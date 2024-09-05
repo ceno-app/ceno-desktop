@@ -1,0 +1,15 @@
+EXTRA_JS_MODULES += [
+    "CenoLauncherUtil.sys.mjs",
+    "CenoProcess.sys.mjs",
+    "CenoProvider.sys.mjs",
+    "CenoProviderBuilder.sys.mjs",
+    "CenoStartupService.sys.mjs",
+]
+
+XPCOM_MANIFESTS += [
+    "components.conf",
+]
+
+EXTRA_COMPONENTS += [
+    "ceno-launcher.manifest",
+]

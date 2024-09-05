@@ -23,6 +23,7 @@ DIRS += [
     "bitsdownload",
     "browser",
     "cascade_bloom_filter",
+    "ceno-launcher",
     "certviewer",
     "cleardata",
     "clearsitedata",
