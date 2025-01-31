@@ -1,9 +1,17 @@
-. $topsrcdir/browser/config/mozconfigs/base-browser
+. $topsrcdir/browser/config/mozconfigs/ceno-browser
+
+export MOZILLA_OFFICIAL=
+ac_add_options --with-branding=browser/branding/ceno-alpha
 
 ac_add_options --target=x86_64-w64-mingw32
 ac_add_options --with-toolchain-prefix=x86_64-w64-mingw32-
 
 ac_add_options --enable-strip
+
+# Options set for dev builds. Later to be managed in a
+# separate channel, i.e browser/branding/ceno-nightly
+ac_add_options --with-ccache=sccache
+mk_add_options MOZ_PARALLEL_BUILD=2
 
 # Bits is Background Intelligent Transfer Service
 ac_add_options --disable-bits-download

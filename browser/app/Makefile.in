@@ -106,7 +106,9 @@ ifdef MOZ_UPDATER
 	cp -f '$(dist_dest)/Contents/MacOS/updater.app/Contents/MacOS/org.mozilla.updater' '$(dist_dest)/Contents/Library/LaunchServices'
 endif
 endif
+# tor-browser#21724: APPLMOZ signature needs changing
+# for making Firefox and other browsers distinct macOS apps
 	$(MKDIR) -p '$(dist_dest)/Contents/Frameworks'
 	mv '$(dist_dest)/Contents/Resources/ChannelPrefs.framework' '$(dist_dest)/Contents/Frameworks'
-	printf APPLMOZB > '$(dist_dest)/Contents/PkgInfo'
+	printf APPLCENOB > '$(dist_dest)/Contents/PkgInfo'
 endif

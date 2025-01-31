@@ -126,6 +126,9 @@ pref("browser.privatebrowsing.preserveClipboard", false);
 pref("clipboard.imageAsFile.enabled", false);
 pref("clipboard.copyPrivateDataToClipboardCloudOrHistory", false);
 
+// Disable site-specific browsing to avoid sharing site icons with the OS. (tor-browser#33855)
+pref("browser.ssb.enabled", false);
+
 // Enable HTTPS-Only mode (tor-browser#19850)
 pref("dom.security.https_only_mode", true);
 // The previous pref automatically sets this to true (see StaticPrefList.yaml),
