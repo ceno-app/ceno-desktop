@@ -1002,6 +1002,11 @@ def base_browser_version_quoted(value):
 set_define("BASE_BROWSER_VERSION", base_browser_version)
 set_define("BASE_BROWSER_VERSION_QUOTED", base_browser_version_quoted)
 
+# Ceno Browser additions.
+
+# We always want Ceno Browser to be defined. Since we do not need any
+# value for it, just always set it to True.
+set_define("CENO_BROWSER", True)
 
 # Please do not add configure checks from here on.
 

@@ -8,8 +8,8 @@ imply_option("MOZ_PLACES", True)
 # tor-browser#32493
 imply_option("MOZ_SERVICES_HEALTHREPORT", False)
 imply_option("MOZ_SERVICES_SYNC", True)
-imply_option("MOZ_DEDICATED_PROFILES", True)
-imply_option("MOZ_BLOCK_PROFILE_DOWNGRADE", True)
+imply_option("MOZ_DEDICATED_PROFILES", False)
+imply_option("MOZ_BLOCK_PROFILE_DOWNGRADE", False)
 # tor-browser#33734
 imply_option("MOZ_NORMANDY", False)
 
