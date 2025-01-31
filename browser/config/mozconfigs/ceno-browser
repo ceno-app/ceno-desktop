@@ -1,0 +1,5 @@
+. $topsrcdir/browser/config/mozconfigs/base-browser
+
+export MOZ_APP_REMOTINGNAME="Ceno Browser"
+
+ac_add_options --with-relative-data-dir=CenoDesktop/Data/Browser
