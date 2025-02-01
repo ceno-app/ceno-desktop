@@ -1,0 +1,15 @@
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+include $(topsrcdir)/config/rules.mk
+
+# Define Ouinet download path
+OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/ouinet/build
+
+# Target for downloading Ouinet files
+download-ouinet:
+	@echo "Downloading Ouinet files..."
+	@mkdir -p $(OUINET_OUTPUT_DIR)
+	@cd $(DIST)/bin/ouinet && $(PYTHON3) download_ouinet.py $(OUINET_OUTPUT_DIR)
