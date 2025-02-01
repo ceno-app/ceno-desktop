@@ -12,6 +12,7 @@ EXTRA_COMPONENTS += [
 
 DIRS += [
     "actors",
+    "ceno",
     "components",
     "content",
     "crashreporter",
@@ -20,6 +21,7 @@ DIRS += [
     "mozapps/downloads",
     "mozapps/extensions",
     "mozapps/preferences",
+    "ouinet",
     "profile",
     "themes",
 ]
