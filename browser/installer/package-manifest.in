@@ -157,6 +157,12 @@
 @BINPATH@/@DLL_PREFIX@gkcodecs@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavutil@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
+@BINPATH@/distribution/extensions/ceno@equalit.ie.xpi
+@BINPATH@/ouinet/build/client.exe
+@BINPATH@/ouinet/build/repos/client/ouinet-client.conf
+@BINPATH@/ouinet/build/repos/client/ssl-inj-cert.pem
+@BINPATH@/ouinet/build/lib*.dll
+@BINPATH@/ouinet/build/lib*.dll.a
 
 ; [Components]
 #ifdef ACCESSIBILITY
@@ -215,6 +221,7 @@
 @RESPATH@/chrome/pdfjs/*
 @RESPATH@/chrome/toolkit@JAREXT@
 @RESPATH@/chrome/toolkit.manifest
+@RESPATH@/components/ceno-launcher.manifest
 #ifdef MOZ_GTK
 @RESPATH@/browser/chrome/icons/default/default16.png
 @RESPATH@/browser/chrome/icons/default/default32.png
