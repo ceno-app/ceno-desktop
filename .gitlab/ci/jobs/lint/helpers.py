@@ -42,18 +42,27 @@ def get_firefox_tag(reference):
     else:
         raise ValueError(f"Failed to extract version from reference '{reference}'.")
 
-    tag = f"FIREFOX_{firefox_version.replace('.', '_')}_"
+    major_version = firefox_version.split(".")[0]
+    minor_patch_version = "_".join(firefox_version.split(".")[1:])
+
     remote_tags = git("ls-remote --tags origin")
 
     # Each line looks like:
     # 9edd658bfd03a6b4743ecb75fd4a9ad968603715  refs/tags/FIREFOX_91_9_0esr_BUILD1
-    pattern = rf"(.*){re.escape(tag)}(.*)$"
+    pattern = (
+        rf"(.*)FIREFOX_{re.escape(major_version)}_{re.escape(minor_patch_version)}(.*)$"
+    )
     match = re.search(pattern, remote_tags, flags=re.MULTILINE)
+    if not match:
+        # Attempt to match with a nightly tag, in case the ESR tag is not found
+        pattern = rf"(.*)FIREFOX_NIGHTLY_{re.escape(major_version)}(.*)$"
+        match = re.search(pattern, remote_tags, flags=re.MULTILINE)
+
     if match:
         return match.group(0).split()[0]
     else:
         raise ValueError(
-            f"Failed to find reference specifier for Firefox tag '{tag}' from '{reference}'."
+            f"Failed to find reference specifier for Firefox tag of version '{firefox_version}' from '{reference}'."
         )
 
 
