@@ -27,6 +27,7 @@
  export class CenoProcess {
    #exeFile = null;
    #dataDir = null;
+   #injCertFile = null;
    #args = [];
    #subprocess = null;
    #status = CenoProcessStatus.Unknown;
@@ -167,7 +168,8 @@
  
    #makeArgs() {
      this.#exeFile = lazy.CenoLauncherUtil.getCenoFile("client", false);
-     this.#dataDir = lazy.CenoLauncherUtil.getCenoFile("repos-client", false);
+     this.#dataDir = lazy.CenoLauncherUtil.getCenoFile("repo", false);
+     this.#injCertFile = lazy.CenoLauncherUtil.getCenoFile("injcert", false);
      /*
      // TODO: Implement localized strings to throw error
      let detailsKey;
@@ -191,7 +193,7 @@
  
      this.#args = [];
      this.#args.push("--repo", this.#dataDir.path)
-     // TODO push tls-cert arg with dynamic path here
+     this.#args.push("--injector-tls-cert-file", this.#injCertFile.path)
    }
  }
  

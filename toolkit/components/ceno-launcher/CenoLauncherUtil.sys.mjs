@@ -87,16 +87,19 @@ class CenoFile {
         this.file = CenoFile.cenoDir;
         this.file.append(CenoLauncherUtil.isWindows ? "client.exe" : "client");
         break;
-      case "repos-client":
+      case "repo":
         this.file = CenoFile.cenoDir;
-        this.file.append("repos");
-        this.file.append("client");
+        this.file.append("repo");
         break;
       case "cacert":
         this.file = CenoFile.cenoDir;
-        this.file.append("repos");
-        this.file.append("client");
+        this.file.append("repo");
         this.file.append("ssl-ca-cert.pem");
+        break;
+      case "injcert":
+        this.file = CenoFile.cenoDir;
+        this.file.append("repo");
+        this.file.append("ssl-inj-cert.pem");
         break;
       case "startup-dir":
         // On macOS we specify different relative paths than on Linux and
@@ -183,9 +186,9 @@ class CenoFile {
       // The directory that contains firefox
       const cenoDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
       if (!CenoLauncherUtil.isMac) {
-        cenoDir.append("ouinet");
+        cenoDir.append("CenoBrowser");
       }
-      cenoDir.append("build");
+      cenoDir.append("Ouinet");
       // Save the value only if the XPCOM methods do not throw.
       this._cenoDir = cenoDir;
     }
