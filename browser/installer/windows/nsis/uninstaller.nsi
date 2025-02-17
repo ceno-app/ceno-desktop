@@ -145,9 +145,9 @@ VIAddVersionKey "OriginalFilename" "helper.exe"
 Name "${BrandFullName}"
 OutFile "helper.exe"
 !ifdef HAVE_64BIT_BUILD
-  InstallDir "$PROGRAMFILES64\${BrandFullName}\"
+  InstallDir "$DESKTOP\${BrandFullName}\"
 !else
-  InstallDir "$PROGRAMFILES32\${BrandFullName}\"
+  InstallDir "$DESKTOP\${BrandFullName}\"
 !endif
 ShowUnInstDetails nevershow
 
@@ -423,7 +423,7 @@ Section "Uninstall"
   ; Return value is saved to an unused variable to prevent the the error flag
   ; from being set.
   Var /GLOBAL UnusedExecCatchReturn
-  ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask uninstall' $UnusedExecCatchReturn
+  ;ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask uninstall' $UnusedExecCatchReturn
 
   ; Uninstall the default browser agent scheduled task and all other scheduled
   ; tasks registered by Firefox.
