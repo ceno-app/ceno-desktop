@@ -5,7 +5,7 @@ FINAL_TARGET_FILES["ouinet"] += [
     "download_ouinet.py",
 ]
 
-FINAL_TARGET_FILES["ouinet/build/repos/client"] += [
-    "build/repos/client/ouinet-client.conf",
-    "build/repos/client/ssl-inj-cert.pem",
+FINAL_TARGET_FILES["CenoBrowser/Ouinet/repo"] += [
+    "repo/ouinet-client.conf",
+    "repo/ssl-inj-cert.pem",
 ]

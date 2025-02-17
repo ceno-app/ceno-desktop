@@ -6,7 +6,7 @@
 include $(topsrcdir)/config/rules.mk
 
 # Define Ouinet download path
-OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/ouinet/build
+OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/CenoBrowser/Ouinet/
 
 # Target for downloading Ouinet files
 download-ouinet:
