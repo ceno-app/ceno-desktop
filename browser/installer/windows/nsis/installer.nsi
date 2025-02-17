@@ -155,9 +155,9 @@ VIAddVersionKey "OriginalFilename" "setup.exe"
 Name "${BrandFullName}"
 OutFile "setup.exe"
 !ifdef HAVE_64BIT_BUILD
-  InstallDir "$PROGRAMFILES64\${BrandFullName}\"
+  InstallDir "$DESKTOP\${BrandFullName}\"
 !else
-  InstallDir "$PROGRAMFILES32\${BrandFullName}\"
+  InstallDir "$DESKTOP\${BrandFullName}\"
 !endif
 ShowInstDetails nevershow
 
@@ -740,7 +740,7 @@ Section "-Application" APP_IDX
 ; Return value is saved to an unused variable to prevent the the error flag
 ; from being set.
 Var /GLOBAL UnusedExecCatchReturn
-ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask install' $UnusedExecCatchReturn
+;ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask install' $UnusedExecCatchReturn
 SectionEnd
 
 ; Cleanup operations to perform at the end of the installation.
