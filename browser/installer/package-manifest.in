@@ -163,6 +163,7 @@
 @BINPATH@/CenoBrowser/Ouinet/repo/ssl-inj-cert.pem
 @BINPATH@/CenoBrowser/Ouinet/lib*@DLL_SUFFIX@
 @BINPATH@/CenoBrowser/Ouinet/lib*@DLL_SUFFIX@.a
+@BINPATH@/CenoBrowser/Ouinet/zlib*@DLL_SUFFIX@
 
 ; [Components]
 #ifdef ACCESSIBILITY

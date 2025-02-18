@@ -47,7 +47,7 @@ def main():
 
     output_dir = sys.argv[1]
     ouinet_url = (
-        "https://gitlab.com/equalitie/ouinet/-/jobs/8887529261/artifacts/download"
+        "https://gitlab.com/equalitie/ouinet/-/jobs/9165266789/artifacts/download"
     )
     print(f"Downloading and extracting ouinet artifacts at {output_dir}...")
     try:
