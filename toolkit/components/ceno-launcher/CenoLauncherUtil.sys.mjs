@@ -88,17 +88,18 @@ class CenoFile {
         this.file.append(CenoLauncherUtil.isWindows ? "client.exe" : "client");
         break;
       case "repo":
-        this.file = CenoFile.cenoDir;
-        this.file.append("repo");
+        this.file = CenoFile.cenoDataDir;
+        break;
+      case "conf":
+        this.file = CenoFile.cenoDataDir;
+        this.file.append("ouinet-client.conf");
         break;
       case "cacert":
-        this.file = CenoFile.cenoDir;
-        this.file.append("repo");
+        this.file = CenoFile.cenoDataDir;
         this.file.append("ssl-ca-cert.pem");
         break;
       case "injcert":
         this.file = CenoFile.cenoDir;
-        this.file.append("repo");
         this.file.append("ssl-inj-cert.pem");
         break;
       case "startup-dir":
@@ -138,18 +139,14 @@ class CenoFile {
   }
 
   createFile() {
-    /*
     // Example of creating directories
     if (
-      "datadir" == this.fileType ||
-      "authdir" == this.fileType ||
-      "profiles-dir" == this.fileType
+      "repo" == this.fileType
     ) {
       this.file.create(this.file.DIRECTORY_TYPE, 0o700);
     } else {
-    */
       this.file.create(this.file.NORMAL_FILE_TYPE, 0o600);
-    //}
+    }
   }
 
   // Returns an nsIFile that points to the binary directory (on Linux and
@@ -186,9 +183,8 @@ class CenoFile {
       // The directory that contains firefox
       const cenoDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
       if (!CenoLauncherUtil.isMac) {
-        cenoDir.append("CenoBrowser");
+        cenoDir.append("Ouinet");
       }
-      cenoDir.append("Ouinet");
       // Save the value only if the XPCOM methods do not throw.
       this._cenoDir = cenoDir;
     }
@@ -199,7 +195,7 @@ class CenoFile {
   // data. Currently it is ${dataDir}/Ceno.
   static get cenoDataDir() {
     const dir = this.dataDir;
-    dir.append("Ceno");
+    dir.append("Ouinet");
     return dir;
   }
 }

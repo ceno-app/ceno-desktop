@@ -27,10 +27,14 @@
  export class CenoProcess {
    #exeFile = null;
    #dataDir = null;
-   #injCertFile = null;
+   #injectorTlsCertFile = null;
    #args = [];
    #subprocess = null;
    #status = CenoProcessStatus.Unknown;
+
+   #cacheHttpPublicKey = "zh6ylt6dghu6swhhje2j66icmjnonv53tstxxvj6acu64sc62fnq";
+   #cacheType = "bep5-http";
+   #injectorCredentials = "ouinet:160d79874a52c2cbcdec58db1a8160a9";
  
    onExit = exitCode => {};
  
@@ -168,8 +172,10 @@
  
    #makeArgs() {
      this.#exeFile = lazy.CenoLauncherUtil.getCenoFile("client", false);
-     this.#dataDir = lazy.CenoLauncherUtil.getCenoFile("repo", false);
-     this.#injCertFile = lazy.CenoLauncherUtil.getCenoFile("injcert", false);
+     this.#dataDir = lazy.CenoLauncherUtil.getCenoFile("repo", true);
+     this.#injectorTlsCertFile = lazy.CenoLauncherUtil.getCenoFile("injcert", false);
+     // Create empty ouinet-client.conf file, required to start ouinet
+     lazy.CenoLauncherUtil.getCenoFile("conf", true);
      /*
      // TODO: Implement localized strings to throw error
      let detailsKey;
@@ -192,8 +198,11 @@
      */
  
      this.#args = [];
-     this.#args.push("--repo", this.#dataDir.path)
-     this.#args.push("--injector-tls-cert-file", this.#injCertFile.path)
+     this.#args.push("--repo", this.#dataDir.path);
+     this.#args.push("--cache-type", this.#cacheType);
+     this.#args.push("--cache-http-public-key", this.#cacheHttpPublicKey);
+     this.#args.push("--injector-credentials", this.#injectorCredentials);
+     this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
    }
  }
  
