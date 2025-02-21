@@ -155,9 +155,9 @@ VIAddVersionKey "OriginalFilename" "setup.exe"
 Name "${BrandFullName}"
 OutFile "setup.exe"
 !ifdef HAVE_64BIT_BUILD
-  InstallDir "$DESKTOP\${BrandFullName}\"
+  InstallDir "$PROGRAMFILES64\${BrandFullName}\"
 !else
-  InstallDir "$DESKTOP\${BrandFullName}\"
+  InstallDir "$PROGRAMFILES32\${BrandFullName}\"
 !endif
 ShowInstDetails nevershow
 
@@ -353,6 +353,10 @@ Section "-Application" APP_IDX
   ${CopyFilesFromDir} "$EXEDIR\core" "$INSTDIR" \
                       "$(ERROR_CREATE_DIRECTORY_PREFIX)" \
                       "$(ERROR_CREATE_DIRECTORY_SUFFIX)"
+
+  ; Tell the browser we are not in standalone mode anymore.
+  FileOpen $0 "$INSTDIR\system-install" w
+  FileClose $0
 
   ; Register DLLs
   ; XXXrstrong - AccessibleMarshal.dll can be used by multiple applications but
