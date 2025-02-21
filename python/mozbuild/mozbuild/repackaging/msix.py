@@ -333,7 +333,7 @@ def repackage_msix(
     app_name=None,
     identity=None,
     publisher=None,
-    publisher_display_name="Mozilla Corporation",
+    publisher_display_name="eQualitie",
     arch=None,
     output=None,
     force=False,
@@ -344,11 +344,9 @@ def repackage_msix(
     if not channel:
         raise Exception("channel is required")
     if channel not in (
-        "official",
-        "beta",
-        "aurora",
-        "nightly",
-        "unofficial",
+        "ceno-release",
+        "ceno-alpha",
+        "ceno-nightly",
     ):
         raise Exception("channel is unrecognized: {}".format(channel))
 
@@ -404,7 +402,7 @@ def repackage_msix(
 
     first = next(values)
     if not displayname:
-        displayname = "Mozilla {}".format(first)
+        displayname = "eQualitie {}".format(first)
 
         if channel == "beta":
             # Release (official) and Beta share branding.  Differentiate Beta a little bit.

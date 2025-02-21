@@ -2580,7 +2580,7 @@ def repackage_msi(
 @CommandArgument(
     "--channel",
     type=str,
-    choices=["official", "beta", "aurora", "nightly", "unofficial"],
+    choices=["ceno-release", "ceno-alpha", "ceno-nightly"],
     help="Release channel.",
 )
 @CommandArgument(
@@ -2600,10 +2600,10 @@ def repackage_msi(
 @CommandArgument(
     "--vendor",
     type=str,
-    default="Mozilla",
+    default="eQualitie",
     required=False,
     help="The vendor to use in the Package/Identity/Name string to use in the App Manifest."
-    + " Defaults to 'Mozilla'.",
+    + " Defaults to 'eQualitie'.",
 )
 @CommandArgument(
     "--identity-name",
@@ -2618,7 +2618,7 @@ def repackage_msi(
     type=str,
     # This default is baked into enough places under `browser/` that we need
     # not extract a constant.
-    default="CN=Mozilla Corporation, OU=MSIX Packaging",
+    default="CN=eQualitie, OU=MSIX Packaging",
     required=False,
     help="The Package/Identity/Publisher string to use in the App Manifest."
     + " It must match the subject on the certificate used for signing.",
@@ -2626,10 +2626,10 @@ def repackage_msi(
 @CommandArgument(
     "--publisher-display-name",
     type=str,
-    default="Mozilla Corporation",
+    default="eQualitie",
     required=False,
     help="The Package/Properties/PublisherDisplayName string to use in the App Manifest. "
-    + " Defaults to 'Mozilla Corporation'.",
+    + " Defaults to 'eQualitie'.",
 )
 @CommandArgument(
     "--makeappx",
