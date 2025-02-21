@@ -158,12 +158,11 @@
 @BINPATH@/@DLL_PREFIX@mozavutil@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
 @BINPATH@/distribution/extensions/ceno@equalit.ie.xpi
-@BINPATH@/CenoBrowser/Ouinet/client@BIN_SUFFIX@
-@BINPATH@/CenoBrowser/Ouinet/repo/ouinet-client.conf
-@BINPATH@/CenoBrowser/Ouinet/repo/ssl-inj-cert.pem
-@BINPATH@/CenoBrowser/Ouinet/lib*@DLL_SUFFIX@
-@BINPATH@/CenoBrowser/Ouinet/lib*@DLL_SUFFIX@.a
-@BINPATH@/CenoBrowser/Ouinet/zlib*@DLL_SUFFIX@
+@BINPATH@/Ouinet/client@BIN_SUFFIX@
+@BINPATH@/Ouinet/ssl-inj-cert.pem
+@BINPATH@/Ouinet/lib*@DLL_SUFFIX@
+@BINPATH@/Ouinet/lib*@DLL_SUFFIX@.a
+@BINPATH@/Ouinet/zlib*@DLL_SUFFIX@
 
 ; [Components]
 #ifdef ACCESSIBILITY
