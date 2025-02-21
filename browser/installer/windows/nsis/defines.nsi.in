@@ -74,7 +74,7 @@
 
 #ifdef MOZ_LAUNCHER_PROCESS
 !define MOZ_LAUNCHER_PROCESS
-!define MOZ_LAUNCHER_SUBKEY "Software\Mozilla\${AppName}\Launcher"
+!define MOZ_LAUNCHER_SUBKEY "Software\eQualitie\${AppName}\Launcher"
 #endif
 
 #ifdef RELEASE_OR_BETA
