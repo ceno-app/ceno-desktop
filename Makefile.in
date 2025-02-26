@@ -154,8 +154,6 @@ include $(topsrcdir)/config/rules.mk
 libs::
 	@echo "Running custom target for Ouinet artifacts..."
 	$(MAKE) -C toolkit/ouinet download-ouinet
-	@echo "Running custom target for Ceno XPI..."
-	$(MAKE) -C toolkit/ceno package-xpi
 
 ifdef SCCACHE_VERBOSE_STATS
 default::

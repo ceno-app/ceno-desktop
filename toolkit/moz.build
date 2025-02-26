@@ -12,7 +12,6 @@ EXTRA_COMPONENTS += [
 
 DIRS += [
     "actors",
-    "ceno",
     "components",
     "content",
     "crashreporter",
