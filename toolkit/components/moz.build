@@ -24,6 +24,7 @@ DIRS += [
     "browser",
     "cascade_bloom_filter",
     "ceno-launcher",
+    "cenohome",
     "certviewer",
     "cleardata",
     "clearsitedata",

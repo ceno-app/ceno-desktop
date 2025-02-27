@@ -1,0 +1,105 @@
+/* Copyright (c) 2021, The Tor Project, Inc. */
+
+@import url("chrome://global/skin/error-pages.css");
+@import url("chrome://global/skin/tor-colors.css");
+
+:root {
+  --onion-opacity: 1;
+  --onion-color: var(--card-outline-color);
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+#connect-to-tor {
+  margin-inline-start: 0;
+}
+
+#try-bridge {
+  cursor: default;
+}
+
+#locationDropdownLabel {
+  margin-block: auto;
+  margin-inline: 4px;
+}
+
+#locationDropdownLabel.error {
+  color: var(--text-color-error)
+}
+
+/* this follows similar css in error-pages.css for buttons */
+@media only screen and (min-width: 480px) {
+  form#locationDropdown {
+    margin-inline: 4px;
+    /* subtracting out the margin is needeed because by
+       default forms have different margins than buttons */
+    max-width: calc(100% - 8px);
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  #tryAgainButton {
+    margin-top: 4px;
+  }
+}
+
+form#locationDropdown {
+  width: 240px;
+}
+
+form#locationDropdown select {
+  max-width: 100%;
+  margin-inline: 0;
+  font-weight: 700;
+}
+
+:root {
+  --progressbar-shadow-start: rgba(255, 255, 255, 0.7);
+  --progressbar-gradient: linear-gradient(90deg, #FC00FF 0%, #00DBDE 50%, #FC00FF 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --progressbar-shadow-start: rgba(28, 27, 34, 0.7);
+  }
+}
+
+#connectPageContainer {
+  margin-top: 10vh;
+  width: 100%;
+  max-width: 45em;
+}
+
+body.aboutCenoHome {
+  justify-content: space-between;
+  padding-block-end: 175px;
+}
+
+body.aboutCenoHome .title {
+  -moz-context-properties: stroke, fill, fill-opacity;
+  fill-opacity: var(--onion-opacity);
+  fill: var(--onion-color);
+  stroke: var(--onion-color);
+  /* Make sure there is no padding between the title and #breadcrumbs. */
+  padding-block-start: 0;
+}
+
+/* Android-specific CSS, to be removed when we use only the native UI. */
+:root {
+  --android-dark-accents-buttons: #9059FF;
+  --android-dark-background-secondary: #E1E0E7;
+  --android-dark-text-primary: #FBFBFE;
+  --android-light-text-primary: #15141A;
+}
+
+[hidden=true] {
+  display: none !important;
+}
+
+body:not(.android) #connectButtonContainer {
+  /* Use the .button-container context */
+  display: contents;
+}

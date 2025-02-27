@@ -6,7 +6,7 @@ pref("intl.locale.requested", "");
 
 // Home page and new tab is blank rather than Firefox Home (Activity Stream).
 // tor-browser#31575 and tor-browser#30662
-pref("browser.startup.homepage", "about:blank");
+pref("browser.startup.homepage", "about:cenohome");
 pref("browser.newtabpage.enabled", false);
 
 // tor-browser#43164: Prevent search-bar from being auto-hidden when not used for awhile

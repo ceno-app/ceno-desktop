@@ -1,0 +1,161 @@
+@namespace xul "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+:root {
+  /* Photon colors not available in Firefox. */
+  --purple-30: #c069ff;
+  --purple-40: #ad3bff;
+  --purple-50: #9400ff;
+  --purple-60: #8000d7;
+  --purple-70: #6200a4;
+  --purple-80: #440071;
+  --purple-90: #25003e;
+
+  /* On light backgrounds. */
+  --tor-accent-color-light: var(--purple-60);
+  --tor-accent-color-hover-light: var(--purple-70);
+  --tor-accent-color-active-light: var(--purple-80);
+
+  /* Acorn color grey light 05. */
+  --tor-button-text-color-light: var(--color-gray-05);
+  --tor-button-text-color-hover-light: var(--color-gray-05);
+  --tor-button-text-color-active-light: var(--color-gray-05);
+  --tor-button-background-color-light: var(--tor-accent-color-light);
+  --tor-button-background-color-hover-light: var(--tor-accent-color-hover-light);
+  --tor-button-background-color-active-light: var(--tor-accent-color-active-light);
+  --tor-focus-outline-color-light: var(--tor-accent-color-light);
+  --tor-link-color-light: var(--tor-accent-color-light);
+  --tor-link-color-hover-light: var(--tor-accent-color-hover-light);
+  --tor-link-color-active-light: var(--tor-accent-color-active-light);
+
+
+  /* On dark backgrounds. */
+  /* TODO: Need a dark theme purple color that gets *lighter* with hover and
+   * active states, see tor-browser#42025 */
+  --tor-accent-color-dark: var(--purple-30);
+  --tor-accent-color-hover-dark: var(--purple-40);
+  --tor-accent-color-active-dark: var(--purple-50);
+
+  /* TODO: Use a dark text color for dark theme. tor-browser#41787. */
+  --tor-button-text-color-dark: var(--color-gray-05);
+  --tor-button-text-color-hover-dark: var(--color-gray-05);
+  --tor-button-text-color-active-dark: var(--color-gray-05);
+  --tor-button-background-color-dark: var(--tor-accent-color-dark);
+  --tor-button-background-color-hover-dark: var(--tor-accent-color-hover-dark);
+  --tor-button-background-color-active-dark: var(--tor-accent-color-active-dark);
+  --tor-focus-outline-color-dark: var(--tor-accent-color-dark);
+  --tor-link-color-dark: var(--tor-accent-color-dark);
+  --tor-link-color-hover-dark: var(--tor-accent-color-hover-dark);
+  --tor-link-color-active-dark: var(--tor-accent-color-active-dark);
+
+
+  /* Generic colors that adapt to theme. */
+  --tor-accent-color: light-dark(
+    var(--tor-accent-color-light),
+    var(--tor-accent-color-dark)
+  );
+  --tor-accent-color-hover: light-dark(
+    var(--tor-accent-color-hover-light),
+    var(--tor-accent-color-hover-dark)
+  );
+  --tor-accent-color-active: light-dark(
+    var(--tor-accent-color-active-light),
+    var(--tor-accent-color-active-dark)
+  );
+  --tor-button-text-color: light-dark(
+    var(--tor-button-text-color-light),
+    var(--tor-button-text-color-dark)
+  );
+  --tor-button-text-color-hover: light-dark(
+    var(--tor-button-text-color-hover-light),
+    var(--tor-button-text-color-hover-dark)
+  );
+  --tor-button-text-color-active: light-dark(
+    var(--tor-button-text-color-active-light),
+    var(--tor-button-text-color-active-dark)
+  );
+  --tor-button-background-color: light-dark(
+    var(--tor-button-background-color-light),
+    var(--tor-button-background-color-dark)
+  );
+  --tor-button-background-color-hover: light-dark(
+    var(--tor-button-background-color-hover-light),
+    var(--tor-button-background-color-hover-dark)
+  );
+  --tor-button-background-color-active: light-dark(
+    var(--tor-button-background-color-active-light),
+    var(--tor-button-background-color-active-dark)
+  );
+  --tor-focus-outline-color: light-dark(
+    var(--tor-focus-outline-color-light),
+    var(--tor-focus-outline-color-dark)
+  );
+  --tor-link-color: light-dark(
+    var(--tor-link-color-light),
+    var(--tor-link-color-dark)
+  );
+  --tor-link-color-hover: light-dark(
+    var(--tor-link-color-hover-light),
+    var(--tor-link-color-hover-dark)
+  );
+  --tor-link-color-active: light-dark(
+    var(--tor-link-color-active-light),
+    var(--tor-link-color-active-dark)
+  );
+}
+
+@media ((prefers-contrast) or (forced-colors)) {
+  :root {
+    /* Use Firefox design system accent colors. */
+    --tor-accent-color: var(--color-accent-primary);
+    --tor-accent-color-hover: var(--color-accent-primary-hover);
+    --tor-accent-color-active: var(--color-accent-primary-active);
+
+    /* Use Firefox design system primary button colors. */
+    --tor-button-text-color: var(--button-text-color-primary);
+    --tor-button-text-color-hover: var(--button-text-color-primary-hover);
+    --tor-button-text-color-active: var(--button-text-color-primary-active);
+    --tor-button-background-color: var(--button-background-color-primary);
+    --tor-button-background-color-hover: var(--button-background-color-primary-hover);
+    --tor-button-background-color-active: var(--button-background-color-primary-active);
+
+    /* Use Firefox design system default colors. */
+    --tor-focus-outline-color: var(--focus-outline-color);
+    --tor-link-color: var(--link-color);
+    --tor-link-color-hover: var(--link-color-hover);
+    --tor-link-color-active: var(--link-color-active);
+  }
+}
+
+/* Has a higher specificity than `button` and `button.primary`. */
+button.tor-button:is(*, .primary),
+xul|button.tor-button:is(*, [default]),
+.tor-button {
+  color: var(--tor-button-text-color);
+  background-color: var(--tor-button-background-color);
+}
+
+:is(
+  button.tor-button:is(*, .primary),
+  xul|button.tor-button:is(*, [default]),
+  .tor-button
+):not([disabled]):hover {
+  color: var(--tor-button-text-color-hover);
+  background-color: var(--tor-button-background-color-hover);
+}
+
+:is(
+  button.tor-button:is(*, .primary),
+  xul|button.tor-button:is(*, [default]),
+  .tor-button
+):not([disabled]):hover:active {
+  color: var(--tor-button-text-color-active);
+  background-color: var(--tor-button-background-color-active);
+}
+
+:is(
+  button.tor-button:is(*, .primary),
+  xul|button.tor-button:is(*, [default]),
+  .tor-button
+):focus-visible {
+  outline-color: var(--tor-focus-outline-color);
+}
