@@ -450,7 +450,7 @@ pref("security.remote_settings.intermediates.enabled", false);
 // Bug 2874: Block Components.interfaces from content
 pref("dom.use_components_shim", false);
 // Enable letterboxing
-pref("privacy.resistFingerprinting.letterboxing", true);
+pref("privacy.resistFingerprinting.letterboxing", false);
 // tor-browser#41917: Center letterboxed area vertically
 pref("privacy.resistFingerprinting.letterboxing.vcenter", true);
 // tor-browser#41917: Letterboxing gradient background
