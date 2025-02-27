@@ -157,7 +157,7 @@
 @BINPATH@/@DLL_PREFIX@gkcodecs@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavutil@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
-@BINPATH@/distribution/extensions/ceno@equalit.ie.xpi
+@BINPATH@/browser/features/ceno@equalit.ie/
 @BINPATH@/Ouinet/client@BIN_SUFFIX@
 @BINPATH@/Ouinet/ssl-inj-cert.pem
 @BINPATH@/Ouinet/lib*@DLL_SUFFIX@
