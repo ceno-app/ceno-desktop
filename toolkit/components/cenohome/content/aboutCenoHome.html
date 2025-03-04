@@ -13,12 +13,14 @@
       type="text/css"
       media="all"
     />
+    <link rel="localization" href="toolkit/global/ceno-browser.ftl" />
 
     <script
       type="module"
       src="chrome://global/content/elements/moz-toggle.mjs"
     ></script>
-    <title>Ceno Homepage</title>
+    <title data-l10n-id="ceno-browser-about-ceno-home-title">
+    </title>
   </head>
   <body class="aboutCenoHome">
     <div id="connectPageContainer" class="container">
@@ -26,12 +28,12 @@
         <div class="title">
           <img src="chrome://global/content/cenohome/ceno-logo.svg" width="40%" height="40%"></img>
         </div>
-        <div id="connectLongContent">
-          <p>Ceno has two browsing modes: Public and Personal</p>
-          <p>You can easily toggle between them via the Ceno button in the toolbar.</p>
-          <p>Public mode offers the best connectivity but the least privacy - websites that you visit or share are recorded in a publicly-accessible registry (BitTorrent).</p>
-          <p>Personal mode eliminates this record but may be slower and less efficient at retrieving content.</p>
-          <p>See the <a href="https://censorship.no/en/support.html">FAQ</a> for more details on how Ceno works.</p>
+        <div>
+          <p data-l10n-id="ceno-browser-about-ceno-home-description-1"></p>
+          <p data-l10n-id="ceno-browser-about-ceno-home-description-2"></p>
+          <p data-l10n-id="ceno-browser-about-ceno-home-description-3"></p>
+          <p data-l10n-id="ceno-browser-about-ceno-home-description-4"></p>
+          <p><span data-l10n-id="ceno-browser-about-ceno-home-description-5"></span> <a href="https://censorship.no/en/support.html">FAQ</a>.</p>
         </div>
       </div>
     </div>
