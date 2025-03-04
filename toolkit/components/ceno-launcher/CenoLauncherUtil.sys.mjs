@@ -102,6 +102,10 @@ class CenoFile {
         this.file = CenoFile.cenoDir;
         this.file.append("ssl-inj-cert.pem");
         break;
+      case "mozcert":
+        this.file = CenoFile.cenoDir;
+        this.file.append("cacert.pem");
+        break;
       case "startup-dir":
         // On macOS we specify different relative paths than on Linux and
         // Windows

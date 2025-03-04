@@ -27,7 +27,6 @@
  export class CenoProcess {
    #exeFile = null;
    #dataDir = null;
-   #injectorTlsCertFile = null;
    #args = [];
    #subprocess = null;
    #status = CenoProcessStatus.Unknown;
@@ -35,6 +34,8 @@
    #cacheHttpPublicKey = "zh6ylt6dghu6swhhje2j66icmjnonv53tstxxvj6acu64sc62fnq";
    #cacheType = "bep5-http";
    #injectorCredentials = "ouinet:160d79874a52c2cbcdec58db1a8160a9";
+   #injectorTlsCertFile = null;
+   #tlsCaCertStorePath = null;
  
    onExit = exitCode => {};
  
@@ -174,6 +175,7 @@
      this.#exeFile = lazy.CenoLauncherUtil.getCenoFile("client", false);
      this.#dataDir = lazy.CenoLauncherUtil.getCenoFile("repo", true);
      this.#injectorTlsCertFile = lazy.CenoLauncherUtil.getCenoFile("injcert", false);
+     this.#tlsCaCertStorePath = lazy.CenoLauncherUtil.getCenoFile("mozcert", false);
      // Create empty ouinet-client.conf file, required to start ouinet
      lazy.CenoLauncherUtil.getCenoFile("conf", true);
      /*
@@ -203,6 +205,7 @@
      this.#args.push("--cache-http-public-key", this.#cacheHttpPublicKey);
      this.#args.push("--injector-credentials", this.#injectorCredentials);
      this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
+     this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
    }
  }
  
