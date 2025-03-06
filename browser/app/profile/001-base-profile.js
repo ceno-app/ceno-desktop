@@ -644,7 +644,8 @@ pref("extensions.quarantinedDomains.enabled", false);
 pref("intl.multilingual.downloadEnabled", false);
 
 // Enforce certificate pinning, see: https://bugs.torproject.org/16206
-pref("security.cert_pinning.enforcement_level", 2);
+// CENO: set to 1 to allow MiTM
+pref("security.cert_pinning.enforcement_level", 1);
 
 // Don't load OS client certs.
 pref("security.osclientcerts.autoload", false);
