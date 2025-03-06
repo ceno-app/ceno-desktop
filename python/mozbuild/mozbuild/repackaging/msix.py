@@ -779,9 +779,9 @@ def _sign_msix_win(output, force, log, verbose):
 
     # These are baked into enough places under `browser/` that we need not
     # extract constants.
-    vendor = "Mozilla"
-    publisher = "CN=Mozilla Corporation, OU=MSIX Packaging"
-    friendly_name = "Mozilla Corporation MSIX Packaging Test Certificate"
+    vendor = "eQualitie"
+    publisher = "CN=eQualitie, OU=MSIX Packaging"
+    friendly_name = "eQualitie MSIX Packaging Test Certificate"
 
     # The convention is $MOZBUILD_STATE_PATH/cache/$FEATURE.
     crt_path = mozpath.join(
@@ -1008,9 +1008,9 @@ def _sign_msix_posix(output, force, log, verbose):
 
     # These are baked into enough places under `browser/` that we need not
     # extract constants.
-    cn = "Mozilla Corporation"
+    cn = "eQualitie"
     ou = "MSIX Packaging"
-    friendly_name = "Mozilla Corporation MSIX Packaging Test Certificate"
+    friendly_name = "eQualitie MSIX Packaging Test Certificate"
     # Password is needed when generating the cert, but
     # "makeappx" explicitly does _not_ support passing it
     # so it ends up getting removed when we create the pfx
