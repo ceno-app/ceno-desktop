@@ -1,5 +1,0 @@
-. $topsrcdir/browser/config/mozconfigs/base-browser
-
-export MOZ_APP_BASENAME="Ceno Alpha"
-export MOZ_APP_NAME=ceno-alpha
-export MOZ_APP_REMOTINGNAME="Ceno alpha"
