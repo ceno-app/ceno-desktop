@@ -686,6 +686,9 @@ Section "Uninstall"
   ${If} ${FileExists} "$INSTDIR\postSigningData"
     Delete /REBOOTOK "$INSTDIR\postSigningData"
   ${EndIf}
+  ${If} ${FileExists} "$INSTDIR\system-install"
+    Delete /REBOOTOK "$INSTDIR\system-install"
+  ${EndIf}
 
   ; Explicitly remove empty webapprt dir in case it exists (bug 757978).
   RmDir "$INSTDIR\webapprt\components"
