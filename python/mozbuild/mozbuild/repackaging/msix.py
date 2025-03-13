@@ -345,8 +345,8 @@ def repackage_msix(
         raise Exception("channel is required")
     if channel not in (
         "ceno-release",
+        "ceno-beta",
         "ceno-alpha",
-        "ceno-nightly",
     ):
         raise Exception("channel is unrecognized: {}".format(channel))
 

@@ -2580,7 +2580,7 @@ def repackage_msi(
 @CommandArgument(
     "--channel",
     type=str,
-    choices=["ceno-release", "ceno-alpha", "ceno-nightly"],
+    choices=["ceno-release", "ceno-beta", "ceno-alpha"],
     help="Release channel.",
 )
 @CommandArgument(

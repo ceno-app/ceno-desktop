@@ -7,11 +7,11 @@
 # that Mozilla includes in the Firefox language packs.
 
 -brand-shorter-name = Ceno
--brand-short-name = Ceno Browser
+-brand-short-name = Ceno Alpha
 -brand-shortcut-name = Ceno
--brand-full-name = Ceno Browser
+-brand-full-name = Ceno Alpha
 # This brand name can be used in messages where the product name needs to
 # remain unchanged across different versions (Nightly, Beta, etc.).
--brand-product-name = Ceno Browser
+-brand-product-name = Ceno
 -vendor-short-name = eQualitie
 trademarkInfo = { " " }
