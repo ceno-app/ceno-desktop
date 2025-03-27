@@ -6,4 +6,9 @@
 
 DIRS += [
     "ceno",
+    "formautofill",
+    "screenshots",
+    "webcompat",
+    "pictureinpicture",
+    "search-detection",
 ]
