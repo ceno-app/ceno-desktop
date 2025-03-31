@@ -57,6 +57,7 @@ DIRS += [
     "ml",
     "mozintl",
     "mozprotocol",
+    "ouinet-launcher",
     "parentalcontrols",
     "passwordmgr",
     "pdfjs",
