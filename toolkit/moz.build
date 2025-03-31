@@ -20,6 +20,7 @@ DIRS += [
     "mozapps/downloads",
     "mozapps/extensions",
     "mozapps/preferences",
+    "ouinet",
     "profile",
     "themes",
 ]
