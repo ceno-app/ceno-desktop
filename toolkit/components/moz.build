@@ -57,6 +57,7 @@ DIRS += [
     # Exclude the "ml" component. tor-browser#44045.
     "mozintl",
     "mozprotocol",
+    "ouinet-launcher",
     "parentalcontrols",
     "passwordmgr",
     "pdfjs",
