@@ -100,6 +100,7 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
       await this.reloadAddons();
       this.clearConnections();
       this.clearPrivateSession();
+      await this.clearOuinetCache();
     }
 
     clearSiteSpecificZoom() {
@@ -366,6 +367,12 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
       Services.obs.notifyObservers(null, "last-pb-context-exited");
     }
 
+    async clearOuinetCache() {
+      logger.info("Clearing Ouinet cache");
+      // TODO: Get Ouinet API endpoint from client/extension, instead of hardcoding
+      await fetch("http://127.0.0.1:8078/?purge_cache=do")
+    }
+
     async reloadAddons() {
       logger.info("Reloading add-ons to clear their temporary state.");
       // Reload all active extensions except search engines, which would throw.
@@ -402,7 +409,7 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
         const isCustomHome =
           Services.prefs.getIntPref("browser.startup.page") === 1;
         const win = OpenBrowserWindow({
-          private: true,
+          private: isCustomHome && isTrustedHome ? "private" : "no-home",,
           skipCustomHome: !(isCustomHome && isTrustedHome),
         });
         // This mechanism to know when the new window is ready is used by
