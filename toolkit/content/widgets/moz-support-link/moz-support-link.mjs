@@ -124,8 +124,7 @@ export default class MozSupportLink extends HTMLAnchorElement {
       this.href = href;
       return;
     }
-    let supportPage = this.getAttribute("support-page") ?? "";
-    let base = MozSupportLink.SUPPORT_URL + supportPage;
+    let base = "https://ceno.app/en/support.html";
     this.href = this.hasAttribute("utm-content")
       ? formatUTMParams(this.getAttribute("utm-content"), base)
       : base;
