@@ -151,6 +151,10 @@ default all::
 
 include $(topsrcdir)/config/rules.mk
 
+libs::
+	@echo "Running custom target for Ouinet artifacts..."
+	$(MAKE) -C toolkit/ouinet download-ouinet
+
 ifdef SCCACHE_VERBOSE_STATS
 default::
 	-$(CCACHE) --show-adv-stats --stats-format=json > '$(UPLOAD_PATH)/sccache-stats.json'
