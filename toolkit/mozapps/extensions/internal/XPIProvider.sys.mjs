@@ -3230,13 +3230,11 @@ export var XPIProvider = {
             }
             aManifests[loc.name][id] = addon;
             changed = true;
-
-            // mullvad-browser#20: Allow pre-installed extensions in PBM
+            // Allow pre-installed extensions in PBM
             const PRIVATE_ALLOWED_PERMISSION =
               "internal:privateBrowsingAllowed";
             if (
-              addon.id === "uBlock0@raymondhill.net" ||
-              addon.id == "{d19a89b9-76c1-4a61-bcd4-49e8de916403}"
+              addon.id === "uBlock0@raymondhill.net"
             ) {
               lazy.ExtensionPermissions.add(addon.id, {
                 permissions: [PRIVATE_ALLOWED_PERMISSION],
