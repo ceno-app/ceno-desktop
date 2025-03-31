@@ -27,6 +27,7 @@ DIRS += [
     "browser",
     "captchadetection",
     "cascade_bloom_filter",
+    "cenohome",
     "certviewer",
     "cleardata",
     "clearsitedata",
