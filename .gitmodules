@@ -1,0 +1,4 @@
+[submodule "browser/extensions/ceno"]
+	path = browser/extensions/ceno
+	url = https://gitlab.com/censorship-no/ceno-ext-settings
+  branch = master
