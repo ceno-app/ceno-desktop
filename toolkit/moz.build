@@ -23,6 +23,7 @@ DIRS += [
     "ouinet",
     "profile",
     "themes",
+    "ublock",
 ]
 
 if CONFIG["OS_ARCH"] == "WINNT":
