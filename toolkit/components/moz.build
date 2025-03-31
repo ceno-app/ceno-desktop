@@ -23,6 +23,7 @@ DIRS += [
     "bitsdownload",
     "browser",
     "cascade_bloom_filter",
+    "cenohome",
     "certviewer",
     "cleardata",
     "clearsitedata",
