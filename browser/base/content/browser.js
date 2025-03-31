@@ -715,6 +715,7 @@ var gPageIcons = {
 var gInitialPages = [
   "about:mullvad-browser",
   "about:blank",
+  "about:cenohome",
   "about:home",
   "about:firefoxview",
   "about:newtab",
