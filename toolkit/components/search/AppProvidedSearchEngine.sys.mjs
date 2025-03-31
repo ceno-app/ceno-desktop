@@ -210,7 +210,13 @@ class IconHandler {
    */
   async #getIconList() {
     try {
-      this.#iconList = await this.#iconCollection.get();
+      this.#iconList = new Map(
+        await (
+          await fetch(
+            "chrome://global/content/search/cenoBrowserSearchEngineIcons.json"
+          )
+        ).json()
+      );
     } catch (ex) {
       console.error(ex);
       this.#iconList = [];
