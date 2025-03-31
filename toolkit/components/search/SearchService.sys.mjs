@@ -2611,10 +2611,9 @@ export class SearchService {
       this._settings.setMetaDataAttribute(key, value);
     }
 
-    let { engines, privateDefault } =
-      await this.#engineSelector.fetchEngineConfiguration(
-        searchEngineSelectorProperties
-      );
+    const engines = await (
+      await fetch("chrome://global/content/search/cenoBrowserSearchEngines.json")
+    ).json();
 
     for (let e of engines) {
       if (!e.webExtension) {
@@ -2647,7 +2646,7 @@ export class SearchService {
       }
     }
 
-    return { engines, privateDefault };
+    return { engines, privateDefault: undefined };
   }
 
   #setDefaultAndOrdersFromSelector(engines, privateDefault) {
