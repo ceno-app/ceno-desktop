@@ -6,7 +6,7 @@ pref("intl.locale.requested", "");
 
 // Home page and new tab is blank rather than Firefox Home (Activity Stream).
 // tor-browser#31575 and tor-browser#30662
-pref("browser.startup.homepage", "about:blank");
+pref("browser.startup.homepage", "about:cenohome");
 pref("browser.newtabpage.enabled", false);
 
 // tor-browser#43164: Prevent search-bar from being auto-hidden when not used for awhile
@@ -50,10 +50,12 @@ pref("browser.startup.homepage_override.buildID", "20100101");
 pref("browser.disableResetPrompt", true);
 
 // Disk activity: Disable Browsing History Storage
-pref("browser.privatebrowsing.autostart", true);
+// CENO: Do not start into private mode automatically
+pref("browser.privatebrowsing.autostart", false);
 pref("browser.cache.disk.enable", false);
 pref("permissions.memory_only", true);
-pref("security.nocertdb", true);
+// CENO: certdb is required for MitM cert injection
+pref("security.nocertdb", false);
 pref("media.aboutwebrtc.hist.enabled", false);
 
 // Disk Activity
@@ -123,6 +125,9 @@ pref("browser.privatebrowsing.preserveClipboard", false);
 // Also, do not save clipboard in history/cloud.
 pref("clipboard.imageAsFile.enabled", false);
 pref("clipboard.copyPrivateDataToClipboardCloudOrHistory", false);
+
+// Disable site-specific browsing to avoid sharing site icons with the OS. (tor-browser#33855)
+pref("browser.ssb.enabled", false);
 
 // Enable HTTPS-Only mode (tor-browser#19850)
 pref("dom.security.https_only_mode", true);
@@ -445,7 +450,7 @@ pref("security.remote_settings.intermediates.enabled", false);
 // Bug 2874: Block Components.interfaces from content
 pref("dom.use_components_shim", false);
 // Enable letterboxing
-pref("privacy.resistFingerprinting.letterboxing", true);
+pref("privacy.resistFingerprinting.letterboxing", false);
 // tor-browser#41917: Center letterboxed area vertically
 pref("privacy.resistFingerprinting.letterboxing.vcenter", true);
 // tor-browser#41917: Letterboxing gradient background
@@ -631,19 +636,23 @@ pref("extensions.postDownloadThirdPartyPrompt", false);
 // tor-browser#41701: Reporting an extension does not work. The request goes to
 // Mozilla and is always rejected anyway (HTTP 400).
 pref("extensions.abuseReport.enabled", false);
+// CENO: Quarantined Domains allows built-in Ceno extension to work on restricted domains
+pref("extensions.quarantinedDomains.enabled", false);
 // We are already providing the languages we support in multi-lingual packages.
 // Therefore, do not allow download of additional language packs. They are not a
 // privacy/security threat, we are disabling them for UX reasons. See bug 41377.
 pref("intl.multilingual.downloadEnabled", false);
 
 // Enforce certificate pinning, see: https://bugs.torproject.org/16206
-pref("security.cert_pinning.enforcement_level", 2);
+// CENO: set to 1 to allow MiTM
+pref("security.cert_pinning.enforcement_level", 1);
 
 // Don't load OS client certs.
 pref("security.osclientcerts.autoload", false);
 
 // Don't allow MitM via enterprise roots, see bug 30681
-pref("security.enterprise_roots.enabled", false);
+// CENO: Enterprise roots required for MitM cert injection
+pref("security.enterprise_roots.enabled", true);
 
 // Don't ping Mozilla for MitM detection, see bug 32321
 pref("security.certerrors.mitm.priming.enabled", false);
@@ -688,6 +697,9 @@ pref("dom.text-recognition.enabled", false);
 
 // Log levels
 pref("browser.new_identity.log_level", "Info");
+
+// CENO: Needed to install built-in extensions
+pref("xpinstall.signatures.required", false);
 
 #ifdef XP_WIN
 pref("browser.taskbar.lists.enabled", false);
