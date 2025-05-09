@@ -25,9 +25,9 @@ def unpackage_file(zfile, output_dir):
     with zipfile.ZipFile(zfile, "r") as ouinet_zip:
         for member in ouinet_zip.namelist():
             # Check if the file is in the 'build/windows' directory
-            if member.startswith("build/windows/") and not member.endswith("/"):
+            if member.startswith("ouinet-windows-x64-v1.1.1/") and not member.endswith("/"):
                 # Extract the file to the output directory, stripping 'build/windows/'
-                relative_path = os.path.relpath(member, "build/windows")
+                relative_path = os.path.relpath(member, "ouinet-windows-x64-v1.1.1")
                 target_path = os.path.join(output_dir, relative_path)
                 # Ensure the target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
