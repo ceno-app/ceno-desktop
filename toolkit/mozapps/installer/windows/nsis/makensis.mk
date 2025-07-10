@@ -61,6 +61,8 @@ ifdef MOZ_STUB_INSTALLER
 	cd $(CONFIG_DIR) && $(MAKENSISU) $(MAKENSISU_FLAGS) stub.nsi
 endif
 
+GIT_COMMIT_HASH := $(shell git rev-parse HEAD)
+
 ifdef ZIP_IN
 installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(CONFIG_DIR)/setup-portable.exe
 	@echo 'Packaging $(WIN32_INSTALLER_OUT).'
@@ -73,6 +75,8 @@ installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(CONFIG_DIR)/setup-portable.exe
 	  --setupexe $(CONFIG_DIR)/setup.exe \
 	  --sfx-stub $(SFX_MODULE) \
 	  $(USE_UPX)
+	mv $(CONFIG_DIR)/setup-portable.exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(MOZ_PKG_VERSION)-$(GIT_COMMIT_HASH).exe
+	mv $(ABS_DIST)/$(PKG_INST_PATH)$(PKG_INST_BASENAME).exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(MOZ_PKG_VERSION)-$(GIT_COMMIT_HASH).exe
 ifdef MOZ_STUB_INSTALLER
 	$(PYTHON3) $(MOZILLA_DIR)/mach repackage installer \
 	  -o '$(ABS_DIST)/$(PKG_INST_PATH)$(PKG_STUB_BASENAME).exe' \
