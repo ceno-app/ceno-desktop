@@ -62,7 +62,7 @@ ifdef MOZ_STUB_INSTALLER
 endif
 
 ifdef ZIP_IN
-installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN)
+installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(CONFIG_DIR)/setup-portable.exe
 	@echo 'Packaging $(WIN32_INSTALLER_OUT).'
 	$(NSINSTALL) -D '$(ABS_DIST)/$(PKG_INST_PATH)'
 	$(PYTHON3) $(MOZILLA_DIR)/mach repackage installer \

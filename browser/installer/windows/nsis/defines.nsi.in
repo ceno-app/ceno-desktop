@@ -20,6 +20,8 @@
 !define StubURLVersionAppend     ""
 !endif
 
+!define PROGRAM_SOURCE        "@ABS_DIST@/@MOZ_APP_NAME@"
+
 # These defines should match application.ini settings
 !define AppName               "CenoBrowser"
 !define AppVersion            "@APP_VERSION@"
