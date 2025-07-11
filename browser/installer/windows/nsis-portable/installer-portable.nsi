@@ -21,7 +21,7 @@ RequestExecutionLevel user
 Unicode true
 ManifestDPIAware true
 
-BrandingText "${BrandFullName} ${AppVersion}"
+BrandingText "${BrandFullName} ${BASE_BROWSER_VERSION}"
 VIAddVersionKey "FileDescription" "${BrandFullName} Portable Installer"
 
 !define MUI_ICON "portable-setup.ico"
