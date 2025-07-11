@@ -58,12 +58,14 @@ else
 PPL_LOCALE_ARGS=$(call EXPAND_LOCALE_SRCDIR,browser/locales)/installer
 endif
 
-setup_headers::
+prepare_config_dir::
 	$(RM) -r $(CONFIG_DIR)
 	$(MKDIR) $(CONFIG_DIR)
 	$(INSTALL) $(addprefix $(srcdir)/,$(INSTALLER_FILES)) $(CONFIG_DIR)
 	$(INSTALL) $(addprefix $(topsrcdir)/$(MOZ_BRANDING_DIRECTORY)/,$(BRANDING_FILES)) $(CONFIG_DIR)
-	$(call py_action,preprocessor defines.nsi,-Fsubstitution $(DEFINES) $(ACDEFINES) -DABS_DIST=$(ABS_DIST) \
+
+$(CONFIG_DIR)/setup.exe:: prepare_config_dir
+	$(call py_action,preprocessor defines.nsi,-Fsubstitution $(DEFINES) $(ACDEFINES) \
 	  $(srcdir)/nsis/defines.nsi.in -o $(CONFIG_DIR)/defines.nsi)
 	$(PYTHON3) $(topsrcdir)/toolkit/mozapps/installer/windows/nsis/preprocess-locale.py \
 	  --preprocess-locale $(topsrcdir) \
@@ -76,9 +78,9 @@ setup_headers::
 	  --convert-utf8-utf16le \
 	  $(srcdir)/nsis/extensionsLocale.nsh $(CONFIG_DIR)/extensionsLocale.nsh
 
-$(CONFIG_DIR)/setup.exe:: setup_headers
-
-$(CONFIG_DIR)/setup-portable.exe:: setup_headers
+$(CONFIG_DIR)/setup-portable.exe:: prepare_config_dir
+	$(call py_action,preprocessor defines.nsi,-Fsubstitution $(DEFINES) $(ACDEFINES) -DABS_DIST=$(ABS_DIST) \
+	  $(srcdir)/nsis-portable/portable-defines.nsh.in -o $(CONFIG_DIR)/portable-defines.nsh)
 	cd $(CONFIG_DIR) && $(MAKENSISU) $(MAKENSISU_FLAGS) installer-portable.nsi
 
 include $(topsrcdir)/config/rules.mk

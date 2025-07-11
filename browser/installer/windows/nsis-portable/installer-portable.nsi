@@ -4,7 +4,7 @@
 !include "MUI.nsh"
 
 !include branding.nsi
-!include defines.nsi
+!include portable-defines.nsh
 !include WinVer.nsh
 !include "x64.nsh"
 
