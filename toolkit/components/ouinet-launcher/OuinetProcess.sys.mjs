@@ -33,6 +33,7 @@
 
    #cacheHttpPublicKey = "zh6ylt6dghu6swhhje2j66icmjnonv53tstxxvj6acu64sc62fnq";
    #cacheType = "bep5-http";
+   #injectorEndpoint = "utp+tls:46.4.14.190:7085";
    #injectorCredentials = "ouinet:160d79874a52c2cbcdec58db1a8160a9";
    #injectorTlsCertFile = null;
    #tlsCaCertStorePath = null;
@@ -203,6 +204,7 @@
      this.#args.push("--repo", this.#dataDir.path);
      this.#args.push("--cache-type", this.#cacheType);
      this.#args.push("--cache-http-public-key", this.#cacheHttpPublicKey);
+     this.#args.push("--injector-ep", this.#injectorEndpoint);
      this.#args.push("--injector-credentials", this.#injectorCredentials);
      this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
      this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
