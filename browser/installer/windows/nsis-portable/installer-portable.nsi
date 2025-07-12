@@ -109,7 +109,7 @@ FunctionEnd
 
 Section "Browser" SecBrowser
     SetOutPath "$INSTDIR"
-    File /r "${PROGRAM_SOURCE}\*"
+    File /r /x "helper.exe" "${PROGRAM_SOURCE}\*"
 SectionEnd
 
 Function CreateShortcuts
