@@ -110,6 +110,11 @@ FunctionEnd
 Section "Browser" SecBrowser
     SetOutPath "$INSTDIR"
     File /r /x "helper.exe" "${PROGRAM_SOURCE}\*"
+    FileOpen $0 $INSTDIR\uninstall\README.txt w
+    IfErrors done
+    FileWrite $0 $(uninstall_readme)
+    FileClose $0
+    done:
 SectionEnd
 
 Function CreateShortcuts
