@@ -12,12 +12,12 @@
   ; install location in the Software\Mozilla key and uninstall registry entries
   ; that point to our install location for both HKCU and HKLM.
   SetShellVarContext current  ; Set SHCTX to the current user (e.g. HKCU)
-  ${RegCleanMain} "Software\Mozilla"
+  ${RegCleanMain} "Software\eQualitie"
   ${RegCleanUninstall}
   ${UpdateProtocolHandlers}
 
   ; setup the application model id registration value
-  ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
+  ${InitHashAppModelId} "$INSTDIR" "Software\eQualitie\${AppName}\TaskBarIDs"
 
   ClearErrors
   WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
@@ -25,9 +25,9 @@
     StrCpy $RegHive "HKCU"
   ${Else}
     SetShellVarContext all    ; Set SHCTX to all users (e.g. HKLM)
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\eQualitie" "${BrandShortName}InstallerTest"
     StrCpy $RegHive "HKLM"
-    ${RegCleanMain} "Software\Mozilla"
+    ${RegCleanMain} "Software\eQualitie"
     ${RegCleanUninstall}
     ${UpdateProtocolHandlers}
     ${FixShellIconHandler} "HKLM"
@@ -36,9 +36,9 @@
     ; Add the Firewall entries after an update
     Call AddFirewallEntries
 
-    ReadRegStr $0 HKLM "Software\mozilla.org\Mozilla" "CurrentVersion"
+    ReadRegStr $0 HKLM "Software\equalitie.org\eQualitie" "CurrentVersion"
     ${If} "$0" != "${GREVersion}"
-      WriteRegStr HKLM "Software\mozilla.org\Mozilla" "CurrentVersion" "${GREVersion}"
+      WriteRegStr HKLM "Software\equalitie.org\eQualitie" "CurrentVersion" "${GREVersion}"
     ${EndIf}
   ${EndIf}
 
@@ -88,10 +88,10 @@
     ; If it already exists, just delete the appdata one.
     ; It's possible this was for a different install, but it's impossible to
     ; know for sure, so we may as well just get rid of it.
-    Delete /REBOOTOK "$0\Mozilla\Firefox\postSigningData"
+    Delete /REBOOTOK "$0\eQualitie\Ceno Browser\postSigningData"
   ${Else}
-    ${If} ${FileExists} "$0\Mozilla\Firefox\postSigningData"
-      Rename "$0\Mozilla\Firefox\postSigningData" "$INSTDIR\postSigningData"
+    ${If} ${FileExists} "$0\eQualitie\Ceno Browser\postSigningData"
+      Rename "$0\eQualitie\Ceno Browser\postSigningData" "$INSTDIR\postSigningData"
     ${EndIf}
   ${EndIf}
 
@@ -125,7 +125,7 @@
     ${OrIf} ${IsNativeARM64}
       SetRegView 64
     ${EndIf}
-    ReadRegDWORD $5 HKLM "Software\Mozilla\MaintenanceService" "Attempted"
+    ReadRegDWORD $5 HKLM "Software\eQualitie\MaintenanceService" "Attempted"
     ClearErrors
     ${If} ${RunningX64}
     ${OrIf} ${IsNativeARM64}
@@ -173,7 +173,7 @@
 !ifdef MOZ_DEFAULT_BROWSER_AGENT
 ${If} $RegHive == "HKCU"
   ClearErrors
-  ReadRegDWORD $0 HKCU "Software\Mozilla\${AppName}\Installer\$AppUserModelID" \
+  ReadRegDWORD $0 HKCU "Software\eQualitie\${AppName}\Installer\$AppUserModelID" \
                     "DidRegisterDefaultBrowserAgent"
   ${If} $0 != 0
   ${OrIf} ${Errors}
@@ -703,31 +703,31 @@ ${RemoveDefaultBrowserAgentShortcut}
 
   ; Running Firefox 64 bit on Windows 64 bit
   ClearErrors
-  ReadRegDWORD $2 HKLM "Software\Mozilla\${AppName}\32to64DidMigrate" "$1"
+  ReadRegDWORD $2 HKLM "Software\eQualitie\${AppName}\32to64DidMigrate" "$1"
   ; If there were no errors then the system was updated from Firefox 32 bit to
   ; Firefox 64 bit and if the value is already 1 then the registry value has
   ; already been updated in the HKLM registry.
   ${IfNot} ${Errors}
   ${AndIf} $2 != 1
     ClearErrors
-    WriteRegDWORD HKLM "Software\Mozilla\${AppName}\32to64DidMigrate" "$1" 1
+    WriteRegDWORD HKLM "Software\eQualitie\${AppName}\32to64DidMigrate" "$1" 1
     ${If} ${Errors}
       ; There was an error writing to HKLM so just write it to HKCU
-      WriteRegDWORD HKCU "Software\Mozilla\${AppName}\32to64DidMigrate" "$1" 1
+      WriteRegDWORD HKCU "Software\eQualitie\${AppName}\32to64DidMigrate" "$1" 1
     ${Else}
       ; This will delete the value from HKCU if it exists
-      DeleteRegValue HKCU "Software\Mozilla\${AppName}\32to64DidMigrate" "$1"
+      DeleteRegValue HKCU "Software\eQualitie\${AppName}\32to64DidMigrate" "$1"
     ${EndIf}
   ${EndIf}
 
   ClearErrors
-  ReadRegDWORD $2 HKCU "Software\Mozilla\${AppName}\32to64DidMigrate" "$1"
+  ReadRegDWORD $2 HKCU "Software\eQualitie\${AppName}\32to64DidMigrate" "$1"
   ; If there were no errors then the system was updated from Firefox 32 bit to
   ; Firefox 64 bit and if the value is already 1 then the registry value has
   ; already been updated in the HKCU registry.
   ${IfNot} ${Errors}
   ${AndIf} $2 != 1
-    WriteRegDWORD HKCU "Software\Mozilla\${AppName}\32to64DidMigrate" "$1" 1
+    WriteRegDWORD HKCU "Software\eQualitie\${AppName}\32to64DidMigrate" "$1" 1
   ${EndIf}
 
 !else
@@ -737,14 +737,14 @@ ${RemoveDefaultBrowserAgentShortcut}
   ${OrIf} ${IsNativeARM64}
     ; Running Firefox 32 bit on a Windows 64 bit system
     ClearErrors
-    ReadRegDWORD $2 HKLM "Software\Mozilla\${AppName}\32to64DidMigrate" "$1"
+    ReadRegDWORD $2 HKLM "Software\eQualitie\${AppName}\32to64DidMigrate" "$1"
     ; If there were errors the value doesn't exist yet.
     ${If} ${Errors}
       ClearErrors
-      WriteRegDWORD HKLM "Software\Mozilla\${AppName}\32to64DidMigrate" "$1" 0
+      WriteRegDWORD HKLM "Software\eQualitie\${AppName}\32to64DidMigrate" "$1" 0
       ; If there were errors write the value in HKCU.
       ${If} ${Errors}
-        WriteRegDWORD HKCU "Software\Mozilla\${AppName}\32to64DidMigrate" "$1" 0
+        WriteRegDWORD HKCU "Software\eQualitie\${AppName}\32to64DidMigrate" "$1" 0
       ${EndIf}
     ${EndIf}
   ${EndIf}
@@ -781,7 +781,7 @@ ${RemoveDefaultBrowserAgentShortcut}
 !macroend
 !define FixShellIconHandler "!insertmacro FixShellIconHandler"
 
-; Add Software\Mozilla\ registry entries (uses SHCTX).
+; Add Software\eQualitie\ registry entries (uses SHCTX).
 ; This expects $RegHive to already have been set correctly.
 !macro SetAppKeys
   ; Check if this is an ESR release and if so add registry values so it is
@@ -795,14 +795,14 @@ ${RemoveDefaultBrowserAgentShortcut}
   ${EndIf}
 
   ${GetLongPath} "$INSTDIR" $8
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Main"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Main"
   ${WriteRegStr2} $RegHive "$0" "Install Directory" "$8" 0
   ${WriteRegStr2} $RegHive "$0" "PathToExe" "$8\${FileMainEXE}" 0
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Uninstall"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Uninstall"
   ${WriteRegStr2} $RegHive "$0" "Description" "${BrandFullNameInternal} ${AppVersion}$3 (${ARCH} ${AB_CD})" 0
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})"
   ${WriteRegStr2} $RegHive  "$0" "" "${AppVersion}$3 (${ARCH} ${AB_CD})" 0
   ${If} "$3" == ""
     DeleteRegValue SHCTX "$0" "ESR"
@@ -810,14 +810,14 @@ ${RemoveDefaultBrowserAgentShortcut}
     ${WriteRegDWORD2} $RegHive "$0" "ESR" 1 0
   ${EndIf}
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3\bin"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal} ${AppVersion}$3\bin"
   ${WriteRegStr2} $RegHive "$0" "PathToExe" "$8\${FileMainEXE}" 0
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3\extensions"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal} ${AppVersion}$3\extensions"
   ${WriteRegStr2} $RegHive "$0" "Components" "$8\components" 0
   ${WriteRegStr2} $RegHive "$0" "Plugins" "$8\plugins" 0
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal} ${AppVersion}$3"
   ${WriteRegStr2} $RegHive "$0" "GeckoVer" "${GREVersion}" 0
   ${If} "$3" == ""
     DeleteRegValue SHCTX "$0" "ESR"
@@ -825,7 +825,7 @@ ${RemoveDefaultBrowserAgentShortcut}
     ${WriteRegDWORD2} $RegHive "$0" "ESR" 1 0
   ${EndIf}
 
-  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}$3"
+  StrCpy $0 "Software\eQualitie\${BrandFullNameInternal}$3"
   ${WriteRegStr2} $RegHive "$0" "" "${GREVersion}" 0
   ${WriteRegStr2} $RegHive "$0" "CurrentVersion" "${AppVersion}$3 (${ARCH} ${AB_CD})" 0
 !macroend
@@ -878,7 +878,7 @@ ${RemoveDefaultBrowserAgentShortcut}
     ${WriteRegStr2} $1 "$0" "DisplayVersion" "${AppVersion}" 0
     ${WriteRegStr2} $1 "$0" "HelpLink" "${HelpLink}" 0
     ${WriteRegStr2} $1 "$0" "InstallLocation" "$8" 0
-    ${WriteRegStr2} $1 "$0" "Publisher" "Mozilla" 0
+    ${WriteRegStr2} $1 "$0" "Publisher" "eQualitie" 0
     ${WriteRegStr2} $1 "$0" "UninstallString" "$\"$8\uninstall\helper.exe$\"" 0
     DeleteRegValue SHCTX "$0" "URLInfoAbout"
 ; Don't add URLUpdateInfo which is the release notes url except for the release
@@ -1077,7 +1077,7 @@ ${RemoveDefaultBrowserAgentShortcut}
     ; Setting the Attempted value will ensure that a new Maintenance Service
     ; install will never be attempted again after this from updates.  The value
     ; is used only to see if updates should attempt new service installs.
-    WriteRegDWORD HKLM "Software\Mozilla\MaintenanceService" "Attempted" 1
+    WriteRegDWORD HKLM "Software\eQualitie\MaintenanceService" "Attempted" 1
 
     ; These values associate the allowed certificates for the current
     ; installation.
@@ -1264,7 +1264,7 @@ ${RemoveDefaultBrowserAgentShortcut}
       ClearErrors
       WriteIniStr "$0" "TASKBAR" "Migrated" "true"
       WriteRegDWORD HKCU \
-        "Software\Mozilla\${AppName}\Installer\$AppUserModelID" \
+        "Software\eQualitie\${AppName}\Installer\$AppUserModelID" \
         "WasPinnedToTaskbar" 1
       ${If} "${SHOULD_PIN}" == "1"
         ${PinToTaskBar}
@@ -1668,7 +1668,7 @@ Function SetAsDefaultAppUserHKCU
   StrCpy $0 $0 -2
   ${If} $0 != $8
     ${If} $AppUserModelID == ""
-      ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
+      ${InitHashAppModelId} "$INSTDIR" "Software\eQualitie\${AppName}\TaskBarIDs"
     ${EndIf}
     StrCpy $R9 "${AppRegName}-$AppUserModelID"
   ${EndIf}
