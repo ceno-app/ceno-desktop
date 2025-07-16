@@ -42,7 +42,7 @@ Var InstallType
 Var AddStartMenuSC
 Var AddTaskbarSC
 Var AddDesktopSC
-Var AddPrivateBrowsingSC
+;Var AddPrivateBrowsingSC
 Var InstallMaintenanceService
 Var InstallOptionalExtensions
 Var ExtensionRecommender
@@ -310,10 +310,10 @@ Section "-InstallStartCleanup"
   ${EndIf}
 
   ; setup the application model id registration value
-  ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
+  ${InitHashAppModelId} "$INSTDIR" "Software\eQualitie\${AppName}\TaskBarIDs"
 
   ; Clean up old maintenance service logs
-  ${CleanMaintenanceServiceLogs} "Mozilla\Firefox"
+  ${CleanMaintenanceServiceLogs} "eQualite\Ceno Browser"
 
   ${RemoveDeprecatedFiles}
   ${RemovePrecompleteEntries} "false"
@@ -356,6 +356,10 @@ Section "-Application" APP_IDX
   ${CopyFilesFromDir} "$EXEDIR\core" "$INSTDIR" \
                       "$(ERROR_CREATE_DIRECTORY_PREFIX)" \
                       "$(ERROR_CREATE_DIRECTORY_SUFFIX)"
+
+  ; Tell the browser we are not in standalone mode anymore.
+  FileOpen $0 "$INSTDIR\system-install" w
+  FileClose $0
 
   ; Register DLLs
   ; XXXrstrong - AccessibleMarshal.dll can be used by multiple applications but
@@ -405,9 +409,9 @@ Section "-Application" APP_IDX
     StrCpy $AddStartMenuSC "1"
   ${EndIf}
 
-  ${If} $AddPrivateBrowsingSC == ""
-    StrCpy $AddPrivateBrowsingSC "1"
-  ${EndIf}
+  ;${If} $AddPrivateBrowsingSC == ""
+  ;  StrCpy $AddPrivateBrowsingSC "1"
+  ;${EndIf}
 
   ; Default for creating Desktop shortcut (1 = create, 0 = don't create)
   ${If} $AddDesktopSC == ""
@@ -421,25 +425,25 @@ Section "-Application" APP_IDX
 
   ${LogHeader} "Adding Registry Entries"
   SetShellVarContext current  ; Set SHCTX to HKCU
-  ${RegCleanMain} "Software\Mozilla"
+  ${RegCleanMain} "Software\eQualitie"
   ${RegCleanUninstall}
   ${UpdateProtocolHandlers}
 
   ClearErrors
-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
+  WriteRegStr HKLM "Software\eQualitie" "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     StrCpy $RegHive "HKCU"
   ${Else}
     SetShellVarContext all  ; Set SHCTX to HKLM
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\eQualitie" "${BrandShortName}InstallerTest"
     StrCpy $RegHive "HKLM"
-    ${RegCleanMain} "Software\Mozilla"
+    ${RegCleanMain} "Software\eQualitie"
     ${RegCleanUninstall}
     ${UpdateProtocolHandlers}
 
-    ReadRegStr $0 HKLM "Software\mozilla.org\Mozilla" "CurrentVersion"
+    ReadRegStr $0 HKLM "Software\equalitie.org\eQualitie" "CurrentVersion"
     ${If} "$0" != "${GREVersion}"
-      WriteRegStr HKLM "Software\mozilla.org\Mozilla" "CurrentVersion" "${GREVersion}"
+      WriteRegStr HKLM "Software\equalitie.org\eQualitie" "CurrentVersion" "${GREVersion}"
     ${EndIf}
   ${EndIf}
 
@@ -626,9 +630,9 @@ Section "-Application" APP_IDX
   ; native "Pin to Taskbar" functionality can find an appropriate shortcut.
   ; See https://bugzilla.mozilla.org/show_bug.cgi?id=1762994 for additional
   ; background.
-  ${If} $AddPrivateBrowsingSC == 1
-    ${AddPrivateBrowsingShortcut}
-  ${EndIf}
+  ;${If} $AddPrivateBrowsingSC == 1
+  ;  ${AddPrivateBrowsingShortcut}
+  ;${EndIf}
 
   ; Update lastwritetime of the Start Menu shortcut to clear the tile cache.
   ; Do this for both shell contexts in case the user has shortcuts in multiple
@@ -738,14 +742,14 @@ Section "-Application" APP_IDX
   ${EndIf}
   ; Remember whether we were told to skip registering the agent, so that updates
   ; won't try to create a registration when they don't find an existing one.
-  WriteRegDWORD HKCU "Software\Mozilla\${AppName}\Installer\$AppUserModelID" \
+  WriteRegDWORD HKCU "Software\eQualitie\${AppName}\Installer\$AppUserModelID" \
                      "DidRegisterDefaultBrowserAgent" $RegisterDefaultAgent
 !endif
 
 ; Return value is saved to an unused variable to prevent the the error flag
 ; from being set.
 Var /GLOBAL UnusedExecCatchReturn
-ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask install' $UnusedExecCatchReturn
+;ExecWait '"$INSTDIR\${FileMainEXE}" --backgroundtask install' $UnusedExecCatchReturn
 SectionEnd
 
 ; Cleanup operations to perform at the end of the installation.
@@ -1037,7 +1041,7 @@ Function SendPing
   ${If} ${Errors}
     StrCpy $0 "-1" ; Assign -1 if an error occured during registry read
   ${EndIf}
-  
+
   nsJSON::Set /tree ping "Data" "windows_ubr" /value '$0'
 
   ${GetParameters} $0
@@ -1071,12 +1075,12 @@ Function SendPing
   ${EndIf}
 
   ClearErrors
-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" \
+  WriteRegStr HKLM "Software\eQualitie" "${BrandShortName}InstallerTest" \
                    "Write Test"
   ${If} ${Errors}
     nsJSON::Set /tree ping "Data" "admin_user" /value false
   ${Else}
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\eQualitie" "${BrandShortName}InstallerTest"
     nsJSON::Set /tree ping "Data" "admin_user" /value true
   ${EndIf}
 
@@ -1209,12 +1213,12 @@ Function WriteInstallationTelemetryData
   ; Check for write access to HKLM, if successful then report this user
   ; as an (elevated) admin.
   ClearErrors
-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" \
+  WriteRegStr HKLM "Software\eQualitie" "${BrandShortName}InstallerTest" \
                    "Write Test"
   ${If} ${Errors}
     StrCpy $1 "false"
   ${Else}
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\eQualitie" "${BrandShortName}InstallerTest"
     StrCpy $1 "true"
   ${EndIf}
   ${JSONSet} "admin_user" /value $1
@@ -1229,7 +1233,7 @@ Function WriteInstallationTelemetryData
   ; Check for top-level profile directory
   ; Note: This is the same check used to set $ExistingProfile in stub.nsi
   ${GetLocalAppDataFolder} $0
-  ${If} ${FileExists} "$0\Mozilla\Firefox"
+  ${If} ${FileExists} "$0\eQualitie\Ceno Browser"
     StrCpy $1 "true"
   ${Else}
     StrCpy $1 "false"
@@ -1447,13 +1451,13 @@ Function preComponents
 
   ; Only show the maintenance service page if we have write access to HKLM
   ClearErrors
-  WriteRegStr HKLM "Software\Mozilla" \
+  WriteRegStr HKLM "Software\eQualitie" \
               "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     ClearErrors
     Abort
   ${Else}
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\eQualitie" "${BrandShortName}InstallerTest"
   ${EndIf}
 
   StrCpy $PageName "Components"
@@ -1766,10 +1770,10 @@ Function .onInit
 !endif
 
   SetShellVarContext all
-  ${GetFirstInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $0
+  ${GetFirstInstallPath} "Software\eQualitie\${BrandFullNameInternal}" $0
   ${If} "$0" == "false"
     SetShellVarContext current
-    ${GetFirstInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $0
+    ${GetFirstInstallPath} "Software\eQualitie\${BrandFullNameInternal}" $0
     ${If} "$0" == "false"
       StrCpy $HadOldInstall false
     ${Else}
