@@ -2640,9 +2640,11 @@ export class SearchService {
       this._settings.setMetaDataAttribute(key, value);
     }
 
-    return this.#engineSelector.fetchEngineConfiguration(
-      searchEngineSelectorProperties
-    );
+    const engines = await (
+      await fetch("chrome://global/content/search/cenoBrowserSearchEngines.json")
+    ).json();
+
+    return { engines, privateDefault: undefined };
   }
 
   #setDefaultFromSelector(refinedConfig) {
