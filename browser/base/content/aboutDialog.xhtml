@@ -36,7 +36,6 @@
     <html:link rel="localization" href="branding/brand.ftl"/>
     <html:link rel="localization" href="browser/aboutDialog.ftl"/>
     <html:link rel="localization" href="toolkit/global/base-browser.ftl"/>
-    <html:link rel="localization" href="toolkit/global/mullvad-browser.ftl"/>
   </linkset>
 
   <html:div id="aboutDialogContainer">
@@ -122,27 +121,25 @@
           <vbox id="experimental" hidden="true">
             <description class="text-blurb" id="warningDesc" data-l10n-id="warningDesc-version"></description>
             <description class="text-blurb" id="communityExperimentalDesc" data-l10n-id="community-exp">
-              <label is="text-link" href="https://www.mozilla.org/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-name="community-exp-mozillaLink"/>
-              <label is="text-link" useoriginprincipal="true" href="about:credits" data-l10n-name="community-exp-creditsLink"/>
+              <label is="text-link" href="https://ceno.app/help.html" data-l10n-name="community-exp-mozillaLink"/>
+              <label is="text-link" useoriginprincipal="true" href="https://ceno.app/help.html" data-l10n-name="community-exp-creditsLink"/>
             </description>
           </vbox>
-          <description class="text-blurb" data-l10n-id="mullvad-about-desc">
-            <label is="text-link" href="https://mullvad.net" data-l10n-name="mullvad-about-mullvadLink"/>
-            <label is="text-link" href="https://www.torproject.org" data-l10n-name="mullvad-about-torProjectLink"/>
+          <description class="text-blurb" id="communityDesc" data-l10n-id="community-2">
+            <label is="text-link" href="https://equalit.ie" data-l10n-name="community-mozillaLink"/>
+            <label is="text-link" useoriginprincipal="true" href="https://ceno.app/help.html" data-l10n-name="community-creditsLink"/>
           </description>
-          <description class="text-blurb">
-            <label is="text-link" href="https://mullvad.net/browser" data-l10n-id="mullvad-about-readMore"/>
+          <description class="text-blurb" id="contributeDesc" data-l10n-id="helpus">
+            <label is="text-link" href="https://ceno.app/donate.html" data-l10n-name="helpus-donateLink"/>
+            <label is="text-link" href="https://ceno.app/help.html" data-l10n-name="helpus-getInvolvedLink"/>
           </description>
-          <description class="text-blurb" data-l10n-id="mullvad-about-feedback2" data-l10n-args='{"emailAddress":"support@mullvadvpn.net"}'/>
         </vbox>
       </vbox>
     </hbox>
     <vbox id="bottomBox">
       <hbox pack="center">
         <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:license" data-l10n-id="bottomLinks-license"/>
-        <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:rights" data-l10n-id="bottomLinks-rights"/>
-        <label is="text-link" class="bottom-link" href="https://mullvad.net/en/help/privacy-policy/" data-l10n-id="bottomLinks-privacy"/>
-        <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:telemetry" data-l10n-id="mullvad-about-telemetryLink"/>
+        <label is="text-link" class="bottom-link" href="https://ceno.app/en/privacy_policy.html" data-l10n-id="bottomLinks-privacy"/>
       </hbox>
       <description id="trademark" data-l10n-id="trademarkInfo"></description>
     </vbox>
