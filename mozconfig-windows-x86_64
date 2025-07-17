@@ -25,3 +25,15 @@ ac_add_options --disable-notification-server
 # Let's make sure no preference is enabling either Adobe's or Google's CDM.
 ac_add_options --disable-eme
 
+###############################
+# Tor/Ceno build differences. #
+# From [Tor Wiki](https://gitlab.torproject.org/tpo/applications/wiki/-/wikis/Development-Information/Tor-Browser/Windows-dev-builds)
+# LLVM/Clang do not provide a C runtime, it can either use Microsoft's CRT (the one included with MSVC) or mingw.
+# Mozilla uses the former, we (Tor) use the latter. (End of quote)
+#
+# We (Ceno) use base-browser sources provided by Tor project, but build using mozilla-build, instead of Tor's RBM
+# This means we are building with Rust 1.86-x86_64-pc-windows-msvc,
+# while Tor would probably use 1.86-x86_64-pc-windows-gnu .
+# Amongst other good things, MSVC's C Runtime headers contain `#define max(a,b) (((a) > (b)) ? (a) : (b))`,
+# which build breaks `std::numeric_limits<T>::max()`.
+export CXXFLAGS="-DNOMINMAX=1"
