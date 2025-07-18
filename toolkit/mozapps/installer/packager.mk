@@ -135,7 +135,10 @@ make-package: FORCE
 	$(MAKE) make-package-internal
 ifeq (WINNT,$(OS_ARCH))
 ifeq ($(MOZ_PKG_FORMAT),ZIP)
-#	$(MAKE) -C windows ZIP_IN='$(ABS_DIST)/$(PACKAGE)' installer
+	# Tor's BaseBrowser doesn't build installer:
+	# https://gitlab.torproject.org/tpo/applications/tor-browser/-/commit/c9f511730d31c17f502fc50a7c75da6b2332b804
+	# We (Ceno) do build it, reenable it
+	$(MAKE) -C windows ZIP_IN='$(ABS_DIST)/$(PACKAGE)' installer
 endif
 endif
 ifdef MOZ_AUTOMATION
