@@ -1,4 +1,4 @@
 [submodule "browser/extensions/ceno"]
 	path = browser/extensions/ceno
-	url = https://gitlab.com/contemporaryCode/ceno-ext-settings
+	url = https://gitlab.com/ceno-app/ceno-ext-settings
   branch = builtin-addon
