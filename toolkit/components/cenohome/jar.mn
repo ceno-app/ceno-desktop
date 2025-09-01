@@ -3,3 +3,7 @@ toolkit.jar:
     content/global/cenohome/aboutCenoHome.html                           (content/aboutCenoHome.html)
     content/global/cenohome/aboutCenoHome.js                             (content/aboutCenoHome.js)
     content/global/cenohome/ceno-logo.svg                                (content/ceno-logo.svg)
+    content/global/cenohome/ouinetConnectTitlebarStatus.css              (content/ouinetConnectTitlebarStatus.css)
+    content/global/cenohome/ouinetConnectTitlebarStatus.js               (content/ouinetConnectTitlebarStatus.js)
+    content/global/cenohome/ouinetConnectUrlbarButton.js                 (content/ouinetConnectUrlbarButton.js)
+    content/global/cenohome/tor-not-connected-to-connected-animated.svg  (content/tor-not-connected-to-connected-animated.svg)

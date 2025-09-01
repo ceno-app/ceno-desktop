@@ -1,0 +1,62 @@
+#ouinet-connect-titlebar-status:not([hidden]) {
+  display: flex;
+  align-items: center;
+  /* Want same as #private-browsing-indicator-with-label */
+  margin-inline: 7px;
+}
+
+#ouinet-connect-titlebar-status-label {
+  margin-inline: 6px;
+  white-space: nowrap;
+}
+
+#ouinet-connect-titlebar-status img {
+  -moz-context-properties: fill, stroke;
+  fill: currentColor;
+  stroke: currentColor;
+  width: 16px;
+  height: 16px;
+  object-fit: none;
+  --num-animation-steps: 8;
+  /* First frame has no offset. */
+  --ouinet-not-connected-offset: 0;
+  /* Each frame/step is offset by 20px from the previous. */
+  --ouinet-connected-offset: calc(-20px * var(--num-animation-steps));
+  object-position: var(--ouinet-not-connected-offset);
+}
+
+#ouinet-connect-titlebar-status.ouinet-connect-status-connected img {
+  object-position: var(--ouinet-connected-offset);
+}
+
+/*
+@TODO:
+#ouinet-connect-titlebar-status.ouinet-connect-status-connected {
+  color: var(--ceno-accent-color);
+}
+*/
+
+@keyframes ouinet-not-connected-to-connected {
+  from {
+    object-position: var(--ouinet-not-connected-offset);
+  }
+
+  to {
+    object-position: var(--ouinet-connected-offset);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #ouinet-connect-titlebar-status.ouinet-connect-status-connected.ouinet-connect-status-animate-transition {
+    transition: color 1000ms;
+  }
+
+  #ouinet-connect-titlebar-status.ouinet-connect-status-connected.ouinet-connect-status-animate-transition img {
+    animation-name: ouinet-not-connected-to-connected;
+    animation-delay: 200ms;
+    animation-fill-mode: both;
+    /* Run animation at 60 frames-per-second. */
+    animation-duration: calc(var(--num-animation-steps) * 1000ms / 60);
+    animation-timing-function: steps(var(--num-animation-steps));
+  }
+}

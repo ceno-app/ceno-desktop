@@ -251,5 +251,10 @@
   "ToolbarDropHandler",
   "ProfilesDatastoreService",
   "SecurityLevelButton",
-  "NewIdentityButton"
+  "NewIdentityButton",
+  "CenoHome",
+  "CenoHomeTopics",
+  "CenoHomeStateName",
+  "gOuinetConnectTitlebarStatus",
+  "gOuinetConnectUrlbarButton",
 ]

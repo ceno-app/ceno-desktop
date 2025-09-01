@@ -100,6 +100,12 @@
 #include private-browsing-indicator.inc.xhtml
     <toolbarbutton class="content-analysis-indicator toolbarbutton-1 content-analysis-indicator-icon"/>
 
+      <html:div id="ouinet-connect-titlebar-status" role="status">
+        <html:img alt=""
+                  src="chrome://global/content/cenohome/tor-not-connected-to-connected-animated.svg" />
+        <html:span id="ouinet-connect-titlebar-status-label"></html:span>
+      </html:div>
+
 #include titlebar-items.inc.xhtml
 
   </toolbar>
@@ -417,6 +423,12 @@
                 <image id="star-button"
                        class="urlbar-icon"/>
               </hbox>
+            </hbox>
+            <hbox id="ouinet-connect-urlbar-button"
+              role="button"
+              class="ouinet-button ouinet-urlbar-button"
+              hidden="true">
+              <label id="ouinet-connect-urlbar-button-label" data-l10n-id="ceno-browser-ouinet-urlbar-connect-button"/>
             </hbox>
           </hbox>
         </html:div>
