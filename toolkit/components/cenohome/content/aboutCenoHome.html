@@ -14,19 +14,22 @@
       media="all"
     />
     <link rel="localization" href="toolkit/global/ceno-browser.ftl" />
-
     <script
       type="module"
       src="chrome://global/content/elements/moz-toggle.mjs"
     ></script>
-    <title data-l10n-id="ceno-browser-about-ceno-home-title">
-    </title>
+    <title data-l10n-id="ceno-browser-about-ceno-home-title"></title>
   </head>
   <body class="aboutCenoHome">
+    <div id="progressBar" hidden="hidden">
+      <div id="progressSolid"></div>
+      <div id="progressBackground"></div>
+      <div id="progressBarBackground"></div>
+    </div>
     <div id="connectPageContainer" class="container">
       <div id="text-container">
         <div class="title">
-          <img src="chrome://global/content/cenohome/ceno-logo.svg" width="40%" height="40%"></img>
+          <img src="chrome://global/content/cenohome/ceno-logo.svg" width="40%" height="40%" />
         </div>
         <div>
           <p data-l10n-id="ceno-browser-about-ceno-home-description-1"></p>
@@ -35,11 +38,30 @@
           <p data-l10n-id="ceno-browser-about-ceno-home-description-4"></p>
           <p>
             <span data-l10n-id="ceno-browser-about-ceno-home-description-5">
-              <a data-l10n-name="faq" href="https://ceno.app/support.html"/>
+              <a data-l10n-name="faq" href="https://ceno.app/support.html"></a>
             </span>
           </p>
         </div>
+
+        <div id="error-container">
+          <p id="link-status" data-l10n-id="ceno-browser-about-ceno-home-link-status-offline" hidden></p>
+          <p id="error-message"></p>
+        </div>
+
+        <div id="quickstartContainer">
+          <moz-toggle id="quickstartToggle"></moz-toggle>
+          <label for="quickstartToggle" data-l10n-id="ceno-browser-about-ceno-home-quickstart-toggle"></label>
+        </div>
+
+        <div class="button-container">
+          <span id="buttonPadding"></span>
+          <span id="connectButtonContainer">
+            <button id="cancelButton" data-l10n-id="ceno-browser-about-ceno-home-cancel-button"></button>
+            <button id="connectButton" data-l10n-id="ceno-browser-about-ceno-home-connect-button" class="ceno-button"></button>
+          </span>
+        </div>
       </div>
     </div>
+    <script type="module" src="chrome://global/content/cenohome/aboutCenoHome.js"></script>
   </body>
 </html>
