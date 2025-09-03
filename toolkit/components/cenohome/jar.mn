@@ -1,4 +1,5 @@
 toolkit.jar:
     content/global/cenohome/aboutCenoHome.css                            (content/aboutCenoHome.css)
     content/global/cenohome/aboutCenoHome.html                           (content/aboutCenoHome.html)
+    content/global/cenohome/aboutCenoHome.js                             (content/aboutCenoHome.js)
     content/global/cenohome/ceno-logo.svg                                (content/ceno-logo.svg)
