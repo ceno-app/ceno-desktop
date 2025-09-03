@@ -16,22 +16,18 @@ XPCOMUtils.defineLazyServiceGetters(lazy, {
 });
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
 });
 
-const PREF_LOGLEVEL = "browser.policies.loglevel";
+const Prefs = Object.freeze({
+  log_level: "extensions.ouinetlauncher.log_level",
+  prefs_prefix: "extensions.ouinetlauncher",
+});
 
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
-  let { ConsoleAPI } = ChromeUtils.importESModule(
-    "resource://gre/modules/Console.sys.mjs"
-  );
-  return new ConsoleAPI({
+  return console.createInstance({
+    maxLogLevelPref: Prefs.log_level,
     prefix: "OuinetLauncherUtil",
-    // tip: set maxLogLevel to "debug" and use log.debug() to create detailed
-    // messages during development. See LOG_LEVELS in Console.sys.mjs for details.
-    maxLogLevel: "error",
-    maxLogLevelPref: PREF_LOGLEVEL,
   });
 });
 
@@ -61,7 +57,6 @@ class OuinetFile {
     if (!this.file.exists() && aCreate) {
       this.createFile();
     }
-    //this.normalize();
   }
 
   getFile() {
@@ -69,7 +64,7 @@ class OuinetFile {
   }
 
   getFromPref() {
-    const prefName = `extensions.ouinetlauncher.${this.fileType}_path`;
+    const prefName = `${Prefs.prefs_prefix}.${this.fileType}_path`;
     const path = Services.prefs.getCharPref(prefName, "");
     if (path) {
       const isUserData =
@@ -209,6 +204,13 @@ export const OuinetLauncherUtil = Object.freeze({
     return Services.appinfo.OS === "Android";
   },
 
+  get isLinux() {
+    // Use AppConstants for Linux rather then appinfo because we are sure it
+    // will catch also various Unix flavors for which unofficial ports might
+    // exist (which should work as Linux, as far as we know).
+    return AppConstants.platform === "linux";
+  },
+
   get isMac() {
     return Services.appinfo.OS === "Darwin";
   },
@@ -223,39 +225,15 @@ export const OuinetLauncherUtil = Object.freeze({
   },
 
   // TODO: Remove? Can we control the proxy config with Ceno extension
-  setProxyConfiguration() {
-    Services.prefs.setCharPref("network.proxy.http", "127.0.0.1");
-    Services.prefs.setIntPref("network.proxy.http_port", 8077);
-    Services.prefs.setCharPref("network.proxy.ssl", "127.0.0.1");
-    Services.prefs.setIntPref("network.proxy.ssl_port", 8077);
-    Services.prefs.setIntPref("network.proxy.type", 1);
-
-    // Force prefs to be synced to disk
-    Services.prefs.savePrefFile(null);
-  },
-
-  get shouldStartAndOwnOuinet() {
-    const kPrefStartOuinet = "extensions.ouinetlauncher.start_ouinet";
-    try {
-      const kBrowserToolboxPort = "MOZ_BROWSER_TOOLBOX_PORT";
-      const kEnvSkipLaunch = "OUINET_SKIP_LAUNCH";
-      const kEnvProvider = "OUINET_PROVIDER";
-      if (Services.env.exists(kBrowserToolboxPort)) {
-        return false;
-      }
-      if (Services.env.exists(kEnvSkipLaunch)) {
-        const value = parseInt(Services.env.get(kEnvSkipLaunch));
-        return isNaN(value) || !value;
-      }
-      if (
-        Services.env.exists(kEnvProvider) &&
-        Services.env.get(kEnvProvider) === "none"
-      ) {
-        return false;
-      }
-    } catch (e) {}
-    return Services.prefs.getBoolPref(kPrefStartOuinet, true);
-  },
+  // setProxyConfiguration() {
+  //   Services.prefs.setCharPref("network.proxy.http", "127.0.0.1");
+  //   Services.prefs.setIntPref("network.proxy.http_port", 8077);
+  //   Services.prefs.setCharPref("network.proxy.ssl", "127.0.0.1");
+  //   Services.prefs.setIntPref("network.proxy.ssl_port", 8077);
+  //   Services.prefs.setIntPref("network.proxy.type", 1);
+  //   // Force prefs to be synced to disk
+  //   Services.prefs.savePrefFile(null);
+  // },
 
   setRootCertificate() {
     (async () => {
@@ -277,7 +255,7 @@ export const OuinetLauncherUtil = Object.freeze({
       }
       dirs.unshift(Services.dirsvc.get("XREAppDist", Ci.nsIFile));
 
-        let certfilename = OuinetLauncherUtil.getOuinetFile("cacert", false).path 
+        let certfilename = OuinetLauncherUtil.getOuinetFile("cacert", false).path
         let certfile
         try {
           certfile = Cc["@mozilla.org/file/local;1"].createInstance(
@@ -359,30 +337,6 @@ export const OuinetLauncherUtil = Object.freeze({
     })();
   },
 
-  // Source: https://superuser.com/questions/1669675/enable-all-firefox-extensions-in-private-mode-by-default
-  setExtensionPermissions() {
-    (async()=>{
-      const PRIVATE_BROWSING_PERMS = {
-          permissions: ["internal:privateBrowsingAllowed"],
-          origins: [],
-      };
-      const {ExtensionPermissions} = ChromeUtils.import("resource://gre/modules/ExtensionPermissions.jsm");
-      const myaddons = await lazy.AddonManager.getAddonsByTypes(["extension"]);
-      for(let addon of myaddons){
-        if (addon.id == "ceno@equalit.ie") {
-          lazy.log.debug(
-            `Setting permissions on '${addon.id}'.`
-          );
-          let policy = WebExtensionPolicy.getByID(addon.id);
-          let extension = policy && policy.extension;
-          await ExtensionPermissions.add(addon.id, PRIVATE_BROWSING_PERMS, extension);
-          if (addon.isActive)
-              addon.reload();
-        }
-      }
-  })();
-  },
-
   // Returns an nsIFile.
   // If aOuinetFileType is "control_ipc" or "socks_ipc", aCreate is ignored
   // and there is no requirement that the IPC object exists.
@@ -400,7 +354,6 @@ export const OuinetLauncherUtil = Object.freeze({
     }
     return null; // File not found or error (logged above).
   },
-
 });
 
 function pemToBase64(pem) {
