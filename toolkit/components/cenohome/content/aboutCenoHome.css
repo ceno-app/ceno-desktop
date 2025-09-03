@@ -16,29 +16,6 @@ html {
   margin-inline-start: 0;
 }
 
-#try-bridge {
-  cursor: default;
-}
-
-#locationDropdownLabel {
-  margin-block: auto;
-  margin-inline: 4px;
-}
-
-#locationDropdownLabel.error {
-  color: var(--text-color-error)
-}
-
-/* this follows similar css in error-pages.css for buttons */
-@media only screen and (min-width: 480px) {
-  form#locationDropdown {
-    margin-inline: 4px;
-    /* subtracting out the margin is needeed because by
-       default forms have different margins than buttons */
-    max-width: calc(100% - 8px);
-  }
-}
-
 @media only screen and (max-width: 480px) {
   #tryAgainButton {
     margin-top: 4px;
@@ -101,4 +78,90 @@ body.aboutCenoHome .title {
 body:not(.android) #connectButtonContainer {
   /* Use the .button-container context */
   display: contents;
+}
+
+:root {
+  --progressbar-shadow-start: rgba(255, 255, 255, 0.7);
+  --progressbar-gradient: linear-gradient(90deg, #FC00FF 0%, #00DBDE 50%, #FC00FF 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --progressbar-shadow-start: rgba(28, 27, 34, 0.7);
+  }
+}
+
+#progressBar:not([hidden]) {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: grid;
+  --progress-percent: 0%;
+  --progress-animation: progressAnimation 5s ease infinite;
+  --progress-bar-height: 7px;
+}
+
+#progressBar > * {
+  grid-area: 1 / 1;
+}
+
+#progressBarBackground {
+  width: 100%;
+  height: var(--progress-bar-height);
+  background: var(--in-content-box-info-background);
+}
+
+#progressBackground {
+  z-index: 1;
+  width: var(--progress-percent);
+  height: 66px;
+  margin-block-start: -26px;
+  background-image:
+    linear-gradient(var(--progressbar-shadow-start), var(--in-content-page-background) 100%),
+    var(--progressbar-gradient);
+  animation: var(--progress-animation);
+  filter: blur(5px);
+  border-end-end-radius: 33px;
+}
+
+#progressSolid {
+  z-index: 2;
+  width: var(--progress-percent);
+  height: var(--progress-bar-height);
+  border-start-end-radius: calc(var(--progress-bar-height) / 2);
+  border-end-end-radius: calc(var(--progress-bar-height) / 2);
+  background-image: var(--progressbar-gradient);
+  animation: var(--progress-animation);
+}
+
+#progressBackground, #progressSolid {
+  background-size: 200% 100%;
+}
+
+@keyframes progressAnimation {
+  0% {
+    background-position: 200%;
+  }
+  50% {
+    background-position: 100%;
+  }
+  100% {
+    background-position: 0%;
+  }
+}
+
+@keyframes progressAnimation {
+  0% {
+    background-position: 200%;
+  }
+  50% {
+    background-position: 100%;
+  }
+  100% {
+    background-position: 0%;
+  }
+}
+
+div#error-container p {
+  font-weight: bold;
 }
