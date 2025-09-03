@@ -27,6 +27,9 @@ ChromeUtils.defineESModuleGetters(this, {
   BrowserUIUtils: "resource:///modules/BrowserUIUtils.sys.mjs",
   BrowserUsageTelemetry: "resource:///modules/BrowserUsageTelemetry.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  CenoHome: "resource://gre/modules/CenoHome.sys.mjs",
+  CenoHomeTopics: "resource://gre/modules/CenoHome.sys.mjs",
+  CenoHomeStateName: "resource://gre/modules/CenoHome.sys.mjs",
   CFRPageActions: "resource:///modules/asrouter/CFRPageActions.sys.mjs",
   Color: "resource://gre/modules/Color.sys.mjs",
   ContentAnalysis: "resource:///modules/ContentAnalysis.sys.mjs",
@@ -303,6 +306,16 @@ XPCOMUtils.defineLazyScriptGetter(
   this,
   "gProfiles",
   "chrome://browser/content/browser-profiles.js"
+);
+XPCOMUtils.defineLazyScriptGetter(
+  this,
+  ["gOuinetConnectTitlebarStatus"],
+  "chrome://global/content/cenohome/ouinetConnectTitlebarStatus.js"
+);
+XPCOMUtils.defineLazyScriptGetter(
+  this,
+  ["gOuinetConnectUrlbarButton"],
+  "chrome://global/content/cenohome/ouinetConnectUrlbarButton.js"
 );
 
 // lazy service getters

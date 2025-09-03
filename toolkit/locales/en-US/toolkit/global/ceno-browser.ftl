@@ -16,3 +16,10 @@ ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach inte
 ceno-browser-about-ceno-home-error-missing-ouinet-binary = Error: ouinet client.exe binary is missing
 ceno-browser-about-ceno-home-error-missing-ouinet-data-dir = Error: ouinet data dir is missing
 ceno-browser-about-ceno-home-error-ouinet-startup = Error: ouinet startup error
+
+ceno-browser-ouinet-titlebar-status-name = Ouinet Connection
+ceno-browser-ouinet-titlebar-status-not-connected = Not connected
+ceno-browser-ouinet-titlebar-status-connecting = Connecting…
+ceno-browser-ouinet-titlebar-status-connected = Connected
+
+ceno-browser-ouinet-urlbar-connect-button = Connect to Ouinet
