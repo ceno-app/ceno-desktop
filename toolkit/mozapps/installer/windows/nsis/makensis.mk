@@ -5,8 +5,12 @@
 ifndef CONFIG_DIR
 $(error CONFIG_DIR must be set before including makensis.mk)
 endif
+ifndef PORTABLE_CONFIG_DIR
+$(error PORTABLE_CONFIG_DIR must be set before including makensis.mk)
+endif
 
 ABS_CONFIG_DIR := $(abspath $(CONFIG_DIR))
+ABS_PORTABLE_CONFIG_DIR := $(abspath $(PORTABLE_CONFIG_DIR))
 
 SFX_MODULE ?= $(error SFX_MODULE is not defined)
 
@@ -61,8 +65,10 @@ ifdef MOZ_STUB_INSTALLER
 	cd $(CONFIG_DIR) && $(MAKENSISU) $(MAKENSISU_FLAGS) stub.nsi
 endif
 
+GIT_COMMIT_HASH := $(shell git rev-parse HEAD)
+
 ifdef ZIP_IN
-installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN)
+installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(PORTABLE_CONFIG_DIR)/setup-portable.exe
 	@echo 'Packaging $(WIN32_INSTALLER_OUT).'
 	$(NSINSTALL) -D '$(ABS_DIST)/$(PKG_INST_PATH)'
 	$(PYTHON3) $(MOZILLA_DIR)/mach repackage installer \
@@ -73,6 +79,9 @@ installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN)
 	  --setupexe $(CONFIG_DIR)/setup.exe \
 	  --sfx-stub $(SFX_MODULE) \
 	  $(USE_UPX)
+	mv $(ABS_DIST)/$(PKG_INST_PATH)$(PKG_INST_BASENAME).exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_HASH).exe
+	mv $(ABS_PORTABLE_CONFIG_DIR)/setup-portable.exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_HASH).exe
+
 ifdef MOZ_STUB_INSTALLER
 	$(PYTHON3) $(MOZILLA_DIR)/mach repackage installer \
 	  -o '$(ABS_DIST)/$(PKG_INST_PATH)$(PKG_STUB_BASENAME).exe' \
