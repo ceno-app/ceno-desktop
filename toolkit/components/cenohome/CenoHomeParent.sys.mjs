@@ -1,7 +1,7 @@
 // Copyright (c) 2025, eQualitie
 
 // Copyright (c) 2021, The Tor Project, Inc.
-// cenohome functionality is taken from CenoHome, this file is based on TorConnectParent.sys.mjs
+// cenohome functionality is taken from TorConnect, this file is based on TorConnectParent.sys.mjs
 
 import {
   CenoHome,
