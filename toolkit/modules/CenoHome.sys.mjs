@@ -33,7 +33,7 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () =>
 );
 
 // Keep CenoHomeStateName in sync with aboutCenoHome.js
-const CenoHomeStateName = Object.freeze({
+export const CenoHomeStateName = Object.freeze({
   Init: "Init",
   StartingProcess: "StartingProcess",
   ConnectingToNetwork: "ConnectingToNetwork",
