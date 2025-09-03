@@ -28,6 +28,7 @@
   skin/classic/browser/light-dark-overrides.css                (../shared/light-dark-overrides.css)
   skin/classic/browser/menupanel.css                           (../shared/menupanel.css)
   skin/classic/browser/notification-icons.css                  (../shared/notification-icons.css)
+  skin/classic/browser/ouinet-urlbar-button.css                (../shared/ouinet-urlbar-button.css)
   skin/classic/browser/pageInfo.css                            (../shared/pageInfo.css)
   skin/classic/browser/sanitizeDialog_v2.css                   (../shared/sanitizeDialog_v2.css)
   skin/classic/browser/setDesktopBackground.css                (../shared/setDesktopBackground.css)
