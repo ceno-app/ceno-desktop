@@ -163,7 +163,6 @@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
 
 ; [Ceno Files]
-@BINPATH@/browser/features/ceno@equalit.ie/
 @RESPATH@/components/ouinet-launcher.manifest
 @BINPATH@/distribution/extensions/uBlock0@raymondhill.net.xpi
 @BINPATH@/Ouinet/cacert.pem
