@@ -13,13 +13,13 @@ ceno-browser-about-ceno-home-connect-button = Connect
 
 ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
 
-ceno-browser-about-ceno-home-error-missing-ouinet-binary = Error: ouinet client.exe binary is missing
-ceno-browser-about-ceno-home-error-missing-ouinet-data-dir = Error: ouinet data dir is missing
-ceno-browser-about-ceno-home-error-ouinet-startup = Error: ouinet startup error
+ceno-browser-about-ceno-home-error-missing-ouinet-binary = Program Integrity Error: Ceno Network client.exe missing. Program reinstall may solve this.
+ceno-browser-about-ceno-home-error-missing-ouinet-data-dir = Program Integrity Error: Ceno Network client data directory is missing. Program reinstall may solve this.
+ceno-browser-about-ceno-home-error-ouinet-startup = Ceno Network client startup error
 
-ceno-browser-ouinet-titlebar-status-name = Ouinet Connection
-ceno-browser-ouinet-titlebar-status-not-connected = Not connected
+ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
+ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network
 ceno-browser-ouinet-titlebar-status-connecting = Connecting…
 ceno-browser-ouinet-titlebar-status-connected = Connected
 
-ceno-browser-ouinet-urlbar-connect-button = Connect to Ouinet
+ceno-browser-ouinet-urlbar-connect-button = Connect to Ceno Network
