@@ -1,0 +1,39 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+
+Program("ceno-network-client")
+SOURCES = [ "main.cpp" ]
+RCFILE = "app.rc"
+
+# No need to modify entry point. Default is wWinMan. This program is using wWinMain.
+#if CONFIG["CC_TYPE"] == "clang-cl":
+#    WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
+
+# gcc and clang (not clang-cl) may need the -municode.
+# If there are issues about undefined symbol WinMain, uncomment following lines.
+#if CONFIG["OS_TARGET"] == "WINNT" and CONFIG["CC_TYPE"] in ("gcc", "clang"):
+#    This allows us to use wmain as the entry point on mingw
+#    LDFLAGS += ["-municode"]
+
+# @TODO: AF_UNIX requires win10
+DEFINES["NTDDI_VERSION"] = "0x06010000"
+DEFINES["WINVER"] = "0x0601"
+DEFINES["_WIN32_WINNT"] = "0x0601"
+DEFINES["WINAPI_FAMILY"] = "WINAPI_FAMILY_DESKTOP_APP"
+DEFINES["UNICODE"] = True
+DEFINES["WIN32"] = True
+DEFINES["WIN32_LEAN_AND_MEAN"] = True
+DEFINES["_UNICODE"] = True
+DEFINES["_WINDOWS"] = True
+
+DisableStlWrapping()
+
+CXXFLAGS += [ "/std:c++20", ]
+
+USE_LIBS += [ "ouinetclient" ]
+
+OS_LIBS += [
+    "shell32",
+    "user32",
+    "Comctl32"
+]
