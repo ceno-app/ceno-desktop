@@ -1,0 +1,185 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * This selector and the stylesheet URL should be kept in sync in
+ * RFPHelper.sys.mjs (LETTERBOX_CSS_SELECTOR and LETTERBOX_CSS_URL,
+ * respectively), where --letterboxing-width & --letterboxing-height are
+ * actually set.
+ * Keep this block first and separate to the rules that do not necessarily
+ * require --letterboxing-width or --letterboxing-height.
+ */
+.letterboxing {
+  .browserContainer:not(.responsive-mode) > .browserStack:not(.exclude-letterboxing) > browser {
+    width: var(--letterboxing-width) !important;
+    height: var(--letterboxing-height) !important;
+  }
+}
+
+#tabbrowser-tabbox.letterboxing {
+  --letterboxing-bgcolor: var(--background-color-canvas);
+  /* Match the border radius used for the sidebar. */
+  --letterboxing-border-radius: var(--border-radius-medium);
+  --letterboxing-border-radius-top: 0;
+  --letterboxing-vertical-alignment: start;
+  --letterboxing-shadow: none;
+  --letterboxing-outline-color: var(--border-color);
+  --letterboxing-outline-width: 1px;
+
+  @media not ((prefers-contrast) or (forced-colors)) {
+    /* Match the #sidebar outline width. */
+    --letterboxing-outline-width: 0.5px;
+    --letterboxing-shadow-color: rgba(58, 57, 68, 0.20);
+    --letterboxing-shadow: 0 2px 14px 0 var(--letterboxing-shadow-color);
+
+    /* Match the effective urlbar background colour. */
+    --letterboxing-bgcolor: var(--letterboxing-urlbar-background-color);
+    /* Match the effective colour of the separator between the urlbar container
+     * and the content. */
+    --letterboxing-outline-color: var(--letterboxing-content-separator-color);
+
+    &.letterboxing-urlbar-background-dark {
+      --letterboxing-shadow-color: #15141a;
+    }
+
+    &.letterboxing-low-background-outline-contrast {
+      /* The default content separator colour has insufficient contrast. */
+      --letterboxing-outline-color: color-mix(in srgb, var(--letterboxing-content-separator-color) 90%, black);
+
+      &.letterboxing-urlbar-background-dark {
+        /* Lighten the colour. */
+        --letterboxing-outline-color: color-mix(in srgb, var(--letterboxing-content-separator-color) 90%, white);
+      }
+    }
+  }
+
+  @media (prefers-contrast) and (not (forced-colors)) {
+    :root[lwtheme] & {
+      /* User with prefers-contrast coming from the system settings, but also an
+       * installed theme. */
+      --letterboxing-bgcolor: var(--letterboxing-urlbar-background-color);
+      /* Presumably a user with prefers-contrast and a custom theme has chosen
+       * a theme where the contrast between the urlbar and the text is
+       * sufficiently high or low. */
+      --letterboxing-outline-color: var(--letterboxing-urlbar-text-color);
+    }
+  }
+
+  background: var(--letterboxing-bgcolor);
+
+  &:has(.deck-selected .browserContainer:not(.responsive-mode) > .browserStack:not(.exclude-letterboxing).letterboxing-show-outline) {
+    /* Letterboxing outline is visible for the current tab. Replace the usual
+     * outline to match the Letterboxing outline. For most scenarios, this
+     * should be mostly the same colour as when Letterboxing is not visible. But
+     * it may make a difference for some theme combinations. */
+    outline-color: var(--letterboxing-outline-color);
+    outline-width: var(--letterboxing-outline-width);
+  }
+
+  #tabbrowser-tabpanels {
+    /* Override the --tabpanel-background-color.
+     * Also, make sure this remains transparent, otherwise it will overlap the
+     * parent's corner's border-radius due to it's "position: relative" rule. */
+    /* TODO: FIX this for newtab pages. tor-browser#44085 */
+    background: transparent;
+  }
+
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("sidebar.revamp") {
+    :root:not([inDOMFullscreen]) &[sidebar-shown]:not(.letterboxing-nav-toolbox-hidden):is(
+      /* When the Letterboxing area is aligned to the top, show the rounded
+       * corner if there is enough vertical space between the sidebar and the
+       * browser element, which is not rounded at the top. */
+      :not(.letterboxing-vcenter):has(.deck-selected .browserContainer:not(.responsive-mode) > .browserStack:not(.exclude-letterboxing).letterboxing-show-sidebar-corner),
+      /* When the Letterboxing area is aligned to the centre, show the rounded
+       * corner if the Letterboxing border is shown. */
+      .letterboxing-vcenter:has(.deck-selected .browserContainer:not(.responsive-mode) > .browserStack:not(.exclude-letterboxing).letterboxing-show-outline)
+    ) {
+      /* stylelint-disable-next-line media-query-no-invalid */
+      @media -moz-pref("sidebar.position_start") {
+        border-start-start-radius: var(--letterboxing-border-radius);
+      }
+
+      /* stylelint-disable-next-line media-query-no-invalid */
+      @media not -moz-pref("sidebar.position_start") {
+        border-start-end-radius: var(--letterboxing-border-radius);
+      }
+    }
+  }
+
+  .browserContainer {
+    /*
+     * From Firefox 115 on, .browserContainer layout is flex / column,
+     * and without this trick the .browserStack's resize observer
+     * doesn't get notified on horizontal shrinking.
+     */
+    overflow: hidden;
+  }
+
+  &.letterboxing-vcenter {
+    --letterboxing-border-radius-top: var(--letterboxing-border-radius);
+    --letterboxing-vertical-alignment: center;
+  }
+}
+
+.browserContainer:not(.responsive-mode) > .browserStack:not(.exclude-letterboxing) {
+  :root:not([inDOMFullscreen]) .letterboxing.letterboxing-ready & {
+    place-content: var(--letterboxing-vertical-alignment) center;
+  }
+
+  :root:not([inDOMFullscreen]) .letterboxing &.letterboxing-show-outline {
+    browser {
+      /* We use clip-path rather than border-radius because border-radius on its
+       * own leads to rendering artefacts in the corners (tested with GNOME).
+       * See tor-browser#44214 (comment 3262962). */
+      /* TODO: Use border-radius once bugzilla bug 1991874 is resolved. */
+      clip-path: rect(auto auto auto auto round var(--letterboxing-border-radius-top) var(--letterboxing-border-radius-top) var(--letterboxing-border-radius) var(--letterboxing-border-radius));
+    }
+
+    .browserDecorator {
+      /* Need a separate browserDecorator element because the clip-path on the
+       * browser would exclude the outline and box-shadow. */
+      /* TODO: Move these rules to the browser element once bugzilla bug 1991874
+       * is resolved, and drop browserDecorator. */
+      display: block;
+      border-radius: var(--letterboxing-border-radius-top) var(--letterboxing-border-radius-top) var(--letterboxing-border-radius) var(--letterboxing-border-radius);
+      /* NOTE: The top outline will not be visible when this is aligned to the
+       * top. */
+      outline: var(--letterboxing-outline-width) solid var(--letterboxing-outline-color);
+      box-shadow: var(--letterboxing-shadow);
+    }
+
+    #statuspanel:not([mirror]) #statuspanel-label {
+      border-end-start-radius: var(--letterboxing-border-radius);
+    }
+
+    #statuspanel[mirror] #statuspanel-label {
+      border-end-end-radius: var(--letterboxing-border-radius);
+    }
+  }
+
+  #statuspanel {
+    position: relative;
+    place-self: end start;
+    z-index: 2;
+
+    &[mirror] {
+      justify-self: end;
+    }
+  }
+
+  #statuspanel-label {
+    margin: 0;
+    outline: var(--letterboxing-outline-width) solid var(--letterboxing-outline-color);
+    max-width: calc(var(--letterboxing-width) * .5);
+  }
+}
+
+.browserDecorator {
+  display: none;
+  pointer-events: none;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
