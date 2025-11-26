@@ -1,7 +1,7 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  CenoHome: "resource://gre/modules/CenoHome.sys.mjs",
+  CenoNetwork: "resource://gre/modules/CenoNetwork.sys.mjs",
 });
 
 const BrowserTopics = Object.freeze({
@@ -28,12 +28,12 @@ export class OuinetStartupService {
 
   #init() {
     Services.obs.addObserver(this, BrowserTopics.QuitApplicationGranted);
-    lazy.CenoHome.init();
+    lazy.CenoNetwork.init();
     this.#gInited = true;
   }
 
   #uninit() {
     Services.obs.removeObserver(this, BrowserTopics.QuitApplicationGranted);
-    lazy.CenoHome.uninit();
+    lazy.CenoNetwork.uninit();
   }
 }
