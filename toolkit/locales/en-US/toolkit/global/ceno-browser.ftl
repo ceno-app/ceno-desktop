@@ -10,6 +10,7 @@ ceno-browser-about-ceno-home-quickstart-toggle = Always connect automatically
 
 ceno-browser-about-ceno-home-cancel-button = Cancel
 ceno-browser-about-ceno-home-connect-button = Connect
+ceno-browser-about-ceno-home-disconnect-button = Disconnect
 
 ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
 
@@ -21,5 +22,59 @@ ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
 ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network
 ceno-browser-ouinet-titlebar-status-connecting = Connecting…
 ceno-browser-ouinet-titlebar-status-connected = Connected
+ceno-browser-ouinet-titlebar-status-degraded = Connected (Connection degraded)
 
 ceno-browser-ouinet-urlbar-connect-button = Connect to Ceno Network
+
+ceno-browser-ouinet-preferences-heading = Connection
+ceno-browser-ouinet-preferences-category =
+    .tooltiptext = { ceno-browser-ouinet-preferences-heading }
+
+ceno-browser-ouinet-preferences-internet-connection-status-label = Internet:
+ceno-browser-ouinet-preferences-internet-connection-status-online = Online
+ceno-browser-ouinet-preferences-internet-connection-status-offline = Offline
+ceno-browser-ouinet-preferences-internet-connection-status-unknown = Unknown
+
+ceno-browser-ouinet-preferences-ouinet-connection-status-label = Ceno Network:
+ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected = Not Connected
+ceno-browser-ouinet-preferences-ouinet-connection-status-connecting = Connecting
+ceno-browser-ouinet-preferences-ouinet-connection-status-degraded = Connected (network connection degraded)
+ceno-browser-ouinet-preferences-ouinet-connection-status-connected = Connected
+ceno-browser-ouinet-preferences-ouinet-connection-status-error = Error
+
+ceno-browser-ouinet-preferences-automatic-heading = Connect automatically
+ceno-browser-ouinet-preferences-automatic-description = Automatically connect to the Ceno network at launch using your current connection settings.
+ceno-browser-ouinet-preferences-quickstart-checkbox =
+    .label = Always connect automatically
+
+ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
+ceno-browser-ouinet-preferences-sources-origin-access =
+    .label = (Origin access) Direct from website
+ceno-browser-ouinet-preferences-sources-proxy-access =
+    .label = (Proxy access) Via the Ceno network (personal)
+ceno-browser-ouinet-preferences-sources-injector-access =
+    .label = (Injector access) Via the Ceno network (public)
+ceno-browser-ouinet-preferences-sources-distributed-cache =
+    .label = (Distributed cache) From other Ceno users
+
+ceno-browser-ouinet-preferences-sources-personal-unreachable = ⚠ Personal browsing mode will fail with current settings. Enable origin access or proxy access.
+ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing mode will fail with current settings. Enable direct access, injector access or distributed cache.
+
+ceno-browser-ouinet-preferences-logging-heading = Logging
+ceno-browser-ouinet-preferences-logging-checkbox =
+    .label = Enable log file
+
+ceno-browser-ouinet-preferences-network-heading = Network
+
+ceno-browser-ouinet-preferences-local-cache = Local Cache
+ceno-browser-ouinet-preferences-local-cache-size = Size:
+ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
+
+ceno-browser-ouinet-preferences-reachability = Reachability:
+ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints:
+ceno-browser-ouinet-preferences-external-udp = External UDP endpoints:
+ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints:
+
+ceno-browser-ouinet-preferences-metrics-heading = Metrics
+ceno-browser-ouinet-preferences-metrics-checkbox =
+    .label = Enable metrics

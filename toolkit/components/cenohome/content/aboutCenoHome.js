@@ -1,31 +1,60 @@
-// Keep CenoHomeStateName in sync with CenoHome.sys.mjs
-const CenoHomeStateName = Object.freeze({
+// Keep OuinetStages in sync with CenoNetwork.sys.mjs
+const OuinetStages = Object.freeze({
   Init: "Init",
   StartingProcess: "StartingProcess",
   ConnectingToNetwork: "ConnectingToNetwork",
   Connected: "Connected",
+  Degraded: "Degraded",
   Exited: "Exited",
   Error: "Error",
 });
-/**
- * @typedef {object} CenoHomeState
- * @property {CenoHomeStateName} [name]
- * @property {int} [connectingToNetworkProgress]
- * @property {string?} [error]
- */
 
-// Keep CenoHomeErrors in sync with CenoHome.sys.mjs
-const CenoHomeErrors = Object.freeze({
+// Keep CenoNetworkTopics in sync with CenoNetwork.sys.mjs
+const CenoNetworkTopics = Object.freeze({
+  StateChange: "cenonetwork:state-change",
+  Connect: "cenonetwork:connect",
+  Cancel: "cenonetwork:cancel",
+  SetQuickstart: "cenonetwork:set-quickstart",
+});
+
+// Keep CenoNetworkErrors in sync with CenoNetwork.sys.mjs
+const CenoNetworkErrors = Object.freeze({
   MissingOuinetBinary: "MissingOuinetBinary",
   MissingDataDir: "MissingDataDir",
   OuinetStartupError: "OuinetStartupError",
 });
+// Keep CenoNetworkErrorToL10n in sync with CenoNetwork.sys.mjs
+function CenoNetworkErrorToL10n(error) {
+  switch (error) {
+    case CenoNetworkErrors.MissingOuinetBinary:
+      return "ceno-browser-about-ceno-home-error-missing-ouinet-binary";
+    case MissingDataDir:
+      return "ceno-browser-about-ceno-home-error-missing-ouinet-data-dir";
+    case OuinetStartupError:
+      return "ceno-browser-about-ceno-home-error-ouinet-startup";
+  }
+}
 
-const CenoHomeErrorsL10n = Object.freeze({
-  MissingOuinetBinary: "ceno-browser-about-ceno-home-error-missing-ouinet-binary",
-  MissingDataDir: "ceno-browser-about-ceno-home-error-missing-ouinet-data-dir",
-  OuinetStartupError: "ceno-browser-about-ceno-home-error-ouinet-startup",
+// Keep InternetStatus in sync with CenoNetwork.sys.mjs
+const InternetStatus = Object.freeze({
+  Unknown: -1,
+  Offline: 0,
+  Online: 1,
 });
+
+function ouinetStageToConnectionProgress(ouinetStage) {
+  let connectingToNetworkProgress = 0;
+  if (ouinetStage === OuinetStages.StartingProcess) {
+    connectingToNetworkProgress = 1;
+  } else if (ouinetStage === OuinetStages.ConnectingToNetwork) {
+    connectingToNetworkProgress = 33;
+  } else if (ouinetStage === OuinetStages.Degraded) {
+    connectingToNetworkProgress = 66;
+  } else if (ouinetStage === OuinetStages.Connected) {
+    connectingToNetworkProgress = 100;
+  }
+  return connectingToNetworkProgress;
+}
 
 /**
  * The controller for the about:cenohome page.
@@ -60,14 +89,7 @@ class AboutCenoHome {
     errors: document.querySelector(this.selectors.errorContainer.errors),
   });
 
-  /**
-   * @type {CenoHomeState}
-   */
-  shownState = {
-    name: CenoHomeStateName.Init,
-    connectingToNetworkProgress: 0,
-    error: null
-  };
+  shownState = OuinetStages.Init;
 
   /*
   Element helper methods
@@ -81,29 +103,19 @@ class AboutCenoHome {
     element.setAttribute("hidden", "true");
   }
 
-  updateQuickstart(enabled) {
-    this.elements.quickstartToggle.pressed = enabled;
-  }
-
-  /**
-   * Update the shown stage.
-   *
-   * @param {CenoHomeState} state - The new state to show.
-   * @param {boolean} [focusConnect=false] - Whether to try and focus the
-   *   connect button, if we are in the Start stage.
-   */
   updateState(state, focusConnect = false) {
-    if (
-      state.name === this.shownState.name &&
-      state.name != CenoHomeStateName.Init
-    ) {
-      return;
+    this.elements.quickstartToggle.pressed = state.quickstart;
+
+    if (state.internetStatus === InternetStatus.Online) {
+      this.hide(this.elements.linkStatus);
+    } else {
+      this.show(this.elements.linkStatus);
     }
 
     if (
-      state.name === CenoHomeStateName.Init ||
-      state.name === CenoHomeStateName.Exited ||
-      state.name === CenoHomeStateName.Error
+      state.ouinetStage === OuinetStages.Init ||
+      state.ouinetStage === OuinetStages.Exited ||
+      state.ouinetStage === OuinetStages.Error
     ) {
       this.show(this.elements.quickstartContainer);
       this.hide(this.elements.cancelButton);
@@ -111,29 +123,31 @@ class AboutCenoHome {
       this.hide(this.elements.progressMeter);
 
       if (
-        state.name === CenoHomeStateName.Error &&
+        state.ouinetStage === OuinetStages.Error &&
         state.error !== undefined &&
-        CenoHomeErrorsL10n[state.error] !== undefined
+        CenoNetworkErrorToL10n[state.error] !== undefined
       ) {
-        document.l10n.setAttributes(this.elements.errors, CenoHomeErrorsL10n[state.error])
+        document.l10n.setAttributes(this.elements.errors, CenoNetworkErrorToL10n[state.error])
         this.show(this.elements.errors);
       } else {
         this.hide(this.elements.errors);
       }
     }
     else if (
-      state.name === CenoHomeStateName.StartingProcess ||
-      state.name === CenoHomeStateName.ConnectingToNetwork
+      state.ouinetStage === OuinetStages.StartingProcess ||
+      state.ouinetStage === OuinetStages.ConnectingToNetwork ||
+      state.ouinetStage === OuinetStages.Degraded
     ) {
       this.show(this.elements.quickstartContainer);
       this.show(this.elements.cancelButton);
       this.hide(this.elements.connectButton);
 
       this.show(this.elements.progressMeter);
-      this.elements.progressMeter.style.setProperty("--progress-percent", `${state.connectingToNetworkProgress}%`);
+      const percentage = ouinetStageToConnectionProgress(state.ouinetStage);
+      this.elements.progressMeter.style.setProperty("--progress-percent", `${percentage}%`);
 
       this.hide(this.elements.errors);
-    } else if (state.name === CenoHomeStateName.Connected) {
+    } else if (state.ouinetStage === OuinetStages.Connected) {
       this.hide(this.elements.quickstartContainer);
       this.hide(this.elements.cancelButton);
       this.hide(this.elements.connectButton);
@@ -144,7 +158,7 @@ class AboutCenoHome {
 
     this.shownState = state;
 
-    if (focusConnect && state.name === CenoHomeStateName.Init) {
+    if (focusConnect && state.ouinetStage === OuinetStages.Init) {
       this.elements.connectButton.focus();
     }
   }
@@ -157,15 +171,15 @@ class AboutCenoHome {
 
     this.elements.quickstartToggle.addEventListener("toggle", () => {
       const quickstart = this.elements.quickstartToggle.pressed;
-      RPMSendAsyncMessage("cenohome:set-quickstart", quickstart);
+      RPMSendAsyncMessage(CenoNetworkTopics.SetQuickstart, quickstart);
     });
 
     this.elements.connectButton.addEventListener("click", () => {
-      RPMSendAsyncMessage("cenohome:connect");
+      RPMSendAsyncMessage(CenoNetworkTopics.Connect);
     });
 
     this.elements.cancelButton.addEventListener("click", () => {
-      RPMSendAsyncMessage("cenohome:cancel");
+      RPMSendAsyncMessage(CenoNetworkTopics.Cancel);
     });
 
     // Prevent repeat triggering on keydown when the Enter key is held down.
@@ -203,19 +217,8 @@ class AboutCenoHome {
   }
 
   initObservers() {
-    RPMAddMessageListener("cenohome:state-change", ( {data} ) => {
+    RPMAddMessageListener(CenoNetworkTopics.StateChange, ({data}) => {
       this.updateState(data);
-    });
-    RPMAddMessageListener("cenohome:quickstart-change", ({ data }) => {
-      this.updateQuickstart(data);
-    });
-    RPMAddMessageListener("cenohome:internet-status-change", ({ data }) => {
-      console.log("received cenohome:internet-status-change", data);
-      if (data.internetStatus === 1) {
-        this.hide(this.elements.linkStatus);
-      } else {
-        this.show(this.elements.linkStatus);
-      }
     });
   }
 
@@ -226,10 +229,11 @@ class AboutCenoHome {
       // see https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code for relevant documentation
       if (evt.code === "Escape") {
         if (
-          this.shownState.name === CenoHomeStateName.StartingProcess ||
-          this.shownState.name === CenoHomeStateName.ConnectingToNetwork
+          this.shownState === OuinetStages.StartingProcess ||
+          this.shownState === OuinetStages.Degraded ||
+          this.shownState === OuinetStages.ConnectingToNetwork
         ) {
-          RPMSendAsyncMessage("cenohome:cancel");
+          RPMSendAsyncMessage(CenoNetworkTopics.Cancel);
         }
       }
     };
@@ -248,9 +252,7 @@ class AboutCenoHome {
     // Otherwise, we do not want to focus it for first time users so they can
     // read the full page first.
     const focusConnect = args.userHasEverClickedConnect;
-
     this.updateState(args.state, focusConnect);
-    this.updateQuickstart(args.quickstartEnabled);
   }
 }
 

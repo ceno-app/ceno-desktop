@@ -44,13 +44,13 @@ class OuinetConnectTitlebarStatus {
       this.#node.setAttribute('title', title);
     });
 
-    this.#observeTopic = CenoHomeTopics.StateChange;
+    this.#observeTopic = CenoNetworkTopics.StateChange;
     this.#stateListener = {
-      observe: (_subject, topic) => {
+      observe: (subject, topic) => {
         if (topic !== this.#observeTopic) {
           return;
         }
-        this.#stateChanged();
+        this.#stateChanged(subject?.wrappedJSObject?.ouinetStage);
       },
     };
     Services.obs.addObserver(this.#stateListener, this.#observeTopic);
@@ -66,23 +66,29 @@ class OuinetConnectTitlebarStatus {
   }
 
   /**
-   * Callback for when the CenoHome state changes.
+   * Callback for when the CenoNetwork state changes.
    */
-  #stateChanged() {
+  #stateChanged(ouinetStage) {
+    if (!ouinetStage) {
+      ouinetStage = CenoNetwork.CenoNetworkState().ouinetStage;
+    }
     let textId;
     let connected = false;
-    switch (CenoHome.state.name) {
-      case CenoHomeStateName.Connected:
+    switch (ouinetStage) {
+      case OuinetStages.Connected:
         textId = 'ceno-browser-ouinet-titlebar-status-connected';
         connected = true;
         break;
-      case CenoHomeStateName.StartingProcess:
-      case CenoHomeStateName.ConnectingToNetwork:
+      case OuinetStages.Degraded:
+        textId = 'ceno-browser-ouinet-titlebar-status-degraded';
+        break;
+      case OuinetStages.StartingProcess:
+      case OuinetStages.ConnectingToNetwork:
         textId = 'ceno-browser-ouinet-titlebar-status-connecting';
         break;
-      case CenoHomeStateName.Init:
-      case CenoHomeStateName.Exited:
-      case CenoHomeStateName.Error:
+      case OuinetStages.Init:
+      case OuinetStages.Exited:
+      case OuinetStages.Error:
       default:
         textId = 'ceno-browser-ouinet-titlebar-status-not-connected';
         break;
@@ -136,9 +142,3 @@ class OuinetConnectTitlebarStatus {
 };
 
 var gOuinetConnectTitlebarStatus = new OuinetConnectTitlebarStatus();
-
-// var gOuinetConnectTitlebarStatus = {
-//   init() {
-//     console.log("HELLO!!!");
-//   },
-// };

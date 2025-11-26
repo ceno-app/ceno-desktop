@@ -47,12 +47,12 @@ export class OuinetProcess {
 
   onExit = _exitCode => {};
 
-  async start() {
+  async start(credentials) {
     if (this.#subprocess) {
       return;
     }
 
-    this.#makeArgs();
+    this.#makeArgs(credentials);
     try {
       // useful for simulating slow ouinet client launch
       const launchDelay = Services.prefs.getIntPref(Prefs.launch_delay, 0);
@@ -150,7 +150,7 @@ export class OuinetProcess {
     this.onExit(exitCode);
   }
 
-  #makeArgs() {
+  #makeArgs(credentials) {
     this.#exeFile = lazy.OuinetLauncherUtil.getOuinetFile("client", false);
     this.#dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
     this.#injectorTlsCertFile = lazy.OuinetLauncherUtil.getOuinetFile("injcert", false);
@@ -171,5 +171,7 @@ export class OuinetProcess {
     this.#args.push("--injector-credentials", this.#injectorCredentials);
     this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
     this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
+    this.#args.push("--front-end-access-token", credentials.frontend_token)
+    // this.#args.push("--proxy-access-token", credentials.proxy_token)
   }
 }
