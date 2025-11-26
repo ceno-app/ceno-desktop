@@ -1,0 +1,6 @@
+browser.jar:
+    content/browser/cenonetworkpreferences/connectionPane.js            (content/connectionPane.js)
+    content/browser/cenonetworkpreferences/connectionPane.inc.xhtml     (content/connectionPane.inc.xhtml)
+    content/browser/cenonetworkpreferences/connectionCategory.inc.xhtml (content/connectionCategory.inc.xhtml)
+    content/browser/cenonetworkpreferences/ceno-icon.svg                (content/ceno-icon.svg)
+    content/browser/cenonetworkpreferences/cenoNetworkPreferences.css   (content/cenoNetworkPreferences.css)
