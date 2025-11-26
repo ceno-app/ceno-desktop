@@ -33,6 +33,7 @@ DIRS += [
     "asrouter",
     "attribution",
     "backup",
+    "cenonetworkpreferences",
     "contentanalysis",
     "contextualidentity",
     "customizableui",

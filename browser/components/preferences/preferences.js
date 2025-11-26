@@ -15,6 +15,7 @@
 /* import-globals-from findInPage.js */
 /* import-globals-from /browser/base/content/utilityOverlay.js */
 /* import-globals-from /toolkit/content/preferencesBindings.js */
+/* import-globals-from ../cenonetworkpreferences/content/connectionPane.js */
 
 "use strict";
 
@@ -227,6 +228,10 @@ function init_all() {
     register_module("paneSync", gSyncPane);
   }
   register_module("paneSearchResults", gSearchResultsPane);
+
+  document.getElementById("category-connection").hidden = false;
+  register_module("paneConnection", gConnectionPane);
+
   gSearchResultsPane.init();
   gMainPane.preInit();
 
