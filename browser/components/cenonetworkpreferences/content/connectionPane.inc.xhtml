@@ -1,0 +1,216 @@
+<!-- Ceno Network Preferences Panel -->
+
+<script src="chrome://browser/content/cenonetworkpreferences/connectionPane.js" />
+
+<html:template id="template-paneConnection">
+
+<vbox id="ouinetCategory"
+      class="subcategory"
+      hidden="true"
+      data-category="paneConnection">
+  <html:h1 data-l10n-id="ceno-browser-ouinet-preferences-heading"></html:h1>
+
+  <!--
+  <description class="description-deemphasized" flex="1">
+    <html:span data-l10n-id="tor-connection-overview"></html:span>
+      <label
+        class="learnMore text-link"
+        is="text-link"
+        href="about:manual#about"
+        useoriginprincipal="true"
+        data-l10n-id="tor-connection-browser-learn-more-link"
+      />
+  </description>
+  -->
+
+  <!-- Keep within #ouinetCategory so this won't appear in search results. -->
+  <html:div
+    id="network-status-internet-area"
+    class="network-status-area"
+    role="group"
+    aria-labelledby="network-status-internet-area-label"
+  >
+    <html:span
+      id="network-status-internet-area-label"
+      class="network-status-label"
+      data-l10n-id="ceno-browser-ouinet-preferences-internet-connection-status-label"
+    ></html:span>
+    <html:span class="network-status-result" id="network-status-internet"></html:span>
+  </html:div>
+  <html:div
+    id="network-status-ouinet-area"
+    class="network-status-area"
+    role="group"
+    aria-labelledby="network-status-ouinet-area-label"
+  >
+    <html:span
+      id="network-status-ouinet-area-label"
+      class="network-status-label"
+      data-l10n-id="ceno-browser-ouinet-preferences-ouinet-connection-status-label"
+    ></html:span>
+    <html:span class="network-status-result" id="network-status-ouinet"></html:span>
+    <html:button
+      id="network-status-ouinet-connect-button"
+      data-l10n-id="ceno-browser-about-ceno-home-connect-button"
+    ></html:button>
+    <html:button
+      id="network-status-ouinet-cancel-button"
+      data-l10n-id="ceno-browser-about-ceno-home-cancel-button"
+    ></html:button>
+    <html:button
+      id="network-status-ouinet-disconnect-button"
+      data-l10n-id="ceno-browser-about-ceno-home-disconnect-button"
+    ></html:button>
+  </html:div>
+
+  <html:div>
+    <html:span
+      data-l10n-id="ceno-browser-ouinet-preferences-reachability"
+      class="network-status-label-not-bold"></html:span>
+    <html:span class="network-status-result" id="reachability-status">Undecided</html:span>
+  </html:div>
+  <html:div>
+    <html:span class="network-status-label-not-bold">UPnP:</html:span>
+    <html:span class="network-status-result" id="upnp-status">Undecided</html:span>
+  </html:div>
+  <html:div>
+    <html:span
+      data-l10n-id="ceno-browser-ouinet-preferences-local-udp"
+      class="network-status-label-not-bold"></html:span>
+    <html:span class="network-status-result" id="local-udp">Unknown</html:span>
+  </html:div>
+  <html:div>
+    <html:span
+      data-l10n-id="ceno-browser-ouinet-preferences-public-udp"
+      class="network-status-label-not-bold"></html:span>
+    <html:span class="network-status-result" id="public-udp">Unknown</html:span>
+  </html:div>
+</vbox>
+
+<!-- Quickstart -->
+<groupbox data-category="paneConnection" hidden="true">
+  <label>
+    <html:h2 data-l10n-id="ceno-browser-ouinet-preferences-automatic-heading"></html:h2>
+  </label>
+  <description
+    class="description-deemphasized"
+    flex="1"
+    data-l10n-id="ceno-browser-ouinet-preferences-automatic-description"
+  />
+  <html:moz-toggle
+    id="ouinet-connection-quickstart-toggle"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-quickstart-checkbox"
+    data-l10n-attrs="label"
+  />
+</groupbox>
+
+<vbox class="subcategory content-sources" data-category="paneConnection" hidden="true">
+  <label>
+    <html:h1
+      tabindex="-1"
+      data-l10n-id="ceno-browser-ouinet-preferences-sources-heading"
+    ></html:h1>
+  </label>
+
+  <h4
+    id="ouinet-connection-personal-unreachable"
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-personal-unreachable"
+  ></h4>
+  <h4
+    id="ouinet-connection-public-unreachable"
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-public-unreachable"
+  ></h4>
+  <html:moz-toggle
+    id="ouinet-connection-origin-access"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-origin-access"
+    data-l10n-attrs="label"
+  />
+  <html:moz-toggle
+    id="ouinet-connection-proxy-access"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-proxy-access"
+    data-l10n-attrs="label"
+  />
+  <html:moz-toggle
+    id="ouinet-connection-injector-access"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-injector-access"
+    data-l10n-attrs="label"
+  />
+  <html:moz-toggle
+    id="ouinet-connection-distributed-cache"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-sources-distributed-cache"
+    data-l10n-attrs="label"
+  />
+</vbox>
+
+<groupbox data-category="paneConnection" hidden="true">
+  <label>
+    <html:h2 data-l10n-id="ceno-browser-ouinet-preferences-local-cache"></html:h2>
+  </label>
+
+  <html:div
+    id="network-status-ouinet-area"
+    class="network-status-area"
+    role="group"
+    aria-labelledby="network-status-ouinet-area-label"
+  >
+  <html:span
+    id="local-cache-size-area-label"
+    class="local-cache-size-label"
+    data-l10n-id="ceno-browser-ouinet-preferences-local-cache-size"
+  ></html:span>
+  <html:span class="local-cache-size" id="local-cache-size"></html:span>
+  <html:button
+    id="clear-cache-button"
+    data-l10n-id="ceno-browser-ouinet-preferences-local-cache-clear-button"
+  ></html:button>
+  </html:div>
+</groupbox>
+
+<vbox class="subcategory" data-category="paneConnection" hidden="true">
+  <label>
+    <html:h1
+      tabindex="-1"
+      data-l10n-id="ceno-browser-ouinet-preferences-logging-heading"
+    ></html:h1>
+  </label>
+
+  <html:moz-toggle
+    id="ouinet-logging"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-logging-checkbox"
+    data-l10n-attrs="label"
+  />
+  <html:a id="ouinet-logfile">logfile.txt</html:a>
+</vbox>
+
+<!--
+<vbox class="subcategory" data-category="paneConnection" hidden="true">
+  <label>
+    <html:h1
+      tabindex="-1"
+      data-l10n-id="ceno-browser-ouinet-preferences-metrics-heading"
+    ></html:h1>
+  </label>
+
+  <html:moz-toggle
+    id="ouinet-metrics"
+    class="moz-toggle"
+    label-align-after=""
+    data-l10n-id="ceno-browser-ouinet-preferences-metrics-checkbox"
+    data-l10n-attrs="label"
+  />
+</vbox>
+-->
+
+</html:template>
