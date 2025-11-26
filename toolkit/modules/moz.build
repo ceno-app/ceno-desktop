@@ -154,7 +154,7 @@ EXTRA_JS_MODULES += [
     "BrowserTelemetryUtils.sys.mjs",
     "BrowserUtils.sys.mjs",
     "CanonicalJSON.sys.mjs",
-    "CenoHome.sys.mjs",
+    "CenoNetwork.sys.mjs",
     "CertUtils.sys.mjs",
     "Color.sys.mjs",
     "Console.sys.mjs",

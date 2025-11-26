@@ -106,6 +106,10 @@ class OuinetFile {
         // Windows
         this.file = OuinetLauncherUtil.isMac ? OuinetFile.ouinetDir : OuinetFile.appDir;
         break;
+      case "logfile":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("log.txt");
+        break;
       default:
         throw new Error("Unknown file type");
     }

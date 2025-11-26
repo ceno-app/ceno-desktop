@@ -4,9 +4,9 @@
 // cenohome functionality is taken from TorConnect, this file is based on TorConnectParent.sys.mjs
 
 import {
-  CenoHome,
-  CenoHomeTopics,
-} from "resource://gre/modules/CenoHome.sys.mjs";
+  CenoNetwork,
+  CenoNetworkTopics,
+} from "resource://gre/modules/CenoNetwork.sys.mjs";
 
 const Prefs = Object.freeze({
   userHasEverClickedConnect: "ceno.cenohome:user_has_ever_clicked_connect"
@@ -37,14 +37,8 @@ export class CenoHomeParent extends JSWindowActorParent {
       observe(subject, topic) {
         const obj = subject?.wrappedJSObject;
         switch (topic) {
-          case CenoHomeTopics.StateChange:
-            self.sendAsyncMessage("cenohome:state-change", CenoHome.state);
-            break;
-          case CenoHomeTopics.QuickstartChange:
-            self.sendAsyncMessage("cenohome:quickstart-change", CenoHome.quickstart);
-            break;
-          case CenoHomeTopics.InternetStatusChange:
-            self.sendAsyncMessage("cenohome:internet-status-change", { internetStatus: CenoHome.internetStatus } );
+          case CenoNetworkTopics.StateChange:
+            self.sendAsyncMessage(CenoNetworkTopics.StateChange, obj);
             break;
         }
       },
@@ -52,30 +46,14 @@ export class CenoHomeParent extends JSWindowActorParent {
 
     Services.obs.addObserver(
       this.connectObserver,
-      CenoHomeTopics.StateChange
-    );
-    Services.obs.addObserver(
-      this.connectObserver,
-      CenoHomeTopics.InternetStatusChange
-    );
-    Services.obs.addObserver(
-      this.connectObserver,
-      CenoHomeTopics.QuickstartChange
+      CenoNetworkTopics.StateChange
     );
   }
 
   didDestroy() {
     Services.obs.removeObserver(
       this.connectObserver,
-      CenoHomeTopics.StateChange
-    );
-    Services.obs.removeObserver(
-      this.connectObserver,
-      CenoHomeTopics.InternetStatusChange
-    );
-    Services.obs.removeObserver(
-      this.connectObserver,
-      CenoHomeTopics.QuickstartChange
+      CenoNetworkTopics.StateChange
     );
   }
 
@@ -86,24 +64,23 @@ export class CenoHomeParent extends JSWindowActorParent {
       //   return Promise.resolve(
       //     CenoHomeParent.fixupURIs(lazy.HomePage.get())[0]
       //   );
-      case "cenohome:set-quickstart":
-        CenoHome.quickstart = message.data;
+      case CenoNetworkTopics.SetQuickstart:
+        CenoNetwork.setQuickstart(message.data);
         break;
-      case "cenohome:connect":
+      case CenoNetworkTopics.Connect:
         Services.prefs.setBoolPref(Prefs.userHasEverClickedConnect, true);
-        CenoHome.connect();
+        CenoNetwork.connect();
         break;
-      case "cenohome:cancel":
-        CenoHome.cancel();
+      case CenoNetworkTopics.Cancel:
+        CenoNetwork.cancel();
         break;
       case "cenohome:get-init-args":
         // Called on AboutCenoHome.init(), pass down all state data it needs
         // to init.
         return {
           Direction: Services.locale.isAppLocaleRTL ? "rtl" : "ltr",
-          state: CenoHome.state,
+          state: CenoNetwork.CenoNetworkState(),
           userHasEverClickedConnect: Services.prefs.getBoolPref(Prefs.userHasEverClickedConnect, false),
-          quickstartEnabled: CenoHome.quickstart,
         };
     }
     return undefined;
