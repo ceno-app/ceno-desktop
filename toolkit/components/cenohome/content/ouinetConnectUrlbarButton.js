@@ -58,13 +58,13 @@ class OuinetConnectUrlbarButton {
       this.connect();
     });
 
-    this.#observeTopic = CenoHomeTopics.StateChange;
+    this.#observeTopic = CenoNetworkTopics.StateChange;
     this.#stateListener = {
-      observe: (_subject, topic) => {
+      observe: (subject, topic) => {
         if (topic !== this.#observeTopic) {
           return;
         }
-        this.#updateButtonVisibility();
+        this.#updateButtonVisibility(subject?.wrappedJSObject?.ouinetStage);
       },
     };
     Services.obs.addObserver(this.#stateListener, this.#observeTopic);
@@ -111,14 +111,17 @@ class OuinetConnectUrlbarButton {
    * Begin the tor connection bootstrapping process.
    */
   connect() {
-    CenoHome.connect();
+    CenoNetwork.connect();
   }
 
   /**
    * Callback when the TorConnect state, current browser location, or activation
    * state changes.
    */
-  #updateButtonVisibility() {
+  #updateButtonVisibility(ouinetStage) {
+    if (!ouinetStage) {
+      ouinetStage = CenoNetwork.CenoNetworkState().ouinetStage;
+    }
     if (!this.#button) {
       return;
     }
@@ -126,9 +129,10 @@ class OuinetConnectUrlbarButton {
     const hide =
       !this.#isActive ||
       this.#inAboutCenoHomeTab ||
-      CenoHome.state.name === CenoHomeStateName.Connected ||
-      CenoHome.state.name === CenoHomeStateName.ConnectingToNetwork ||
-      CenoHome.state.name === CenoHomeStateName.StartingProcess;
+      ouinetStage === OuinetStages.Connected ||
+      ouinetStage === OuinetStages.Degraded ||
+      ouinetStage === OuinetStages.OuinetStages ||
+      ouinetStage === OuinetStages.StartingProcess;
     this.#button.hidden = hide;
     if (hide && hadFocus) {
       // Lost focus. E.g. if the "Connect" button is focused in another window
