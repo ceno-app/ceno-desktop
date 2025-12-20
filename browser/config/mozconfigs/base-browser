@@ -17,7 +17,7 @@ ac_add_options --disable-unverified-updates
 ac_add_options --enable-base-browser-update
 # tor-browser#44414: Disable Zucchini until we fix mingw compatibility and work
 # on potential updates for our update pipeline.
-ac_add_options --disable-zucchini
+# ac_add_options --disable-zucchini
 
 ac_add_options --enable-bundled-fonts
 
