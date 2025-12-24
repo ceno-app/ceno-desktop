@@ -1,0 +1,35 @@
+[
+    {
+        "namespace": "ouinet",
+        "events": [
+            {
+                "name": "onConnect",
+                "type": "function",
+                "description": "Executed when trying to connect to Ouinet",
+                "parameters": [
+                    {
+                        "name": "proxy_endpoint",
+                        "description": "",
+                        "type": "string"
+                    },
+                    {
+                        "name": "proxy_user",
+                        "description": "",
+                        "type": "string"
+                    },
+                    {
+                        "name": "proxy_pass",
+                        "description": "",
+                        "type": "string"
+                    }
+                ]
+            },
+            {
+                "name": "onDisconnect",
+                "type": "function",
+                "description": "Executed on init and when Ouinet client is stopped",
+                "parameters": []
+            }
+        ]
+    }
+]
