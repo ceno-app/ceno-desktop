@@ -124,7 +124,7 @@ union NetAddr {
   struct {           /* Unix domain socket or
                         Windows Named Pipes address */
     uint16_t family; /* address family (AF_UNIX) */
-    char path[104];  /* null-terminated pathname */
+    char path[260];  /* null-terminated pathname */
   } local;
 #endif
   // introduced to support nsTArray<NetAddr> comparisons and sorting
