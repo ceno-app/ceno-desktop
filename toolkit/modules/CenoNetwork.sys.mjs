@@ -1,4 +1,5 @@
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
+import { AsyncSocket } from "resource://gre/modules/AsyncSocket.sys.mjs";
 
 const lazy = {};
 
@@ -135,6 +136,7 @@ class _CenoNetwork {
   }
   #endpoints = {
     proxy: null,
+    frontend_unix_socket: lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false),
     frontend_tcp: 'http://127.0.0.1:8078',
 
     frontend_get_api_status: '/api/status',
@@ -256,9 +258,25 @@ class _CenoNetwork {
   }
 
   async #getFromOuinetFrontend(url) {
-    const result = await fetch(`${this.#endpoints.frontend_tcp}${url}`,
-      { headers: {"X-Ouinet-Front-End-Token": this.#credentials.frontend_token }});
-    return result;
+    let socket = AsyncSocket.fromIpcFile(this.#endpoints.frontend_unix_socket);
+    await socket.write(
+      `GET ${url} HTTP/1.1\r\n` +
+      `X-Ouinet-Front-End-Token: ${this.#credentials.frontend_token}\r\n` +
+      '\r\n'
+    );
+    const response = await socket.read();
+
+    const header_and_body = response.split("\r\n\r\n", 2);
+    const header = header_and_body[0].split("\r\n");
+
+    return {
+      ok: header[0].includes('200'),
+      header: header,
+      body: header_and_body.length === 2 ? header_and_body[1] : null,
+      json: async function() {
+        return JSON.parse(header_and_body[1]);
+      }
+    };
   }
 
   async #getApiEndpoints() {
