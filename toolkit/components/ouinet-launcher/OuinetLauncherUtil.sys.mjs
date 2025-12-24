@@ -110,6 +110,10 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("log.txt");
         break;
+      case "frontend_unix_socket":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("frontend.socket");
+        break;
       default:
         throw new Error("Unknown file type");
     }
