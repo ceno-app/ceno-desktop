@@ -60,7 +60,7 @@ export class OuinetProcess {
         await new Promise(resolve => setTimeout(() => resolve(), launchDelay));
       }
 
-      lazy.logger.debug(`Starting ${this.#exeFile.path}`, this.#args);
+      lazy.logger.debug(`Starting ${this.#exeFile.path}`, this.#args.join(' '));
       const options = {
         command: this.#exeFile.path,
         arguments: this.#args,
@@ -171,7 +171,8 @@ export class OuinetProcess {
     this.#args.push("--injector-credentials", this.#injectorCredentials);
     this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
     this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
+    this.#args.push("--listen-on-tcp", '127.0.0.1:0');
+    this.#args.push("--client-credentials", `${credentials.proxy_user}:${credentials.proxy_password}`)
     this.#args.push("--front-end-access-token", credentials.frontend_token)
-    // this.#args.push("--proxy-access-token", credentials.proxy_token)
   }
 }
