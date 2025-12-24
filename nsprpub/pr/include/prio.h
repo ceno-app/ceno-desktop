@@ -163,7 +163,7 @@ union PRNetAddr {
 #if defined(XP_UNIX) || defined(XP_WIN)
     struct {                            /* Unix domain socket address */
         PRUint16 family;                /* address family (AF_UNIX) */
-        char path[104];                 /* null-terminated pathname */
+        char path[260];                 /* null-terminated pathname */
     } local;
 #endif
 };
