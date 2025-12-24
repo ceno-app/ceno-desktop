@@ -130,10 +130,17 @@ class _CenoNetwork {
 
   #credentials = {
     frontend_token: null,
-    proxy_token: null,
+    proxy_user: 'user',
+    proxy_password: null,
   }
-  #api_status_endpoint = "http://127.0.0.1:8078/api/status";
-  #set_value_endpoint = "http://127.0.0.1:8078/";
+  #endpoints = {
+    proxy: null,
+    frontend_tcp: 'http://127.0.0.1:8078',
+
+    frontend_get_api_status: '/api/status',
+    frontend_set_value: '/',
+    frontend_get_endpoints: '/api/endpoints',
+  }
 
   #ouinetState = {
     origin_access: undefined,
@@ -183,6 +190,14 @@ class _CenoNetwork {
 
   #sendNotifications() {
     Services.obs.notifyObservers(this.CenoNetworkState(), CenoNetworkTopics.StateChange);
+    if (
+      this.#ouinetStage === OuinetStages.Degraded ||
+      this.#ouinetStage === OuinetStages.Connected
+    ) {
+      this.#extensionOnConnect();
+    } else {
+      this.#extensionOnDisconnect();
+    }
   }
 
   #updateInternetStatus() {
@@ -221,7 +236,7 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
-  // init should be called by OuinetStartupService
+  // init is called by OuinetStartupService
   init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
@@ -237,6 +252,35 @@ class _CenoNetwork {
     if (this.#ouinetProcess) {
       this.#ouinetProcess.stop();
       this.#ouinetProcess = null;
+    }
+  }
+
+  async #getFromOuinetFrontend(url) {
+    const result = await fetch(`${this.#endpoints.frontend_tcp}${url}`,
+      { headers: {"X-Ouinet-Front-End-Token": this.#credentials.frontend_token }});
+    return result;
+  }
+
+  async #getApiEndpoints() {
+    while (
+      this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage === OuinetStages.Degraded ||
+      this.#ouinetStage === OuinetStages.Connected
+    ) {
+      try {
+        const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
+        if (response.ok) {
+          const json = await response.json();
+          this.#endpoints.proxy = json.proxy_endpoint;
+          this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
+          break;
+        } else {
+          lazy.logger.error(response);
+        }
+      } catch (e) {
+        lazy.logger.error('Failed to get ouinet endpoints', e);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 
@@ -265,11 +309,9 @@ class _CenoNetwork {
       this.#ouinetStage === OuinetStages.Connected
     ) {
       try {
-        const response = await fetch(this.#api_status_endpoint,
-            { headers: {"X-Ouinet-Front-End-Token": this.#credentials.frontend_token }});
+        const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
         if (response.ok) {
           const json = await response.json();
-          lazy.logger.debug(json);
           if (json.state === 'started') {
             this.#setOuinetStage(OuinetStages.Connected, false);
           } else if (json.state === 'degraded') {
@@ -313,13 +355,71 @@ class _CenoNetwork {
 
   async setValueInAPI(element_id, newValue) {
     try {
-      const setValueResult = await fetch(`${this.#set_value_endpoint}?${element_id}=${newValue ? 'enable' : 'disable'}`,
-        { headers: {"X-Ouinet-Front-End-Token": this.#credentials.frontend_token }});
-        lazy.logger.debug(setValueResult);
-        this.#apiPollTimeoutResolver();
+      lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
+      const setValueResult = await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?${element_id}=${newValue ? 'enable' : 'disable'}`);
+      this.#apiPollTimeoutResolver();
     } catch (e) {
         lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, e);
     }
+  }
+
+  // Enabling/disabling proxy and configuring authentication is performed in the extension
+  #extensionCallbacks = {
+    onConnect: null,
+    onConnectCalled: false,
+    onDisconnect: null,
+    onDisconnectCalled: false,
+  }
+  #extensionOnConnect() {
+    if (
+      this.#extensionCallbacks.onConnect !== null &&
+      !this.#extensionCallbacks.onConnectCalled
+    ) {
+      this.#extensionCallbacks.onConnect(
+        this.#endpoints.proxy,
+        this.#credentials.proxy_user,
+        this.#credentials.proxy_password
+      );
+      this.#extensionCallbacks.onConnectCalled = true;
+      lazy.logger.debug("extensionOnConnect() inner");
+    }
+    this.#extensionCallbacks.onDisconnectCalled = false;
+  }
+  async RegisterExtensionOnConnectCallback(onConnectCallback) {
+    this.#extensionCallbacks.onConnect = onConnectCallback;
+    if (
+      this.#ouinetStage === OuinetStages.Degraded ||
+      this.#ouinetStage === OuinetStages.Connected
+    ) {
+      this.#extensionOnConnect();
+    }
+  }
+  async UnregisterExtensionOnConnectCallback() {
+    this.#extensionCallbacks.onConnect = null;
+  }
+
+  #extensionOnDisconnect() {
+    if (
+      this.#extensionCallbacks.onDisconnect !== null &&
+      !this.#extensionCallbacks.onDisconnectCalled
+    ) {
+      this.#extensionCallbacks.onDisconnect();
+      this.#extensionCallbacks.onDisconnectCalled = true;
+      lazy.logger.debug("extensionOnDisconnect() inner");
+    }
+    this.#extensionCallbacks.onConnectCalled = false;
+  }
+  async RegisterExtensionOnDisconnectCallback(onDisconnectCallback) {
+    this.#extensionCallbacks.onDisconnect = onDisconnectCallback;
+    if (
+      this.#ouinetStage !== OuinetStages.Degraded &&
+      this.#ouinetStage !== OuinetStages.Connected
+    ) {
+      this.#extensionOnDisconnect();
+    }
+  }
+  async UnregisterExtensionOnDisconnectCallback() {
+    this.#extensionCallbacks.onDisconnect = null;
   }
 
   async connect() {
@@ -333,7 +433,7 @@ class _CenoNetwork {
       this.#ouinetProcess = new lazy.OuinetProcess();
       try {
         this.#credentials.frontend_token = randomString(16);
-        this.#credentials.proxy_token = randomString(16);
+        this.#credentials.proxy_password = randomString(16);
         await this.#ouinetProcess.start(this.#credentials);
         this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
 
@@ -345,6 +445,10 @@ class _CenoNetwork {
           this.#sendNotifications();
         };
 
+        // Let ouinet client start before attempting to communicate with it
+        await new Promise(resolve => setTimeout(() => resolve(), 100));
+
+        await this.#getApiEndpoints();
         this.#pollApiStatus();
 
         // @TODO: remove hard-coded delay before installing cert,
