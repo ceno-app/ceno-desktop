@@ -815,7 +815,7 @@ nsresult nsSocketTransport::Init(const nsTArray<nsCString>& types,
   return NS_OK;
 }
 
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
 nsresult nsSocketTransport::InitWithFilename(const char* filename) {
   return InitWithName(filename, strlen(filename));
 }
@@ -846,7 +846,7 @@ nsresult nsSocketTransport::InitWithName(const char* name, size_t length) {
 
   return NS_OK;
 }
-#endif
+// #endif
 
 nsresult nsSocketTransport::InitWithConnectedSocket(PRFileDesc* fd,
                                                     const NetAddr* addr) {
@@ -958,10 +958,10 @@ nsresult nsSocketTransport::ResolveHost() {
 
   if (!mProxyHost.IsEmpty()) {
     if (!mProxyTransparent || mProxyTransparentResolvesHost) {
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
       MOZ_ASSERT(!mNetAddrIsSet || mNetAddr.raw.family != AF_LOCAL,
                  "Unix domain sockets can't be used with proxies");
-#endif
+// #endif
       // When not resolving mHost locally, we still want to ensure that
       // it only contains valid characters.  See bug 304904 for details.
       // Sometimes the end host is not yet known and mHost is *
@@ -1085,10 +1085,10 @@ nsresult nsSocketTransport::BuildSocket(PRFileDesc*& fd, bool& proxyTransparent,
     return NS_OK;
   }
 
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
   MOZ_ASSERT(!mNetAddrIsSet || mNetAddr.raw.family != AF_LOCAL,
              "Unix domain sockets can't be used with socket types");
-#endif
+// #endif
 
   fd = nullptr;
 
@@ -1565,7 +1565,26 @@ nsresult nsSocketTransport::InitiateSocket() {
   }
 
   bool connectCalled = true;  // This is only needed for telemetry.
+# if defined(XP_WIN) // XP means Cross Platform, not Windows XP. As opposed to XP_UNIX
+  auto nativeHandle = PR_FileDesc2NativeHandle(fd);
+  if (0 == ::connect(nativeHandle, (sockaddr *)(&prAddr), sizeof(prAddr.local))) {
+    status = PR_SUCCESS;
+  } else if (WSAEWOULDBLOCK == WSAGetLastError()) {
+    // ::connect returns immediately on async socket. Wait for it to resolve
+    fd_set writefds;
+    FD_ZERO(&writefds);
+    FD_SET(nativeHandle, &writefds);
+    // @TODO: convert NS_SOCKET_CONNECT_TIMEOUT to format acceptable by select()
+    if (1 == select(1, NULL, &writefds, NULL, NULL)) {
+      status = PR_SUCCESS;
+    } else {
+      status = PR_FAILURE;
+    }
+  }
+# else
+  // PR - PortableRuntime
   status = PR_Connect(fd, &prAddr, NS_SOCKET_CONNECT_TIMEOUT);
+# endif
   PRErrorCode code = PR_GetError();
   if (status == PR_SUCCESS) {
     PR_SetFDInheritable(fd, false);
@@ -1669,11 +1688,11 @@ bool nsSocketTransport::RecoverFromError() {
     return false;
   }
 
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
   // Unix domain connections don't have multiple addresses to try,
   // so the recovery techniques here don't apply.
   if (mNetAddrIsSet && mNetAddr.raw.family == AF_LOCAL) return false;
-#endif
+// #endif
 
   if ((mConnectionFlags & nsSocketTransport::USE_IP_HINT_ADDRESS) &&
       mCondition == NS_ERROR_UNKNOWN_HOST &&
@@ -2034,13 +2053,13 @@ void nsSocketTransport::OnSocketEvent(uint32_t type, nsresult status,
         // Unix domain sockets are ready to connect; mNetAddr is all we
         // need. Internet address families require a DNS lookup (or possibly
         // several) before we can connect.
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
         if (mNetAddrIsSet && mNetAddr.raw.family == AF_LOCAL) {
           mCondition = InitiateSocket();
         } else {
-#else
-        {
-#endif
+// #else
+//         {
+// #endif
           mCondition = ResolveHost();
         }
 
@@ -2350,13 +2369,13 @@ void nsSocketTransport::IsLocal(bool* aIsLocal) {
   {
     MutexAutoLock lock(mLock);
 
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
     // Unix-domain sockets are always local.
     if (mNetAddr.raw.family == PR_AF_LOCAL) {
       *aIsLocal = true;
       return;
     }
-#endif
+// #endif
 
     *aIsLocal = mNetAddr.IsLoopbackAddr();
   }

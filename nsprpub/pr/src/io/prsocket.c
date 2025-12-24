@@ -20,9 +20,9 @@
 
 PRBool IsValidNetAddr(const PRNetAddr* addr) {
   if ((addr != NULL)
-#  if defined(XP_UNIX)
+//#  if defined(XP_UNIX)
       && (addr->raw.family != PR_AF_LOCAL)
-#  endif
+// #  endif
       && (addr->raw.family != PR_AF_INET6) &&
       (addr->raw.family != PR_AF_INET)) {
     return PR_FALSE;
@@ -36,9 +36,9 @@ static PRBool IsValidNetAddrLen(const PRNetAddr* addr, PRInt32 addr_len) {
    * is not uniform, so we don't check it.
    */
   if ((addr != NULL)
-#  if defined(XP_UNIX)
+//#  if defined(XP_UNIX)
       && (addr->raw.family != AF_UNIX)
-#  endif
+//#  endif
       && (PR_NETADDR_SIZE(addr) != addr_len)) {
 #  if defined(LINUX) && __GLIBC__ == 2 && __GLIBC_MINOR__ == 1
     /*
@@ -528,15 +528,18 @@ static PRStatus PR_CALLBACK SocketBind(PRFileDesc* fd, const PRNetAddr* addr) {
 
   PR_ASSERT(IsValidNetAddr(addr) == PR_TRUE);
 
-#ifdef XP_UNIX
+// #ifdef XP_UNIX
   if (addr->raw.family == AF_UNIX) {
+    // @TODO:
+    PR_LOG(_pr_io_lm, PR_LOG_ERROR,
+         ("Making sure the unix socket address is not relative: {}", addr->local.path));
     /* Disallow relative pathnames */
     if (addr->local.path[0] != '/') {
       PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
       return PR_FAILURE;
     }
   }
-#endif /* XP_UNIX */
+// #endif /* XP_UNIX */
 
 #if defined(_PR_INET6)
   if (addr->raw.family == PR_AF_INET6) {
@@ -1361,9 +1364,9 @@ PR_Socket(PRInt32 domain, PRInt32 type, PRInt32 proto) {
     _PR_ImplicitInitialization();
   }
   if (PR_AF_INET != domain && PR_AF_INET6 != domain
-#if defined(XP_UNIX)
+// #if defined(XP_UNIX)
       && PR_AF_LOCAL != domain
-#endif
+// #endif
   ) {
     PR_SetError(PR_ADDRESS_NOT_SUPPORTED_ERROR, 0);
     return NULL;

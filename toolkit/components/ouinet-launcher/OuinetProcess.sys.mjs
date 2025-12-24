@@ -173,6 +173,8 @@ export class OuinetProcess {
     this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
     this.#args.push("--listen-on-tcp", '127.0.0.1:0');
     this.#args.push("--client-credentials", `${credentials.proxy_user}:${credentials.proxy_password}`)
+    this.#args.push("--front-end-unix-socket-ep", lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false).path);
+    this.#args.push("--front-end-ep", '127.0.0.1:0');
     this.#args.push("--front-end-access-token", credentials.frontend_token)
   }
 }

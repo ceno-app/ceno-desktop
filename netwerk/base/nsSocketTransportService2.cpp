@@ -980,16 +980,58 @@ nsSocketTransportService::CreateRoutedTransport(
   return NS_OK;
 }
 
+#include <windows.h>
+#include "nsNativeCharsetUtils.h"
+nsresult NS_CopyUnicodeToNative2(const nsAString& aInput, nsACString& aOutput) {
+  uint32_t inputLen = aInput.Length();
+
+  nsAString::const_iterator iter;
+  aInput.BeginReading(iter);
+
+  char16ptr_t buf = iter.get();
+
+  // determine length of result
+  uint32_t resultLen = 0;
+
+  int n = ::WideCharToMultiByte(CP_ACP, 0, buf, inputLen, nullptr, 0, nullptr,
+                                nullptr);
+  if (n > 0) {
+    resultLen += n;
+  }
+
+  // allocate sufficient space
+  if (!aOutput.SetLength(resultLen, fallible)) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+  if (resultLen > 0) {
+    char* result = aOutput.BeginWriting();
+
+    // default "defaultChar" is '?', which is an illegal character on windows
+    // file system.  That will cause file uncreatable. Change it to '_'
+    const char defaultChar = '_';
+
+    ::WideCharToMultiByte(CP_ACP, 0, buf, inputLen, result, resultLen,
+                          &defaultChar, nullptr);
+  }
+  return NS_OK;
+}
+
 NS_IMETHODIMP
 nsSocketTransportService::CreateUnixDomainTransport(
     nsIFile* aPath, nsISocketTransport** result) {
-#ifdef XP_UNIX
+#if defined(XP_UNIX) || defined(XP_WIN)
   nsresult rv;
 
   NS_ENSURE_TRUE(mInitialized, NS_ERROR_NOT_INITIALIZED);
 
+  // nsAutoCString path = aPath->NativePath();
   nsAutoCString path;
+  #ifdef XP_UNIX
   rv = aPath->GetNativePath(path);
+  NS_ENSURE_SUCCESS(rv, rv);
+  #else
+    rv = NS_CopyUnicodeToNative2(aPath->NativePath(), path);
+  #endif
   NS_ENSURE_SUCCESS(rv, rv);
 
   RefPtr<nsSocketTransport> trans = new nsSocketTransport();
