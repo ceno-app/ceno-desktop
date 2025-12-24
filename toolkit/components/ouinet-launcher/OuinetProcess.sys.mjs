@@ -47,10 +47,23 @@ export class OuinetProcess {
 
   onExit = _exitCode => {};
 
+  #cleanupOuinetDataDir() {
+    const launcherUtil = lazy.OuinetLauncherUtil;
+    for (const f of [
+      launcherUtil.getOuinetFile("endpoints.json", false),
+    ]) {
+      if (f.exists()) {
+        f.remove(false);
+      }
+    }
+  }
+
   async start(credentials) {
     if (this.#subprocess) {
       return;
     }
+
+    this.#cleanupOuinetDataDir();
 
     this.#makeArgs(credentials);
     try {
@@ -173,6 +186,7 @@ export class OuinetProcess {
     this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
     this.#args.push("--listen-on-tcp", '127.0.0.1:0');
     this.#args.push("--client-credentials", `${credentials.proxy_user}:${credentials.proxy_password}`)
+    this.#args.push("--front-end-ep", '127.0.0.1:0');
     this.#args.push("--front-end-access-token", credentials.frontend_token)
   }
 }

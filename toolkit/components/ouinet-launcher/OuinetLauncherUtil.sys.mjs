@@ -106,6 +106,10 @@ class OuinetFile {
         // Windows
         this.file = OuinetLauncherUtil.isMac ? OuinetFile.ouinetDir : OuinetFile.appDir;
         break;
+      case "endpoints.json":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("endpoints.json");
+        break;
       case "logfile":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("log.txt");

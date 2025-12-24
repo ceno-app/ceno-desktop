@@ -47,6 +47,7 @@ def main():
 
     output_dir = sys.argv[1]
     ouinet_url = (
+        # @TODO: update url - https://gitlab.com/equalitie/ouinet/-/merge_requests/153
         "https://gitlab.com/equalitie/ouinet/-/package_files/256059766/download"
     )
     print(f"Downloading and extracting ouinet artifacts at {output_dir}...")

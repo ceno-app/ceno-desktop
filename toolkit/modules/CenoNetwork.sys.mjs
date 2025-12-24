@@ -135,7 +135,7 @@ class _CenoNetwork {
   }
   #endpoints = {
     proxy: null,
-    frontend_tcp: 'http://127.0.0.1:8078',
+    frontend_tcp: null,
 
     frontend_get_api_status: '/api/status',
     frontend_set_value: '/',
@@ -262,25 +262,41 @@ class _CenoNetwork {
   }
 
   async #getApiEndpoints() {
+    const endpoints_json_file = lazy.OuinetLauncherUtil.getOuinetFile("endpoints.json", false);
+    let timeout = 500;
     while (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
       this.#ouinetStage === OuinetStages.Connected
     ) {
       try {
-        const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
-        if (response.ok) {
-          const json = await response.json();
+        if (endpoints_json_file.exists()) {
+          const json = await new Promise(async (resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = function() {
+              if (reader.readyState != reader.DONE) {
+                reject(`Failed to read ${endpoints_json_file.path}`);
+                return;
+              }
+              resolve(JSON.parse(reader.result));
+            };
+            reader.readAsText(await File.createFromNsIFile(endpoints_json_file));
+          });
+
           this.#endpoints.proxy = json.proxy_endpoint;
           this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
           break;
         } else {
-          lazy.logger.error(response);
+          lazy.logger.error(`${endpoints_json_file.path} does not yet exist. waiting`);
         }
       } catch (e) {
-        lazy.logger.error('Failed to get ouinet endpoints', e);
+        lazy.logger.error('Failed to get ouinet endpoints:', e);
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, timeout));
+
+      if (timeout < 30000) {
+        timeout *= 2;
+      }
     }
   }
 
@@ -381,7 +397,6 @@ class _CenoNetwork {
         this.#credentials.proxy_password
       );
       this.#extensionCallbacks.onConnectCalled = true;
-      lazy.logger.debug("extensionOnConnect() inner");
     }
     this.#extensionCallbacks.onDisconnectCalled = false;
   }
@@ -405,7 +420,6 @@ class _CenoNetwork {
     ) {
       this.#extensionCallbacks.onDisconnect();
       this.#extensionCallbacks.onDisconnectCalled = true;
-      lazy.logger.debug("extensionOnDisconnect() inner");
     }
     this.#extensionCallbacks.onConnectCalled = false;
   }
