@@ -399,7 +399,6 @@ class _CenoNetwork {
         this.#credentials.proxy_password
       );
       this.#extensionCallbacks.onConnectCalled = true;
-      lazy.logger.debug("extensionOnConnect() inner");
     }
     this.#extensionCallbacks.onDisconnectCalled = false;
   }
@@ -423,7 +422,6 @@ class _CenoNetwork {
     ) {
       this.#extensionCallbacks.onDisconnect();
       this.#extensionCallbacks.onDisconnectCalled = true;
-      lazy.logger.debug("extensionOnDisconnect() inner");
     }
     this.#extensionCallbacks.onConnectCalled = false;
   }
