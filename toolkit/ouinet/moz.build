@@ -6,3 +6,6 @@ FINAL_TARGET_FILES["Ouinet"] += [
     "download_ouinet.py",
     "ssl-inj-cert.pem",
 ]
+
+if CONFIG["OS_ARCH"] == "WINNT":
+    DIRS += [ "ceno-network-client" ]
