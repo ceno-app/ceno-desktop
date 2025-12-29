@@ -1,0 +1,21 @@
+#include "Resource.h"
+#include "winuser.h"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "ceno-network-client.manifest.xml"
+
+IDI_NOTIFICATIONICON ICON "ceno.ico"
+
+STRINGTABLE
+BEGIN
+   IDS_TOOLTIP "Ceno Network Client"
+END
+
+IDC_CONTEXTMENU MENU
+BEGIN
+    POPUP ""
+	BEGIN
+	MENUITEM "Open Ceno Browser", IDM_OPEN
+	MENUITEM SEPARATOR
+	MENUITEM "Disconnect from Ceno Network", IDM_EXIT
+	END
+END
