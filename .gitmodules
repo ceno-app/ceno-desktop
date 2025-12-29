@@ -1,4 +1,4 @@
 [submodule "browser/extensions/ceno"]
 	path = browser/extensions/ceno
 	url = https://gitlab.com/ceno-app/ceno-ext-settings
-  branch = proxy_auth
+  branch = master
