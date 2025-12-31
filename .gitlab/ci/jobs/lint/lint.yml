@@ -15,7 +15,7 @@ lint-all:
     key: $CI_COMMIT_REF_SLUG
   tags:
     # Run these jobs in the browser dedicated runners.
-    - firefox
+    - shell
   script:
     - ./mach configure --with-base-browser-version=0.0.0
     - .gitlab/ci/jobs/helpers.py --get-changed-files | xargs -0 --no-run-if-empty ./mach lint -v
