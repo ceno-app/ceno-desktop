@@ -33,7 +33,7 @@ class ConnectionPane {
 
     logging: "moz-toggle#ouinet-logging",
     logfile: "a#ouinet-logfile",
-    // metrics: "moz-toggle#ouinet-metrics",
+    metrics: "moz-toggle#ouinet-metrics",
 
     local_cache_size: "span#local-cache-size",
     clear_cache_button: "button#clear-cache-button",
@@ -67,7 +67,7 @@ class ConnectionPane {
 
       logging: document.querySelector(this.#selectors.logging),
       logfile: document.querySelector(this.#selectors.logfile),
-      // metrics: document.querySelector(this.#selectors.metrics),
+      metrics: document.querySelector(this.#selectors.metrics),
 
       local_cache_size: document.querySelector(this.#selectors.local_cache_size),
       clear_cache_button: document.querySelector(this.#selectors.clear_cache_button),
@@ -125,9 +125,10 @@ class ConnectionPane {
     this.#elements.logging.addEventListener("toggle", () => {
       CenoNetwork.setValueInAPI('logfile', this.#elements.logging.pressed);
     });
-    // this.#elements.metrics.addEventListener("toggle", () => {
-    //   CenoNetwork.setValueInAPI('metrics', this.#elements.metrics.pressed);
-    // });
+
+    this.#elements.metrics.addEventListener("toggle", () => {
+      CenoNetwork.setValueInAPI('metrics', this.#elements.metrics.pressed);
+    });
   }
 
   init() {
@@ -204,7 +205,7 @@ class ConnectionPane {
     } else {
       this.#elements.logfile.hidden = 'true';
     }
-    // this.#set_toggle(this.#elements.metrics, state.metrics);
+    this.#set_toggle(this.#elements.metrics, state.metrics);
 
     this.#elements.clear_cache_button.hidden = state.local_cache_size === undefined;
     this.#elements.local_cache_size.textContent = this.#calculateSize(state.local_cache_size);
