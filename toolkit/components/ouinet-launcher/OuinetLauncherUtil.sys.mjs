@@ -82,6 +82,27 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDir;
         this.file.append(OuinetLauncherUtil.isWindows ? "ceno-network-client.exe" : "client");
         break;
+      case "client-monitor":
+        if (!OuinetLauncherUtil.isWindows) {
+          throw new Error("client-monitor available only on windows");
+        }
+        this.file = OuinetFile.ouinetDir;
+        this.file.append("ceno-network-client-monitor.exe");
+        break;
+      case "client-terminator":
+        if (!OuinetLauncherUtil.isWindows) {
+          throw new Error("client-terminator available only on windows");
+        }
+        this.file = OuinetFile.ouinetDir;
+        this.file.append("ceno-network-client-terminator.exe");
+        break;
+      case "client-pid-file":
+        if (!OuinetLauncherUtil.isWindows) {
+          throw new Error("client-pid-file available only on windows");
+        }
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("ouinet.pid");
+        break;
       case "repo":
         this.file = OuinetFile.ouinetDataDir;
         break;

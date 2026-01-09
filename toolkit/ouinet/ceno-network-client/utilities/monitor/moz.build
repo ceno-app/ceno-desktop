@@ -1,16 +1,10 @@
 # -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
 # vim: set filetype=python:
 
-Program("ceno-network-client")
-SOURCES = [
-  "ceno-network-client.cpp",
-  "ErrorUtils.cpp",
-  "GuiWindow.cpp",
-  "Ouinet.cpp",
-  "ProcessIdFile.cpp",
-]
+Program("ceno-network-client-monitor")
+SOURCES = [ "ceno-network-client-monitor.cpp" ]
 DIST_SUBDIR = "Ouinet"
-RCFILE = "app.rc"
+RCFILE = "../app.rc"
 
 # No need to modify entry point. Default is wWinMan. This program is using wWinMain.
 #if CONFIG["CC_TYPE"] == "clang-cl":
@@ -35,18 +29,10 @@ DEFINES["_WINDOWS"] = True
 
 DisableStlWrapping()
 
-CXXFLAGS += [ "/std:c++20" ]
-
-# Exceptions are disabled by default
-# CXXFLAGS += [ "/EHsc" ]
+CXXFLAGS += [ "/std:c++20", ]
 
 OS_LIBS += [
     "shell32",
     "user32",
     "Comctl32"
-]
-
-DIRS += [
-  "utilities/monitor",
-  "utilities/terminator",
 ]
