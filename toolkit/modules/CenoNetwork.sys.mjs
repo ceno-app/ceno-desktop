@@ -438,6 +438,9 @@ class _CenoNetwork {
     try {
       lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
       const setValueResult = await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?${element_id}=${newValue ? 'enable' : 'disable'}`);
+      if (!setValueResult.ok) {
+        lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, setValueResult);
+      }
       this.#apiPollTimeoutResolver();
     } catch (e) {
         lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, e);
