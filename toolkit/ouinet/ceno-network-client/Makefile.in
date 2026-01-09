@@ -1,4 +1,11 @@
 MOZ_WINCONSOLE = 0
 
 # Rebuild if manifest changes.
-EXTRA_DEPS += $(srcdir)/ceno-network-client.manifest.xml
+EXTRA_DEPS += $(srcdir)/ceno-network-client.manifest.xml \
+  $(srcdir)/ceno.ico \
+  $(srcdir)/ErrorUtils.h \
+  $(srcdir)/GuiWindow.h \
+  $(srcdir)/Ouinet.h \
+  $(srcdir)/ProcessIdFile.h \
+  $(srcdir)/Resource.h
+

@@ -47,6 +47,11 @@ ceno-browser-ouinet-preferences-automatic-description = Automatically connect to
 ceno-browser-ouinet-preferences-quickstart-checkbox =
     .label = Always connect automatically
 
+ceno-browser-ouinet-preferences-headless-heading = Ceno Network Service
+ceno-browser-ouinet-preferences-headless-description = Your Ceno application can act as a bridge for other Ceno users and also keep your distributed cache available
+ceno-browser-ouinet-preferences-headless-checkbox =
+    .label = Keep Ceno Network Service running
+
 ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
 ceno-browser-ouinet-preferences-sources-origin-access =
     .label = (Origin access) Direct from website
