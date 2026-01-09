@@ -11,7 +11,7 @@
 #include "Ouinet.h"
 #include "ProcessIdFile.h"
 
-static int g_exitCode = EXIT_FAILURE;
+static std::atomic_int g_exitCode = EXIT_FAILURE;
 
 static void onOuinetExit(const int exit_code) {
     g_exitCode = exit_code;
