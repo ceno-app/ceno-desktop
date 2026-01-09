@@ -9,6 +9,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetStartupError: "resource://gre/modules/OuinetProcess.sys.mjs",
   OuinetLauncherUtil: "resource://gre/modules/OuinetLauncherUtil.sys.mjs",
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
+  OuinetProcessMonitor: "resource://gre/modules/OuinetProcessMonitor.sys.mjs",
+  OuinetProcessTerminator: "resource://gre/modules/OuinetProcessTerminator.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
@@ -24,6 +26,11 @@ const NETWORK_LINK_TOPIC = "network:link-status-changed";
 const CenoNetworkPrefs = Object.freeze({
   log_level: "ceno.network.log_level",
   quickstart: "ceno.network.quickstart",
+
+  headless: "ceno.network.headless",
+
+  proxy_password: "ceno.network.proxy_password",
+  frontend_token: "ceno.network.frontend_token",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
@@ -126,18 +133,22 @@ class _CenoNetwork {
   #internetStatus = InternetStatus.Unknown;
   #error = null;
   #quickstart = Services.prefs.getBoolPref(CenoNetworkPrefs.quickstart, false);
+  #headless = Services.prefs.getBoolPref(CenoNetworkPrefs.headless, false);
 
   #ouinetProcess = null;
+  #ouinetProcessMonitor = null;
+
+  #connectionId = 0;
 
   #credentials = {
-    frontend_token: null,
     proxy_user: 'user',
-    proxy_password: null,
+    proxy_password: Services.prefs.getStringPref(CenoNetworkPrefs.proxy_password, null),
+    frontend_token: Services.prefs.getStringPref(CenoNetworkPrefs.frontend_token, null),
   }
   #endpoints = {
     proxy: null,
     frontend_unix_socket: lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false),
-    frontend_tcp: 'http://127.0.0.1:8078',
+    frontend_tcp: null,
 
     frontend_get_api_status: '/api/status',
     frontend_set_value: '/',
@@ -183,6 +194,7 @@ class _CenoNetwork {
     res['internetStatus'] = this.#internetStatus;
     res['error'] = this.#error
     res['quickstart'] = this.#quickstart;
+    res['headless'] = this.#headless;
 
     const logFile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
     res['logfile'] = logFile.exists() ? logFile.path : undefined;
@@ -238,12 +250,60 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
+  setHeadless(isEnabled) {
+    isEnabled = Boolean(isEnabled);
+    this.#headless = isEnabled;
+    Services.prefs.setBoolPref(CenoNetworkPrefs.headless, isEnabled);
+    this.#sendNotifications();
+  }
+
   // init is called by OuinetStartupService
-  init() {
+  async init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
 
-    if (this.#quickstart) {
+    const pidFile = lazy.OuinetLauncherUtil.getOuinetFile("client-pid-file", false)
+    if (pidFile.exists()) {
+      lazy.logger.debug('Process id file found, trying to inherit previous Ceno Network Connection');
+      const connectionId = Number(++this.#connectionId);
+      if (await this.#getApiEndpoints()) {
+        if (connectionId !== this.#connectionId) {
+          lazy.logger.debug("Abandoning cancelled connection attempt");
+          return;
+        }
+        lazy.logger.info('Endpoints found, inheriting previous Ceno Network Connection');
+        this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
+
+        this.#ouinetProcessMonitor = new lazy.OuinetProcessMonitor();
+        this.#ouinetProcessMonitor.monitor().then(_exitCode => {
+          if (connectionId !== this.#connectionId) {
+            lazy.logger.debug("Abandoning cancelled connection attempt");
+            return;
+          }
+          this.#ouinetProcessMonitor = null;
+          if (this.#ouinetStage !== OuinetStages.Exited) {
+            this.#setOuinetStage(OuinetStages.Init, true);
+          }
+          this.#resetOuinetState();
+          this.#sendNotifications();
+        });
+
+        this.#pollApiStatus(connectionId);
+
+        // @TODO: remove hard-coded delay before installing cert,
+        // should detect if ouinet has created the cert file before proceeding
+        await new Promise(resolve => setTimeout(() => resolve(), 5000));
+        lazy.OuinetLauncherUtil.setRootCertificate()
+      } else {
+        lazy.logger.debug('Endpoints unavailable, cannot inherit previous Ceno Network Connection. Terminating previous process');
+        await new lazy.OuinetProcessTerminator().terminate();
+        if (this.#quickstart) {
+          lazy.logger.debug('Quickstart enabled');
+          this.connect();
+        }
+      }
+    } else if (this.#quickstart) {
+      lazy.logger.debug('Quickstart enabled');
       this.connect();
     }
   }
@@ -251,9 +311,13 @@ class _CenoNetwork {
   uninit() {
     Services.obs.removeObserver(this, NETWORK_LINK_TOPIC);
 
-    if (this.#ouinetProcess) {
-      this.#ouinetProcess.stop();
-      this.#ouinetProcess = null;
+    if (this.#headless) {
+      if (this.#ouinetProcessMonitor) {
+        this.#ouinetProcessMonitor.cancel();
+        this.#ouinetProcessMonitor = null;
+      }
+    } else {
+      this.cancel();
     }
   }
 
@@ -280,26 +344,20 @@ class _CenoNetwork {
   }
 
   async #getApiEndpoints() {
-    while (
-      this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
-      this.#ouinetStage === OuinetStages.Degraded ||
-      this.#ouinetStage === OuinetStages.Connected
-    ) {
-      try {
-        const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
-        if (response.ok) {
-          const json = await response.json();
-          this.#endpoints.proxy = json.proxy_endpoint;
-          this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
-          break;
-        } else {
-          lazy.logger.error(response);
-        }
-      } catch (e) {
-        lazy.logger.error('Failed to get ouinet endpoints', e);
+    try {
+      const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
+      if (response.ok) {
+        const json = await response.json();
+        this.#endpoints.proxy = json.proxy_endpoint;
+        this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
+        return true;
+      } else {
+        lazy.logger.error(response);
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (e) {
+      lazy.logger.info('Failed to get ouinet endpoints', e);
     }
+    return false;
   }
 
   // Any API update should immediatelly be followed by #pollApiStatus.
@@ -318,7 +376,7 @@ class _CenoNetwork {
       clearTimeout(this.#apiPollTimeoutResolveData.timeout);
     }
   }
-  async #pollApiStatus() {
+  async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
     const interval_runtime = 5000;
     while (
@@ -326,6 +384,11 @@ class _CenoNetwork {
       this.#ouinetStage === OuinetStages.Degraded ||
       this.#ouinetStage === OuinetStages.Connected
     ) {
+      if (connectionId !== this.#connectionId) {
+        lazy.logger.debug("Abandoning cancelled connection attempt");
+        return;
+      }
+
       try {
         const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
         if (response.ok) {
@@ -441,63 +504,114 @@ class _CenoNetwork {
   async connect() {
     lazy.logger.debug("CenoNetwork.connect()");
     if (
-      this.#ouinetStage === OuinetStages.Init ||
-      this.#ouinetStage === OuinetStages.Exited ||
-      this.#ouinetStage === OuinetStages.Error
+      this.#ouinetStage !== OuinetStages.Init &&
+      this.#ouinetStage !== OuinetStages.Exited &&
+      this.#ouinetStage !== OuinetStages.Error
     ) {
-      this.#setOuinetStage(OuinetStages.StartingProcess, true);
-      this.#ouinetProcess = new lazy.OuinetProcess();
-      try {
-        this.#credentials.frontend_token = randomString(16);
-        this.#credentials.proxy_password = randomString(16);
-        await this.#ouinetProcess.start(this.#credentials);
-        this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
-
-        this.#ouinetProcess.onExit = _exitCode => {
-          if (this.#ouinetStage !== OuinetStages.Exited) {
-            this.#setOuinetStage(OuinetStages.Init, true);
-          }
-          this.#resetOuinetState();
-          this.#sendNotifications();
-        };
-
-        // Let ouinet client start before attempting to communicate with it
-        await new Promise(resolve => setTimeout(() => resolve(), 100));
-
-        await this.#getApiEndpoints();
-        this.#pollApiStatus();
-
-        // @TODO: remove hard-coded delay before installing cert,
-        // should detect if ouinet has created the cert file before proceeding
-        await new Promise(resolve => setTimeout(() => resolve(), 5000));
-        lazy.OuinetLauncherUtil.setRootCertificate()
-      } catch (e) {
-        if (e instanceof lazy.MissingDataDirError) {
-          this.#setError(CenoNetworkErrors.MissingDataDir);
-        } else if (e instanceof lazy.MissingOuinetBinaryError) {
-          this.#setError(CenoNetworkErrors.MissingOuinetBinary);
-        } else {
-          this.#setError(CenoNetworkErrors.OuinetStartupError);
-        }
-      }
-    } else {
       lazy.logger.warn("Ignoring double connect request", this.#ouinetStage);
+      return;
     }
-  }
 
-  cancel() {
-    lazy.logger.debug("CenoNetwork.cancel()");
+    this.#setOuinetStage(OuinetStages.StartingProcess, true);
+    // Current connection can be stopped and restarted during await in the middle of this async function,
+    // Not enough to evaluate #ouinetStage alone.
+    // need to know if we are still in the same connection.
+    const connectionId = Number(++this.#connectionId);
+
+    this.#credentials.frontend_token = randomString(16);
+    this.#credentials.proxy_password = randomString(16);
+    Services.prefs.setStringPref(CenoNetworkPrefs.frontend_token, this.#credentials.frontend_token);
+    Services.prefs.setStringPref(CenoNetworkPrefs.proxy_password, this.#credentials.proxy_password);
+
+    this.#ouinetProcess = new lazy.OuinetProcess();
+    await this.#ouinetProcess.start(this.#credentials);
+
+    // Connection could be cancelled or restarted during the previous `await`.
+    // Do the check after each await
+    if (
+      connectionId !== this.#connectionId ||
+      this.#ouinetStage !== OuinetStages.StartingProcess
+    ) {
+      lazy.logger.debug("Abandoning cancelled connection attempt");
+      return;
+    }
+
+    this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
+
+    // Let ouinet client start before attempting to communicate with it
+    lazy.logger.debug("Process started. Waiting for process to settle");
+    // @TODO: remove hard-coded delay before installing cert,
+    // should detect if ouinet has created the cert file before proceeding
+    await new Promise(resolve => setTimeout(() => resolve(), 5000));
+    lazy.OuinetLauncherUtil.setRootCertificate()
+
+    const maxAttempts = 5;
+    const delayBetweenAttempts = 1000;
+    let didGetApiEndpoints = false;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      if (
+        connectionId !== this.#connectionId ||
+        this.#ouinetStage !== OuinetStages.ConnectingToNetwork
+      ) {
+        lazy.logger.debug("Abandoning cancelled connection attempt");
+        return;
+      }
+
+      didGetApiEndpoints = await this.#getApiEndpoints();
+      if (didGetApiEndpoints) {
+        break;
+      } else if (i + 1 < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+      }
+    }
 
     if (
+      connectionId !== this.#connectionId ||
+      this.#ouinetStage !== OuinetStages.ConnectingToNetwork
+    ) {
+      lazy.logger.debug("Abandoning cancelled connection attempt");
+      return;
+    }
+
+    if (!didGetApiEndpoints) {
+      await this.cancel();
+      return;
+    }
+
+    this.#ouinetProcessMonitor = new lazy.OuinetProcessMonitor();
+    this.#ouinetProcessMonitor.monitor().then(_exitCode => {
+      if (connectionId !== this.#connectionId) {
+        lazy.logger.debug("Abandoning cancelled connection attempt");
+        return;
+      }
+      if (this.#ouinetStage !== OuinetStages.Exited) {
+        this.#setOuinetStage(OuinetStages.Init, true);
+      }
+      this.#resetOuinetState();
+      this.#sendNotifications();
+    });
+    this.#ouinetProcess = null;
+
+    this.#pollApiStatus(connectionId);
+  }
+
+  async cancel() {
+    if (
+      this.#ouinetStage === OuinetStages.StartingProcess ||
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
       this.#ouinetStage === OuinetStages.Connected
     ) {
-      if (this.#ouinetProcess) {
+      if (this.#ouinetProcess !== null) {
         this.#ouinetProcess.stop();
-        this.#setOuinetStage(OuinetStages.Exited, false);
         this.#ouinetProcess = null;
       }
+      await new lazy.OuinetProcessTerminator().terminate();
+      if (null !== this.#ouinetProcessMonitor) {
+        this.#ouinetProcessMonitor.cancel();
+      }
+      this.#setOuinetStage(OuinetStages.Exited, false);
     } else {
       lazy.logger.warn("No connection to cancel");
     }

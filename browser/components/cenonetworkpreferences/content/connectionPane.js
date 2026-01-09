@@ -19,6 +19,7 @@ class ConnectionPane {
     ouinet_disconnect_button: "button#network-status-ouinet-disconnect-button",
     ouinet_cancel_button: "button#network-status-ouinet-cancel-button",
     ouinet_quickstart_toggle: "moz-toggle#ouinet-connection-quickstart-toggle",
+    ouinet_headless_toggle: "moz-toggle#ouinet-connection-headless-toggle",
 
     sources: {
       origin_access: "#ouinet-connection-origin-access",
@@ -52,6 +53,7 @@ class ConnectionPane {
       ouinet_cancel_button: document.querySelector(this.#selectors.ouinet_cancel_button),
       ouinet_disconnect_button: document.querySelector(this.#selectors.ouinet_disconnect_button),
       ouinet_quickstart_toggle: document.querySelector(this.#selectors.ouinet_quickstart_toggle),
+      ouinet_headless_toggle: document.querySelector(this.#selectors.ouinet_headless_toggle),
 
       sources: {
         origin_access: document.querySelector(this.#selectors.sources.origin_access),
@@ -103,6 +105,10 @@ class ConnectionPane {
       CenoNetwork.setQuickstart(this.#elements.ouinet_quickstart_toggle.pressed);
     });
 
+    this.#elements.ouinet_headless_toggle.addEventListener("toggle", () => {
+      CenoNetwork.setHeadless(this.#elements.ouinet_headless_toggle.pressed);
+    });
+
     this.#elements.sources.origin_access.addEventListener("toggle", () => {
       CenoNetwork.setValueInAPI('origin_access', this.#elements.sources.origin_access.pressed);
     });
@@ -146,6 +152,7 @@ class ConnectionPane {
     document.l10n.setAttributes(this.#elements.internet_connection_status, internetStatusToL10n(state.internetStatus));
     document.l10n.setAttributes(this.#elements.ouinet_connection_status, ouinetStageToL10n(state.ouinetStage));
     this.#elements.ouinet_quickstart_toggle.pressed = state.quickstart;
+    this.#elements.ouinet_headless_toggle.pressed = state.headless;
 
     switch (state.ouinetStage) {
       case OuinetStages.Connected:
