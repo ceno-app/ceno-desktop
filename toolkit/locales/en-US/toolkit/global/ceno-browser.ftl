@@ -67,7 +67,7 @@ ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing
 
 ceno-browser-ouinet-preferences-logging-heading = Logging
 ceno-browser-ouinet-preferences-logging-checkbox =
-    .label = Enable log file
+    .label = Enable local log file
 
 ceno-browser-ouinet-preferences-network-heading = Network
 
@@ -80,6 +80,7 @@ ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints:
 ceno-browser-ouinet-preferences-external-udp = External UDP endpoints:
 ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints:
 
-ceno-browser-ouinet-preferences-metrics-heading = Metrics
+ceno-browser-ouinet-preferences-metrics-heading = Background metrics
+ceno-browser-ouinet-preferences-metrics-description = Submit anonymous, privacy respecting metrics to developers
 ceno-browser-ouinet-preferences-metrics-checkbox =
-    .label = Enable metrics
+    .label = Enable Ceno metrics
