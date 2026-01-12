@@ -289,11 +289,6 @@ class _CenoNetwork {
         });
 
         this.#pollApiStatus(connectionId);
-
-        // @TODO: remove hard-coded delay before installing cert,
-        // should detect if ouinet has created the cert file before proceeding
-        await new Promise(resolve => setTimeout(() => resolve(), 5000));
-        lazy.OuinetLauncherUtil.setRootCertificate()
       } else {
         lazy.logger.debug('Endpoints unavailable, cannot inherit previous Ceno Network Connection. Terminating previous process');
         await new lazy.OuinetProcessTerminator().terminate();
@@ -543,10 +538,14 @@ class _CenoNetwork {
 
     // Let ouinet client start before attempting to communicate with it
     lazy.logger.debug("Process started. Waiting for process to settle");
-    // @TODO: remove hard-coded delay before installing cert,
-    // should detect if ouinet has created the cert file before proceeding
-    await new Promise(resolve => setTimeout(() => resolve(), 5000));
-    lazy.OuinetLauncherUtil.setRootCertificate()
+    await new Promise(resolve => setTimeout(() => resolve(), 100));
+
+    const cacert = lazy.OuinetLauncherUtil.getOuinetFile("cacert", false);
+    for (let i = 0; i < 100 && !cacert.exists(); ++i) {
+      lazy.logger.debug('Waiting for cacert to be available', cacert.path);
+      await new Promise(resolve => setTimeout(() => resolve(), 100));
+    }
+    lazy.OuinetLauncherUtil.setRootCertificate();
 
     const maxAttempts = 5;
     const delayBetweenAttempts = 1000;
@@ -579,6 +578,7 @@ class _CenoNetwork {
 
     if (!didGetApiEndpoints) {
       await this.cancel();
+      lazy.logger.error("Connection attempt timed out");
       return;
     }
 
