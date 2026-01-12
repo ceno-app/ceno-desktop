@@ -151,7 +151,8 @@ include $(topsrcdir)/config/rules.mk
 
 libs::
 	@echo "Running custom target for Ouinet artifacts..."
-	$(MAKE) -C toolkit/ouinet download-ouinet
+	$(MAKE) -C toolkit/ouinet $(OBJDIR)/dist/bin/Ouinet/client.exe
+	$(MAKE) -C toolkit/ouinet $(OBJDIR)/dist/bin/Ouinet/cacert.pem
 
 ifdef SCCACHE_VERBOSE_STATS
 default::
