@@ -6,10 +6,21 @@
 include $(topsrcdir)/config/rules.mk
 
 # Define Ouinet download path
-OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/Ouinet/
+OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/Ouinet
 
 # Target for downloading Ouinet files
-download-ouinet:
+$(OUINET_OUTPUT_DIR)/client.exe:
 	@echo "Downloading Ouinet files..."
 	@mkdir -p $(OUINET_OUTPUT_DIR)
 	@cd $(DIST)/bin/Ouinet && $(PYTHON3) download_ouinet.py $(OUINET_OUTPUT_DIR)
+
+$(OUINET_OUTPUT_DIR)/cacert.pem:
+	@echo "Checking CA certificates for updates"
+	wget https://curl.se/ca/cacert.pem.sha256 --output-document $(OUINET_OUTPUT_DIR)/cacert.pem.sha256
+	@if ! diff $(OUINET_OUTPUT_DIR)/cacert.pem.sha256 $(srcdir)/cacert.pem.sha256; then \
+		wget https://curl.se/ca/cacert.pem --output-document $(srcdir)/cacert.pem ; \
+		cp $(OUINET_OUTPUT_DIR)/cacert.pem.sha256 $(srcdir)/cacert.pem.sha256 ; \
+		echo "New CA certificate found. Commit cacert.pem and cacert.pem.sha256 to repository"; \
+	fi
+	@cd $(srcdir) && sha256sum -c $(srcdir)/cacert.pem.sha256
+	@cp $(srcdir)/cacert.pem $(OUINET_OUTPUT_DIR)/cacert.pem
