@@ -110,10 +110,6 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("ouinet-client.conf");
         break;
-      case "saved-conf":
-        this.file = OuinetFile.ouinetDataDir;
-        this.file.append("ouinet-client.saved.conf");
-        break;
       case "cacert":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("ssl-ca-cert.pem");
