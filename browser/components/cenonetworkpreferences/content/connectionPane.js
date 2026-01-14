@@ -34,6 +34,7 @@ class ConnectionPane {
     logging: "moz-toggle#ouinet-logging",
     logfile: "a#ouinet-logfile",
     metrics: "moz-toggle#ouinet-metrics",
+    doh: "moz-toggle#ouinet-doh",
 
     local_cache_size: "span#local-cache-size",
     clear_cache_button: "button#clear-cache-button",
@@ -68,6 +69,7 @@ class ConnectionPane {
       logging: document.querySelector(this.#selectors.logging),
       logfile: document.querySelector(this.#selectors.logfile),
       metrics: document.querySelector(this.#selectors.metrics),
+      doh: document.querySelector(this.#selectors.doh),
 
       local_cache_size: document.querySelector(this.#selectors.local_cache_size),
       clear_cache_button: document.querySelector(this.#selectors.clear_cache_button),
@@ -123,11 +125,14 @@ class ConnectionPane {
     });
 
     this.#elements.logging.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('logfile', this.#elements.logging.pressed);
+      CenoNetwork.setOuinetConfigValue('logging', this.#elements.logging.pressed);
     });
 
     this.#elements.metrics.addEventListener("toggle", () => {
       CenoNetwork.setOuinetConfigValue('metrics', this.#elements.metrics.pressed);
+    });
+    this.#elements.doh.addEventListener("toggle", () => {
+      CenoNetwork.setOuinetConfigValue('doh', this.#elements.doh.pressed);
     });
   }
 
@@ -198,15 +203,17 @@ class ConnectionPane {
     }
 
     this.#set_toggle(this.#elements.logging, state.logging);
-    if (state.logfile) {
-      this.#elements.logfile.href = 'file://' + state.logfile;
+    if (state.logging) {
+      this.#elements.logfile.href = 'file://' + state.logging;
       this.#elements.logfile.innerHTML = 'log.txt';
       this.#elements.logfile.removeAttribute('hidden');
     } else {
       this.#elements.logfile.hidden = 'true';
     }
     this.#set_toggle(this.#elements.metrics, state.metrics);
+    this.#set_toggle(this.#elements.doh, state.doh);
 
+    // @TODO: cache size unknown
     this.#elements.clear_cache_button.hidden = state.local_cache_size === undefined;
     this.#elements.local_cache_size.textContent = this.#calculateSize(state.local_cache_size);
 
