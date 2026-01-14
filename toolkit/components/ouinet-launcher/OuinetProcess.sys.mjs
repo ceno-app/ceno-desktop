@@ -2,13 +2,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 import { Subprocess } from "resource://gre/modules/Subprocess.sys.mjs";
+import { OuinetPrefs } from "../../modules/CenoNetwork.sys.mjs";
 
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   OuinetLauncherUtil: "resource://gre/modules/OuinetLauncherUtil.sys.mjs",
+});
+ChromeUtils.defineESModuleGetters(lazy, {
+  OuinetPrefs: "resource://gre/modules/CenoNetwork.sys.mjs",
 });
 
 const Prefs = Object.freeze({
@@ -45,6 +48,13 @@ export class OuinetProcess {
   #injectorTlsCertFile = null;
   #tlsCaCertStorePath = null;
 
+  #metricsServerUrl = "https://endpoint-dev.ouinet.work/.well-known/endpoint";
+  #metricsServerCaCertFile = null;
+  #metricsEncryptionKey = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
+-----END PUBLIC KEY-----`;
+  #metricsServerToken = "CcmPTtdB5unF8q74AlGf1XMHYuo9opst";
+
   async start(credentials) {
     this.#makeArgs(credentials);
 
@@ -79,6 +89,7 @@ export class OuinetProcess {
     this.#dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
     this.#injectorTlsCertFile = lazy.OuinetLauncherUtil.getOuinetFile("injcert", false);
     this.#tlsCaCertStorePath = lazy.OuinetLauncherUtil.getOuinetFile("mozcert", false);
+    this.#metricsServerCaCertFile = lazy.OuinetLauncherUtil.getOuinetFile("metrics-server-cacert", false);
     // Create empty ouinet-client.conf file, required to start ouinet
     lazy.OuinetLauncherUtil.getOuinetFile("conf", true);
 
@@ -95,5 +106,13 @@ export class OuinetProcess {
     this.#args.push("--front-end-unix-socket-ep", lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false).path);
     this.#args.push("--front-end-ep", '127.0.0.1:0');
     this.#args.push("--front-end-access-token", credentials.frontend_token)
+
+    if (Services.prefs.getBoolPref(lazy.OuinetPrefs.metrics, false)) {
+      this.#args.push("--metrics-enable-on-start");
+    }
+    this.#args.push("--metrics-server-url", this.#metricsServerUrl);
+    this.#args.push("--metrics-server-cacert-file", this.#metricsServerCaCertFile.path);
+    this.#args.push("--metrics-encryption-key", this.#metricsEncryptionKey);
+    this.#args.push("--metrics-server-token", this.#metricsServerToken);
   }
 }
