@@ -11,6 +11,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
   OuinetProcessMonitor: "resource://gre/modules/OuinetProcessMonitor.sys.mjs",
   OuinetProcessTerminator: "resource://gre/modules/OuinetProcessTerminator.sys.mjs",
+  getValuesFromConfig: "resource://gre/modules/OuinetSavedConfig.sys.mjs",
+  setValueInConfig: "resource://gre/modules/OuinetSavedConfig.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
@@ -31,6 +33,11 @@ const CenoNetworkPrefs = Object.freeze({
 
   proxy_password: "ceno.network.proxy_password",
   frontend_token: "ceno.network.frontend_token",
+});
+
+// Cannot save this in config file
+export const OuinetPrefs = Object.freeze({
+  metrics: "ceno.network.metrics",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
@@ -203,6 +210,7 @@ class _CenoNetwork {
   }
 
   #sendNotifications() {
+    lazy.logger.debug("Sending notifications", this.#ouinetState);
     Services.obs.notifyObservers(this.CenoNetworkState(), CenoNetworkTopics.StateChange);
     if (
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -257,10 +265,20 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
+  async #getValuesFromConfig() {
+    const values = await lazy.getValuesFromConfig();
+    for (const k in values) {
+      this.#ouinetState[k] = values[k];
+    }
+    this.#sendNotifications();
+  }
+
   // init is called by OuinetStartupService
   async init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
+
+    await this.#getValuesFromConfig()
 
     const pidFile = lazy.OuinetLauncherUtil.getOuinetFile("client-pid-file", false)
     if (pidFile.exists()) {
@@ -429,9 +447,22 @@ class _CenoNetwork {
     }
   }
 
-  async setValueInAPI(element_id, newValue) {
+  async setOuinetConfigValue(element_id, newValue) {
+    lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
+    if (
+      this.#ouinetStage == OuinetStages.Init ||
+      this.#ouinetStage == OuinetStages.Exited ||
+      this.#ouinetStage == OuinetStages.Error
+    ) {
+        await lazy.setValueInConfig(element_id, newValue);
+        this.#getValuesFromConfig();
+    } else {
+      await this.#setValueInAPI(element_id, newValue);
+    }
+  }
+
+  async #setValueInAPI(element_id, newValue) {
     try {
-      lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
       const setValueResult = await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?${element_id}=${newValue ? 'enable' : 'disable'}`);
       if (!setValueResult.ok) {
         lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, setValueResult);
@@ -591,7 +622,6 @@ class _CenoNetwork {
       if (this.#ouinetStage !== OuinetStages.Exited) {
         this.#setOuinetStage(OuinetStages.Init, true);
       }
-      this.#resetOuinetState();
       this.#sendNotifications();
     });
     this.#ouinetProcess = null;
@@ -600,6 +630,7 @@ class _CenoNetwork {
   }
 
   async cancel() {
+    lazy.logger.debug("CenoNetwork.cancel() ", this.#ouinetStage);
     if (
       this.#ouinetStage === OuinetStages.StartingProcess ||
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
@@ -618,7 +649,6 @@ class _CenoNetwork {
     } else {
       lazy.logger.warn("No connection to cancel");
     }
-    this.#resetOuinetState();
     this.#sendNotifications();
   }
 

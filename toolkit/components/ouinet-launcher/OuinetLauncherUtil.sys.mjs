@@ -20,7 +20,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 const Prefs = Object.freeze({
-  log_level: "extensions.ouinetlauncher.log_level",
+  log_level: "ceno.network.log_level",
   prefs_prefix: "extensions.ouinetlauncher",
 });
 
@@ -110,6 +110,10 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("ouinet-client.conf");
         break;
+      case "saved-conf":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("ouinet-client.saved.conf");
+        break;
       case "cacert":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("ssl-ca-cert.pem");
@@ -134,6 +138,10 @@ class OuinetFile {
       case "frontend_unix_socket":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("frontend.socket");
+        break;
+      case "metrics-server-cacert":
+        this.file = OuinetFile.ouinetDir;
+        this.file.append("metrics-server-cacert.pem");
         break;
       default:
         throw new Error("Unknown file type");
