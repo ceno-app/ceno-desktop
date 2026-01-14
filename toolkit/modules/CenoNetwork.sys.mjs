@@ -163,6 +163,7 @@ class _CenoNetwork {
     frontend_get_api_status: '/api/status',
     frontend_set_value: '/',
     frontend_get_endpoints: '/api/endpoints',
+    frontend_metrics_set_key: '/api/metrics/set_key_value',
   }
 
   #ouinetState = {
@@ -180,9 +181,9 @@ class _CenoNetwork {
     upnp: undefined,
     local_udp: undefined,
     public_udp: undefined,
-    // bridge_announcement: undefined,
-    bt_extra_bootstraps: undefined,
   }
+
+  #metricsRecordId = undefined;
 
   CenoNetworkState() {
     let res = structuredClone(this.#ouinetState);
@@ -365,6 +366,7 @@ class _CenoNetwork {
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
     const interval_runtime = 5000;
+    let metricsStarted = false;
     while (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -379,10 +381,9 @@ class _CenoNetwork {
         const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
         if (response.ok) {
           const json = await response.json();
-          if (json.state === 'started') {
-            this.#setOuinetStage(OuinetStages.Connected, false);
-          } else if (json.state === 'degraded') {
-            this.#setOuinetStage(OuinetStages.Degraded, false);
+          if (connectionId !== this.#connectionId) {
+            lazy.logger.debug("Abandoning cancelled connection attempt");
+            return;
           }
 
           this.#ouinetState.origin_access = json.origin_access;
@@ -398,6 +399,17 @@ class _CenoNetwork {
           this.#ouinetState.upnp = json.is_upnp_active;
           this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
           this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
+
+          this.#metricsRecordId = json.current_metrics_record_id;
+
+          if (json.state === 'started' || json.state === 'degraded') {
+            this.#setOuinetStage(json.state === 'started' ? OuinetStages.Connected : OuinetStages.Degraded, false);
+
+            if (!metricsStarted) {
+              this.#metricsLoop();
+              metricsStarted = true;
+            }
+          }
 
           this.#sendNotifications();
         } else {
@@ -427,13 +439,17 @@ class _CenoNetwork {
     if (
       this.#ouinetStage == OuinetStages.Connected ||
       this.#ouinetStage == OuinetStages.Degraded ||
-      this.#ouinetStage == OuinetStages.ConnectingToNetwork
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage == OuinetStages.StartingProcess
     ) {
       if (element_id == "doh") {
         await this.cancel();
         await this.connect();
       } else {
-        while (this.#ouinetStage == OuinetStages.ConnectingToNetwork) {
+        while (
+          this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+          this.#ouinetStage == OuinetStages.StartingProcess
+        ) {
           await new Promise(resolve => setTimeout(() => resolve(), 100));
         }
         if (
@@ -633,6 +649,7 @@ class _CenoNetwork {
         this.#ouinetProcessMonitor.cancel();
       }
       this.#setOuinetStage(OuinetStages.Exited, false);
+      this.#metricsRecordId = undefined;
     } else {
       lazy.logger.warn("No connection to cancel");
     }
@@ -644,6 +661,34 @@ class _CenoNetwork {
       case NETWORK_LINK_TOPIC:
         this.#updateInternetStatus();
         break;
+    }
+  }
+
+  async #metricsLoop() {
+    const osPrefs = Cc["@mozilla.org/intl/ospreferences;1"].getService(Ci.mozIOSPreferences);
+    const systemLocale = osPrefs.systemLocale;
+
+    const connectionId = this.#connectionId;
+    while (
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded
+    ) {
+      if (connectionId != this.#connectionId) {
+        return;
+      }
+
+      if (this.#metricsRecordId === undefined) {
+        await new Promise(resolve => setTimeout(() => resolve(), 1000));
+      } else {
+        const key = "locale";
+        const val = systemLocale;
+        const url = `${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${val}`;
+        const result = await this.#getFromOuinetFrontend(url);
+        lazy.logger.info(result);
+
+        const interval = 1000 * 60 * 60;
+        await new Promise(resolve => setTimeout(() => resolve(), interval));
+      }
     }
   }
 };
