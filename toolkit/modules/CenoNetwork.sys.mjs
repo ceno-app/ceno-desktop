@@ -11,8 +11,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
   OuinetProcessMonitor: "resource://gre/modules/OuinetProcessMonitor.sys.mjs",
   OuinetProcessTerminator: "resource://gre/modules/OuinetProcessTerminator.sys.mjs",
-  getValuesFromConfig: "resource://gre/modules/OuinetSavedConfig.sys.mjs",
-  setValueInConfig: "resource://gre/modules/OuinetSavedConfig.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
@@ -35,9 +33,14 @@ const CenoNetworkPrefs = Object.freeze({
   frontend_token: "ceno.network.frontend_token",
 });
 
-// Cannot save this in config file
-export const OuinetPrefs = Object.freeze({
+const OuinetPrefs = Object.freeze({
+  origin_access: "ceno.network.origin_access",
+  proxy_access: "ceno.network.proxy_access",
+  injector_access: "ceno.network.injector_access",
+  distributed_cache: "ceno.network.distributed_cache",
+  logging: "ceno.network.logging",
   metrics: "ceno.network.metrics",
+  doh: "ceno.network.doh",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
@@ -163,14 +166,15 @@ class _CenoNetwork {
   }
 
   #ouinetState = {
-    origin_access: undefined,
-    proxy_access: undefined,
-    injector_access: undefined,
-    distributed_cache: undefined,
+    origin_access: Services.prefs.getBoolPref(OuinetPrefs.origin_access, true),
+    proxy_access: Services.prefs.getBoolPref(OuinetPrefs.proxy_access, true),
+    injector_access: Services.prefs.getBoolPref(OuinetPrefs.injector_access, true),
+    distributed_cache: Services.prefs.getBoolPref(OuinetPrefs.distributed_cache, true),
 
     local_cache_size: undefined,
-    logging: undefined,
-    metrics: undefined,
+    logging: Services.prefs.getBoolPref(OuinetPrefs.logging, true),
+    metrics: Services.prefs.getBoolPref(OuinetPrefs.metrics, true),
+    doh: Services.prefs.getBoolPref(OuinetPrefs.doh, true),
 
     reachability: undefined,
     upnp: undefined,
@@ -178,21 +182,6 @@ class _CenoNetwork {
     public_udp: undefined,
     // bridge_announcement: undefined,
     bt_extra_bootstraps: undefined,
-  }
-  #resetOuinetState() {
-    this.#ouinetState.origin_access = undefined;
-    this.#ouinetState.proxy_access = undefined;
-    this.#ouinetState.injector_access = undefined;
-    this.#ouinetState.distributed_cache = undefined;
-    this.#ouinetState.local_cache_size = undefined;
-    this.#ouinetState.logging = undefined;
-    this.#ouinetState.metrics = undefined;
-    this.#ouinetState.reachability = undefined;
-    this.#ouinetState.upnp = undefined;
-    this.#ouinetState.local_udp = undefined;
-    this.#ouinetState.public_udp = undefined;
-    // this.#ouinetState.bridge_announcement = undefined;
-    this.#ouinetState.bt_extra_bootstraps = undefined;
   }
 
   CenoNetworkState() {
@@ -245,11 +234,6 @@ class _CenoNetwork {
     }
   }
 
-  #setError(errorName) {
-    this.#ouinetStage = OuinetStages.Error;
-    this.#error = errorName;
-    this.#sendNotifications();
-  }
 
   setQuickstart(isEnabled) {
     isEnabled = Boolean(isEnabled);
@@ -265,20 +249,10 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
-  async #getValuesFromConfig() {
-    const values = await lazy.getValuesFromConfig();
-    for (const k in values) {
-      this.#ouinetState[k] = values[k];
-    }
-    this.#sendNotifications();
-  }
-
   // init is called by OuinetStartupService
   async init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
-
-    await this.#getValuesFromConfig()
 
     const pidFile = lazy.OuinetLauncherUtil.getOuinetFile("client-pid-file", false)
     if (pidFile.exists()) {
@@ -302,7 +276,6 @@ class _CenoNetwork {
           if (this.#ouinetStage !== OuinetStages.Exited) {
             this.#setOuinetStage(OuinetStages.Init, true);
           }
-          this.#resetOuinetState();
           this.#sendNotifications();
         });
 
@@ -412,23 +385,20 @@ class _CenoNetwork {
             this.#setOuinetStage(OuinetStages.Degraded, false);
           }
 
-          this.#ouinetState = {
-            origin_access: json.origin_access,
-            proxy_access: json.proxy_access,
-            injector_access: json.injector_access,
-            distributed_cache: json.distributed_cache,
+          this.#ouinetState.origin_access = json.origin_access;
+          this.#ouinetState.proxy_access = json.proxy_access;
+          this.#ouinetState.injector_access = json.injector_access;
+          this.#ouinetState.distributed_cache = json.distributed_cache;
+          this.#ouinetState.logging = json.logfile;
+          this.#ouinetState.metrics = json.metrics_enabled;
+          this.#ouinetState.doh = json.doh_enabled;
 
-            local_cache_size: json.local_cache_size,
-            logging: json.logfile,
-            metrics: json.metrics_enabled,
+          this.#ouinetState.local_cache_size = json.local_cache_size;
+          this.#ouinetState.reachability = json.udp_world_reachable;
+          this.#ouinetState.upnp = json.is_upnp_active;
+          this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
+          this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
 
-            reachability: json.udp_world_reachable,
-            upnp: json.is_upnp_active,
-            local_udp: json.local_udp_endpoints.join(', '),
-            public_udp: json.public_udp_endpoints.join(', '),
-            // bridge_announcement: json.bridge_announcement,
-            bt_extra_bootstraps: json.bt_extra_bootstraps,
-          };
           this.#sendNotifications();
         } else {
           lazy.logger.error(response);
@@ -449,15 +419,32 @@ class _CenoNetwork {
 
   async setOuinetConfigValue(element_id, newValue) {
     lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
+    if (element_id in OuinetPrefs) {
+      Services.prefs.setBoolPref(OuinetPrefs[element_id], newValue);
+      this.#ouinetState[element_id] = newValue;
+    }
+
     if (
-      this.#ouinetStage == OuinetStages.Init ||
-      this.#ouinetStage == OuinetStages.Exited ||
-      this.#ouinetStage == OuinetStages.Error
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded ||
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork
     ) {
-        await lazy.setValueInConfig(element_id, newValue);
-        this.#getValuesFromConfig();
+      if (element_id == "doh") {
+        await this.cancel();
+        await this.connect();
+      } else {
+        while (this.#ouinetStage == OuinetStages.ConnectingToNetwork) {
+          await new Promise(resolve => setTimeout(() => resolve(), 100));
+        }
+        if (
+          this.#ouinetStage == OuinetStages.Connected ||
+          this.#ouinetStage == OuinetStages.Degraded
+        ) {
+          await this.#setValueInAPI(element_id, newValue);
+        }
+      }
     } else {
-      await this.#setValueInAPI(element_id, newValue);
+      this.#sendNotifications();
     }
   }
 
@@ -553,7 +540,7 @@ class _CenoNetwork {
     Services.prefs.setStringPref(CenoNetworkPrefs.proxy_password, this.#credentials.proxy_password);
 
     this.#ouinetProcess = new lazy.OuinetProcess();
-    await this.#ouinetProcess.start(this.#credentials);
+    await this.#ouinetProcess.start(this.#credentials, this.#ouinetState);
 
     // Connection could be cancelled or restarted during the previous `await`.
     // Do the check after each await
