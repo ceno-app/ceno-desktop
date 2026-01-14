@@ -2,16 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { Subprocess } from "resource://gre/modules/Subprocess.sys.mjs";
-import { OuinetPrefs } from "../../modules/CenoNetwork.sys.mjs";
 
 const lazy = {};
-
 ChromeUtils.defineESModuleGetters(lazy, {
   OuinetLauncherUtil: "resource://gre/modules/OuinetLauncherUtil.sys.mjs",
-});
-ChromeUtils.defineESModuleGetters(lazy, {
-  OuinetPrefs: "resource://gre/modules/CenoNetwork.sys.mjs",
+  Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
 });
 
 const Prefs = Object.freeze({
@@ -55,8 +50,8 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
 -----END PUBLIC KEY-----`;
   #metricsServerToken = "CcmPTtdB5unF8q74AlGf1XMHYuo9opst";
 
-  async start(credentials) {
-    this.#makeArgs(credentials);
+  async start(credentials, config) {
+    this.#makeArgs(credentials, config);
 
     lazy.logger.debug(`Starting ${this.#exeFile.path}`, this.#args.join(' '));
     const options = {
@@ -75,7 +70,7 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
       };
       options.environmentAppend = true;
     }
-    this.#subprocess = await Subprocess.call(options);
+    this.#subprocess = await lazy.Subprocess.call(options);
   }
 
   stop() {
@@ -84,15 +79,15 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
     this.#subprocess = null;
   }
 
-  #makeArgs(credentials) {
+  #makeArgs(credentials, config) {
     this.#exeFile = lazy.OuinetLauncherUtil.getOuinetFile("client", false);
     this.#dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
     this.#injectorTlsCertFile = lazy.OuinetLauncherUtil.getOuinetFile("injcert", false);
     this.#tlsCaCertStorePath = lazy.OuinetLauncherUtil.getOuinetFile("mozcert", false);
     this.#metricsServerCaCertFile = lazy.OuinetLauncherUtil.getOuinetFile("metrics-server-cacert", false);
+
     // Create empty ouinet-client.conf file, required to start ouinet
     lazy.OuinetLauncherUtil.getOuinetFile("conf", true);
-
 
     this.#args = [];
     this.#args.push("--repo", this.#dataDir.path);
@@ -107,12 +102,33 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
     this.#args.push("--front-end-ep", '127.0.0.1:0');
     this.#args.push("--front-end-access-token", credentials.frontend_token)
 
-    if (Services.prefs.getBoolPref(lazy.OuinetPrefs.metrics, false)) {
+    this.#args.push("--drop-saved-opts");
+
+    if (config.metrics) {
       this.#args.push("--metrics-enable-on-start");
     }
     this.#args.push("--metrics-server-url", this.#metricsServerUrl);
     this.#args.push("--metrics-server-cacert-file", this.#metricsServerCaCertFile.path);
     this.#args.push("--metrics-encryption-key", this.#metricsEncryptionKey);
     this.#args.push("--metrics-server-token", this.#metricsServerToken);
+
+    if (config.logging) {
+      this.#args.push("--enable-log-file");
+    }
+    if (!config.doh) {
+      this.#args.push("--disable-doh");
+    }
+    if (!config.origin_access) {
+      this.#args.push("--disable-origin-access");
+    }
+    if (!config.proxy_access) {
+      this.#args.push("--disable-proxy-access");
+    }
+    if (!config.injector_access) {
+      this.#args.push("--disable-injector-access");
+    }
+    if (!config.distributed_cache) {
+      this.#args.push("--disable-cache-access");
+    }
   }
 }
