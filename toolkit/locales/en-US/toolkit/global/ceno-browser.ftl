@@ -52,6 +52,11 @@ ceno-browser-ouinet-preferences-headless-description = Your Ceno application can
 ceno-browser-ouinet-preferences-headless-checkbox =
     .label = Keep Ceno Network Service running
 
+ceno-browser-ouinet-preferences-doh-heading = DNS over HTTPS
+ceno-browser-ouinet-preferences-doh-description = DNS over HTTPS may be blocked in some areas. Disable to use unencrypted DNS services. Changing this setting requires reconnection to Ceno Network.
+ceno-browser-ouinet-preferences-doh-checkbox =
+    .label = Use DNS over HTTPS
+
 ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
 ceno-browser-ouinet-preferences-sources-origin-access =
     .label = (Origin access) Direct from website
