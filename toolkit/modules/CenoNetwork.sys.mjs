@@ -183,6 +183,7 @@ class _CenoNetwork {
     public_udp: undefined,
   }
 
+  #metricsRegion = undefined;
   #metricsRecordId = undefined;
 
   CenoNetworkState() {
@@ -254,6 +255,10 @@ class _CenoNetwork {
   async init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
+
+    const locale = Cc["@mozilla.org/intl/ospreferences;1"]
+      .getService(Ci.mozIOSPreferences).systemLocale.split('-');
+    this.#metricsRegion = locale[locale.length - 1];
 
     const pidFile = lazy.OuinetLauncherUtil.getOuinetFile("client-pid-file", false)
     if (pidFile.exists()) {
@@ -366,7 +371,6 @@ class _CenoNetwork {
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
     const interval_runtime = 5000;
-    let metricsStarted = false;
     while (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -400,18 +404,21 @@ class _CenoNetwork {
           this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
           this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
 
-          this.#metricsRecordId = json.current_metrics_record_id;
-
-          if (json.state === 'started' || json.state === 'degraded') {
-            this.#setOuinetStage(json.state === 'started' ? OuinetStages.Connected : OuinetStages.Degraded, false);
-
-            if (!metricsStarted) {
-              this.#metricsLoop();
-              metricsStarted = true;
-            }
+          if (json.state === 'started') {
+            this.#setOuinetStage(OuinetStages.Connected, false);
           }
-
+          else if (json.state === 'degraded') {
+            this.#setOuinetStage(OuinetStages.Degraded, false);
+          }
           this.#sendNotifications();
+
+          if (this.#metricsRecordId == json.current_metrics_record_id) {
+            this.#metricsRecordId == json.current_metrics_record_id
+
+            const url = `${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=region&value=${this.#metricsRegion}`;
+            const result = await this.#getFromOuinetFrontend(url);
+            lazy.logger.info(result);
+          }
         } else {
           lazy.logger.error(response);
         }
@@ -661,34 +668,6 @@ class _CenoNetwork {
       case NETWORK_LINK_TOPIC:
         this.#updateInternetStatus();
         break;
-    }
-  }
-
-  async #metricsLoop() {
-    const osPrefs = Cc["@mozilla.org/intl/ospreferences;1"].getService(Ci.mozIOSPreferences);
-    const systemLocale = osPrefs.systemLocale;
-
-    const connectionId = this.#connectionId;
-    while (
-      this.#ouinetStage == OuinetStages.Connected ||
-      this.#ouinetStage == OuinetStages.Degraded
-    ) {
-      if (connectionId != this.#connectionId) {
-        return;
-      }
-
-      if (this.#metricsRecordId === undefined) {
-        await new Promise(resolve => setTimeout(() => resolve(), 1000));
-      } else {
-        const key = "locale";
-        const val = systemLocale;
-        const url = `${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${val}`;
-        const result = await this.#getFromOuinetFrontend(url);
-        lazy.logger.info(result);
-
-        const interval = 1000 * 60 * 60;
-        await new Promise(resolve => setTimeout(() => resolve(), interval));
-      }
     }
   }
 };
