@@ -98,7 +98,7 @@ class ConnectionPane {
       CenoNetwork.cancel();
     })
     this.#elements.clear_cache_button.addEventListener("click", () => {
-      CenoNetwork.setValueInAPI('purge_cache', 'Purge cache now');
+      CenoNetwork.setOuinetConfigValue('purge_cache', 'Purge cache now');
     })
 
     this.#elements.ouinet_quickstart_toggle.addEventListener("toggle", () => {
@@ -110,24 +110,24 @@ class ConnectionPane {
     });
 
     this.#elements.sources.origin_access.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('origin_access', this.#elements.sources.origin_access.pressed);
+      CenoNetwork.setOuinetConfigValue('origin_access', this.#elements.sources.origin_access.pressed);
     });
     this.#elements.sources.proxy_access.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('proxy_access', this.#elements.sources.proxy_access.pressed);
+      CenoNetwork.setOuinetConfigValue('proxy_access', this.#elements.sources.proxy_access.pressed);
     });
     this.#elements.sources.injector_access.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('injector_access', this.#elements.sources.injector_access.pressed);
+      CenoNetwork.setOuinetConfigValue('injector_access', this.#elements.sources.injector_access.pressed);
     });
     this.#elements.sources.distributed_cache.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('distributed_cache', this.#elements.sources.distributed_cache.pressed);
+      CenoNetwork.setOuinetConfigValue('distributed_cache', this.#elements.sources.distributed_cache.pressed);
     });
 
     this.#elements.logging.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('logfile', this.#elements.logging.pressed);
+      CenoNetwork.setOuinetConfigValue('logfile', this.#elements.logging.pressed);
     });
 
     this.#elements.metrics.addEventListener("toggle", () => {
-      CenoNetwork.setValueInAPI('metrics', this.#elements.metrics.pressed);
+      CenoNetwork.setOuinetConfigValue('metrics', this.#elements.metrics.pressed);
     });
   }
 
