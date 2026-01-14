@@ -412,8 +412,8 @@ class _CenoNetwork {
           }
           this.#sendNotifications();
 
-          if (this.#metricsRecordId == json.current_metrics_record_id) {
-            this.#metricsRecordId == json.current_metrics_record_id
+          if (this.#metricsRecordId != json.current_metrics_record_id) {
+            this.#metricsRecordId = json.current_metrics_record_id;
 
             const url = `${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=region&value=${this.#metricsRegion}`;
             const result = await this.#getFromOuinetFrontend(url);
