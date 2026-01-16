@@ -168,6 +168,7 @@
 @BINPATH@/Ouinet/cacert.pem
 @BINPATH@/Ouinet/client@BIN_SUFFIX@
 @BINPATH@/Ouinet/ssl-inj-cert.pem
+@BINPATH@/Ouinet/metrics-server-cacert.pem
 @BINPATH@/Ouinet/lib*@DLL_SUFFIX@
 @BINPATH@/Ouinet/lib*@DLL_SUFFIX@.a
 @BINPATH@/Ouinet/zlib*@DLL_SUFFIX@
