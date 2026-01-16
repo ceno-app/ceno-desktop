@@ -688,10 +688,25 @@ class _CenoNetwork {
   }
 
   async newIdentity() {
-    await this.cancel();
-    const repo = lazy.OuinetLauncherUtil.getOuinetFile("repo");
-    if (repo.exists()) {
-      repo.remove(true);
+    while (
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage == OuinetStages.StartingProcess
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded
+    ) {
+      this.#extensionOnDisconnect();
+      await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?purge_cache=do`);
+      this.#extensionOnConnect();
+    } else {
+      const bep5_http = lazy.OuinetLauncherUtil.getOuinetFile("bep5_http");
+      if (bep5_http.exists()) {
+        bep5_http.remove(true);
+      }
     }
   }
 
