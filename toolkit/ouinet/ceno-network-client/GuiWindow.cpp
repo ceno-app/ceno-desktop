@@ -172,6 +172,7 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, 
     case exitOuinetMessage:
         ouinet_client_stop();
         break;
+    case WM_CLOSE:
     case exitRequestMessage:
         DestroyWindow(hWnd);
         break;
