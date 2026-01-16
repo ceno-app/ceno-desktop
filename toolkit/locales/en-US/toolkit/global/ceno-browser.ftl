@@ -5,6 +5,7 @@ ceno-browser-about-ceno-home-description-2 = You can easily toggle between them 
 ceno-browser-about-ceno-home-description-3 = Public mode offers the best connectivity but the least privacy - websites that you visit or share are recorded in a publicly-accessible registry (BitTorrent).
 ceno-browser-about-ceno-home-description-4 = Personal mode eliminates this record but may be slower and less efficient at retrieving content.
 ceno-browser-about-ceno-home-description-5 = See the <a data-l10n-name="faq">FAQ</a> for more details on Ceno usage.
+ceno-browser-about-ceno-home-description-6 = We're launching a privacy respecting metrics system to help us better understand Ceno users' needs. You can review the details of what we'll collect and how we handle your data in our <a data-l10n-name="privacypolicy">Privacy Policy</a>. You can also opt out at any time via Settings > Connection > Ceno metrics.
 
 ceno-browser-about-ceno-home-quickstart-toggle = Always connect automatically
 
