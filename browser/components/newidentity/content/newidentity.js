@@ -1,5 +1,9 @@
 "use strict";
 
+ChromeUtils.defineESModuleGetters(lazy, {
+  CenoNetwork: "resource://gre/modules/CenoNetwork.sys.mjs",
+});
+
 // Use a lazy getter because NewIdentityButton is declared more than once
 // otherwise.
 ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
@@ -100,7 +104,7 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
       await this.reloadAddons();
       this.clearConnections();
       this.clearPrivateSession();
-      await this.clearOuinetCache();
+      await lazy.CenoNetwork.newIdentity();
     }
 
     clearSiteSpecificZoom() {
@@ -365,12 +369,6 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
     clearPrivateSession() {
       logger.info("Ending any remaining private browsing sessions.");
       Services.obs.notifyObservers(null, "last-pb-context-exited");
-    }
-
-    async clearOuinetCache() {
-      logger.info("Clearing Ouinet cache");
-      // TODO: Get Ouinet API endpoint from client/extension, instead of hardcoding
-      await fetch("http://127.0.0.1:8078/?purge_cache=do")
     }
 
     async reloadAddons() {
