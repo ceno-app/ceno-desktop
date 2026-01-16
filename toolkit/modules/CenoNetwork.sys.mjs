@@ -183,7 +183,8 @@ class _CenoNetwork {
     public_udp: undefined,
   }
 
-  #metricsRegion = undefined;
+  #metricsRegion = Services.MetricsGeoTimezone.region;
+  #metricsTimezone = Services.MetricsGeoTimezone.timezone;
   #metricsRecordId = undefined;
 
   CenoNetworkState() {
@@ -201,7 +202,7 @@ class _CenoNetwork {
   }
 
   #sendNotifications() {
-    lazy.logger.debug("Sending notifications", this.#ouinetState);
+    lazy.logger.debug("Sending notifications", this.#ouinetStage, this.#ouinetState);
     Services.obs.notifyObservers(this.CenoNetworkState(), CenoNetworkTopics.StateChange);
     if (
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -255,10 +256,6 @@ class _CenoNetwork {
   async init() {
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     this.#updateInternetStatus();
-
-    const locale = Cc["@mozilla.org/intl/ospreferences;1"]
-      .getService(Ci.mozIOSPreferences).systemLocale.split('-');
-    this.#metricsRegion = locale[locale.length - 1];
 
     const pidFile = lazy.OuinetLauncherUtil.getOuinetFile("client-pid-file", false)
     if (pidFile.exists()) {
@@ -325,8 +322,12 @@ class _CenoNetwork {
     const header_and_body = response.split("\r\n\r\n", 2);
     const header = header_and_body[0].split("\r\n");
 
+    const isOk = header[0].includes('200');
+    if (!isOk) {
+      throw new Error("Frontend request failed: ", header_and_body);
+    }
     return {
-      ok: header[0].includes('200'),
+      ok: isOk,
       header: header,
       body: header_and_body.length === 2 ? header_and_body[1] : null,
       json: async function() {
@@ -338,14 +339,10 @@ class _CenoNetwork {
   async #getApiEndpoints() {
     try {
       const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
-      if (response.ok) {
-        const json = await response.json();
-        this.#endpoints.proxy = json.proxy_endpoint;
-        this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
-        return true;
-      } else {
-        lazy.logger.error(response);
-      }
+      const json = await response.json();
+      this.#endpoints.proxy = json.proxy_endpoint;
+      this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
+      return true;
     } catch (e) {
       lazy.logger.info('Failed to get ouinet endpoints', e);
     }
@@ -368,6 +365,7 @@ class _CenoNetwork {
       clearTimeout(this.#apiPollTimeoutResolveData.timeout);
     }
   }
+
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
     const interval_runtime = 5000;
@@ -383,44 +381,38 @@ class _CenoNetwork {
 
       try {
         const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
-        if (response.ok) {
-          const json = await response.json();
-          if (connectionId !== this.#connectionId) {
-            lazy.logger.debug("Abandoning cancelled connection attempt");
-            return;
-          }
+        const json = await response.json();
+        if (connectionId !== this.#connectionId) {
+          lazy.logger.debug("Abandoning cancelled connection attempt");
+          return;
+        }
 
-          this.#ouinetState.origin_access = json.origin_access;
-          this.#ouinetState.proxy_access = json.proxy_access;
-          this.#ouinetState.injector_access = json.injector_access;
-          this.#ouinetState.distributed_cache = json.distributed_cache;
-          this.#ouinetState.logging = json.logfile;
-          this.#ouinetState.metrics = json.metrics_enabled;
-          this.#ouinetState.doh = json.doh_enabled;
+        this.#ouinetState.origin_access = json.origin_access;
+        this.#ouinetState.proxy_access = json.proxy_access;
+        this.#ouinetState.injector_access = json.injector_access;
+        this.#ouinetState.distributed_cache = json.distributed_cache;
+        this.#ouinetState.logging = json.logfile;
+        this.#ouinetState.metrics = json.metrics_enabled;
+        this.#ouinetState.doh = json.doh_enabled;
 
-          this.#ouinetState.local_cache_size = json.local_cache_size;
-          this.#ouinetState.reachability = json.udp_world_reachable;
-          this.#ouinetState.upnp = json.is_upnp_active;
-          this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
-          this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
+        this.#ouinetState.local_cache_size = json.local_cache_size;
+        this.#ouinetState.reachability = json.udp_world_reachable;
+        this.#ouinetState.upnp = json.is_upnp_active;
+        this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
+        this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
 
-          if (json.state === 'started') {
-            this.#setOuinetStage(OuinetStages.Connected, false);
-          }
-          else if (json.state === 'degraded') {
-            this.#setOuinetStage(OuinetStages.Degraded, false);
-          }
-          this.#sendNotifications();
+        if (json.state === 'started') {
+          this.#setOuinetStage(OuinetStages.Connected, false);
+        }
+        else if (json.state === 'degraded') {
+          this.#setOuinetStage(OuinetStages.Degraded, false);
+        }
+        this.#sendNotifications();
 
-          if (this.#metricsRecordId != json.current_metrics_record_id) {
-            this.#metricsRecordId = json.current_metrics_record_id;
-
-            const url = `${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=region&value=${this.#metricsRegion}`;
-            const result = await this.#getFromOuinetFrontend(url);
-            lazy.logger.info(result);
-          }
-        } else {
-          lazy.logger.error(response);
+        if (this.#metricsRecordId != json.current_metrics_record_id && json.metrics_enabled) {
+          this.#metricsRecordId = json.current_metrics_record_id;
+          await this.#sendMetrics('network_country', this.#metricsRegion);
+          await this.#sendMetrics('timezone', this.#metricsTimezone);
         }
       } catch (e) {
         lazy.logger.error('Failed to get ouinet API status', e);
@@ -433,6 +425,16 @@ class _CenoNetwork {
         this.#apiPollTimeoutResolveData.resolver = resolve;
         this.#apiPollTimeoutResolveData.timeout = setTimeout(() => this.#apiPollTimeoutResolver(), poll_interval);
       });
+    }
+  }
+
+  async #sendMetrics(key, value) {
+    try {
+      value = encodeURIComponent(value);
+      lazy.logger.debug(`Sending metrics '${key}'='${value}'`);
+      await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${value}`);
+    } catch (e) {
+      lazy.logger.error('Failed to send metrics', e);
     }
   }
 
@@ -473,10 +475,7 @@ class _CenoNetwork {
 
   async #setValueInAPI(element_id, newValue) {
     try {
-      const setValueResult = await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?${element_id}=${newValue ? 'enable' : 'disable'}`);
-      if (!setValueResult.ok) {
-        lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, setValueResult);
-      }
+      await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?${element_id}=${newValue ? 'enable' : 'disable'}`);
       this.#apiPollTimeoutResolver();
     } catch (e) {
         lazy.logger.error(`Failed to set ${element_id}=${newValue ? 'enable' : 'disable'} in Ouinet API`, e);

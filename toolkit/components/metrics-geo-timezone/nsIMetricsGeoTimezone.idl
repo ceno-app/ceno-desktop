@@ -1,0 +1,14 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// This is the base include which defines nsISupports. This class defines
+// the QueryInterface method.
+#include "nsISupports.idl"
+
+// `scriptable` designates that this object will be used with JavaScript
+[scriptable, uuid(5ad3ef67-af51-4a67-9756-ca37388db374)]
+interface nsIMetricsGeoTimezone : nsISupports {
+  readonly attribute AString region;
+  readonly attribute AString timezone;
+};
