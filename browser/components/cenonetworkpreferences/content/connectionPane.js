@@ -100,7 +100,7 @@ class ConnectionPane {
       CenoNetwork.cancel();
     })
     this.#elements.clear_cache_button.addEventListener("click", () => {
-      CenoNetwork.setOuinetConfigValue('purge_cache', 'Purge cache now');
+      CenoNetwork.purgeOuinetCache();
     })
 
     this.#elements.ouinet_quickstart_toggle.addEventListener("toggle", () => {
@@ -215,7 +215,7 @@ class ConnectionPane {
 
     // @TODO: cache size unknown
     this.#elements.clear_cache_button.hidden = state.local_cache_size === undefined;
-    this.#elements.local_cache_size.textContent = this.#calculateSize(state.local_cache_size);
+    this.#elements.local_cache_size.textContent = state.local_cache_size === undefined ? "???" : this.#calculateSize(state.local_cache_size);
 
     this.#elements.reachability.textContent = state.reachability;
     this.#elements.upnp.textContent = state.upnp;
