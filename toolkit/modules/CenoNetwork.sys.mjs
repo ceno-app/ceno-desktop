@@ -662,6 +662,14 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
+  async newIdentity() {
+    await this.cancel();
+    const repo = lazy.OuinetLauncherUtil.getOuinetFile("repo");
+    if (repo.exists()) {
+      repo.remove(true);
+    }
+  }
+
   async observe(_subject, topic) {
     switch (topic) {
       case NETWORK_LINK_TOPIC:
