@@ -135,6 +135,10 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("frontend.socket");
         break;
+      case "bep5_http":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("bep5_http");
+        break;
       case "metrics-server-cacert":
         this.file = OuinetFile.ouinetDir;
         this.file.append("metrics-server-cacert.pem");
