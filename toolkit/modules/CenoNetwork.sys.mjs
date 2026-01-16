@@ -445,31 +445,38 @@ class _CenoNetwork {
       this.#ouinetState[element_id] = newValue;
     }
 
-    if (
-      this.#ouinetStage == OuinetStages.Connected ||
-      this.#ouinetStage == OuinetStages.Degraded ||
+    while (
       this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage == OuinetStages.StartingProcess
     ) {
-      if (element_id == "doh") {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (element_id == "doh") {
+      if (
+        this.#ouinetStage == OuinetStages.Connected ||
+        this.#ouinetStage == OuinetStages.Degraded ||
+        this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+        this.#ouinetStage == OuinetStages.StartingProcess
+      ) {
         await this.cancel();
         await this.connect();
-      } else {
-        while (
-          this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-          this.#ouinetStage == OuinetStages.StartingProcess
-        ) {
-          await new Promise(resolve => setTimeout(() => resolve(), 100));
-        }
-        if (
-          this.#ouinetStage == OuinetStages.Connected ||
-          this.#ouinetStage == OuinetStages.Degraded
-        ) {
-          await this.#setValueInAPI(element_id, newValue);
-        }
       }
-    } else {
-      this.#sendNotifications();
+      return;
+    }
+
+    while (
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage == OuinetStages.StartingProcess
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded
+    ) {
+      await this.#setValueInAPI(element_id, newValue);
     }
   }
 
@@ -660,6 +667,24 @@ class _CenoNetwork {
       lazy.logger.warn("No connection to cancel");
     }
     this.#sendNotifications();
+  }
+
+  async purgeOuinetCache() {
+    lazy.logger.debug("Purging Ouinet cache");
+
+    while (
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage == OuinetStages.StartingProcess
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded
+    ) {
+      await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?purge_cache=do`);
+      this.#apiPollTimeoutResolver();
+    }
   }
 
   async newIdentity() {
