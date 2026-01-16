@@ -13,9 +13,6 @@ BOOL CALLBACK EnumWindowsCallback(HWND hwnd, const LPARAM processId) {
     DWORD windowProcessId;
     GetWindowThreadProcessId(hwnd, &windowProcessId);
 
-    wchar_t buffer[256] = {L'\0'};
-    GetClassName(hwnd, buffer, 256);
-    std::wcout << windowProcessId << L": " << buffer << std::endl;
     if (processId == windowProcessId) {
         g_networkClientWindowHandle = hwnd;
         return FALSE;
