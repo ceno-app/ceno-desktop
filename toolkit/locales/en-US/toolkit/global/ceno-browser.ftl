@@ -6,6 +6,7 @@ ceno-browser-about-ceno-home-description-3 = Public mode offers the best connect
 ceno-browser-about-ceno-home-description-4 = Personal mode eliminates this record but may be slower and less efficient at retrieving content.
 ceno-browser-about-ceno-home-description-5 = See the <a data-l10n-name="faq">FAQ</a> for more details on Ceno usage.
 ceno-browser-about-ceno-home-description-6 = We're launching a privacy respecting metrics system to help us better understand Ceno users' needs. You can review the details of what we'll collect and how we handle your data in our <a data-l10n-name="privacypolicy">Privacy Policy</a>. You can also opt out at any time via <a data-l10n-name="connectionpreferences">Settings > Connection > Background metrics</a>.
+ceno-browser-about-ceno-home-description-7 = Thanks for growing the network! By default, your installation of Ceno for Windows is acting as bridge. By being a bridge, you make the Ceno network stronger and help other Ceno users connect. Note that this will make your public IP address visible to other Ceno users. You can disable Bridge Mode by going to <a data-l10n-name="connectionpreferences">Settings > Connection > Bridge Mode</a> or learn more about <a data-l10n-name="bridgerisks">risks for bridge operators</a> in our FAQ.
 
 ceno-browser-about-ceno-home-quickstart-toggle = Always connect automatically
 
@@ -48,9 +49,14 @@ ceno-browser-ouinet-preferences-quickstart-checkbox =
     .label = Always connect automatically
 
 ceno-browser-ouinet-preferences-headless-heading = Ceno Network Service
-ceno-browser-ouinet-preferences-headless-description = Your Ceno application can act as a bridge for other Ceno users and also keep your distributed cache available
+ceno-browser-ouinet-preferences-headless-description = Your Ceno application can act as a bridge for other Ceno users and also keep your distributed cache available.
 ceno-browser-ouinet-preferences-headless-checkbox =
     .label = Keep Ceno Network Service running
+
+ceno-browser-ouinet-preferences-bridge-heading = Bridge Mode
+ceno-browser-ouinet-preferences-bridge-description = By being a bridge, you make the Ceno network stronger and help other Ceno users connect. Note that this will make your public IP address visible to other Ceno users. Changing this setting requires reconnection to Ceno Network.
+ceno-browser-ouinet-preferences-bridge-checkbox =
+    .label = Enable bridge mode
 
 ceno-browser-ouinet-preferences-doh-heading = DNS over HTTPS
 ceno-browser-ouinet-preferences-doh-description = DNS over HTTPS may be blocked in some areas. Disable to use unencrypted DNS services. Changing this setting requires reconnection to Ceno Network.
