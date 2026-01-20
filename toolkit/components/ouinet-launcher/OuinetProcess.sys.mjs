@@ -113,6 +113,9 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
     if (!config.doh) {
       this.#args.push("--disable-doh");
     }
+    if (!config.bridge) {
+      this.#args.push("--disable-bridge-announcement");
+    }
     if (!config.origin_access) {
       this.#args.push("--disable-origin-access");
     }
