@@ -272,15 +272,7 @@ class _CenoNetwork {
           }
           this.#ouinetProcessMonitor = null;
           if (this.#ouinetStage !== OuinetStages.Exited) {
-            if (this.#ouinetStage !== OuinetStages.ConnectingToNetwork) {
-              if (this.#ouinetState.logging) {
-                this.#setError(CenoNetworkErrors.FailedToStart);
-              } else {
-                this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
-              }
-            } else {
-              this.#setOuinetStage(OuinetStages.Init, true);
-            }
+            this.#setOuinetStage(OuinetStages.Init, true);
           }
           this.#sendNotifications();
         });
@@ -645,15 +637,7 @@ class _CenoNetwork {
       }
       this.#ouinetProcessMonitor = null;
       if (this.#ouinetStage !== OuinetStages.Exited) {
-        if (this.#ouinetStage !== OuinetStages.ConnectingToNetwork) {
-          if (this.#ouinetState.logging) {
-            this.#setError(CenoNetworkErrors.FailedToStart);
-          } else {
-            this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
-          }
-        } else {
-          this.#setOuinetStage(OuinetStages.Init, true);
-        }
+        this.#setOuinetStage(OuinetStages.Init, true);
       }
       this.#sendNotifications();
     });
