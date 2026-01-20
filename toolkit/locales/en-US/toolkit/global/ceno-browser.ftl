@@ -5,7 +5,7 @@ ceno-browser-about-ceno-home-description-2 = You can easily toggle between them 
 ceno-browser-about-ceno-home-description-3 = Public mode offers the best connectivity but the least privacy - websites that you visit or share are recorded in a publicly-accessible registry (BitTorrent).
 ceno-browser-about-ceno-home-description-4 = Personal mode eliminates this record but may be slower and less efficient at retrieving content.
 ceno-browser-about-ceno-home-description-5 = See the <a data-l10n-name="faq">FAQ</a> for more details on Ceno usage.
-ceno-browser-about-ceno-home-description-6 = We're launching a privacy respecting metrics system to help us better understand Ceno users' needs. You can review the details of what we'll collect and how we handle your data in our <a data-l10n-name="privacypolicy">Privacy Policy</a>. You can also opt out at any time via Settings > Connection > Ceno metrics.
+ceno-browser-about-ceno-home-description-6 = We're launching a privacy respecting metrics system to help us better understand Ceno users' needs. You can review the details of what we'll collect and how we handle your data in our <a data-l10n-name="privacypolicy">Privacy Policy</a>. You can also opt out at any time via <a data-l10n-name="connectionpreferences">Settings > Connection > Background metrics</a>.
 
 ceno-browser-about-ceno-home-quickstart-toggle = Always connect automatically
 
@@ -14,10 +14,9 @@ ceno-browser-about-ceno-home-connect-button = Connect
 ceno-browser-about-ceno-home-disconnect-button = Disconnect
 
 ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
-
-ceno-browser-about-ceno-home-error-missing-ouinet-binary = Program Integrity Error: Ceno Network client.exe missing. Program reinstall may solve this.
-ceno-browser-about-ceno-home-error-missing-ouinet-data-dir = Program Integrity Error: Ceno Network client data directory is missing. Program reinstall may solve this.
-ceno-browser-about-ceno-home-error-ouinet-startup = Ceno Network client startup error
+ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile" id="showlogfile-orig">Show logfile</a>.
+ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
+ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Logging and Retry
 
 ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
 ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network

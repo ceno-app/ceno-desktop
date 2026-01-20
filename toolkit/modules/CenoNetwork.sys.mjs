@@ -52,20 +52,9 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () =>
 
 // Keep CenoNetworkErrors in sync with aboutCenoHome.js
 export const CenoNetworkErrors = Object.freeze({
-  MissingOuinetBinary: "MissingOuinetBinary",
-  MissingDataDir: "MissingDataDir",
-  OuinetStartupError: "OuinetStartupError",
+  FailedToStart: "FailedToStart",
+  FailedToStartSuggestLogging: "FailedToStartSuggestLogging",
 });
-export function CenoNetworkErrorToL10n(error) {
-  switch (error) {
-    case CenoNetworkErrors.MissingOuinetBinary:
-      return "ceno-browser-about-ceno-home-error-missing-ouinet-binary";
-    case MissingDataDir:
-      return "ceno-browser-about-ceno-home-error-missing-ouinet-data-dir";
-    case OuinetStartupError:
-      return "ceno-browser-about-ceno-home-error-ouinet-startup";
-  }
-}
 
 export const InternetStatus = Object.freeze({
   Unknown: -1,
@@ -237,6 +226,11 @@ class _CenoNetwork {
     }
   }
 
+  #setError(errorName) {
+    this.#ouinetStage = OuinetStages.Error;
+    this.#error = errorName;
+    this.#sendNotifications();
+  }
 
   setQuickstart(isEnabled) {
     isEnabled = Boolean(isEnabled);
@@ -277,7 +271,15 @@ class _CenoNetwork {
           }
           this.#ouinetProcessMonitor = null;
           if (this.#ouinetStage !== OuinetStages.Exited) {
-            this.#setOuinetStage(OuinetStages.Init, true);
+            if (this.#ouinetStage !== OuinetStages.ConnectingToNetwork) {
+              if (this.#ouinetState.logging) {
+                this.#setError(CenoNetworkErrors.FailedToStart);
+              } else {
+                this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
+              }
+            } else {
+              this.#setOuinetStage(OuinetStages.Init, true);
+            }
           }
           this.#sendNotifications();
         });
@@ -625,7 +627,11 @@ class _CenoNetwork {
 
     if (!didGetApiEndpoints) {
       await this.cancel();
-      lazy.logger.error("Connection attempt timed out");
+      if (this.#ouinetState.logging) {
+        this.#setError(CenoNetworkErrors.FailedToStart);
+      } else {
+        this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
+      }
       return;
     }
 
@@ -635,8 +641,17 @@ class _CenoNetwork {
         lazy.logger.debug("Abandoning cancelled connection attempt");
         return;
       }
+      this.#ouinetProcessMonitor = null;
       if (this.#ouinetStage !== OuinetStages.Exited) {
-        this.#setOuinetStage(OuinetStages.Init, true);
+        if (this.#ouinetStage !== OuinetStages.ConnectingToNetwork) {
+          if (this.#ouinetState.logging) {
+            this.#setError(CenoNetworkErrors.FailedToStart);
+          } else {
+            this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
+          }
+        } else {
+          this.#setOuinetStage(OuinetStages.Init, true);
+        }
       }
       this.#sendNotifications();
     });
@@ -716,6 +731,23 @@ class _CenoNetwork {
         this.#updateInternetStatus();
         break;
     }
+  }
+
+  showLogFile() {
+    lazy.logger.error("showLogFile");
+    Services.wm.getMostRecentWindow("navigator:browser").gBrowser.addTab(
+      "file://" + lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path,
+      {
+        inBackground: false,
+        triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+      }
+    );
+  }
+
+  enableLoggingAndReconnect() {
+    this.#ouinetState.logging = true;
+    Services.prefs.setBoolPref(OuinetPrefs.logging, true);
+    this.connect();
   }
 };
 

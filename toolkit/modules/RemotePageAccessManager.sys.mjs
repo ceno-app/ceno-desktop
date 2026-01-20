@@ -65,12 +65,15 @@ export let RemotePageAccessManager = {
     },
     "about:cenohome": {
       RPMAddMessageListener: [
-        "cenonetwork:state-change",
+        "cenohome:state-change",
       ],
       RPMSendAsyncMessage: [
-        "cenonetwork:connect",
-        "cenonetwork:cancel",
-        "cenonetwork:set-quickstart",
+        "cenohome:connect",
+        "cenohome:cancel",
+        "cenohome:set-quickstart",
+        "cenohome:openconnectionpreferences",
+        "cenohome:showlogfile",
+        "cenohome:enableloggingandreconnect",
       ],
       RPMSendQuery: [
         "cenohome:get-init-args"
