@@ -42,6 +42,7 @@ const OuinetPrefs = Object.freeze({
   logging: "ceno.network.logging",
   metrics: "ceno.network.metrics",
   doh: "ceno.network.doh",
+  bridge: "ceno.network.bridge",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
@@ -166,6 +167,7 @@ class _CenoNetwork {
     logging: Services.prefs.getBoolPref(OuinetPrefs.logging, true),
     metrics: Services.prefs.getBoolPref(OuinetPrefs.metrics, true),
     doh: Services.prefs.getBoolPref(OuinetPrefs.doh, true),
+    bridge: Services.prefs.getBoolPref(OuinetPrefs.bridge, true),
 
     reachability: undefined,
     upnp: undefined,
@@ -389,6 +391,7 @@ class _CenoNetwork {
         this.#ouinetState.logging = json.logfile;
         this.#ouinetState.metrics = json.metrics_enabled;
         this.#ouinetState.doh = json.doh_enabled;
+        this.#ouinetState.bridge = json.bridge_announcement;
 
         this.#ouinetState.local_cache_size = json.local_cache_size;
         this.#ouinetState.reachability = json.udp_world_reachable;
@@ -449,7 +452,7 @@ class _CenoNetwork {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    if (element_id == "doh") {
+    if (element_id === "doh" || element_id === "bridge") {
       if (
         this.#ouinetStage == OuinetStages.Connected ||
         this.#ouinetStage == OuinetStages.Degraded ||
