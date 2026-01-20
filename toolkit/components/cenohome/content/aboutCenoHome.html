@@ -44,14 +44,17 @@
           <p>
             <span data-l10n-id="ceno-browser-about-ceno-home-description-6">
               <a data-l10n-name="privacypolicy" href="https://ceno.app/privacy_policy.html"></a>
-              <!-- <a data-l10n-name="connection" href="" onClick="window.location.assign('about:preferences#connection'); return false;"></a> -->
+              <a data-l10n-name="connectionpreferences" id="connectionpreferences" href=""></a>
             </span>
           </p>
         </div>
 
         <div id="error-container">
           <p id="link-status" data-l10n-id="ceno-browser-about-ceno-home-link-status-offline" hidden></p>
-          <p id="error-message"></p>
+          <p id="error-message-failed-to-start" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start" hidden></p>
+          <p id="error-message-failed-to-start-show-log" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log" hidden>
+            <a data-l10n-name="showlogfile" id="showlogfile" href=""></a>
+          </p>
         </div>
 
         <div id="quickstartContainer">
@@ -62,6 +65,7 @@
         <div class="button-container">
           <span id="buttonPadding"></span>
           <span id="connectButtonContainer">
+            <button id="enableloggingandreconnect" data-l10n-id="ceno-browser-about-ceno-home-enableloggingandreconnect-button"></button>
             <button id="cancelButton" data-l10n-id="ceno-browser-about-ceno-home-cancel-button"></button>
             <button id="connectButton" data-l10n-id="ceno-browser-about-ceno-home-connect-button" class="ceno-button"></button>
           </span>
