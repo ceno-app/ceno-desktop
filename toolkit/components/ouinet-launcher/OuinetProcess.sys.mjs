@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   OuinetLauncherUtil: "resource://gre/modules/OuinetLauncherUtil.sys.mjs",
@@ -20,10 +19,6 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () => {
     prefix: "OuinetProcess",
   });
 });
-
-export class MissingOuinetBinaryError extends Error {};
-export class MissingDataDirError extends Error {};
-export class OuinetStartupError extends Error {};
 
 /**
  * This class can be used to start a ouinet daemon instance and receive
