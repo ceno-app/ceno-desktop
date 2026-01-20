@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
   OuinetProcessMonitor: "resource://gre/modules/OuinetProcessMonitor.sys.mjs",
   OuinetProcessTerminator: "resource://gre/modules/OuinetProcessTerminator.sys.mjs",
+  AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
@@ -413,6 +414,7 @@ class _CenoNetwork {
 
         if (this.#metricsRecordId != json.current_metrics_record_id && json.metrics_enabled) {
           this.#metricsRecordId = json.current_metrics_record_id;
+          await this.#sendMetrics('APP_VERSION', lazy.AppConstants.BASE_BROWSER_VERSION);
           await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
           await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
         }
