@@ -12,6 +12,18 @@ const Prefs = Object.freeze({
   userHasEverClickedConnect: "ceno.cenohome:user_has_ever_clicked_connect"
 });
 
+// Keep CenoHomeTopics in sync with aboutCenoHome.js
+const CenoHomeTopics = Object.freeze({
+  GetInitArgs: "cenohome:get-init-args",
+  StateChange: "cenohome:state-change",
+  Connect: "cenohome:connect",
+  Cancel: "cenohome:cancel",
+  SetQuickstart: "cenohome:set-quickstart",
+  OpenConnectionPreferences: "cenohome:openconnectionpreferences",
+  ShowLogFile: "cenohome:showlogfile",
+  EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
+});
+
 /*
 This object is basically a marshalling interface between the CenoHome module
 and a particular about:cenohome page
@@ -38,7 +50,7 @@ export class CenoHomeParent extends JSWindowActorParent {
         const obj = subject?.wrappedJSObject;
         switch (topic) {
           case CenoNetworkTopics.StateChange:
-            self.sendAsyncMessage(CenoNetworkTopics.StateChange, obj);
+            self.sendAsyncMessage(CenoHomeTopics.StateChange, obj);
             break;
         }
       },
@@ -64,17 +76,17 @@ export class CenoHomeParent extends JSWindowActorParent {
       //   return Promise.resolve(
       //     CenoHomeParent.fixupURIs(lazy.HomePage.get())[0]
       //   );
-      case CenoNetworkTopics.SetQuickstart:
+      case CenoHomeTopics.SetQuickstart:
         CenoNetwork.setQuickstart(message.data);
         break;
-      case CenoNetworkTopics.Connect:
+      case CenoHomeTopics.Connect:
         Services.prefs.setBoolPref(Prefs.userHasEverClickedConnect, true);
         CenoNetwork.connect();
         break;
-      case CenoNetworkTopics.Cancel:
+      case CenoHomeTopics.Cancel:
         CenoNetwork.cancel();
         break;
-      case "cenohome:get-init-args":
+      case CenoHomeTopics.GetInitArgs:
         // Called on AboutCenoHome.init(), pass down all state data it needs
         // to init.
         return {
@@ -82,6 +94,21 @@ export class CenoHomeParent extends JSWindowActorParent {
           state: CenoNetwork.CenoNetworkState(),
           userHasEverClickedConnect: Services.prefs.getBoolPref(Prefs.userHasEverClickedConnect, false),
         };
+      case CenoHomeTopics.OpenConnectionPreferences:
+        Services.wm.getMostRecentWindow("navigator:browser").gBrowser.addTab(
+          "about:preferences#connection", {
+            inBackground: false,
+            triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+          }
+        );
+        break;
+      case CenoHomeTopics.ShowLogFile:
+        console.log("CenoHomeParent: ", CenoHomeTopics.ShowLogFile);
+        CenoNetwork.showLogFile();
+        break;
+      case CenoHomeTopics.EnableLoggingAndReconnect:
+        CenoNetwork.enableLoggingAndReconnect();
+        break;
     }
     return undefined;
   }

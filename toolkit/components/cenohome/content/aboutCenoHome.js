@@ -9,31 +9,24 @@ const OuinetStages = Object.freeze({
   Error: "Error",
 });
 
-// Keep CenoNetworkTopics in sync with CenoNetwork.sys.mjs
-const CenoNetworkTopics = Object.freeze({
-  StateChange: "cenonetwork:state-change",
-  Connect: "cenonetwork:connect",
-  Cancel: "cenonetwork:cancel",
-  SetQuickstart: "cenonetwork:set-quickstart",
+// Keep CenoHomeTopics in sync with CenoHomeParent.sys.mjs
+// Also keep in sync with RemotePageAccessManager.sys.mjs
+const CenoHomeTopics = Object.freeze({
+  GetInitArgs: "cenohome:get-init-args",
+  StateChange: "cenohome:state-change",
+  Connect: "cenohome:connect",
+  Cancel: "cenohome:cancel",
+  SetQuickstart: "cenohome:set-quickstart",
+  OpenConnectionPreferences: "cenohome:openconnectionpreferences",
+  ShowLogFile: "cenohome:showlogfile",
+  EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
 });
 
 // Keep CenoNetworkErrors in sync with CenoNetwork.sys.mjs
 const CenoNetworkErrors = Object.freeze({
-  MissingOuinetBinary: "MissingOuinetBinary",
-  MissingDataDir: "MissingDataDir",
-  OuinetStartupError: "OuinetStartupError",
+  FailedToStart: "FailedToStart",
+  FailedToStartSuggestLogging: "FailedToStartSuggestLogging",
 });
-// Keep CenoNetworkErrorToL10n in sync with CenoNetwork.sys.mjs
-function CenoNetworkErrorToL10n(error) {
-  switch (error) {
-    case CenoNetworkErrors.MissingOuinetBinary:
-      return "ceno-browser-about-ceno-home-error-missing-ouinet-binary";
-    case MissingDataDir:
-      return "ceno-browser-about-ceno-home-error-missing-ouinet-data-dir";
-    case OuinetStartupError:
-      return "ceno-browser-about-ceno-home-error-ouinet-startup";
-  }
-}
 
 // Keep InternetStatus in sync with CenoNetwork.sys.mjs
 const InternetStatus = Object.freeze({
@@ -71,11 +64,15 @@ class AboutCenoHome {
     buttons: {
       cancel: "button#cancelButton",
       connect: "button#connectButton",
+      enableLoggingAndReconnect: "button#enableloggingandreconnect",
     },
     errorContainer: {
       linkStatus: "p#link-status",
-      errors: "p#error-message",
+      failedToStart: "p#error-message-failed-to-start",
+      failedToStartShowLog: "p#error-message-failed-to-start-show-log",
     },
+    openConnectionPreferences: "a#connectionpreferences",
+    showLogFile: "a#showlogfile",
   });
 
   elements = Object.freeze({
@@ -84,9 +81,12 @@ class AboutCenoHome {
     quickstartToggle: document.querySelector(this.selectors.quickstart.toggle),
     cancelButton: document.querySelector(this.selectors.buttons.cancel),
     connectButton: document.querySelector(this.selectors.buttons.connect),
-    tryAgainButton: document.querySelector(this.selectors.buttons.tryAgain),
     linkStatus: document.querySelector(this.selectors.errorContainer.linkStatus),
-    errors: document.querySelector(this.selectors.errorContainer.errors),
+    failedToStart: document.querySelector(this.selectors.errorContainer.failedToStart),
+    failedToStartShowLog: document.querySelector(this.selectors.errorContainer.failedToStartShowLog),
+    showLogFile: document.querySelector(this.selectors.showLogFile),
+    enableLoggingAndReconnectButton: document.querySelector(this.selectors.buttons.enableLoggingAndReconnect),
+    openConnectionPreferences: document.querySelector(this.selectors.openConnectionPreferences),
   });
 
   shownState = OuinetStages.Init;
@@ -105,13 +105,15 @@ class AboutCenoHome {
 
   updateState(state, focusConnect = false) {
     this.elements.quickstartToggle.pressed = state.quickstart;
+    this.hide(this.elements.enableLoggingAndReconnectButton);
+    this.hide(this.elements.failedToStart);
+    this.hide(this.elements.failedToStartShowLog);
 
     if (state.internetStatus === InternetStatus.Online) {
       this.hide(this.elements.linkStatus);
     } else {
       this.show(this.elements.linkStatus);
     }
-
     if (
       state.ouinetStage === OuinetStages.Init ||
       state.ouinetStage === OuinetStages.Exited ||
@@ -122,15 +124,14 @@ class AboutCenoHome {
       this.show(this.elements.connectButton);
       this.hide(this.elements.progressMeter);
 
-      if (
-        state.ouinetStage === OuinetStages.Error &&
-        state.error !== undefined &&
-        CenoNetworkErrorToL10n[state.error] !== undefined
-      ) {
-        document.l10n.setAttributes(this.elements.errors, CenoNetworkErrorToL10n[state.error])
-        this.show(this.elements.errors);
-      } else {
-        this.hide(this.elements.errors);
+      if (state.ouinetStage === OuinetStages.Error) {
+        if (state.error === CenoNetworkErrors.FailedToStart) {
+          this.show(this.elements.failedToStartShowLog);
+        }
+        else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
+          this.show(this.elements.failedToStart);
+          this.show(this.elements.enableLoggingAndReconnectButton);
+        }
       }
     }
     else if (
@@ -145,15 +146,11 @@ class AboutCenoHome {
       this.show(this.elements.progressMeter);
       const percentage = ouinetStageToConnectionProgress(state.ouinetStage);
       this.elements.progressMeter.style.setProperty("--progress-percent", `${percentage}%`);
-
-      this.hide(this.elements.errors);
     } else if (state.ouinetStage === OuinetStages.Connected) {
       this.hide(this.elements.quickstartContainer);
       this.hide(this.elements.cancelButton);
       this.hide(this.elements.connectButton);
       this.hide(this.elements.progressMeter);
-
-      this.hide(this.elements.errors);
     }
 
     this.shownState = state;
@@ -171,15 +168,25 @@ class AboutCenoHome {
 
     this.elements.quickstartToggle.addEventListener("toggle", () => {
       const quickstart = this.elements.quickstartToggle.pressed;
-      RPMSendAsyncMessage(CenoNetworkTopics.SetQuickstart, quickstart);
+      RPMSendAsyncMessage(CenoHomeTopics.SetQuickstart, quickstart);
     });
 
     this.elements.connectButton.addEventListener("click", () => {
-      RPMSendAsyncMessage(CenoNetworkTopics.Connect);
+      RPMSendAsyncMessage(CenoHomeTopics.Connect);
     });
 
     this.elements.cancelButton.addEventListener("click", () => {
-      RPMSendAsyncMessage(CenoNetworkTopics.Cancel);
+      RPMSendAsyncMessage(CenoHomeTopics.Cancel);
+    });
+
+    this.elements.openConnectionPreferences.addEventListener("click", () => {
+      RPMSendAsyncMessage(CenoHomeTopics.OpenConnectionPreferences);
+    });
+    this.elements.showLogFile.addEventListener("click", () => {
+      RPMSendAsyncMessage(CenoHomeTopics.ShowLogFile);
+    });
+    this.elements.enableLoggingAndReconnectButton.addEventListener("click", () => {
+      RPMSendAsyncMessage(CenoHomeTopics.EnableLoggingAndReconnect);
     });
 
     // Prevent repeat triggering on keydown when the Enter key is held down.
@@ -212,12 +219,13 @@ class AboutCenoHome {
     this.show(this.elements.connectButton);
     this.hide(this.elements.progressMeter);
 
-    this.hide(this.elements.errors);
+    this.hide(this.elements.failedToStart);
+    this.hide(this.elements.failedToStartShowLog);
     this.hide(this.elements.linkStatus);
   }
 
   initObservers() {
-    RPMAddMessageListener(CenoNetworkTopics.StateChange, ({data}) => {
+    RPMAddMessageListener(CenoHomeTopics.StateChange, ({data}) => {
       this.updateState(data);
     });
   }
@@ -233,7 +241,7 @@ class AboutCenoHome {
           this.shownState === OuinetStages.Degraded ||
           this.shownState === OuinetStages.ConnectingToNetwork
         ) {
-          RPMSendAsyncMessage(CenoNetworkTopics.Cancel);
+          RPMSendAsyncMessage(CenoHomeTopics.Cancel);
         }
       }
     };

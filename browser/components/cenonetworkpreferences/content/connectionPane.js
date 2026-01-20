@@ -204,7 +204,7 @@ class ConnectionPane {
 
     this.#set_toggle(this.#elements.logging, state.logging);
     if (state.logging) {
-      this.#elements.logfile.href = 'file://' + state.logging;
+      this.#elements.logfile.href = 'file://' + state.logfile;
       this.#elements.logfile.innerHTML = 'log.txt';
       this.#elements.logfile.removeAttribute('hidden');
     } else {
