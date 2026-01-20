@@ -9,3 +9,5 @@ EXPORTS += [ "MetricsGeoTimezone.h" ]
 
 UNIFIED_SOURCES += [ "MetricsGeoTimezone.cpp" ]
 #SOURCES += [ "MetricsGeoTimezone.cpp" ]
+
+CXXFLAGS += [ "/std:c++20" ]
