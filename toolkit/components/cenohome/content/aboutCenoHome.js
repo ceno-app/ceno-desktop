@@ -71,7 +71,7 @@ class AboutCenoHome {
       failedToStart: "p#error-message-failed-to-start",
       failedToStartShowLog: "p#error-message-failed-to-start-show-log",
     },
-    openConnectionPreferences: "a#connectionpreferences",
+    openConnectionPreferences: "a.connectionpreferences",
     showLogFile: "a#showlogfile",
   });
 
@@ -86,7 +86,7 @@ class AboutCenoHome {
     failedToStartShowLog: document.querySelector(this.selectors.errorContainer.failedToStartShowLog),
     showLogFile: document.querySelector(this.selectors.showLogFile),
     enableLoggingAndReconnectButton: document.querySelector(this.selectors.buttons.enableLoggingAndReconnect),
-    openConnectionPreferences: document.querySelector(this.selectors.openConnectionPreferences),
+    openConnectionPreferences: document.querySelectorAll(this.selectors.openConnectionPreferences),
   });
 
   shownState = OuinetStages.Init;
@@ -179,9 +179,11 @@ class AboutCenoHome {
       RPMSendAsyncMessage(CenoHomeTopics.Cancel);
     });
 
-    this.elements.openConnectionPreferences.addEventListener("click", () => {
-      RPMSendAsyncMessage(CenoHomeTopics.OpenConnectionPreferences);
-    });
+    for (const e of this.elements.openConnectionPreferences) {
+      e.addEventListener("click", () => {
+        RPMSendAsyncMessage(CenoHomeTopics.OpenConnectionPreferences);
+      });
+    }
     this.elements.showLogFile.addEventListener("click", () => {
       RPMSendAsyncMessage(CenoHomeTopics.ShowLogFile);
     });
