@@ -1,5 +1,6 @@
 #include "nsString.h"
 
+#include <format>
 #include <timezoneapi.h>
 #include <winnls.h>
 
@@ -23,7 +24,20 @@ MetricsGeoTimezone::GetTimezone(nsAString& timezone) {
   TIME_ZONE_INFORMATION timeZoneInformation {};
   const auto isItDstNow = GetTimeZoneInformation(&timeZoneInformation);
 
-  timezone = (isItDstNow == TIME_ZONE_ID_DAYLIGHT) ? timeZoneInformation.DaylightName : timeZoneInformation.StandardName;
+  long calculatedBias = timeZoneInformation.Bias;
+  if (isItDstNow == TIME_ZONE_ID_DAYLIGHT) {
+    calculatedBias += timeZoneInformation.DaylightBias;
+  } else {
+    calculatedBias += timeZoneInformation.StandardBias;
+  }
+
+  // UTC = local time + bias
+  calculatedBias = 0 - calculatedBias;
+
+  long biasHours = calculatedBias / 60;
+  long biasMinutes = calculatedBias % 60;
+  timezone = std::format(L"UTC{0:+}:{1:02}", biasHours, biasMinutes).c_str();
+
   return NS_OK;
 }
 
