@@ -413,8 +413,8 @@ class _CenoNetwork {
 
         if (this.#metricsRecordId != json.current_metrics_record_id && json.metrics_enabled) {
           this.#metricsRecordId = json.current_metrics_record_id;
-          await this.#sendMetrics('network_country', this.#metricsRegion);
-          await this.#sendMetrics('timezone', this.#metricsTimezone);
+          await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
+          await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
         }
       } catch (e) {
         lazy.logger.error('Failed to get ouinet API status', e);
