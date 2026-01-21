@@ -413,6 +413,7 @@ class _CenoNetwork {
           await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
           await this.#sendMetrics('NETWORK_COUNTRY_CONFIDENCE', "1");
           await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
+          await this.#sendMetrics('BRIDGE_OPT_IN', this.#ouinetState.bridge ? "true" : "false");
         }
       } catch (e) {
         lazy.logger.error('Failed to get ouinet API status', e);
