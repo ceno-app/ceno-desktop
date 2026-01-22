@@ -87,6 +87,9 @@ Var PostSigningData
 !include WinVer.nsh
 !include WordFunc.nsh
 
+!include "StrFunc.nsh"
+${Using:StrFunc} StrStr
+
 !insertmacro GetOptions
 !insertmacro GetParameters
 !insertmacro GetSize
@@ -1729,6 +1732,27 @@ Function .onInit
   StrCpy $PageName ""
   StrCpy $LANGUAGE 0
   ${SetBrandNameVars} "$EXEDIR\core\distribution\setup.ini"
+
+  # Check if c:\Users\Username has non ascii chars.
+  # Allowed characters in the installation path
+  ascii_path_test:
+  ${GetLocalAppDataFolder} $4
+  StrCpy $0 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./:<=>?@[\]^_`{}"
+  StrCpy $1 0
+  loop:
+    #StrCpy destination src [maxlen] [start_offset]
+    StrCpy $2 $4 1 $1
+    StrCmp $2 '' end
+
+    IntOp $1 $1 + 1
+
+    # ${StrStr} "ResultVar" "String" "SubString"
+    ${StrStr} $3 $0 $2
+    StrCmp $3 '' 0 loop
+    showError:
+    MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "User profile ($4) contains non Latin letters. Current version Ceno Browser Alpha has a problem with handling of non Latin characters in user profile path. Install portable version of Ceno Browser instead." IDRETRY ascii_path_test IDIGNORE end
+    Abort
+  end:
 
   ; Don't install on systems that don't support SSE2. The parameter value of
   ; 10 is for PF_XMMI64_INSTRUCTIONS_AVAILABLE which will check whether the
