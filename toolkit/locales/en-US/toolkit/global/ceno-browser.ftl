@@ -54,7 +54,7 @@ ceno-browser-ouinet-preferences-headless-checkbox =
     .label = Keep Ceno Network Service running
 
 ceno-browser-ouinet-preferences-bridge-heading = Bridge Mode
-ceno-browser-ouinet-preferences-bridge-description = By being a bridge, you make the Ceno network stronger and help other Ceno users connect. Note that this will make your public IP address visible to other Ceno users. Changing this setting requires reconnection to Ceno Network.
+ceno-browser-ouinet-preferences-bridge-description = Note that this will make your public IP address visible to other Ceno users. Changing this setting requires reconnection to Ceno Network.
 ceno-browser-ouinet-preferences-bridge-checkbox =
     .label = Enable bridge mode
 
