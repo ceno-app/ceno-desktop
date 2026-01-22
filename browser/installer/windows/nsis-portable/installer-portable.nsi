@@ -82,21 +82,29 @@ FunctionEnd
 Function CheckIfTargetDirectoryIsSuitable
   # Allowed characters in the installation path
   StrCpy $0 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./:<=>?@[\]^_`{}"
+  # $1 is iterator
   StrCpy $1 0
+  # $4 contains found unsupported chars
+  StrCpy $4 ''
 
   loop:
     #StrCpy destination src [maxlen] [start_offset]
+    # $2 is the letter being evaluated
     StrCpy $2 $INSTDIR 1 $1
-    StrCmp $2 '' end
+    StrCmp $2 '' loop_end
 
     IntOp $1 $1 + 1
 
     # ${StrStr} "ResultVar" "String" "SubString"
     ${StrStr} $3 $0 $2
     StrCmp $3 '' 0 loop
-    MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "Install path ($INSTDIR) contains non Latin letters. Current version Ceno Browser Alpha has a problem with handling of non Latin characters in install path. Suggested install location: 'C:\Ceno Alpha'" IDIGNORE end
-    # MessageBox MB_ABORTRETRYIGNORE "Install path ($INSTDIR)" IDIGNORE end
-    Abort
+    StrCpy $4 "$4$2"
+    goto loop
+  loop_end:
+
+  StrCmp $4 '' end
+  MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "Install path ($INSTDIR) contains unsupported characters ($4). Current version Ceno Browser Alpha has a problem with handling of unsupported characters in install path. Suggested install location: 'C:\Ceno Alpha'" IDIGNORE end
+  Abort
   end:
 
   ${If} ${FileExists} "$INSTDIR\*.*"

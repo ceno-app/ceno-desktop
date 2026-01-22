@@ -1739,19 +1739,25 @@ Function .onInit
   ${GetLocalAppDataFolder} $4
   StrCpy $0 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./:<=>?@[\]^_`{}"
   StrCpy $1 0
+  # $5 contains found unsupported chars
+  StrCpy $5 ''
   loop:
     #StrCpy destination src [maxlen] [start_offset]
     StrCpy $2 $4 1 $1
-    StrCmp $2 '' end
+    StrCmp $2 '' loop_end
 
     IntOp $1 $1 + 1
 
     # ${StrStr} "ResultVar" "String" "SubString"
     ${StrStr} $3 $0 $2
     StrCmp $3 '' 0 loop
-    showError:
-    MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "User profile ($4) contains non Latin letters. Current version Ceno Browser Alpha has a problem with handling of non Latin characters in user profile path. Install portable version of Ceno Browser instead." IDRETRY ascii_path_test IDIGNORE end
-    Abort
+    StrCpy $5 "$5$2"
+    goto loop
+  loop_end:
+
+  StrCmp $5 '' end
+  MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "User profile path ($4) contains unsupported characters. Current version Ceno Browser Alpha has a problem with handling of unsupported characters ($5) in user profile path. Install portable version of Ceno Browser instead." IDRETRY ascii_path_test IDIGNORE end
+  Abort
   end:
 
   ; Don't install on systems that don't support SSE2. The parameter value of
