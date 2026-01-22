@@ -36,7 +36,7 @@ MetricsGeoTimezone::GetTimezone(nsAString& timezone) {
 
   long biasHours = calculatedBias / 60;
   long biasMinutes = calculatedBias % 60;
-  timezone = std::format(L"UTC{0:+}:{1:02}", biasHours, biasMinutes).c_str();
+  timezone = std::format(L"UTC{0:+03}:{1:02}", biasHours, biasMinutes).c_str();
 
   return NS_OK;
 }
