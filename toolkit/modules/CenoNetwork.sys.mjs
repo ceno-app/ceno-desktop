@@ -431,7 +431,6 @@ class _CenoNetwork {
 
   async #sendMetrics(key, value) {
     try {
-      value = encodeURIComponent(value);
       lazy.logger.debug(`Sending metrics '${key}'='${value}'`);
       await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${value}`);
     } catch (e) {
