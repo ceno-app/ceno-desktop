@@ -9,6 +9,9 @@
 !include WinVer.nsh
 !include "x64.nsh"
 
+!include "StrFunc.nsh"
+${Using:StrFunc} StrStr
+
 SetCompressor /SOLID lzma
 SetCompressorDictSize 128
 
@@ -76,7 +79,26 @@ Function CheckRequirements
   ${EndIf}
 FunctionEnd
 
-Function CheckIfTargetDirectoryExists
+Function CheckIfTargetDirectoryIsSuitable
+  # Allowed characters in the installation path
+  StrCpy $0 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./:<=>?@[\]^_`{}"
+  StrCpy $1 0
+
+  loop:
+    #StrCpy destination src [maxlen] [start_offset]
+    StrCpy $2 $INSTDIR 1 $1
+    StrCmp $2 '' end
+
+    IntOp $1 $1 + 1
+
+    # ${StrStr} "ResultVar" "String" "SubString"
+    ${StrStr} $3 $0 $2
+    StrCmp $3 '' 0 loop
+    MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "Install path ($INSTDIR) contains non Latin letters. Current version Ceno Browser Alpha has a problem with handling of non Latin characters in install path. Suggested install location: 'C:\Ceno Alpha'" IDIGNORE end
+    # MessageBox MB_ABORTRETRYIGNORE "Install path ($INSTDIR)" IDIGNORE end
+    Abort
+  end:
+
   ${If} ${FileExists} "$INSTDIR\*.*"
     MessageBox MB_YESNO "$(destination_exists)" IDYES +2
     Abort
@@ -95,7 +117,8 @@ InstallDir "$DESKTOP\${BrandFullName}"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "$(add_shortcuts)"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION "CreateShortcuts"
 
-!define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryExists
+; !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryExists
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryIsSuitable
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -106,6 +129,23 @@ InstallDir "$DESKTOP\${BrandFullName}"
 Function .onInit
   Call CheckRequirements
   !insertmacro MUI_LANGDLL_DISPLAY
+
+  # Allowed characters in the installation path
+  StrCpy $0 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./:<=>?@[\]^_`{}"
+  StrCpy $1 0
+
+  loop:
+    #StrCpy destination src [maxlen] [start_offset]
+    StrCpy $2 $INSTDIR 1 $1
+    StrCmp $2 '' end
+
+    IntOp $1 $1 + 1
+
+    # ${StrStr} "ResultVar" "String" "SubString"
+    ${StrStr} $3 $0 $2
+    StrCmp $3 '' 0 loop
+    StrCpy $INSTDIR "C:\Ceno Alpha"
+  end:
 FunctionEnd
 
 Section "Browser" SecBrowser
