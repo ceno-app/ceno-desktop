@@ -476,6 +476,10 @@ class _CenoNetwork {
       this.#ouinetStage == OuinetStages.Connected ||
       this.#ouinetStage == OuinetStages.Degraded
     ) {
+      // logging in ouinet is referred to as logfile
+      if (element_id == "logging") {
+        element_id = "logfile"
+      }
       await this.#setValueInAPI(element_id, newValue);
     }
   }
