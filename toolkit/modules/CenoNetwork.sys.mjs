@@ -175,8 +175,8 @@ class _CenoNetwork {
     public_udp: undefined,
   }
 
-  #metricsRegion = Services.MetricsGeoTimezone.region;
-  #metricsTimezone = Services.MetricsGeoTimezone.timezone;
+  #metricsRegion = Services.OuinetNativeHelpers.region;
+  #metricsTimezone = Services.OuinetNativeHelpers.timezone;
   #metricsRecordId = undefined;
 
   CenoNetworkState() {

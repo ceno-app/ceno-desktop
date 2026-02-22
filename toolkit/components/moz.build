@@ -55,11 +55,11 @@ DIRS += [
     "kvstore",
     "media",
     "mediasniffer",
-    "metrics-geo-timezone",
     # Exclude the "ml" component. tor-browser#44045.
     "mozintl",
     "mozprotocol",
     "ouinet-launcher",
+    "ouinet-native-helpers",
     "parentalcontrols",
     "passwordmgr",
     "pdfjs",
