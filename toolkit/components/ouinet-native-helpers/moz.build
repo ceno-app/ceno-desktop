@@ -1,0 +1,15 @@
+XPIDL_SOURCES += [ "nsIOuinetNativeHelpers.idl" ]
+
+XPIDL_MODULE = "nsIOuinetNativeHelpers"
+FINAL_LIBRARY = "xul"
+
+XPCOM_MANIFESTS += [ "components.conf" ]
+
+EXPORTS += [ "OuinetNativeHelpers.h" ]
+
+UNIFIED_SOURCES += [
+    "MetricsGeoTimezone.cpp",
+    "VirtualAppData.cpp"
+]
+
+CXXFLAGS += [ "/std:c++20" ]

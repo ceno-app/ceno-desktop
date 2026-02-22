@@ -207,7 +207,16 @@ class OuinetFile {
       // Notice that we use `DefProfRt`, because users could create their
       // profile in a completely unexpected directory: the profiles.ini contains
       // a IsRelative entry, which I expect could influence ProfD, but not this.
-      this._dataDir = Services.dirsvc.get("DefProfRt", Ci.nsIFile).parent;
+      const _dataDir = Services.dirsvc.get("DefProfRt", Ci.nsIFile).parent;
+      if (OuinetLauncherUtil.isWindows) {
+        // Data dir could be in a virtual AppData, translate the path to a real AppData path
+        const _realDataDir = Services.OuinetNativeHelpers.GetRealAppData(_dataDir.path);
+        const realDataDirFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+        realDataDirFile.initWithPath(_realDataDir);
+        this._dataDir = realDataDirFile;
+      } else {
+        this._dataDir = _dataDir;
+      }
     }
     return this._dataDir.clone();
   }
@@ -217,7 +226,13 @@ class OuinetFile {
   static get ouinetDir() {
     if (!this._ouinetDir) {
       // The directory that contains firefox
-      const ouinetDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
+      let ouinetDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
+      if (OuinetLauncherUtil.isWindows) {
+        // Convert the path into a shortPath. Converts unicode chars to ascii
+        const shortDirPath = Services.OuinetNativeHelpers.GetShortPath(ouinetDir.path);
+        ouinetDir = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+        ouinetDir.initWithPath(shortDirPath);
+      }
       if (!OuinetLauncherUtil.isMac) {
         ouinetDir.append("Ouinet");
       }
