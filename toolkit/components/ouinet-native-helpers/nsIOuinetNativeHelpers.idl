@@ -7,8 +7,11 @@
 #include "nsISupports.idl"
 
 // `scriptable` designates that this object will be used with JavaScript
-[scriptable, uuid(5ad3ef67-af51-4a67-9756-ca37388db374)]
-interface nsIMetricsGeoTimezone : nsISupports {
+[scriptable, uuid(5ad3ef67-af51-4a67-9756-ca37388db375)]
+interface nsIOuinetNativeHelpers : nsISupports {
   readonly attribute AString region;
   readonly attribute AString timezone;
+
+  AString GetRealAppData(in AString virtualAppData);
+  AString GetShortPath(in AString longPath);
 };

@@ -1,18 +1,20 @@
 #include "nsString.h"
 
-#include <format>
-#include <timezoneapi.h>
-#include <winnls.h>
+#include <windows.h>
 
-#include "MetricsGeoTimezone.h"
+// #include <appmodel.h>
+#include <timezoneapi.h>
+// #include <winnls.h>
+
+#include "OuinetNativeHelpers.h"
 
 namespace mozilla {
 
 // Use the macro to inject all of the definitions for nsISupports.
-NS_IMPL_ISUPPORTS(MetricsGeoTimezone, nsIMetricsGeoTimezone)
+NS_IMPL_ISUPPORTS(OuinetNativeHelpers, nsIOuinetNativeHelpers)
 
 NS_IMETHODIMP
-MetricsGeoTimezone::GetRegion(nsAString& region) {
+OuinetNativeHelpers::GetRegion(nsAString& region) {
   wchar_t region_c[4] {};
   GetUserDefaultGeoName(region_c, 4);
   region = region_c;
@@ -20,7 +22,7 @@ MetricsGeoTimezone::GetRegion(nsAString& region) {
 }
 
 NS_IMETHODIMP
-MetricsGeoTimezone::GetTimezone(nsAString& timezone) {
+OuinetNativeHelpers::GetTimezone(nsAString& timezone) {
   TIME_ZONE_INFORMATION timeZoneInformation {};
   const auto isItDstNow = GetTimeZoneInformation(&timeZoneInformation);
 
