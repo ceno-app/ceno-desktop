@@ -37,6 +37,9 @@ DisableStlWrapping()
 
 CXXFLAGS += [ "/std:c++20" ]
 
+# VC Redist static link
+CXXFLAGS += ["/MT"]
+
 # Exceptions are disabled by default
 # CXXFLAGS += [ "/EHsc" ]
 
