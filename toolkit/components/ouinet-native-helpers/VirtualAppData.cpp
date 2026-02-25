@@ -12,78 +12,104 @@
 namespace mozilla {
 
 static std::optional<std::wstring> getPackageFamilyName() {
-    UINT32 nameLen = 0;
-    LONG rc = GetCurrentPackageFamilyName(&nameLen, NULL);
+  UINT32 nameLen = 0;
+  LONG rc = GetCurrentPackageFamilyName(&nameLen, NULL);
 
-    if (rc != ERROR_INSUFFICIENT_BUFFER) {
-        return {};
-    }
-    std::wstring familyName;
-    familyName.resize(nameLen, L'\0');
+  if (rc != ERROR_INSUFFICIENT_BUFFER) {
+    return {};
+  }
+  std::wstring familyName(nameLen, L'\0');
 
-    rc = GetCurrentPackageFamilyName(&nameLen, familyName.data());
-    if (rc != ERROR_SUCCESS) {
-        return {};
-    }
-    // remove trailing null terminator. wstring already handles it.
-    familyName.resize(nameLen - 1);
-    return familyName;
+  rc = GetCurrentPackageFamilyName(&nameLen, familyName.data());
+  if (rc != ERROR_SUCCESS) {
+    return {};
+  }
+
+  // trim extra null terminator, if there is
+  familyName.resize(wcsnlen(familyName.c_str(), familyName.size()));
+
+  return familyName;
+}
+
+static std::optional<std::wstring> getUserShellFolderRegValue(const wchar_t *regKey) {
+  constexpr const wchar_t *subKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders";
+  DWORD bufferSize = 0;
+
+  if (ERROR_SUCCESS != RegGetValueW(HKEY_CURRENT_USER, subKey, regKey,
+                                    RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ, nullptr, nullptr, &bufferSize)) {
+    return {};
+  }
+
+  // RegGetValueW uses bytes, not count of chars, divide size by 2
+  std::wstring buffer(bufferSize / sizeof(wchar_t), L'-');
+  if (ERROR_SUCCESS != RegGetValueW(HKEY_CURRENT_USER, subKey, regKey,
+                                    RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ, nullptr, buffer.data(), &bufferSize)) {
+    return {};
+  }
+  // RegGetValueW returned size is larger than real data.
+  // There is some junk after null terminator.
+  // wcslen to clean it up.
+  buffer.resize(wcsnlen(buffer.c_str(), buffer.size()));
+
+  return buffer;
+}
+
+static std::optional<std::wstring> getEnvValue(const wchar_t *envKey) {
+  DWORD bufferSize = GetEnvironmentVariableW(envKey, NULL, 0);
+  if (0 == bufferSize) {
+    return {};
+  }
+
+  std::wstring buffer(bufferSize, L'\0');
+
+  bufferSize = GetEnvironmentVariableW(envKey, buffer.data(), bufferSize);
+  if (0 == bufferSize) {
+    return {};
+  }
+
+  // trim extra null terminator, if there is
+  buffer.resize(wcsnlen(buffer.c_str(), buffer.size()));
+
+  return buffer;
 }
 
 static std::optional<std::wstring> getLocalAppData() {
-    wchar_t localAppData[MAX_PATH] { };
-    DWORD localAppDataSize = MAX_PATH;
+  auto localAppData = getUserShellFolderRegValue(L"Local AppData");
+  if (localAppData.has_value()) {
+    return localAppData;
+  }
 
-    if (ERROR_SUCCESS == RegGetValueW(
-        HKEY_CURRENT_USER,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
-        L"Local AppData",
-        RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ, NULL, localAppData, &localAppDataSize)) {
-        return localAppData;
-    }
-
-    const auto envVarSize = GetEnvironmentVariableW(L"LOCALAPPDATA", localAppData, MAX_PATH);
-    if (envVarSize > 0 && envVarSize < MAX_PATH) {
-        return localAppData;
-    }
-
-    return {};
+  return getEnvValue(L"LOCALAPPDATA");
 }
 
 static std::optional<std::wstring> getRoamingAppData() {
-    wchar_t roamingAppData[MAX_PATH] { };
-    DWORD roamingAppDataSize = MAX_PATH;
+  auto localAppData = getUserShellFolderRegValue(L"AppData");
+  if (localAppData.has_value()) {
+    return localAppData;
+  }
 
-    if (ERROR_SUCCESS == RegGetValueW(
-        HKEY_CURRENT_USER,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders",
-        L"AppData",
-        RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ, NULL, roamingAppData, &roamingAppDataSize)) {
-        return roamingAppData;
-    }
-
-    const auto envVarSize = GetEnvironmentVariableW(L"APPDATA", roamingAppData, MAX_PATH);
-    if (envVarSize > 0 && envVarSize < MAX_PATH) {
-        return roamingAppData;
-    }
-
-    return {};
+  return getEnvValue(L"APPDATA");
 }
 
 static std::wstring getShortPath(const std::wstring &longPath) {
-  std::wstring shortPath = longPath;
-  const auto shortenedLength = GetShortPathNameW(longPath.c_str(), shortPath.data(), shortPath.capacity());
-  if (shortenedLength > 0) {
-      shortPath.resize(shortenedLength);
+  DWORD length = GetShortPathNameW(longPath.c_str(), nullptr, 0);
+  if (length > 0) {
+    std::wstring shortPath(length, L'\0');
+    length = GetShortPathNameW(longPath.c_str(), shortPath.data(), shortPath.size());
+    if (length > 0) {
+      // trim extra null terminator, if there is
+      shortPath.resize(wcsnlen(shortPath.c_str(), shortPath.size()));
+      return shortPath;
+    }
   }
-  return shortPath;
+  return longPath;
 }
 
 NS_IMETHODIMP
 OuinetNativeHelpers::GetShortPath(const nsAString &longPath, nsAString &shortPath) {
   // nsAString may not be null terminated.
-  const std::wstring longPathStr {
-    reinterpret_cast<const wchar_t*>(longPath.BeginReading()),
+  const std::wstring longPathStr{
+    reinterpret_cast<const wchar_t *>(longPath.BeginReading()),
     longPath.Length()
   };
   const std::wstring shortPathStr = getShortPath(longPathStr);
@@ -100,7 +126,7 @@ OuinetNativeHelpers::GetShortPath(const nsAString &longPath, nsAString &shortPat
 // Real app Data:
 // C:\Users\u\AppData\Local\Packages\ceno_5e75r73jvfq74\LocalCache\Roaming\eQualitie\Ceno Alpha
 // Final result (short path)
-// @TODO:
+// @TODO: short version of:
 // C:\Users\u\AppData\Local\Packages\ceno_5e75r73jvfq74\LocalCache\Roaming\eQualitie\Ceno Alpha
 
 NS_IMETHODIMP
@@ -119,8 +145,8 @@ OuinetNativeHelpers::GetRealAppData(const nsAString &virtualAppData, nsAString &
     return NS_OK;
   }
 
-  const std::wstring_view virtualAppDataStr {
-    reinterpret_cast<const wchar_t*>(virtualAppData.BeginReading()),
+  const std::wstring_view virtualAppDataStr{
+    reinterpret_cast<const wchar_t *>(virtualAppData.BeginReading()),
     virtualAppData.Length()
   };
 
@@ -129,10 +155,10 @@ OuinetNativeHelpers::GetRealAppData(const nsAString &virtualAppData, nsAString &
     return NS_OK;
   }
 
-  std::wstring_view suffixInRoaming { virtualAppDataStr };
+  std::wstring_view suffixInRoaming{virtualAppDataStr};
   suffixInRoaming.remove_prefix(roamingAppData.value().length());
   while (suffixInRoaming.starts_with(L'/') || suffixInRoaming.starts_with(L'\\')) {
-      suffixInRoaming.remove_prefix(1);
+    suffixInRoaming.remove_prefix(1);
   }
 
   const std::wstring realPath = std::format(
