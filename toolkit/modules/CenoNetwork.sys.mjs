@@ -170,7 +170,7 @@ class _CenoNetwork {
     local_cache_size: undefined,
     logging: Services.prefs.getBoolPref(OuinetPrefs.logging, false),
     metrics: Services.prefs.getBoolPref(OuinetPrefs.metrics, true),
-    doh: Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" && this.#metricsRegion[0] != "I"),
+    doh: Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I"),
     bridge: Services.prefs.getBoolPref(OuinetPrefs.bridge, true),
 
     reachability: undefined,
