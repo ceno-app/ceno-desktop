@@ -157,6 +157,10 @@ class _CenoNetwork {
     frontend_metrics_set_key: '/api/metrics/set_key_value',
   }
 
+  #metricsRegion = Services.OuinetNativeHelpers.region;
+  #metricsTimezone = Services.OuinetNativeHelpers.timezone;
+  #metricsRecordId = undefined;
+
   #ouinetState = {
     origin_access: Services.prefs.getBoolPref(OuinetPrefs.origin_access, true),
     proxy_access: Services.prefs.getBoolPref(OuinetPrefs.proxy_access, true),
@@ -164,9 +168,9 @@ class _CenoNetwork {
     distributed_cache: Services.prefs.getBoolPref(OuinetPrefs.distributed_cache, true),
 
     local_cache_size: undefined,
-    logging: Services.prefs.getBoolPref(OuinetPrefs.logging, true),
+    logging: Services.prefs.getBoolPref(OuinetPrefs.logging, false),
     metrics: Services.prefs.getBoolPref(OuinetPrefs.metrics, true),
-    doh: Services.prefs.getBoolPref(OuinetPrefs.doh, true),
+    doh: Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" && this.#metricsRegion[0] != "I"),
     bridge: Services.prefs.getBoolPref(OuinetPrefs.bridge, true),
 
     reachability: undefined,
@@ -174,10 +178,6 @@ class _CenoNetwork {
     local_udp: undefined,
     public_udp: undefined,
   }
-
-  #metricsRegion = Services.OuinetNativeHelpers.region;
-  #metricsTimezone = Services.OuinetNativeHelpers.timezone;
-  #metricsRecordId = undefined;
 
   CenoNetworkState() {
     let res = structuredClone(this.#ouinetState);
