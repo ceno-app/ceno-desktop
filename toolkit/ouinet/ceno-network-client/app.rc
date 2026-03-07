@@ -3,11 +3,15 @@
 
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "ceno-network-client.manifest.xml"
 
-IDI_NOTIFICATIONICON ICON "ceno.ico"
+IDI_ICON_ACTIVE ICON "ceno.ico"
+IDI_ICON_GRAY   ICON "cenogray.ico"
 
 STRINGTABLE
 BEGIN
-   IDS_TOOLTIP "Ceno Network Client"
+   IDS_TOOLTIP_CONNECTING   "Ceno Network Client - Connecting"
+   IDS_TOOLTIP_DEGRADED     "Ceno Network Client - Connection Degraded  / Local Cache Only"
+   IDS_TOOLTIP_CONNECTED    "Ceno Network Client"
+   IDS_TOOLTIP_EXITING      "Ceno Network Client - Exiting"
 END
 
 IDC_CONTEXTMENU MENU
