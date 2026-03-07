@@ -42,6 +42,7 @@ class ConnectionPane {
     logfile: "a#ouinet-logfile",
     metrics: "moz-toggle#ouinet-metrics",
     doh: "moz-toggle#ouinet-doh",
+    unencrypted_dns: "moz-toggle#ouinet-unencrypted-dns",
     bridge: "moz-toggle#ouinet-connection-bridge-toggle",
 
     local_cache_size: "span#local-cache-size",
@@ -86,6 +87,7 @@ class ConnectionPane {
       logfile: document.querySelector(this.#selectors.logfile),
       metrics: document.querySelector(this.#selectors.metrics),
       doh: document.querySelector(this.#selectors.doh),
+      unencrypted_dns: document.querySelector(this.#selectors.unencrypted_dns),
       bridge: document.querySelector(this.#selectors.bridge),
 
       local_cache_size: document.querySelector(this.#selectors.local_cache_size),
@@ -154,6 +156,9 @@ class ConnectionPane {
     });
     this.#elements.doh.addEventListener("toggle", () => {
       CenoNetwork.setOuinetConfigValue('doh', this.#elements.doh.pressed);
+    });
+    this.#elements.unencrypted_dns.addEventListener("toggle", () => {
+      CenoNetwork.setOuinetConfigValue('unencrypted_dns', this.#elements.unencrypted_dns.pressed);
     });
     this.#elements.bridge.addEventListener("toggle", () => {
       CenoNetwork.setOuinetConfigValue('bridge', this.#elements.bridge.pressed);
@@ -253,6 +258,8 @@ class ConnectionPane {
     }
     this.#set_toggle(this.#elements.metrics, state.metrics);
     this.#set_toggle(this.#elements.doh, state.doh);
+    this.#set_toggle(this.#elements.unencrypted_dns, state.unencrypted_dns);
+    this.#elements.unencrypted_dns.disabled = !state.doh;
     this.#set_toggle(this.#elements.bridge, state.bridge);
 
     // @TODO: cache size unknown

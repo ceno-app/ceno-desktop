@@ -2,6 +2,7 @@
 - Update default options for Ceno Network Client
 - Update Ceno Network Client to use Ouinet DLL instead of wrapping client.exe. Failed startup errors displayed as error windows instead of silent exits. Network status displayed visually as different icons (gray vs colored) and tooltip text.
 - Updates to Connection preferences page. Show detected errors (failed startup, no internet).
+- Update DNS over HTTPS config, allowing both HTTPS and unencrypted DNS requests.
 
 # Ceno Browser 0.0.11
 
