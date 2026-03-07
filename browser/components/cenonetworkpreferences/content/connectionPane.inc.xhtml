@@ -10,33 +10,7 @@
       data-category="paneConnection">
   <html:h1 data-l10n-id="ceno-browser-ouinet-preferences-heading"></html:h1>
 
-  <!--
-  <description class="description-deemphasized" flex="1">
-    <html:span data-l10n-id="tor-connection-overview"></html:span>
-      <label
-        class="learnMore text-link"
-        is="text-link"
-        href="about:manual#about"
-        useoriginprincipal="true"
-        data-l10n-id="tor-connection-browser-learn-more-link"
-      />
-  </description>
-  -->
-
   <!-- Keep within #ouinetCategory so this won't appear in search results. -->
-  <html:div
-    id="network-status-internet-area"
-    class="network-status-area"
-    role="group"
-    aria-labelledby="network-status-internet-area-label"
-  >
-    <html:span
-      id="network-status-internet-area-label"
-      class="network-status-label"
-      data-l10n-id="ceno-browser-ouinet-preferences-internet-connection-status-label"
-    ></html:span>
-    <html:span class="network-status-result" id="network-status-internet"></html:span>
-  </html:div>
   <html:div
     id="network-status-ouinet-area"
     class="network-status-area"
@@ -61,6 +35,22 @@
       id="network-status-ouinet-disconnect-button"
       data-l10n-id="ceno-browser-about-ceno-home-disconnect-button"
     ></html:button>
+    <html:button
+      id="network-status-ouinet-enableloggingandreconnect-button"
+      data-l10n-id="ceno-browser-about-ceno-home-enableloggingandreconnect-button"
+    ></html:button>
+  </html:div>
+
+  <html:div
+    id="error-container"
+    role="group"
+    aria-labelledby="error-container-label"
+  >
+    <html:p id="error-message-link-status-offline" data-l10n-id="ceno-browser-about-ceno-home-link-status-offline"></html:p>
+    <html:p id="error-message-failed-to-start" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start"></html:p>
+    <html:p id="error-message-failed-to-start-show-log" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log">
+      <html:a data-l10n-name="showlogfile" class="showlogfile" href=""></html:a>
+    </html:p>
   </html:div>
 
   <html:div>
