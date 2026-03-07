@@ -25,9 +25,9 @@ def unpackage_file(zfile, output_dir):
     with zipfile.ZipFile(zfile, "r") as ouinet_zip:
         for member in ouinet_zip.namelist():
             # Check if the file is in the 'build/windows' directory
-            if member.startswith("ouinet-windows-x64-v1.6.2/") and not member.endswith("/"):
+            if member.startswith("ouinet-windows-x64-v1.7.1-dev0/") and not member.endswith("/"):
                 # Extract the file to the output directory, stripping 'build/windows/'
-                relative_path = os.path.relpath(member, "ouinet-windows-x64-v1.6.2")
+                relative_path = os.path.relpath(member, "ouinet-windows-x64-v1.7.1-dev0")
                 target_path = os.path.join(output_dir, relative_path)
                 # Ensure the target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -47,7 +47,7 @@ def main():
 
     output_dir = sys.argv[1]
     ouinet_url = (
-        "https://gitlab.com/equalitie/ouinet/-/package_files/259678759/download"
+        "https://gitlab.com/equalitie/ouinet/-/package_files/279124207/download"
     )
     print(f"Downloading and extracting ouinet artifacts at {output_dir}...")
     try:

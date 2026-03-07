@@ -3,10 +3,10 @@
 <assemblyIdentity
     version="1.0.0.0"
     processorArchitecture="*"
-    name="Equalietie.Ceno.Desktop"
+    name="Equalitie.Ceno.Desktop"
     type="win32"
 />
-<description>Your application description here.</description>
+<description>Ceno Network Client.</description>
 <dependency>
     <dependentAssembly>
         <assemblyIdentity
