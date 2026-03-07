@@ -1,27 +1,29 @@
+#include <format>
 #include <fstream>
+
+#include "ErrorUtils.h"
 #include "ProcessIdFile.h"
 
-bool ProcessIdFile::write(const DWORD windowProcessId) {
+bool ProcessIdFile::write(const HWND hWnd) {
+    DWORD windowProcessId = 0;
+    GetWindowThreadProcessId(hWnd, &windowProcessId);
+
     std::ofstream stream { pidFilePath};
     written = stream.good() && (stream << windowProcessId);
+
+    if (!written) {
+        ShowError(L"Failed to write Process ID file: ", pidFilePath.wstring());
+    }
     return written;
 }
-
-bool ProcessIdFile::remove(std::error_code &ec) {
-    if (written) {
-        if (std::filesystem::remove(pidFilePath, ec)) {
-            written = false;
-            return true;
-        }
-    }
-    return false;
-}
-
 ProcessIdFile::~ProcessIdFile() {
-    std::error_code ec;
-    remove(ec);
-}
+    if (!written)
+        return;
 
-const std::filesystem::path &ProcessIdFile::getPidFilePath() const {
-    return pidFilePath;
+    if (std::error_code ec; !std::filesystem::remove(pidFilePath, ec)) {
+        ShowErrorA(
+            "Failed to remove Process ID file: ",
+            std::format("{} - {}", pidFilePath.string(), ec.message())
+        );
+    }
 }

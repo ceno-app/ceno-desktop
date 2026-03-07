@@ -3,11 +3,12 @@
 
 Program("ceno-network-client")
 SOURCES = [
+  "ArgumentsConverter.cpp",
   "ceno-network-client.cpp",
   "ErrorUtils.cpp",
   "GuiWindow.cpp",
-  "Ouinet.cpp",
   "ProcessIdFile.cpp",
+  "StatePoller.cpp",
 ]
 DIST_SUBDIR = "Ouinet"
 RCFILE = "app.rc"
@@ -48,6 +49,9 @@ OS_LIBS += [
     "user32",
     "Comctl32"
 ]
+
+LDFLAGS += [ TOPOBJDIR + '/dist/bin/Ouinet/libclient_lib.dll.a' ]
+CXXFLAGS += [ '-I' + TOPOBJDIR + '/dist/bin/Ouinet/' ]
 
 DIRS += [
   "utilities/monitor",

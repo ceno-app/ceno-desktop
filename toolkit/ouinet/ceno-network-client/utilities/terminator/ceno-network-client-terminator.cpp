@@ -2,8 +2,6 @@
 
 #include "../ceno-network-client-helper.h"
 
-static constexpr UINT exitOuinetMessage = WM_APP + 1;
-
 // EnumWindowsCallback Source:
 // https://stackoverflow.com/questions/11711417/get-hwnd-by-process-id-c/20730976#20730976
 // Posted by Andre Kirpitch
@@ -44,7 +42,7 @@ int wmain(const int argc, const wchar_t *argv[]) {
         std::wcerr << L"Failed to get process handle. Will not be able to wait for termination to complete: " << GetLastErrorAsWString() << std::endl;
     }
 
-    if (!PostMessage(g_networkClientWindowHandle, exitOuinetMessage, 0, 0)) {
+    if (!PostMessage(g_networkClientWindowHandle, WM_CLOSE, 0, 0)) {
         std::wcerr << L"Failed to end Ceno Network Client" << std::endl;
         return 1;
     }
