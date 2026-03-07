@@ -21,10 +21,6 @@ ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Log
 
 ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
 ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network
-ceno-browser-ouinet-titlebar-status-connecting = Connecting…
-ceno-browser-ouinet-titlebar-status-connected = Connected
-ceno-browser-ouinet-titlebar-status-degraded = Connected (Connection degraded)
-ceno-browser-ouinet-titlebar-status-local-cache = Local Cache Only
 
 ceno-browser-ouinet-urlbar-connect-button = Connect to Ceno Network
 
