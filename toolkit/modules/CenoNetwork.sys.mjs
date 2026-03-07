@@ -42,6 +42,7 @@ const OuinetPrefs = Object.freeze({
   logging: "ceno.network.logging",
   metrics: "ceno.network.metrics",
   doh: "ceno.network.doh",
+  unencrypted_dns: "ceno.network.unencrypted_dns",
   bridge: "ceno.network.bridge",
 });
 
@@ -175,6 +176,8 @@ class _CenoNetwork {
     logging: Services.prefs.getBoolPref(OuinetPrefs.logging, false),
     metrics: Services.prefs.getBoolPref(OuinetPrefs.metrics, true),
     doh: Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I"),
+    unencrypted_dns: Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I") ?
+      Services.prefs.getBoolPref(OuinetPrefs.unencrypted_dns, true) : true,
     bridge: Services.prefs.getBoolPref(OuinetPrefs.bridge, true),
 
     reachability: undefined,
@@ -191,8 +194,7 @@ class _CenoNetwork {
     res['quickstart'] = this.#quickstart;
     res['headless'] = this.#headless;
 
-    const logFile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
-    res['logfile'] = logFile.exists() ? logFile.path : undefined;
+    res['logfile'] = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path;
 
     return res;
   }
@@ -394,7 +396,8 @@ class _CenoNetwork {
         this.#ouinetState.distributed_cache = json.distributed_cache;
         this.#ouinetState.logging = json.logfile;
         this.#ouinetState.metrics = json.metrics_enabled;
-        this.#ouinetState.doh = json.doh_enabled;
+        this.#ouinetState.doh = json.dns_protocols.includes("https");
+        this.#ouinetState.unencrypted_dns = json.dns_protocols.includes("plain");
         this.#ouinetState.bridge = json.bridge_announcement;
 
         this.#ouinetState.local_cache_size = json.local_cache_size;
@@ -447,6 +450,11 @@ class _CenoNetwork {
     if (element_id in OuinetPrefs) {
       Services.prefs.setBoolPref(OuinetPrefs[element_id], newValue);
       this.#ouinetState[element_id] = newValue;
+      if (element_id === "doh" && !newValue && !this.#ouinetState["unencrypted_dns"]) {
+        this.#ouinetState["unencrypted_dns"] = true;
+      }
+
+      this.#sendNotifications();
     }
 
     while (
@@ -456,7 +464,7 @@ class _CenoNetwork {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    if (element_id === "doh" || element_id === "bridge") {
+    if (element_id === "doh" || element_id === "unencrypted_dns" || element_id === "bridge") {
       if (
         this.#ouinetStage == OuinetStages.Connected ||
         this.#ouinetStage == OuinetStages.Degraded ||
@@ -485,6 +493,13 @@ class _CenoNetwork {
         element_id = "logfile"
       }
       await this.#setValueInAPI(element_id, newValue);
+    } else if (element_id == "logging" && !this.#ouinetState.logging && (
+      this.#ouinetStage == OuinetStages.Init ||
+      this.#ouinetStage == OuinetStages.Exited ||
+      this.#ouinetStage == OuinetStages.Error
+    )) {
+      lazy.logger.error("attempting to remove logfile");
+      lazy.logger.error(lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false));
     }
   }
 
@@ -650,6 +665,9 @@ class _CenoNetwork {
       this.#ouinetProcessMonitor = null;
       if (this.#ouinetStage !== OuinetStages.Exited) {
         this.#setOuinetStage(OuinetStages.Init, true);
+      }
+      if (!this.#ouinetState.logging) {
+        lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
       }
       this.#sendNotifications();
     });
