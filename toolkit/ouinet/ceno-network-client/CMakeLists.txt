@@ -27,19 +27,28 @@ add_definitions(
 
 add_executable(ceno-network-client WIN32
         app.rc
+        ArgumentsConverter.cpp
+        ArgumentsConverter.h
         ErrorUtils.cpp
         ErrorUtils.h
         GuiWindow.cpp
         GuiWindow.h
-        Ouinet.cpp
-        Ouinet.h
         ProcessIdFile.cpp
         ProcessIdFile.h
         Resource.h
         ceno-network-client.cpp
         ceno.ico
+        cenogray.ico
+        StatePoller.cpp
+        StatePoller.h
 )
-target_link_libraries(ceno-network-client comctl32)
+
+target_link_libraries(ceno-network-client comctl32
+    ${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/libclient_lib.dll
+)
+target_include_directories(ceno-network-client PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/)
+
 # No exceptions to match compile options in moz.build,
 # moz.build disabled exceptions by default
 target_compile_options(ceno-network-client PUBLIC -municode -fno-exceptions)

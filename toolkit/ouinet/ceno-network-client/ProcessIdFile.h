@@ -13,7 +13,5 @@ public:
 	explicit ProcessIdFile(const std::filesystem::path &repoPath) : pidFilePath(repoPath / g_pidFilename) {}
 	~ProcessIdFile();
 
-	bool write(DWORD windowProcessId);
-	bool remove(std::error_code &ec);
-	const std::filesystem::path & getPidFilePath() const;
+	bool write(HWND hWnd);
 };
