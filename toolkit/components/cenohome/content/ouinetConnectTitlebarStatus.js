@@ -31,7 +31,7 @@ function ouinetStageToL10n(state, internetStatus) {
     case OuinetStages.Init:
     case OuinetStages.Exited:
     default:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
+      return "ceno-browser-ouinet-titlebar-status-not-connected";
 
     case OuinetStages.StartingProcess:
     case OuinetStages.ConnectingToNetwork:
@@ -92,12 +92,12 @@ class OuinetConnectTitlebarStatus {
         if (topic !== this.#observeTopic) {
           return;
         }
-        this.#stateChanged(subject?.wrappedJSObject?.ouinetStage);
+        this.#stateChanged(subject?.wrappedJSObject ? subject?.wrappedJSObject : CenoNetwork.CenoNetworkState());
       },
     };
     Services.obs.addObserver(this.#stateListener, this.#observeTopic);
 
-    this.#stateChanged(CenoNetwork.CenoNetworkState().ouinetStage);
+    this.#stateChanged(CenoNetwork.CenoNetworkState());
   }
 
   /**
