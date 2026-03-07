@@ -74,7 +74,7 @@ export function internetStatusToL10n(status) {
   }
 };
 
-// Keep OuinetStages in sync with aboutCenoHome.js
+// Keep OuinetStages in sync with aboutCenoHome.js and ouinetConnectTitlebarStatus.js
 export const OuinetStages = Object.freeze({
   Init: "Init",
   StartingProcess: "StartingProcess",
@@ -85,13 +85,17 @@ export const OuinetStages = Object.freeze({
   Error: "Error",
 });
 
-export function ouinetStageToL10n(state) {
+// Keep ouinetStageToL10n in sync with ouinetConnectTitlebarStatus.js
+export function ouinetStageToL10n(state, internetStatus) {
   switch (state) {
     case OuinetStages.Connected:
       return "ceno-browser-ouinet-preferences-ouinet-connection-status-connected";
 
     case OuinetStages.Degraded:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-degraded";
+      if (internetStatus === InternetStatus.Online)
+        return "ceno-browser-ouinet-preferences-ouinet-connection-status-degraded";
+      else
+        return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
 
     case OuinetStages.Init:
     case OuinetStages.Exited:
