@@ -110,8 +110,11 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
     if (config.logging) {
       this.#args.push("--enable-log-file");
     }
-    if (!config.doh) {
-      this.#args.push("--disable-doh");
+    if (config.doh) {
+      this.#args.push("--dns-protocol", "https");
+    }
+    if (config.unencrypted_dns) {
+      this.#args.push("--dns-protocol", "plain");
     }
     if (!config.bridge) {
       this.#args.push("--disable-bridge-announcement");

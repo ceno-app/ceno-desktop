@@ -61,9 +61,11 @@ ceno-browser-ouinet-preferences-bridge-checkbox =
     .label = Enable bridge mode
 
 ceno-browser-ouinet-preferences-doh-heading = DNS over HTTPS
-ceno-browser-ouinet-preferences-doh-description = DNS over HTTPS may be blocked in some areas. Disable to use unencrypted DNS services. Changing this setting requires reconnection to Ceno Network.
+ceno-browser-ouinet-preferences-doh-description = Unencrypted DNS or DNS over HTTPS may be blocked in some areas. Changing DNS settings requires reconnection to Ceno Network.
 ceno-browser-ouinet-preferences-doh-checkbox =
     .label = Use DNS over HTTPS
+ceno-browser-ouinet-preferences-unencrypted-dns-checkbox =
+    .label = Fallback to unencrypted DNS if DNS over HTTPS is unavailable
 
 ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
 ceno-browser-ouinet-preferences-sources-origin-access =
