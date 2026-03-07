@@ -24,6 +24,7 @@ ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Networ
 ceno-browser-ouinet-titlebar-status-connecting = Connecting…
 ceno-browser-ouinet-titlebar-status-connected = Connected
 ceno-browser-ouinet-titlebar-status-degraded = Connected (Connection degraded)
+ceno-browser-ouinet-titlebar-status-local-cache = Local Cache Only
 
 ceno-browser-ouinet-urlbar-connect-button = Connect to Ceno Network
 
@@ -40,6 +41,7 @@ ceno-browser-ouinet-preferences-ouinet-connection-status-label = Ceno Network:
 ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected = Not Connected
 ceno-browser-ouinet-preferences-ouinet-connection-status-connecting = Connecting
 ceno-browser-ouinet-preferences-ouinet-connection-status-degraded = Connected (network connection degraded)
+ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache = Local Cache Only
 ceno-browser-ouinet-preferences-ouinet-connection-status-connected = Connected
 ceno-browser-ouinet-preferences-ouinet-connection-status-error = Error
 

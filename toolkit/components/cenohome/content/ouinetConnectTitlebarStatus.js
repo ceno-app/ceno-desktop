@@ -1,5 +1,47 @@
 // Taken from TorConnectTitlebarStatus
 
+const InternetStatus = Object.freeze({
+  Unknown: -1,
+  Offline: 0,
+  Online: 1,
+});
+
+const OuinetStages = Object.freeze({
+  Init: "Init",
+  StartingProcess: "StartingProcess",
+  ConnectingToNetwork: "ConnectingToNetwork",
+  Connected: "Connected",
+  Degraded: "Degraded",
+  Exited: "Exited",
+  Error: "Error",
+});
+
+// Keep ouinetStageToL10n in sync with ouinetConnectTitlebarStatus.js
+function ouinetStageToL10n(state, internetStatus) {
+  switch (state) {
+    case OuinetStages.Connected:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connected";
+
+    case OuinetStages.Degraded:
+      if (internetStatus === InternetStatus.Online)
+        return "ceno-browser-ouinet-preferences-ouinet-connection-status-degraded";
+      else
+        return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
+
+    case OuinetStages.Init:
+    case OuinetStages.Exited:
+    default:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
+
+    case OuinetStages.StartingProcess:
+    case OuinetStages.ConnectingToNetwork:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connecting";
+
+    case OuinetStages.Error:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-error";
+  }
+};
+
 /**
  * A OuinetConnect status shown in the application title bar.
  */
@@ -55,7 +97,7 @@ class OuinetConnectTitlebarStatus {
     };
     Services.obs.addObserver(this.#stateListener, this.#observeTopic);
 
-    this.#stateChanged();
+    this.#stateChanged(CenoNetwork.CenoNetworkState().ouinetStage);
   }
 
   /**
@@ -68,33 +110,11 @@ class OuinetConnectTitlebarStatus {
   /**
    * Callback for when the CenoNetwork state changes.
    */
-  #stateChanged(ouinetStage) {
-    if (!ouinetStage) {
-      ouinetStage = CenoNetwork.CenoNetworkState().ouinetStage;
-    }
-    let textId;
-    let connected = false;
-    switch (ouinetStage) {
-      case OuinetStages.Connected:
-        textId = 'ceno-browser-ouinet-titlebar-status-connected';
-        connected = true;
-        break;
-      case OuinetStages.Degraded:
-        textId = 'ceno-browser-ouinet-titlebar-status-degraded';
-        break;
-      case OuinetStages.StartingProcess:
-      case OuinetStages.ConnectingToNetwork:
-        textId = 'ceno-browser-ouinet-titlebar-status-connecting';
-        break;
-      case OuinetStages.Init:
-      case OuinetStages.Exited:
-      case OuinetStages.Error:
-      default:
-        textId = 'ceno-browser-ouinet-titlebar-status-not-connected';
-        break;
-    }
+  #stateChanged(state) {
+    const textId = ouinetStageToL10n(state.ouinetStage, state.internetStatus);
     document.l10n.setAttributes(this.#label, textId);
 
+    const connected = state.ouinetStage == OuinetStages.Connected;
     if (this.#connected !== connected) {
       this.#node.classList.toggle("ouinet-connect-status-connected", connected);
       this.#connected = connected;

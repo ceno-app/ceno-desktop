@@ -8,16 +8,23 @@
 /* import-globals-from /browser/components/preferences/preferences.js */
 /* import-globals-from /browser/components/preferences/search.js */
 
-const { CenoNetwork, CenoNetworkTopics, internetStatusToL10n, OuinetStages, ouinetStageToL10n } =
-  ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
+const {
+  CenoNetwork,
+  CenoNetworkTopics,
+  CenoNetworkErrors,
+  internetStatusToL10n,
+  InternetStatus,
+  OuinetStages,
+  ouinetStageToL10n
+} = ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
 
 class ConnectionPane {
   #selectors = Object.freeze({
-    internet_connection_status: "span#network-status-internet",
     ouinet_connection_status: "span#network-status-ouinet",
     ouinet_connect_button: "button#network-status-ouinet-connect-button",
     ouinet_disconnect_button: "button#network-status-ouinet-disconnect-button",
     ouinet_cancel_button: "button#network-status-ouinet-cancel-button",
+
     ouinet_quickstart_toggle: "moz-toggle#ouinet-connection-quickstart-toggle",
     ouinet_headless_toggle: "moz-toggle#ouinet-connection-headless-toggle",
 
@@ -49,11 +56,12 @@ class ConnectionPane {
   #elements = {};
   #initElements() {
     this.#elements = Object.freeze({
-      internet_connection_status: document.querySelector(this.#selectors.internet_connection_status),
       ouinet_connection_status: document.querySelector(this.#selectors.ouinet_connection_status),
       ouinet_connect_button: document.querySelector(this.#selectors.ouinet_connect_button),
       ouinet_cancel_button: document.querySelector(this.#selectors.ouinet_cancel_button),
       ouinet_disconnect_button: document.querySelector(this.#selectors.ouinet_disconnect_button),
+      ouinet_enableloggingandreconnect_button: document.querySelector("button#network-status-ouinet-enableloggingandreconnect-button"),
+
       ouinet_quickstart_toggle: document.querySelector(this.#selectors.ouinet_quickstart_toggle),
       ouinet_headless_toggle: document.querySelector(this.#selectors.ouinet_headless_toggle),
 
@@ -65,6 +73,13 @@ class ConnectionPane {
 
         personal_unreachable: document.querySelector(this.#selectors.sources.personal_unreachable),
         public_unreachable: document.querySelector(this.#selectors.sources.public_unreachable),
+      },
+
+      errors: {
+        link_status_offline: document.querySelector("p#error-message-link-status-offline"),
+        failed_to_start: document.querySelector("p#error-message-failed-to-start"),
+        failed_to_start_show_log: document.querySelector("p#error-message-failed-to-start-show-log"),
+        show_logfile: document.querySelector("a.showlogfile"),
       },
 
       logging: document.querySelector(this.#selectors.logging),
@@ -94,16 +109,20 @@ class ConnectionPane {
   #addEventListeners() {
     this.#elements.ouinet_connect_button.addEventListener("click", () => {
       CenoNetwork.connect();
-    })
+    });
     this.#elements.ouinet_disconnect_button.addEventListener("click", () => {
       CenoNetwork.cancel();
-    })
+    });
     this.#elements.ouinet_cancel_button.addEventListener("click", () => {
       CenoNetwork.cancel();
-    })
+    });
+    this.#elements.ouinet_enableloggingandreconnect_button.addEventListener("click", () => {
+      CenoNetwork.setOuinetConfigValue('logging', true);
+      CenoNetwork.connect();
+    });
     this.#elements.clear_cache_button.addEventListener("click", () => {
       CenoNetwork.purgeOuinetCache();
-    })
+    });
 
     this.#elements.ouinet_quickstart_toggle.addEventListener("toggle", () => {
       CenoNetwork.setQuickstart(this.#elements.ouinet_quickstart_toggle.pressed);
@@ -160,24 +179,22 @@ class ConnectionPane {
   }
 
   #update_ui(state) {
-    document.l10n.setAttributes(this.#elements.internet_connection_status, internetStatusToL10n(state.internetStatus));
-    document.l10n.setAttributes(this.#elements.ouinet_connection_status, ouinetStageToL10n(state.ouinetStage));
+    document.l10n.setAttributes(this.#elements.ouinet_connection_status, ouinetStageToL10n(state.ouinetStage, state.internetStatus));
     this.#elements.ouinet_quickstart_toggle.pressed = state.quickstart;
     this.#elements.ouinet_headless_toggle.pressed = state.headless;
 
+    this.#elements.ouinet_connect_button.hidden = true;
+    this.#elements.ouinet_cancel_button.hidden = true;
+    this.#elements.ouinet_disconnect_button.hidden = true;
     switch (state.ouinetStage) {
       case OuinetStages.Connected:
       case OuinetStages.Degraded:
-        this.#elements.ouinet_connect_button.hidden = true;
-        this.#elements.ouinet_cancel_button.hidden = true;
         this.#elements.ouinet_disconnect_button.hidden = false;
         break;
 
       case OuinetStages.StartingProcess:
       case OuinetStages.ConnectingToNetwork:
-        this.#elements.ouinet_connect_button.hidden = true;
         this.#elements.ouinet_cancel_button.hidden = false;
-        this.#elements.ouinet_disconnect_button.hidden = true;
         break;
 
       case OuinetStages.Init:
@@ -185,10 +202,29 @@ class ConnectionPane {
       case OuinetStages.Error:
       default:
         this.#elements.ouinet_connect_button.hidden = false;
-        this.#elements.ouinet_cancel_button.hidden = true;
-        this.#elements.ouinet_disconnect_button.hidden = true;
         break;
     }
+
+    this.#elements.ouinet_enableloggingandreconnect_button.hidden = true;
+    this.#elements.errors.link_status_offline.hidden = true;
+    this.#elements.errors.failed_to_start.hidden = true;
+    this.#elements.errors.failed_to_start_show_log.hidden = true;
+    this.#elements.errors.show_logfile.hidden = true;
+
+    if (state.ouinetStage === OuinetStages.Error) {
+      if (state.error === CenoNetworkErrors.FailedToStart) {
+        this.#elements.errors.failed_to_start_show_log.hidden = false;
+
+        this.#elements.errors.show_logfile.href = 'file://' + state.logfile;
+        this.#elements.errors.show_logfile.innerHTML = 'log.txt';
+        this.#elements.errors.show_logfile.removeAttribute('hidden');
+      }
+      else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
+        this.#elements.ouinet_enableloggingandreconnect_button.hidden = false;
+        this.#elements.errors.failed_to_start.hidden = false;
+      }
+    }
+    this.#elements.errors.link_status_offline.hidden = state.internetStatus === InternetStatus.Online;
 
     this.#set_toggle(this.#elements.sources.origin_access, state.origin_access);
     this.#set_toggle(this.#elements.sources.proxy_access, state.proxy_access);
