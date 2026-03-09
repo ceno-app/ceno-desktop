@@ -172,6 +172,7 @@ export class OuinetProcess {
     if (config.logging) {
       this.#args.push("--enable-log-file");
     }
+    this.#args.push("--log-level", config.logging_level);
     if (config.doh) {
       this.#args.push("--dns-protocol", "https");
     }

@@ -82,6 +82,7 @@ class ConnectionPane {
       },
 
       logging: document.querySelector(this.#selectors.logging),
+      logging_level: document.getElementById("logging-level"),
       metrics: document.querySelector(this.#selectors.metrics),
       doh: document.querySelector(this.#selectors.doh),
       unencrypted_dns: document.querySelector(this.#selectors.unencrypted_dns),
@@ -149,6 +150,9 @@ class ConnectionPane {
 
     this.#elements.logging.addEventListener("toggle", () => {
       CenoNetwork.setOuinetConfigValue('logging', this.#elements.logging.pressed);
+    });
+    this.#elements.logging_level.addEventListener("change", (e) => {
+      CenoNetwork.setOuinetConfigValue('logging_level', e.target.value);
     });
 
     this.#elements.metrics.addEventListener("toggle", () => {
@@ -253,6 +257,9 @@ class ConnectionPane {
     } else {
       this.#elements.logfile.hidden = true;
     }
+    this.#elements.logging_level.value = state.logging_level;
+    this.#elements.logging_level.disabled = !state.logging;
+
     this.#set_toggle(this.#elements.metrics, state.metrics);
     this.#set_toggle(this.#elements.doh, state.doh);
     this.#set_toggle(this.#elements.unencrypted_dns, state.unencrypted_dns);
