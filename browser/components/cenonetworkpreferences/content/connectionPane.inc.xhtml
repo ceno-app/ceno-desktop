@@ -49,7 +49,7 @@
     <html:p id="error-message-link-status-offline" data-l10n-id="ceno-browser-about-ceno-home-link-status-offline"></html:p>
     <html:p id="error-message-failed-to-start" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start"></html:p>
     <html:p id="error-message-failed-to-start-show-log" data-l10n-id="ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log">
-      <html:a data-l10n-name="showlogfile" class="showlogfile" href=""></html:a>
+      <html:a data-l10n-name="showlogfile" id="showlogfile_err_msg" target="_blank" data-l10n-id="ceno-browser-ouinet-preferences-logging-show-logfile"></html:a>
     </html:p>
   </html:div>
 
@@ -244,7 +244,7 @@
     data-l10n-id="ceno-browser-ouinet-preferences-logging-checkbox"
     data-l10n-attrs="label"
   />
-  <html:a id="ouinet-logfile" target="_blank">logfile.txt</html:a>
+  <html:a class="showlogfile" id="showlogfile" target="_blank" data-l10n-id="ceno-browser-ouinet-preferences-logging-show-logfile"></html:a>
 </vbox>
 
 <groupbox data-category="paneConnection" hidden="true">

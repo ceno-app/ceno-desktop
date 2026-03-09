@@ -191,8 +191,8 @@ class _CenoNetwork {
     res['error'] = this.#error
     res['quickstart'] = this.#quickstart;
     res['headless'] = this.#headless;
-    res['logfile'] = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path;
-
+    const logfile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
+    res['logfile'] = res['logging'] && logfile.exists() ? lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path : false;
     return res;
   }
 
