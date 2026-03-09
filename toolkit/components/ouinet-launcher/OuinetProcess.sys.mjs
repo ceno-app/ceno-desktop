@@ -71,7 +71,9 @@ export class OuinetProcess {
     const options = {
       command: OuinetProcess.#exeFile.path,
       arguments: this.#args,
-      stderr: "stdout",
+      stdin: 'devnull',
+      stdout: 'devnull',
+      stderr: 'devnull',
       workdir: lazy.OuinetLauncherUtil.getOuinetFile("startup-dir", false).path,
     };
     if (lazy.OuinetLauncherUtil.isLinux) {
@@ -112,8 +114,8 @@ export class OuinetProcess {
       }
       const processObserver = {
         QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
-        observe: function(subject, topic, data) {
-          onExitLocalCopy(data === "normal" ? 0 : 1);
+        observe: function(subject, topic, exitCode) {
+          onExitLocalCopy(exitCode);
         }
       };
       try {

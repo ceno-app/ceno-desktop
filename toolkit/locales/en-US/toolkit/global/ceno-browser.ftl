@@ -40,6 +40,8 @@ ceno-browser-ouinet-preferences-ouinet-connection-status-degraded = Connected (n
 ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache = Local Cache Only
 ceno-browser-ouinet-preferences-ouinet-connection-status-connected = Connected
 ceno-browser-ouinet-preferences-ouinet-connection-status-error = Error
+ceno-browser-ouinet-preferences-ouinet-connection-status-exiting = Exiting
+ceno-browser-ouinet-preferences-ouinet-connection-status-restarting = Restarting
 
 ceno-browser-ouinet-preferences-automatic-heading = Connect automatically
 ceno-browser-ouinet-preferences-automatic-description = Automatically connect to the Ceno network at launch using your current connection settings.
@@ -80,6 +82,14 @@ ceno-browser-ouinet-preferences-logging-heading = Logging
 ceno-browser-ouinet-preferences-logging-checkbox =
     .label = Enable local log file
 ceno-browser-ouinet-preferences-logging-show-logfile = Show logfile
+ceno-browser-ouinet-preferences-logging-level = Logging Level
+logging-level-silly = Silly
+logging-level-debug = Debug
+logging-level-verbose = Verbose
+logging-level-info = Info
+logging-level-warn = Warning
+logging-level-error = Error
+logging-level-abort = Abort
 
 ceno-browser-ouinet-preferences-network-heading = Network
 
