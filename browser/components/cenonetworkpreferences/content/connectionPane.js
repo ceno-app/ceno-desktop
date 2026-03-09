@@ -205,7 +205,6 @@ class ConnectionPane {
       case OuinetStages.Init:
       case OuinetStages.Exited:
       case OuinetStages.Error:
-      default:
         this.#elements.ouinet_connect_button.hidden = false;
         break;
     }

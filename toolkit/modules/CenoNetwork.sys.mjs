@@ -80,6 +80,8 @@ export const OuinetStages = Object.freeze({
   ConnectingToNetwork: "ConnectingToNetwork",
   Connected: "Connected",
   Degraded: "Degraded",
+  Exiting: "Exiting",
+  Restarting: "Restarting",
   Exited: "Exited",
   Error: "Error",
 });
@@ -96,17 +98,22 @@ export function ouinetStageToL10n(state, internetStatus) {
       else
         return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
 
-    case OuinetStages.Init:
-    case OuinetStages.Exited:
-    default:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
-
     case OuinetStages.StartingProcess:
     case OuinetStages.ConnectingToNetwork:
       return "ceno-browser-ouinet-preferences-ouinet-connection-status-connecting";
 
     case OuinetStages.Error:
       return "ceno-browser-ouinet-preferences-ouinet-connection-status-error";
+
+    case OuinetStages.Exiting:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-exiting";
+    case OuinetStages.Restarting:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-restarting";
+
+    case OuinetStages.Init:
+    case OuinetStages.Exited:
+    default:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
   }
 };
 
@@ -174,8 +181,7 @@ class _CenoNetwork {
     this.#ouinetState.logging = Services.prefs.getBoolPref(OuinetPrefs.logging, false);
     this.#ouinetState.metrics = Services.prefs.getBoolPref(OuinetPrefs.metrics, true);
     this.#ouinetState.doh = Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I");
-    this.#ouinetState.unencrypted_dns = Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I") ?
-      Services.prefs.getBoolPref(OuinetPrefs.unencrypted_dns, true) : true;
+    this.#ouinetState.unencrypted_dns = this.#ouinetState.doh ? Services.prefs.getBoolPref(OuinetPrefs.unencrypted_dns, true) : true;
     this.#ouinetState.bridge = Services.prefs.getBoolPref(OuinetPrefs.bridge, true);
 
     this.#ouinetState.reachability = undefined;
@@ -197,7 +203,6 @@ class _CenoNetwork {
   }
 
   #sendNotifications() {
-    lazy.logger.debug("Sending notifications", this.#ouinetStage, this.#ouinetState);
     Services.obs.notifyObservers(this.CenoNetworkState(), CenoNetworkTopics.StateChange);
     if (
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -218,16 +223,12 @@ class _CenoNetwork {
       return;
     }
     this.#internetStatus = newStatus;
+    await this.#waitForProcessToSettle();
     if (
-      this.#ouinetStage === OuinetStages.StartingProcess ||
-      this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
       this.#ouinetStage === OuinetStages.Connected
     ) {
-      this.#onOuinetExit_post = () => {
-        this.connect();
-      }
-      this.cancel();
+      this.#restart();
     }
     this.#sendNotifications();
   }
@@ -267,7 +268,7 @@ class _CenoNetwork {
   async init() {
     this.#initOuinetState();
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
-    this.#updateInternetStatus();
+    await this.#updateInternetStatus();
 
     if (lazy.OuinetProcess.pidExists()) {
       lazy.logger.debug('Trying to inherit previous Ceno Network Connection');
@@ -438,6 +439,25 @@ class _CenoNetwork {
     }
   }
 
+  #restartIfRunning() {
+    if (
+      this.#ouinetStage == OuinetStages.Connected ||
+      this.#ouinetStage == OuinetStages.Degraded
+    ) {
+      this.#restart();
+    }
+  }
+  async #waitForProcessToSettle() {
+    while (
+      this.#ouinetStage == OuinetStages.Restarting ||
+      this.#ouinetStage == OuinetStages.Exiting ||
+      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
+      this.#ouinetStage == OuinetStages.StartingProcess
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
   async setOuinetConfigValue(element_id, newValue) {
     lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
     if (element_id in OuinetPrefs) {
@@ -451,33 +471,11 @@ class _CenoNetwork {
       this.#sendNotifications();
     }
 
-    while (
-      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-      this.#ouinetStage == OuinetStages.StartingProcess
-    ) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    await this.#waitForProcessToSettle();
 
     if (element_id === "doh" || element_id === "unencrypted_dns" || element_id === "bridge") {
-      if (
-        this.#ouinetStage == OuinetStages.Connected ||
-        this.#ouinetStage == OuinetStages.Degraded ||
-        this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-        this.#ouinetStage == OuinetStages.StartingProcess
-      ) {
-        this.#onOuinetExit_post = () => {
-          this.connect();
-        };
-        this.cancel();
-      }
+      this.#restartIfRunning();
       return;
-    }
-
-    while (
-      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-      this.#ouinetStage == OuinetStages.StartingProcess
-    ) {
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     if (element_id == "logging" && !this.#ouinetState.logging) {
@@ -486,12 +484,20 @@ class _CenoNetwork {
         this.#ouinetStage == OuinetStages.Exited ||
         this.#ouinetStage == OuinetStages.Error
       ) {
-        lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
+        try {
+          lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
+        } catch (e) {
+          lazy.logger.error("Failed to remove log file: ", e);
+        }
       } else {
         this.#onOuinetExit_pre = () => {
           // Make sure that logging was not toggled back on before removing the log file
           if (!this.#ouinetState.logging) {
-            lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
+            try {
+              lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
+            } catch (e) {
+              lazy.logger.error("Failed to remove log file: ", e);
+            }
           }
         }
       }
@@ -694,10 +700,52 @@ class _CenoNetwork {
   }
 
   cancel() {
-    // Only request to close, don't change OuinetStage until it actually closes
     lazy.logger.debug("CenoNetwork.cancel() ", this.#ouinetStage);
+    const connectionId = this.#connectionId;
     if (null !== this.#ouinetProcess) {
+      this.#setOuinetStage(OuinetStages.Exiting);
       this.#ouinetProcess.stop();
+      const doubleTapTimeout = 500;
+      new Promise(resolve => setTimeout(() => {
+        if (
+          connectionId === this.#connectionId &&
+          this.#ouinetStage === OuinetStages.Exiting
+        ){
+          this.#ouinetProcess.stop();
+        }
+        resolve();
+      }, doubleTapTimeout));
+
+    } else {
+      lazy.logger.warn("No connection to cancel");
+    }
+    this.#sendNotifications();
+  }
+
+  #restart() {
+    lazy.logger.debug("CenoNetwork.#restart() ", this.#ouinetStage);
+    const connectionId = this.#connectionId;
+    if (null !== this.#ouinetProcess) {
+      this.#setOuinetStage(OuinetStages.Restarting);
+      this.#onOuinetExit_post = () => {
+        if (connectionId === this.#connectionId && (
+          this.#ouinetStage === OuinetStages.Exited ||
+          this.#ouinetStage === OuinetStages.Init
+        )) {
+          this.connect();
+        }
+      }
+      this.#ouinetProcess.stop();
+      const doubleTapTimeout = 500;
+      new Promise(resolve => setTimeout(() => {
+        if (
+          connectionId === this.#connectionId &&
+          this.#ouinetStage === OuinetStages.Restarting
+        ){
+          this.#ouinetProcess.stop();
+        }
+        resolve();
+      }, doubleTapTimeout));
     } else {
       lazy.logger.warn("No connection to cancel");
     }
@@ -707,12 +755,7 @@ class _CenoNetwork {
   async purgeOuinetCache() {
     lazy.logger.debug("Purging Ouinet cache");
 
-    while (
-      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-      this.#ouinetStage == OuinetStages.StartingProcess
-    ) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    await this.#waitForProcessToSettle();
     if (
       this.#ouinetStage == OuinetStages.Connected ||
       this.#ouinetStage == OuinetStages.Degraded
@@ -723,12 +766,7 @@ class _CenoNetwork {
   }
 
   async newIdentity() {
-    while (
-      this.#ouinetStage == OuinetStages.ConnectingToNetwork ||
-      this.#ouinetStage == OuinetStages.StartingProcess
-    ) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    await this.#waitForProcessToSettle();
 
     if (
       this.#ouinetStage == OuinetStages.Connected ||

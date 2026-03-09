@@ -48,8 +48,23 @@ OuinetNativeHelpers::EndProcess(const int32_t pid) {
 
 NS_IMETHODIMP
 OuinetNativeHelpers::MonitorProcess(const int32_t pid, nsIObserver *callback) {
-    HANDLE hProcess = ::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
-    if (NULL == hProcess) {
+    struct HandleGuard {
+        HANDLE h;
+        explicit HandleGuard(HANDLE handle) : h(handle) {}
+        ~HandleGuard() { if (h) ::CloseHandle(h); }
+        void close() {
+            if (h) {
+                ::CloseHandle(h);
+                h = nullptr;
+            }
+        }
+        // Prevent copying (which would double-close)
+        HandleGuard(const HandleGuard&) = delete;
+        HandleGuard(HandleGuard&& other) : h(other.h) { other.h = nullptr; }
+    };
+
+    HandleGuard hProcess(::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 0, pid));
+    if (NULL == hProcess.h) {
         return NS_ERROR_INVALID_ARG;
     }
 
@@ -65,14 +80,23 @@ OuinetNativeHelpers::MonitorProcess(const int32_t pid, nsIObserver *callback) {
     nsresult rv = NS_NewNamedThread("ProcessWait", getter_AddRefs(thread));
     NS_ENSURE_SUCCESS(rv, rv);
     
-    thread->Dispatch(NS_NewRunnableFunction("ProcessWait", [hProcess, mainThread, observer = std::move(observer)]() mutable {
-        DWORD result = ::WaitForSingleObject(hProcess, INFINITE);
-        ::CloseHandle(hProcess);
-        
-        mainThread->Dispatch(NS_NewRunnableFunction("ProcessExit", [observer = std::move(observer), result]() {
-            observer->Observe(nullptr, "ouinet-process-exited", (result == WAIT_OBJECT_0) ? u"normal" : u"error");
-        }), NS_DISPATCH_NORMAL);
-        
+    thread->Dispatch(NS_NewRunnableFunction("ProcessWait", [mainThread, hProcess = std::move(hProcess), observer = std::move(observer)]() mutable {
+        DWORD result = ::WaitForSingleObject(hProcess.h, INFINITE);
+        DWORD exitCode = 1;
+        BOOL exitCodeGetterStatus = 0;
+        if (result == WAIT_OBJECT_0) {
+            exitCodeGetterStatus = ::GetExitCodeProcess(hProcess.h, &exitCode);
+        }
+        hProcess.close();
+
+        if (exitCodeGetterStatus) {
+            mainThread->Dispatch(NS_NewRunnableFunction("ProcessExit", [observer = std::move(observer), exitCode]() {
+                nsAutoString exitCodeStr;
+                exitCodeStr.AppendInt(static_cast<int32_t>(exitCode));
+                observer->Observe(nullptr, "ouinet-process-exited", exitCodeStr.get());
+            }), NS_DISPATCH_NORMAL);
+        }
+
         nsCOMPtr<nsIThread> currentThread;
         NS_GetCurrentThread(getter_AddRefs(currentThread));
         currentThread->Shutdown();
