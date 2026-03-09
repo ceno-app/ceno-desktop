@@ -28,17 +28,22 @@ function ouinetStageToL10n(state, internetStatus) {
       else
         return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
 
-    case OuinetStages.Init:
-    case OuinetStages.Exited:
-    default:
-      return "ceno-browser-ouinet-titlebar-status-not-connected";
-
     case OuinetStages.StartingProcess:
     case OuinetStages.ConnectingToNetwork:
       return "ceno-browser-ouinet-preferences-ouinet-connection-status-connecting";
 
     case OuinetStages.Error:
       return "ceno-browser-ouinet-preferences-ouinet-connection-status-error";
+
+    case OuinetStages.Exiting:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-exiting";
+    case OuinetStages.Restarting:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-restarting";
+
+    case OuinetStages.Init:
+    case OuinetStages.Exited:
+    default:
+      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
   }
 };
 
