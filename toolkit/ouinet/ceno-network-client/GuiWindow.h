@@ -5,7 +5,6 @@
 #include <windows.h>
 
 #include "ArgumentsConverter.h"
-#include "ProcessIdFile.h"
 
 extern std::atomic<HWND> windowHandleForCommunicatingFromOtherThreads;
 extern std::atomic_int g_exitCode;
@@ -13,4 +12,4 @@ extern std::atomic_flag g_ouinetIsStuckOnExit_ForceExitInMain;
 
 constexpr UINT ouinetStateChange = WM_APP + 3;
 
-HWND createGuiWindow(HINSTANCE hInstance, ArgvConverter *args, ProcessIdFile *pidFile);
+HWND createGuiWindow(HINSTANCE hInstance, ArgvConverter *args);
