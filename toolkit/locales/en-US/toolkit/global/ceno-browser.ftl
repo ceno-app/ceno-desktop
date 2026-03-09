@@ -15,7 +15,7 @@ ceno-browser-about-ceno-home-connect-button = Connect
 ceno-browser-about-ceno-home-disconnect-button = Disconnect
 
 ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
-ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile" id="showlogfile-orig">Show logfile</a>.
+ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile">Show logfile</a>.
 ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
 ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Logging and Retry
 
@@ -79,6 +79,7 @@ ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing
 ceno-browser-ouinet-preferences-logging-heading = Logging
 ceno-browser-ouinet-preferences-logging-checkbox =
     .label = Enable local log file
+ceno-browser-ouinet-preferences-logging-show-logfile = Show logfile
 
 ceno-browser-ouinet-preferences-network-heading = Network
 

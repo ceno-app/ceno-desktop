@@ -39,7 +39,6 @@ class ConnectionPane {
     },
 
     logging: "moz-toggle#ouinet-logging",
-    logfile: "a#ouinet-logfile",
     metrics: "moz-toggle#ouinet-metrics",
     doh: "moz-toggle#ouinet-doh",
     unencrypted_dns: "moz-toggle#ouinet-unencrypted-dns",
@@ -80,11 +79,9 @@ class ConnectionPane {
         link_status_offline: document.querySelector("p#error-message-link-status-offline"),
         failed_to_start: document.querySelector("p#error-message-failed-to-start"),
         failed_to_start_show_log: document.querySelector("p#error-message-failed-to-start-show-log"),
-        show_logfile: document.querySelector("a.showlogfile"),
       },
 
       logging: document.querySelector(this.#selectors.logging),
-      logfile: document.querySelector(this.#selectors.logfile),
       metrics: document.querySelector(this.#selectors.metrics),
       doh: document.querySelector(this.#selectors.doh),
       unencrypted_dns: document.querySelector(this.#selectors.unencrypted_dns),
@@ -97,6 +94,9 @@ class ConnectionPane {
       upnp: document.querySelector(this.#selectors.upnp),
       local_udp: document.querySelector(this.#selectors.local_udp),
       public_udp: document.querySelector(this.#selectors.public_udp),
+
+      logfile_err_msg: document.querySelector("a#showlogfile_err_msg"),
+      logfile: document.querySelector("a#showlogfile"),
     });
   }
 
@@ -214,17 +214,15 @@ class ConnectionPane {
     this.#elements.errors.link_status_offline.hidden = true;
     this.#elements.errors.failed_to_start.hidden = true;
     this.#elements.errors.failed_to_start_show_log.hidden = true;
-    this.#elements.errors.show_logfile.hidden = true;
 
     if (state.ouinetStage === OuinetStages.Error) {
       if (state.error === CenoNetworkErrors.FailedToStart) {
-        this.#elements.errors.failed_to_start_show_log.hidden = false;
-
-        this.#elements.errors.show_logfile.href = 'file://' + state.logfile;
-        this.#elements.errors.show_logfile.innerHTML = 'log.txt';
-        this.#elements.errors.show_logfile.removeAttribute('hidden');
-      }
-      else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
+        if (state.logfile) {
+          this.#elements.errors.failed_to_start_show_log.hidden = false;
+        } else {
+          this.#elements.errors.failed_to_start.hidden = false;
+        }
+      } else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
         this.#elements.ouinet_enableloggingandreconnect_button.hidden = false;
         this.#elements.errors.failed_to_start.hidden = false;
       }
@@ -249,12 +247,12 @@ class ConnectionPane {
     }
 
     this.#set_toggle(this.#elements.logging, state.logging);
-    if (state.logging) {
+    if (state.logfile) {
+      this.#elements.logfile_err_msg.href = 'file://' + state.logfile;
       this.#elements.logfile.href = 'file://' + state.logfile;
-      this.#elements.logfile.innerHTML = 'log.txt';
       this.#elements.logfile.removeAttribute('hidden');
     } else {
-      this.#elements.logfile.hidden = 'true';
+      this.#elements.logfile.hidden = true;
     }
     this.#set_toggle(this.#elements.metrics, state.metrics);
     this.#set_toggle(this.#elements.doh, state.doh);
