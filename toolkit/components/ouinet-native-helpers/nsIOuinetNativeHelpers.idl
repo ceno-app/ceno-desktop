@@ -6,6 +6,8 @@
 // the QueryInterface method.
 #include "nsISupports.idl"
 
+interface nsIObserver;
+
 // `scriptable` designates that this object will be used with JavaScript
 [scriptable, uuid(5ad3ef67-af51-4a67-9756-ca37388db375)]
 interface nsIOuinetNativeHelpers : nsISupports {
@@ -14,4 +16,8 @@ interface nsIOuinetNativeHelpers : nsISupports {
 
   AString GetRealAppData(in AString virtualAppData);
   AString GetShortPath(in AString longPath);
+
+  void EndProcess(in long pid);
+
+  void MonitorProcess(in long pid, in nsIObserver callback);
 };

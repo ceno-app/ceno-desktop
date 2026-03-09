@@ -13,7 +13,6 @@ struct ArgvConverter {
     std::vector<std::string> storage;
     std::vector<const char*> argv;
 
-    std::optional<std::filesystem::path> repo_path;
     std::optional<std::filesystem::path> ceno_network_client_path;
 
     explicit ArgvConverter(const wchar_t *wArgsStr);

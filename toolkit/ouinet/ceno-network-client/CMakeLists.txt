@@ -33,8 +33,6 @@ add_executable(ceno-network-client WIN32
         ErrorUtils.h
         GuiWindow.cpp
         GuiWindow.h
-        ProcessIdFile.cpp
-        ProcessIdFile.h
         Resource.h
         ceno-network-client.cpp
         ceno.ico
