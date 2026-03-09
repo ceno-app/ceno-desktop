@@ -245,6 +245,19 @@
     data-l10n-attrs="label"
   />
   <html:a class="showlogfile" id="showlogfile" target="_blank" data-l10n-id="ceno-browser-ouinet-preferences-logging-show-logfile"></html:a>
+
+  <hbox align="center">
+    <html:select id="logging-level">
+      <html:option data-l10n-id="logging-level-silly" value="silly"/>
+      <html:option data-l10n-id="logging-level-debug" value="debug"/>
+      <html:option data-l10n-id="logging-level-verbose" value="verbose"/>
+      <html:option data-l10n-id="logging-level-info" value="info"/>
+      <html:option data-l10n-id="logging-level-warn" value="warn"/>
+      <html:option data-l10n-id="logging-level-error" value="error"/>
+      <html:option data-l10n-id="logging-level-abort" value="abort"/>
+    </html:select>
+    <label id="logging-level-label" data-l10n-id="ceno-browser-ouinet-preferences-logging-level" control="logging-level" />
+  </hbox>
 </vbox>
 
 <groupbox data-category="paneConnection" hidden="true">
