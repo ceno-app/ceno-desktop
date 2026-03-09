@@ -6,7 +6,7 @@
 #include "GuiWindow.h"
 #include "StatePoller.h"
 
-static std::thread thread;
+static std::thread poller_thread;
 static std::atomic_flag keep_going;
 
 static void work() {
@@ -25,10 +25,12 @@ static void work() {
 
 void startStatePoller() {
     keep_going.test_and_set();
-    thread = std::thread(work);
+    poller_thread = std::thread(work);
 }
 
 void stopStatePoller() {
-    keep_going.clear();
-    thread.detach();
+    if (poller_thread.joinable()) {
+        keep_going.clear();
+        poller_thread.detach();
+    }
 }
