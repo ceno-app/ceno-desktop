@@ -38,9 +38,7 @@ export class OuinetProcess {
 
   static #metricsServerUrl = "https://endpoint-dev.ouinet.work/.well-known/endpoint";
   static #metricsServerCaCertFile = lazy.OuinetLauncherUtil.getOuinetFile("metrics-server-cacert", false);
-  static #metricsEncryptionKey = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
------END PUBLIC KEY-----`;
+  static #metricsEncryptionKey = "MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=";
   static #metricsServerToken = "CcmPTtdB5unF8q74AlGf1XMHYuo9opst";
 
   static #pidPref = "ceno.network.pid";
