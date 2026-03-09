@@ -38,6 +38,7 @@ const OuinetPrefs = Object.freeze({
   injector_access: "ceno.network.injector_access",
   distributed_cache: "ceno.network.distributed_cache",
   logging: "ceno.network.logging",
+  logging_level: "ceno.network.logging_level",
   metrics: "ceno.network.metrics",
   doh: "ceno.network.doh",
   unencrypted_dns: "ceno.network.unencrypted_dns",
@@ -179,6 +180,7 @@ class _CenoNetwork {
 
     this.#ouinetState.local_cache_size = undefined;
     this.#ouinetState.logging = Services.prefs.getBoolPref(OuinetPrefs.logging, false);
+    this.#ouinetState.logging_level = Services.prefs.getStringPref(OuinetPrefs.logging_level, "error");
     this.#ouinetState.metrics = Services.prefs.getBoolPref(OuinetPrefs.metrics, true);
     this.#ouinetState.doh = Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I");
     this.#ouinetState.unencrypted_dns = this.#ouinetState.doh ? Services.prefs.getBoolPref(OuinetPrefs.unencrypted_dns, true) : true;
@@ -458,8 +460,23 @@ class _CenoNetwork {
     }
   }
 
+  // @TODO: this could be simplified somehow
+  // it got a bit ugly over time
   async setOuinetConfigValue(element_id, newValue) {
+    if (element_id === "logging_level") {
+      if (!["silly", "debug", "verbose", "info", "warn", "error", "abort"].includes(newValue)) {
+        lazy.logger.error("Bad logging_level value: ", newValue);
+        return;
+      }
+      this.#ouinetState["logging_level"] = newValue;
+      Services.prefs.setStringPref(OuinetPrefs.logging_level, newValue);
+      await this.#waitForProcessToSettle();
+      this.#restartIfRunning();
+      return;
+    }
+
     lazy.logger.info(`Attempting to set ${element_id}=${newValue ? 'enable' : 'disable'}`);
+
     if (element_id in OuinetPrefs) {
       Services.prefs.setBoolPref(OuinetPrefs[element_id], newValue);
       this.#ouinetState[element_id] = newValue;

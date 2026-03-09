@@ -23,3 +23,11 @@
 #error-container {
   font-weight: bold;
 }
+
+#logging-level {
+  margin-inline-start: 0;
+}
+
+#logging-level-label {
+  margin-inline: 8px;
+}
