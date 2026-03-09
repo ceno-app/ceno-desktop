@@ -1,8 +1,6 @@
 EXTRA_JS_MODULES += [
     "OuinetLauncherUtil.sys.mjs",
     "OuinetProcess.sys.mjs",
-    "OuinetProcessMonitor.sys.mjs",
-    "OuinetProcessTerminator.sys.mjs",
     "OuinetStartupService.sys.mjs",
 ]
 

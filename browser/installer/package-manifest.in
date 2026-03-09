@@ -174,8 +174,6 @@
 @BINPATH@/Ouinet/zlib*@DLL_SUFFIX@
 #if defined(XP_WIN)
 @BINPATH@/Ouinet/ceno-network-client.exe
-@BINPATH@/Ouinet/ceno-network-client-monitor.exe
-@BINPATH@/Ouinet/ceno-network-client-terminator.exe
 #endif
 
 ; [Components]

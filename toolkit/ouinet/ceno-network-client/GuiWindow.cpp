@@ -31,7 +31,6 @@ static HINSTANCE hInstance{};
 std::atomic<HWND> windowHandleForCommunicatingFromOtherThreads { NULL };
 
 static ArgvConverter *args;
-static ProcessIdFile *pidFile;
 
 static std::filesystem::path cenoExecutablePath;
 
@@ -46,10 +45,9 @@ static std::atomic_flag exitRequested;
 
 static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args, ProcessIdFile *_pidFile) {
+HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     hInstance = _hInstance;
     args = _args;
-    pidFile = _pidFile;
 
     cenoExecutablePath = args->ceno_network_client_path.value().parent_path().parent_path().append(L"ceno-alpha.exe");
 
@@ -255,8 +253,6 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, 
         break;
     case WM_CREATE:
         windowHandleForCommunicatingFromOtherThreads = hWnd;
-        if (!pidFile->write(hWnd))
-            return -1;
         if (!loadIcons(hWnd))
             return -1;
         if (!createNotificationIcon(hWnd))
