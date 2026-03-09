@@ -57,10 +57,6 @@ ArgvConverter::ArgvConverter(const wchar_t *wArgsStr) {
     argv.push_back(storage.back().c_str());
 
     for (int i = 0; i < argc; ++i) {
-        if (constexpr std::wstring_view repoArgument(L"--repo"); repoArgument == wArgv.data[i] && i + 1 < argc) {
-            repo_path = std::filesystem::path(wArgv.data[i + 1]);
-        }
-
         const int length = WideCharToMultiByte(CP_UTF8, 0, wArgv.data[i], -1, nullptr, 0, nullptr, nullptr);
 
         // length includes null terminator
@@ -79,6 +75,5 @@ void ArgvConverter::cleanup() {
     argc = 0;
     storage.clear();
     argv.clear();
-    repo_path.reset();
     ceno_network_client_path.reset();
 }

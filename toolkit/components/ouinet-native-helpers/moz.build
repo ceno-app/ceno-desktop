@@ -9,7 +9,8 @@ EXPORTS += [ "OuinetNativeHelpers.h" ]
 
 UNIFIED_SOURCES += [
     "MetricsGeoTimezone.cpp",
-    "VirtualAppData.cpp"
+    "ProcessManagement.cpp",
+    "VirtualAppData.cpp",
 ]
 
 CXXFLAGS += [ "/std:c++20" ]

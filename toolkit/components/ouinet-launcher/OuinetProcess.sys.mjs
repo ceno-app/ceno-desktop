@@ -27,30 +27,51 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () => {
  * command line arguments.
  */
 export class OuinetProcess {
-  #exeFile = null;
-  #dataDir = null;
-  #args = [];
-  #subprocess = null;
+  static #exeFile = lazy.OuinetLauncherUtil.getOuinetFile("client", false);
+  static #dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
 
-  #cacheHttpPublicKey = "zh6ylt6dghu6swhhje2j66icmjnonv53tstxxvj6acu64sc62fnq";
-  #cacheType = "bep5-http";
-  #injectorCredentials = "ouinet:160d79874a52c2cbcdec58db1a8160a9";
-  #injectorTlsCertFile = null;
-  #tlsCaCertStorePath = null;
+  static #cacheHttpPublicKey = "zh6ylt6dghu6swhhje2j66icmjnonv53tstxxvj6acu64sc62fnq";
+  static #cacheType = "bep5-http";
+  static #injectorCredentials = "ouinet:160d79874a52c2cbcdec58db1a8160a9";
+  static #injectorTlsCertFile = lazy.OuinetLauncherUtil.getOuinetFile("injcert", false);
+  static #tlsCaCertStorePath = lazy.OuinetLauncherUtil.getOuinetFile("mozcert", false);
 
-  #metricsServerUrl = "https://endpoint-dev.ouinet.work/.well-known/endpoint";
-  #metricsServerCaCertFile = null;
-  #metricsEncryptionKey = `-----BEGIN PUBLIC KEY-----
+  static #metricsServerUrl = "https://endpoint-dev.ouinet.work/.well-known/endpoint";
+  static #metricsServerCaCertFile = lazy.OuinetLauncherUtil.getOuinetFile("metrics-server-cacert", false);
+  static #metricsEncryptionKey = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
 -----END PUBLIC KEY-----`;
-  #metricsServerToken = "CcmPTtdB5unF8q74AlGf1XMHYuo9opst";
+  static #metricsServerToken = "CcmPTtdB5unF8q74AlGf1XMHYuo9opst";
+
+  static #pidPref = "ceno.network.pid";
+  static pidExists() {
+    return null != Services.prefs.getIntPref(OuinetProcess.#pidPref, null);
+  }
+
+  #args = [];
+  #subprocess = null;
+  #onExit = _exitCode => {};
+
+  #onExitWrapper = _exitCode => {
+    this.#subprocess = null;
+    Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
+    if (this.#onExit) {
+      this.#onExit(_exitCode);
+    }
+  }
+  constructor(onExit) {
+    this.#onExit = onExit;
+  }
 
   async start(credentials, config) {
+    // Create empty ouinet-client.conf file, required to start ouinet
+    lazy.OuinetLauncherUtil.getOuinetFile("conf", true);
+
     this.#makeArgs(credentials, config);
 
-    lazy.logger.debug(`Starting ${this.#exeFile.path}`, this.#args.join(' '));
+    lazy.logger.debug(`Starting ${OuinetProcess.#exeFile.path}`, this.#args.join(' '));
     const options = {
-      command: this.#exeFile.path,
+      command: OuinetProcess.#exeFile.path,
       arguments: this.#args,
       stderr: "stdout",
       workdir: lazy.OuinetLauncherUtil.getOuinetFile("startup-dir", false).path,
@@ -61,36 +82,77 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
         ldLibPath = ":" + ldLibPath;
       }
       options.environment = {
-        LD_LIBRARY_PATH: this.#exeFile.parent.path + ldLibPath,
+        LD_LIBRARY_PATH: OuinetProcess.#exeFile.parent.path + ldLibPath,
       };
       options.environmentAppend = true;
     }
     this.#subprocess = await lazy.Subprocess.call(options);
+    Services.prefs.setIntPref(OuinetProcess.#pidPref, this.#subprocess.pid);
+    this.#watchProcess();
+  }
+
+  async #watchProcess() {
+    const watched = this.#subprocess;
+    if (!watched) {
+      return;
+    }
+    const { exitCode } = await watched.wait();
+    if (watched === this.#subprocess) {
+      this.#onExitWrapper(exitCode);
+    }
+  }
+
+  inherit() {
+    const pid = Services.prefs.getIntPref(OuinetProcess.#pidPref, null);
+    if (!pid) {
+      return;
+    }
+
+    if (lazy.OuinetLauncherUtil.isWindows) {
+      const onExitLocalCopy = (exitCode) => {
+        this.#onExitWrapper(exitCode);
+      }
+      const processObserver = {
+        QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
+        observe: function(subject, topic, data) {
+          onExitLocalCopy(data === "normal" ? 0 : 1);
+        }
+      };
+      try {
+        Services.OuinetNativeHelpers.MonitorProcess(pid, processObserver);
+      } catch (e) {
+        lazy.logger.error('Failed to monitor process.', e);
+        this.#onExitWrapper(1);
+      }
+    } else {
+      throw new Error("OuinetProcess.inherit() is not implemented for this platform");
+    }
   }
 
   stop() {
-    this.#subprocess.kill()
-    // this.#subprocess.stdout.close();
-    this.#subprocess = null;
+    const pid = Services.prefs.getIntPref(OuinetProcess.#pidPref, null);
+    if (pid) {
+      if (lazy.OuinetLauncherUtil.isWindows) {
+        try {
+          Services.OuinetNativeHelpers.EndProcess(pid);
+        } catch (e) {
+          lazy.logger.error('Failed to end process.', e);
+          Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
+        }
+      } else {
+        throw new Error("OuinetProcess.stop() is not implemented for this platform");
+      }
+    }
   }
 
   #makeArgs(credentials, config) {
-    this.#exeFile = lazy.OuinetLauncherUtil.getOuinetFile("client", false);
-    this.#dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
-    this.#injectorTlsCertFile = lazy.OuinetLauncherUtil.getOuinetFile("injcert", false);
-    this.#tlsCaCertStorePath = lazy.OuinetLauncherUtil.getOuinetFile("mozcert", false);
-    this.#metricsServerCaCertFile = lazy.OuinetLauncherUtil.getOuinetFile("metrics-server-cacert", false);
-
-    // Create empty ouinet-client.conf file, required to start ouinet
-    lazy.OuinetLauncherUtil.getOuinetFile("conf", true);
-
     this.#args = [];
-    this.#args.push("--repo", this.#dataDir.path);
-    this.#args.push("--cache-type", this.#cacheType);
-    this.#args.push("--cache-http-public-key", this.#cacheHttpPublicKey);
-    this.#args.push("--injector-credentials", this.#injectorCredentials);
-    this.#args.push("--injector-tls-cert-file", this.#injectorTlsCertFile.path);
-    this.#args.push("--tls-ca-cert-store-path", this.#tlsCaCertStorePath.path);
+    this.#args.push("--repo", OuinetProcess.#dataDir.path);
+    this.#args.push("--cache-type", OuinetProcess.#cacheType);
+    this.#args.push("--cache-http-public-key", OuinetProcess.#cacheHttpPublicKey);
+    this.#args.push("--injector-credentials", OuinetProcess.#injectorCredentials);
+    this.#args.push("--injector-tls-cert-file", OuinetProcess.#injectorTlsCertFile.path);
+    this.#args.push("--tls-ca-cert-store-path", OuinetProcess.#tlsCaCertStorePath.path);
     this.#args.push("--listen-on-tcp", '127.0.0.1:0');
     this.#args.push("--client-credentials", `${credentials.proxy_user}:${credentials.proxy_password}`)
     this.#args.push("--front-end-unix-socket-ep", lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false).path);
@@ -102,10 +164,10 @@ MCowBQYDK2VuAyEAmfqHeh9oZ4S42+NS9s9unqcfqxzKIcKQfxBmk2osQA0=
     if (config.metrics) {
       this.#args.push("--metrics-enable-on-start");
     }
-    this.#args.push("--metrics-server-url", this.#metricsServerUrl);
-    this.#args.push("--metrics-server-cacert-file", this.#metricsServerCaCertFile.path);
-    this.#args.push("--metrics-encryption-key", this.#metricsEncryptionKey);
-    this.#args.push("--metrics-server-token", this.#metricsServerToken);
+    this.#args.push("--metrics-server-url", OuinetProcess.#metricsServerUrl);
+    this.#args.push("--metrics-server-cacert-file", OuinetProcess.#metricsServerCaCertFile.path);
+    this.#args.push("--metrics-encryption-key", OuinetProcess.#metricsEncryptionKey);
+    this.#args.push("--metrics-server-token", OuinetProcess.#metricsServerToken);
 
     if (config.logging) {
       this.#args.push("--enable-log-file");
