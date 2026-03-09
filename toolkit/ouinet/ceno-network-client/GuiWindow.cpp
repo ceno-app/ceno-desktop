@@ -44,6 +44,7 @@ constexpr int ICON_EXITING = 3;
 static std::atomic_flag exitRequested;
 
 static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static void updateNotificationIcon(int iconId);
 
 HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     hInstance = _hInstance;
@@ -73,7 +74,6 @@ HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     return windowHandle;
 }
 
-static void updateNotificationIcon(int iconId);
 static void requestToCloseProgram(HWND hWnd) {
     stopStatePoller();
     updateNotificationIcon(ICON_EXITING);
@@ -150,7 +150,7 @@ static void updateNotificationIcon(const int iconId) {
     }
 }
 
-void removeNotificationIcon() {
+static void removeNotificationIcon() {
     if (notificationShown) {
         Shell_NotifyIcon(NIM_DELETE, &icons[ICON_EXITING]);
     }
