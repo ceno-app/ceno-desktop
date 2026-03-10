@@ -1,17 +1,11 @@
 #include "nsString.h"
 
 #include <windows.h>
-
-// #include <appmodel.h>
 #include <timezoneapi.h>
-// #include <winnls.h>
 
 #include "OuinetNativeHelpers.h"
 
 namespace mozilla {
-
-// Use the macro to inject all of the definitions for nsISupports.
-NS_IMPL_ISUPPORTS(OuinetNativeHelpers, nsIOuinetNativeHelpers)
 
 NS_IMETHODIMP
 OuinetNativeHelpers::GetRegion(nsAString& region) {
