@@ -1,5 +1,5 @@
 #include "nsCOMPtr.h"
-#include "nsIThread.h"           // Fixed: incomplete type
+
 #include "nsIThreadManager.h"
 #include "nsThreadUtils.h"       // NS_NewNamedThread, NS_DispatchToMainThread
 #include "nsServiceManagerUtils.h" // do_GetService
@@ -7,15 +7,20 @@
 
 #include "nsCOMPtr.h"           // nsCOMPtr, do_GetService
 #include "nsIObserver.h"        // nsIObserver interface
+#include "nsIObserverService.h"        // nsIObserver interface
 #include "nsIThreadManager.h"   // nsIThreadManager
 #include "nsThreadUtils.h"      // NS_NewRunnableFunction, NS_DispatchToMainThread
 #include "nsComponentManagerUtils.h" // do_GetService (alternative: nsServiceManagerUtils.h)
 #include "nsLiteralString.h"    // NS_LITERAL_CSTRING, _ns literals
+#include "mozilla/ScopeExit.h"
 #include <windows.h>
 
 #include "OuinetNativeHelpers.h"
 
 namespace mozilla {
+
+// This implements QueryInterface, AddRef, Release for all listed interfaces
+NS_IMPL_ISUPPORTS(OuinetNativeHelpers, nsIOuinetNativeHelpers, nsIObserver)
 
 // EnumWindowsCallback Source:
 // https://stackoverflow.com/questions/11711417/get-hwnd-by-process-id-c/20730976#20730976
@@ -38,69 +43,127 @@ OuinetNativeHelpers::EndProcess(const int32_t pid) {
     g_networkClientWindowHandle = nullptr;
     EnumWindows(EnumWindowsCallback, pid);
     if (nullptr == g_networkClientWindowHandle) {
-        // return NS_ERROR_INVALID_ARG;
-        return NS_OK;
+        return NS_ERROR_INVALID_ARG;
     }
 
     ::PostMessageW(g_networkClientWindowHandle, WM_CLOSE, 0, 0);
     return NS_OK;
 }
 
+void OuinetNativeHelpers::Shutdown() {
+    if (hShutdownEvent != nullptr) {
+        SetEvent(hShutdownEvent);
+    }
+    if (monitorThread) {
+        monitorThread->Shutdown();
+    }
+    if (hShutdownEvent) {
+        ::CloseHandle(hShutdownEvent);
+    }
+    if (isRegistered) {
+        if (nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1")) {
+            obs->RemoveObserver(this, "quit-application-granted");
+        }
+    }
+    hShutdownEvent = nullptr;
+    monitorThread = nullptr;
+    isRegistered = false;
+}
+
+NS_IMETHODIMP
+OuinetNativeHelpers::Observe(nsISupports *subject, const char *topic, const char16_t *data) {
+    if (strcmp(topic, "quit-application-granted") == 0) {
+        Shutdown();
+    }
+    return NS_OK;
+}
+
+OuinetNativeHelpers::OuinetNativeHelpers() {
+    if (nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1")) {
+        if (NS_SUCCEEDED(obs->AddObserver(this, "quit-application-granted", false))) {
+            isRegistered = true;
+        }
+    }
+}
+OuinetNativeHelpers::~OuinetNativeHelpers() {
+    Shutdown();
+}
+
+struct CallbackGuard {
+    nsIObserver* obs;
+    explicit CallbackGuard(nsIObserver* o) : obs(o) {}
+    ~CallbackGuard() { if (obs) NS_RELEASE(obs); }
+
+    // Disable copy to prevent double-release
+    CallbackGuard(const CallbackGuard&) = delete;
+    CallbackGuard& operator=(const CallbackGuard&) = delete;
+
+    // Enable move to transfer ownership
+    CallbackGuard(CallbackGuard&& other) noexcept : obs(other.obs) {
+        other.obs = nullptr;
+    }
+    CallbackGuard& operator=(CallbackGuard&& other) noexcept {
+        if (this != &other) {
+            if (obs) NS_RELEASE(obs);
+            obs = other.obs;
+            other.obs = nullptr;
+        }
+        return *this;
+    }
+};
+
 NS_IMETHODIMP
 OuinetNativeHelpers::MonitorProcess(const int32_t pid, nsIObserver *callback) {
-    struct HandleGuard {
-        HANDLE h;
-        explicit HandleGuard(HANDLE handle) : h(handle) {}
-        ~HandleGuard() { if (h) ::CloseHandle(h); }
-        void close() {
-            if (h) {
-                ::CloseHandle(h);
-                h = nullptr;
-            }
+    if (!hShutdownEvent) {
+        hShutdownEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        if (!hShutdownEvent) {
+            return NS_ERROR_OUT_OF_MEMORY;
         }
-        // Prevent copying (which would double-close)
-        HandleGuard(const HandleGuard&) = delete;
-        HandleGuard(HandleGuard&& other) : h(other.h) { other.h = nullptr; }
-    };
-
-    HandleGuard hProcess(::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 0, pid));
-    if (NULL == hProcess.h) {
-        return NS_ERROR_INVALID_ARG;
+    }
+    if (!monitorThread) {
+        nsresult rv = NS_NewNamedThread("MonitorProcess", getter_AddRefs(monitorThread));
+        NS_ENSURE_SUCCESS(rv, rv);
     }
 
-    // Hold a reference to the observer - JS won't keep it alive for us asynchronously
-    nsCOMPtr<nsIObserver> observer(callback);
-    
-    // Get main thread to dispatch callback later
-    nsCOMPtr<nsIThreadManager> tm = do_GetService("@mozilla.org/thread-manager;1");
-    nsCOMPtr<nsIThread> mainThread;
-    tm->GetMainThread(getter_AddRefs(mainThread));
+    HANDLE hProcess = ::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+    if (NULL == hProcess) {
+        return NS_ERROR_INVALID_ARG;
+    }
+    NS_ADDREF(callback);
 
-    nsCOMPtr<nsIThread> thread;
-    nsresult rv = NS_NewNamedThread("ProcessWait", getter_AddRefs(thread));
-    NS_ENSURE_SUCCESS(rv, rv);
-    
-    thread->Dispatch(NS_NewRunnableFunction("ProcessWait", [mainThread, hProcess = std::move(hProcess), observer = std::move(observer)]() mutable {
-        DWORD result = ::WaitForSingleObject(hProcess.h, INFINITE);
-        DWORD exitCode = 1;
-        BOOL exitCodeGetterStatus = 0;
-        if (result == WAIT_OBJECT_0) {
-            exitCodeGetterStatus = ::GetExitCodeProcess(hProcess.h, &exitCode);
-        }
-        hProcess.close();
+    CallbackGuard callbackGuard (callback);
+    auto handleGuard = MakeScopeExit([&] { CloseHandle(hProcess); });
 
-        if (exitCodeGetterStatus) {
-            mainThread->Dispatch(NS_NewRunnableFunction("ProcessExit", [observer = std::move(observer), exitCode]() {
+    HANDLE hShutdown = hShutdownEvent;
+
+    nsresult rv = monitorThread->Dispatch(NS_NewRunnableFunction("ProcessWait", [hProcess, hShutdown, callbackGuard = std::move(callbackGuard)]() mutable {
+        // observer pointer leaks if NS_DispatchToMainThread fails (returns NS_ERROR_FAILURE).
+        // This is because it can only be released on main thread, not on this current worker thread.
+        // If NS_DispatchToMainThread fails, it means there's no way other reasonable way to release it.
+        nsIObserver* observer = callbackGuard.obs;
+        callbackGuard.obs = nullptr;  // Prevent guard from releasing
+
+        HANDLE handles[2] = { hProcess, hShutdown };
+        DWORD result = ::WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+
+        DWORD exitCode = 0;
+        ::GetExitCodeProcess(hProcess, &exitCode);
+        ::CloseHandle(hProcess);
+
+        NS_DispatchToMainThread(NS_NewRunnableFunction("ProcessExit", [observer, result, exitCode]() mutable {
+            if (result == WAIT_OBJECT_0) {
                 nsAutoString exitCodeStr;
                 exitCodeStr.AppendInt(static_cast<int32_t>(exitCode));
-                observer->Observe(nullptr, "ouinet-process-exited", exitCodeStr.get());
-            }), NS_DISPATCH_NORMAL);
-        }
-
-        nsCOMPtr<nsIThread> currentThread;
-        NS_GetCurrentThread(getter_AddRefs(currentThread));
-        currentThread->Shutdown();
+                observer->Observe(nullptr, "process-exited", exitCodeStr.get());
+            }
+            NS_RELEASE(observer);
+        }), NS_DISPATCH_NORMAL);
     }), NS_DISPATCH_NORMAL);
+
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    // Ownership transferred successfully
+    handleGuard.release();
 
     return NS_OK;
 }
