@@ -8,10 +8,12 @@ IDI_ICON_GRAY   ICON "cenogray.ico"
 
 STRINGTABLE
 BEGIN
-   IDS_TOOLTIP_CONNECTING   "Ceno Network Client - Connecting"
-   IDS_TOOLTIP_DEGRADED     "Ceno Network Client - Connection Degraded  / Local Cache Only"
-   IDS_TOOLTIP_CONNECTED    "Ceno Network Client"
-   IDS_TOOLTIP_EXITING      "Ceno Network Client - Exiting"
+    IDS_TOOLTIP_CONNECTING  "Ceno Network Client - Connecting"
+    IDS_TOOLTIP_DEGRADED    "Ceno Network Client - Connection Degraded"
+    IDS_TOOLTIP_CONNECTED   "Ceno Network Client"
+    IDS_TOOLTIP_EXITING     "Ceno Network Client - Exiting"
+    IDS_TOOLTIP_RESTARTING  "Ceno Network Client - Restarting"
+    IDS_TOOLTIP_OFFLINE     "Ceno Network Client - Offline - Local Cache Only"
 END
 
 IDC_CONTEXTMENU MENU

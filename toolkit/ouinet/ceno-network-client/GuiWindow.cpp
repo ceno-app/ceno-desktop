@@ -17,9 +17,9 @@
 static constexpr UINT notificationIconUid = 1;
 
 // Order of closing:
-// 1: WM_CLOSE receival
-// 2: ouinet_client_stop request
-// 3: onOuinetExit callback is executed
+// 1: Receive WM_CLOSE
+// 2: ouinet_client_stop() request
+// 3: onOuinetExit() callback is executed
 // 4: sending ouinetDidExitMessage to GUI thread
 // 5: PostQuitMessage() in GUI thread
 
@@ -35,13 +35,16 @@ static ArgvConverter *args;
 static std::filesystem::path cenoExecutablePath;
 
 static bool notificationShown { false };
-static std::array<NOTIFYICONDATA, 4> icons {};
+static std::array<NOTIFYICONDATA, 6> icons {};
 constexpr int ICON_CONNECTING = 0;
 constexpr int ICON_DEGRADED = 1;
 constexpr int ICON_CONNECTED = 2;
 constexpr int ICON_EXITING = 3;
+constexpr int ICON_RESTARTING = 4;
+constexpr int ICON_OFFLINE = 5;
 
 static std::atomic_flag exitRequested;
+static std::atomic_flag isRestarting;
 
 static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static void updateNotificationIcon(int iconId);
@@ -74,6 +77,7 @@ HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     return windowHandle;
 }
 
+
 static void requestToCloseProgram(HWND hWnd) {
     stopStatePoller();
     updateNotificationIcon(ICON_EXITING);
@@ -91,6 +95,13 @@ static void requestToCloseProgram(HWND hWnd) {
     }
 }
 
+static void requestToRestartProgram() {
+    stopStatePoller();
+    updateNotificationIcon(ICON_RESTARTING);
+    isRestarting.test_and_set();
+    ouinet_client_stop_and_detach();
+}
+
 // onOuinetExit is executed by ouinet's thread
 static void onOuinetExit(const int exit_code) {
     g_exitCode = exit_code;
@@ -99,7 +110,8 @@ static void onOuinetExit(const int exit_code) {
         ShowErrorA(err, "");
     }
 
-    if (!PostMessage(windowHandleForCommunicatingFromOtherThreads, ouinetDidExitMessage, 0, 0)) {
+    HWND hWnd = windowHandleForCommunicatingFromOtherThreads.load();
+    if (hWnd == NULL || !PostMessage(hWnd, ouinetDidExitMessage, 0, 0)) {
         ShowError(L"Failed to close Ceno Network Client: ", GetLastErrorAsWString());
         exit(EXIT_FAILURE);
     }
@@ -128,7 +140,9 @@ static bool loadIcons(HWND hWnd) {
         load(icons[ICON_CONNECTING], IDS_TOOLTIP_CONNECTING, IDI_ICON_GRAY) &&
         load(icons[ICON_DEGRADED], IDS_TOOLTIP_DEGRADED, IDI_ICON_GRAY) &&
         load(icons[ICON_CONNECTED], IDS_TOOLTIP_CONNECTED, IDI_ICON_ACTIVE) &&
-        load(icons[ICON_EXITING], IDS_TOOLTIP_EXITING, IDI_ICON_GRAY);
+        load(icons[ICON_EXITING], IDS_TOOLTIP_EXITING, IDI_ICON_GRAY) &&
+        load(icons[ICON_RESTARTING], IDS_TOOLTIP_RESTARTING, IDI_ICON_GRAY) &&
+        load(icons[ICON_OFFLINE], IDS_TOOLTIP_OFFLINE, IDI_ICON_GRAY);
 }
 
 static bool createNotificationIcon(HWND hWnd) {
@@ -157,30 +171,24 @@ static void removeNotificationIcon() {
     notificationShown = false;
 }
 
-static void onOuinetStateChange(const int ouinetState) {
-    /*
-    case ouinet::Client::RunningState::Created: state = 0;
-    case ouinet::Client::RunningState::Failed: state = 1;
-    case ouinet::Client::RunningState::Starting: state = 2;
-    case ouinet::Client::RunningState::Degraded: state = 3;
-    case ouinet::Client::RunningState::Started: state = 4;
-    case ouinet::Client::RunningState::Stopping: state = 5;
-    case ouinet::Client::RunningState::Stopped: state = 6;
-    */
+static void onOuinetStateChange(const int ouinetState, const bool isOnline) {
     int icon;
     switch (ouinetState) {
-    case 0:
-    case 2:
+    case 0: // ouinet::Client::RunningState::Created = 0
+    case 2: // ouinet::Client::RunningState::Starting = 2
         icon = ICON_CONNECTING;
         break;
-    case 3:
-        icon = ICON_DEGRADED;
+    case 3: // ouinet::Client::RunningState::Degraded = 3
+        icon = isOnline ? ICON_DEGRADED : ICON_OFFLINE;
         break;
-    case 4:
+    case 4: // ouinet::Client::RunningState::Started = 4
         icon = ICON_CONNECTED;
         break;
+    // ouinet::Client::RunningState::Failed = 1
+    // ouinet::Client::RunningState::Stopping = 5
+    // ouinet::Client::RunningState::Stopped = 6
     default:
-        icon = ICON_EXITING;
+        icon = isRestarting.test() ? ICON_RESTARTING : ICON_EXITING;
         break;
     }
     updateNotificationIcon(icon);
@@ -212,7 +220,8 @@ static void showContextMenu(HWND hWnd, POINT pt) {
     }
 }
 
-static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam) {
+    static WPARAM connectionId = 0;
     switch (message) {
     case notificationCallbackMessage:
         switch (LOWORD(lParam)) {
@@ -246,6 +255,21 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, 
         requestToCloseProgram(hWnd);
         break;
     case ouinetDidExitMessage:
+        if (isRestarting.test()) {
+            isRestarting.clear();
+            const auto now = std::chrono::steady_clock::now();
+            if (EXIT_SUCCESS != ouinet_client_run(args->argc, args->argv.data(), onOuinetExit)) {
+                ShowErrorA("Failed to restart Ceno Network Client:", ouinet_client_get_error());
+                removeNotificationIcon();
+                g_exitCode = 1;
+                PostQuitMessage(g_exitCode);
+                windowHandleForCommunicatingFromOtherThreads = NULL;
+            }
+            connectionId++;
+            startStatePoller(connectionId, now);
+            break;
+        }
+        [[fallthrough]];
     case WM_DESTROY:
         removeNotificationIcon();
         PostQuitMessage(g_exitCode);
@@ -257,13 +281,24 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, 
             return -1;
         if (!createNotificationIcon(hWnd))
             return -1;
-        if (EXIT_SUCCESS != ouinet_client_run(args->argc, args->argv.data(), onOuinetExit))
-            return -1;
-        args->cleanup();
-        startStatePoller();
+        {
+            const auto now = std::chrono::steady_clock::now();
+            if (EXIT_SUCCESS != ouinet_client_run(args->argc, args->argv.data(), onOuinetExit))
+                return -1;
+            startStatePoller(connectionId, now);
+        }
         break;
     case ouinetStateChange:
-        onOuinetStateChange((int)wParam);
+        if (wParam == connectionId) {
+            const int ouinetState = unpackOuinetState(lParam);
+            const bool internetState = unpackInternetState(lParam);
+            onOuinetStateChange(ouinetState, internetState);
+        }
+        break;
+    case networkAddressChange:
+        if (!exitRequested.test() && !isRestarting.test()) {
+            requestToRestartProgram();
+        }
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

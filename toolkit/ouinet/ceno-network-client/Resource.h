@@ -5,6 +5,8 @@
 #define IDS_TOOLTIP_DEGRADED    101
 #define IDS_TOOLTIP_CONNECTED   102
 #define IDS_TOOLTIP_EXITING     103
+#define IDS_TOOLTIP_RESTARTING  104
+#define IDS_TOOLTIP_OFFLINE     105
 
 #define IDC_CONTEXTMENU         209
 #define IDM_EXIT                210

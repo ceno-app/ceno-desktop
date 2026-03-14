@@ -39,9 +39,13 @@ add_executable(ceno-network-client WIN32
         cenogray.ico
         StatePoller.cpp
         StatePoller.h
+        NetworkStatusMonitor.cpp
+        NetworkStatusMonitor.h
+        NetworkAddressMonitor.cpp
+        NetworkAddressMonitor.h
 )
 
-target_link_libraries(ceno-network-client comctl32
+target_link_libraries(ceno-network-client comctl32 iphlpapi
     ${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/libclient_lib.dll
 )
 target_include_directories(ceno-network-client PRIVATE
