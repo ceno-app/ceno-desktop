@@ -7,6 +7,8 @@ SOURCES = [
   "ceno-network-client.cpp",
   "ErrorUtils.cpp",
   "GuiWindow.cpp",
+  "NetworkAddressMonitor.cpp",
+  "NetworkStatusMonitor.cpp",
   "StatePoller.cpp",
 ]
 DIST_SUBDIR = "Ouinet"
@@ -46,7 +48,9 @@ CXXFLAGS += ["/MT"]
 OS_LIBS += [
     "shell32",
     "user32",
-    "Comctl32"
+    "Comctl32",
+    "ole32",
+    "iphlpapi",
 ]
 
 LDFLAGS += [ TOPOBJDIR + '/dist/bin/Ouinet/libclient_lib.dll.a' ]
