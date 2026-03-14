@@ -7,6 +7,8 @@
 #include "ArgumentsConverter.h"
 #include "ErrorUtils.h"
 #include "GuiWindow.h"
+#include "NetworkAddressMonitor.h"
+#include "NetworkStatusMonitor.h"
 
 std::atomic_int g_exitCode = EXIT_FAILURE;
 std::atomic_flag g_ouinetIsStuckOnExit_ForceExitInMain;
@@ -19,6 +21,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR ouinetClientArgumen
         return 1;
     }
 
+    startNetworkStatusMonitor();
+    startNetworkAddressMonitor();
+
     if (NULL == createGuiWindow(hInstance, &arguments))
         return 1;
 
@@ -27,6 +32,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR ouinetClientArgumen
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
+    stopNetworkStatusMonitor();
+    stopNetworkAddressMonitor();
 
     if (g_ouinetIsStuckOnExit_ForceExitInMain.test())
         exit(EXIT_FAILURE);

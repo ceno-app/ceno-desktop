@@ -70,10 +70,3 @@ ArgvConverter::ArgvConverter(const wchar_t *wArgsStr) {
     // null terminate the argv array
     argv.push_back(nullptr);
 }
-
-void ArgvConverter::cleanup() {
-    argc = 0;
-    storage.clear();
-    argv.clear();
-    ceno_network_client_path.reset();
-}
