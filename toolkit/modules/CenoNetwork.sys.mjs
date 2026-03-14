@@ -225,13 +225,6 @@ class _CenoNetwork {
       return;
     }
     this.#internetStatus = newStatus;
-    await this.#waitForProcessToSettle();
-    if (
-      this.#ouinetStage === OuinetStages.Degraded ||
-      this.#ouinetStage === OuinetStages.Connected
-    ) {
-      this.#restart();
-    }
     this.#sendNotifications();
   }
 
@@ -290,7 +283,9 @@ class _CenoNetwork {
         this.#pollApiStatus(connectionId);
       } else {
         lazy.logger.debug('Endpoints unavailable, cannot inherit previous Ceno Network Connection. Terminating previous process');
-        this.#ouinetProcess.stop();
+        if (this.#ouinetProcess != null) {
+          this.#ouinetProcess.stop();
+        }
         if (this.#quickstart) {
           lazy.logger.debug('Quickstart enabled');
           this.connect();
@@ -367,7 +362,7 @@ class _CenoNetwork {
 
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
-    const interval_runtime = 5000;
+    const interval_runtime = 1000;
     while (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
@@ -420,7 +415,9 @@ class _CenoNetwork {
         }
       } catch (e) {
         lazy.logger.error('Failed to get ouinet API status', e);
-        break;
+        if (this.#ouinetStage === OuinetStages.ConnectingToNetwork) {
+          break;
+        }
       }
 
       const poll_interval = this.#ouinetStage !== OuinetStages.Connected ? interval_startup : interval_runtime;
@@ -463,6 +460,7 @@ class _CenoNetwork {
   // @TODO: this could be simplified somehow
   // it got a bit ugly over time
   async setOuinetConfigValue(element_id, newValue) {
+    const connectionId = this.#connectionId;
     if (element_id === "logging_level") {
       if (!["silly", "debug", "verbose", "info", "warn", "error", "abort"].includes(newValue)) {
         lazy.logger.error("Bad logging_level value: ", newValue);
@@ -471,7 +469,9 @@ class _CenoNetwork {
       this.#ouinetState["logging_level"] = newValue;
       Services.prefs.setStringPref(OuinetPrefs.logging_level, newValue);
       await this.#waitForProcessToSettle();
-      this.#restartIfRunning();
+      if (connectionId == this.#connectionId) {
+        this.#restartIfRunning();
+      }
       return;
     }
 
@@ -489,6 +489,9 @@ class _CenoNetwork {
     }
 
     await this.#waitForProcessToSettle();
+    if (connectionId != this.#connectionId) {
+      return;
+    }
 
     if (element_id === "doh" || element_id === "unencrypted_dns" || element_id === "bridge") {
       this.#restartIfRunning();
@@ -669,50 +672,30 @@ class _CenoNetwork {
 
     this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
 
-    // Let ouinet client start before attempting to communicate with it
-    lazy.logger.debug("Process started. Waiting for process to settle");
-    await new Promise(resolve => setTimeout(() => resolve(), 100));
+    new Promise(async function (resolve) {
+      const cacert = lazy.OuinetLauncherUtil.getOuinetFile("cacert", false);
+      const delayBetweenAttempts = 1000;
+      while (connectionId === this.#connectionId) {
+        if (cacert.exists()) {
+          lazy.OuinetLauncherUtil.setRootCertificate();
+          break;
+        } else {
+          await new Promise(resolve => setTimeout(() => resolve(), delayBetweenAttempts));
+        }
+      }
+      resolve();
+    });
 
-    const cacert = lazy.OuinetLauncherUtil.getOuinetFile("cacert", false);
-    for (let i = 0; i < 100 && !cacert.exists(); ++i) {
-      lazy.logger.debug('Waiting for cacert to be available', cacert.path);
-      await new Promise(resolve => setTimeout(() => resolve(), 100));
-    }
-    lazy.OuinetLauncherUtil.setRootCertificate();
-
-    const maxAttempts = 5;
     const delayBetweenAttempts = 1000;
-    let didGetApiEndpoints = false;
-
-    for (let i = 0; i < maxAttempts; i++) {
-      if (
-        connectionId !== this.#connectionId ||
-        this.#ouinetStage !== OuinetStages.ConnectingToNetwork
-      ) {
-        lazy.logger.debug("Abandoning cancelled connection attempt");
-        return;
-      }
-
-      didGetApiEndpoints = await this.#getApiEndpoints();
-      if (didGetApiEndpoints) {
-        break;
-      } else if (i + 1 < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
-      }
-    }
-
-    if (
-      connectionId !== this.#connectionId ||
-      this.#ouinetStage !== OuinetStages.ConnectingToNetwork
+    while (
+      connectionId === this.#connectionId &&
+      this.#ouinetStage === OuinetStages.ConnectingToNetwork
     ) {
-      lazy.logger.debug("Abandoning cancelled connection attempt");
-      return;
-    }
-
-    if (didGetApiEndpoints) {
-      this.#pollApiStatus(connectionId);
-    } else {
-      this.cancel();
+      if (await this.#getApiEndpoints()) {
+        this.#pollApiStatus(connectionId);
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
     }
   }
 
@@ -740,7 +723,6 @@ class _CenoNetwork {
   }
 
   #restart() {
-    lazy.logger.debug("CenoNetwork.#restart() ", this.#ouinetStage);
     const connectionId = this.#connectionId;
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Restarting);
