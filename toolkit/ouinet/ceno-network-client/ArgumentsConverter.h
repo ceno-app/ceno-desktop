@@ -16,6 +16,4 @@ struct ArgvConverter {
     std::optional<std::filesystem::path> ceno_network_client_path;
 
     explicit ArgvConverter(const wchar_t *wArgsStr);
-
-    void cleanup();
 };

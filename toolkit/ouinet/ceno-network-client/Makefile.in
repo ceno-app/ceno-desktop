@@ -7,5 +7,7 @@ EXTRA_DEPS += $(srcdir)/ceno-network-client.manifest.xml \
   $(srcdir)/ArgumentsConverter.h \
   $(srcdir)/ErrorUtils.h \
   $(srcdir)/GuiWindow.h \
+  $(srcdir)/NetworkAddressMonitor.cpp \
+  $(srcdir)/NetworkStatusMonitor.cpp \
   $(srcdir)/Resource.h \
   $(srcdir)/StatePoller.h \
