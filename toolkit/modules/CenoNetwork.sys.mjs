@@ -287,8 +287,10 @@ class _CenoNetwork {
           this.#ouinetProcess.stop();
         }
         if (this.#quickstart) {
-          lazy.logger.debug('Quickstart enabled');
-          this.connect();
+          this.#onOuinetExit_post = () => {
+            lazy.logger.debug('Quickstart enabled');
+            this.connect();
+          }
         }
       }
     } else if (this.#quickstart) {
@@ -362,22 +364,18 @@ class _CenoNetwork {
 
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
-    const interval_runtime = 1000;
+    const interval_runtime = 5000;
     while (
+      connectionId === this.#connectionId && (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
       this.#ouinetStage === OuinetStages.Degraded ||
       this.#ouinetStage === OuinetStages.Connected
-    ) {
-      if (connectionId !== this.#connectionId) {
-        lazy.logger.debug("Abandoning cancelled connection attempt");
-        return;
-      }
-
+    )) {
       try {
         const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
         const json = await response.json();
+
         if (connectionId !== this.#connectionId) {
-          lazy.logger.debug("Abandoning cancelled connection attempt");
           return;
         }
 
@@ -407,11 +405,16 @@ class _CenoNetwork {
 
         if (this.#metricsRecordId != json.current_metrics_record_id && json.metrics_enabled) {
           this.#metricsRecordId = json.current_metrics_record_id;
-          await this.#sendMetrics('APP_VERSION', lazy.AppConstants.BASE_BROWSER_VERSION);
-          await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
-          await this.#sendMetrics('NETWORK_COUNTRY_CONFIDENCE', "1");
-          await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
-          await this.#sendMetrics('BRIDGE_OPT_IN', this.#ouinetState.bridge ? "true" : "false");
+
+          try {
+            await this.#sendMetrics('APP_VERSION', lazy.AppConstants.BASE_BROWSER_VERSION);
+            await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
+            await this.#sendMetrics('NETWORK_COUNTRY_CONFIDENCE', "1");
+            await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
+            await this.#sendMetrics('BRIDGE_OPT_IN', this.#ouinetState.bridge ? "true" : "false");
+          } catch (e) {
+            lazy.logger.error('Metrics failed: ', e);
+          }
         }
       } catch (e) {
         lazy.logger.error('Failed to get ouinet API status', e);
@@ -430,12 +433,8 @@ class _CenoNetwork {
   }
 
   async #sendMetrics(key, value) {
-    try {
-      lazy.logger.debug(`Sending metrics '${key}'='${value}'`);
-      await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${value}`);
-    } catch (e) {
-      lazy.logger.error('Failed to send metrics', e);
-    }
+    lazy.logger.debug(`Sending metrics '${key}'='${value}'`);
+    await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_metrics_set_key}?record_id=${this.#metricsRecordId}&key=${key}&value=${value}`);
   }
 
   #restartIfRunning() {
@@ -469,7 +468,7 @@ class _CenoNetwork {
       this.#ouinetState["logging_level"] = newValue;
       Services.prefs.setStringPref(OuinetPrefs.logging_level, newValue);
       await this.#waitForProcessToSettle();
-      if (connectionId == this.#connectionId) {
+      if (connectionId === this.#connectionId) {
         this.#restartIfRunning();
       }
       return;
@@ -624,13 +623,17 @@ class _CenoNetwork {
           this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
         }
     }
-    else if (this.#ouinetStage !== OuinetStages.Exited) {
+    else if (
+      this.#ouinetStage !== OuinetStages.Exited &&
+      this.#ouinetStage !== OuinetStages.Restarting
+    ) {
       this.#setOuinetStage(OuinetStages.Init, false);
     }
+    this.#initOuinetState();
+
     this.#onOuinetExit_post();
     this.#onOuinetExit_post = () => {};
 
-    this.#initOuinetState();
     this.#sendNotifications();
   }
 
@@ -639,6 +642,7 @@ class _CenoNetwork {
     if (
       this.#ouinetStage !== OuinetStages.Init &&
       this.#ouinetStage !== OuinetStages.Exited &&
+      this.#ouinetStage !== OuinetStages.Restarting &&
       this.#ouinetStage !== OuinetStages.Error
     ) {
       lazy.logger.warn("Ignoring double connect request", this.#ouinetStage);
@@ -672,19 +676,7 @@ class _CenoNetwork {
 
     this.#setOuinetStage(OuinetStages.ConnectingToNetwork, true);
 
-    new Promise(async function (resolve) {
-      const cacert = lazy.OuinetLauncherUtil.getOuinetFile("cacert", false);
-      const delayBetweenAttempts = 1000;
-      while (connectionId === this.#connectionId) {
-        if (cacert.exists()) {
-          lazy.OuinetLauncherUtil.setRootCertificate();
-          break;
-        } else {
-          await new Promise(resolve => setTimeout(() => resolve(), delayBetweenAttempts));
-        }
-      }
-      resolve();
-    });
+    this.#installCaCert(connectionId);
 
     const delayBetweenAttempts = 1000;
     while (
@@ -699,13 +691,26 @@ class _CenoNetwork {
     }
   }
 
+  async #installCaCert(connectionId) {
+    const cacert = lazy.OuinetLauncherUtil.getOuinetFile("cacert", false);
+    const delayBetweenAttempts = 1000;
+    while (connectionId === this.#connectionId) {
+      if (cacert.exists()) {
+        lazy.OuinetLauncherUtil.setRootCertificate();
+        break;
+      } else {
+        await new Promise(resolve => setTimeout(() => resolve(), delayBetweenAttempts));
+      }
+    }
+  }
+
   cancel() {
     lazy.logger.debug("CenoNetwork.cancel() ", this.#ouinetStage);
     const connectionId = this.#connectionId;
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Exiting);
       this.#ouinetProcess.stop();
-      const doubleTapTimeout = 500;
+      const doubleTapTimeout = 5000;
       new Promise(resolve => setTimeout(() => {
         if (
           connectionId === this.#connectionId &&
@@ -715,7 +720,6 @@ class _CenoNetwork {
         }
         resolve();
       }, doubleTapTimeout));
-
     } else {
       lazy.logger.warn("No connection to cancel");
     }
@@ -727,10 +731,10 @@ class _CenoNetwork {
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Restarting);
       this.#onOuinetExit_post = () => {
-        if (connectionId === this.#connectionId && (
-          this.#ouinetStage === OuinetStages.Exited ||
-          this.#ouinetStage === OuinetStages.Init
-        )) {
+        if (
+          connectionId === this.#connectionId &&
+          this.#ouinetStage === OuinetStages.Restarting
+        ) {
           this.connect();
         }
       }
