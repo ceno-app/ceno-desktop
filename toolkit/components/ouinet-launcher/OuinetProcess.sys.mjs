@@ -131,17 +131,24 @@ export class OuinetProcess {
 
   stop() {
     const pid = Services.prefs.getIntPref(OuinetProcess.#pidPref, null);
-    if (pid) {
-      if (lazy.OuinetLauncherUtil.isWindows) {
+    if (!pid) {
+      return;
+    }
+
+    if (lazy.OuinetLauncherUtil.isWindows) {
+      try {
+        Services.OuinetNativeHelpers.EndProcess(pid);
+      } catch (_) {
+        lazy.logger.error('Failed to end process. Retrying with fallback to kill process');
         try {
-          Services.OuinetNativeHelpers.EndProcess(pid);
+          Services.OuinetNativeHelpers.EndOrKillProcess(pid);
         } catch (e) {
-          lazy.logger.error('Failed to end process.', e);
+          lazy.logger.error('Failed to end or kill process');
           Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
         }
-      } else {
-        throw new Error("OuinetProcess.stop() is not implemented for this platform");
       }
+    } else {
+      throw new Error("OuinetProcess.stop() is not implemented for this platform");
     }
   }
 
