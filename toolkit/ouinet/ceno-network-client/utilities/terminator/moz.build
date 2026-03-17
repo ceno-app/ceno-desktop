@@ -35,7 +35,6 @@ CXXFLAGS += [ "/std:c++20", ]
 CXXFLAGS += ["/MT"]
 
 OS_LIBS += [
-    "shell32",
-    "user32",
-    "Comctl32"
+    "psapi",
+    "shlwapi",
 ]

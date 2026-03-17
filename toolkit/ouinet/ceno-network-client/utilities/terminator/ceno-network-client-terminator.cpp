@@ -1,68 +1,50 @@
+#include <windows.h>
+#include <psapi.h>
+#include <shlwapi.h>
+
 #include <iostream>
+#include <filesystem>
+#include <string>
 
-#include "../ceno-network-client-helper.h"
+constexpr const wchar_t *expectedFilename = L"ceno-network-client.exe";
 
-// EnumWindowsCallback Source:
-// https://stackoverflow.com/questions/11711417/get-hwnd-by-process-id-c/20730976#20730976
-// Posted by Andre Kirpitch
-// Retrieved 2026-01-05, License - CC BY-SA 3.0
-static HWND g_networkClientWindowHandle = NULL;
-BOOL CALLBACK EnumWindowsCallback(HWND hwnd, const LPARAM processId) {
-    DWORD windowProcessId;
-    GetWindowThreadProcessId(hwnd, &windowProcessId);
-
-    if (processId == windowProcessId) {
-        g_networkClientWindowHandle = hwnd;
-        return FALSE;
+bool CheckProcessImageName(HANDLE myHandle) {
+    std::wstring path(MAX_PATH, L'\0');
+    DWORD size = MAX_PATH;
+    if (!QueryFullProcessImageNameW(myHandle, 0, path.data(), &size)) {
+        if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
+            return false;
+        }
+        constexpr DWORD NT_MAX_PATH = 32767;
+        path.resize(NT_MAX_PATH);
+        size = NT_MAX_PATH;
+        if (!QueryFullProcessImageNameW(myHandle, 0, path.data(), &size)) {
+            return false;
+        }
     }
-    return TRUE;
+    path.resize(wcsnlen(path.c_str(), path.size()));
+    return _wcsicmp(std::filesystem::path{path}.filename().c_str(), expectedFilename) == 0;
 }
 
 int wmain(const int argc, const wchar_t *argv[]) {
     if (argc != 2) {
         std::wcerr << "Program usage:" << std::endl
-            << "\"ceno-network-client-terminator.exe c:\\ouinet-repo\" to terminate an active Ceno Network Client process" << std::endl;
+            << "\"ceno-network-client-terminator.exe pid - to terminate a stuck Ceno Network Client process" << std::endl;
         return 1;
     }
 
-    const std::filesystem::path ouinetRepoPath = argv[1];
-    const auto processId = getProcessId(ouinetRepoPath);
-    if (!processId.has_value()) {
-        return 1;
-    }
+    int retval = 0;
 
-    EnumWindows(EnumWindowsCallback, processId.value());
-    if (NULL == g_networkClientWindowHandle) {
-        std::wcerr << L"Failed to find Ceno Network Client window: " << GetLastErrorAsWString() << std::endl;
-        return 1;
-    }
+    const DWORD pid = static_cast<DWORD>(std::wcstol(argv[1], nullptr, 10));
 
-    HANDLE handle = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId.value());
-    if (handle == NULL) {
-        std::wcerr << L"Failed to get process handle. Will not be able to wait for termination to complete: " << GetLastErrorAsWString() << std::endl;
+    HANDLE h = ::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_TERMINATE, FALSE, pid);
+    if (h) {
+        if (!CheckProcessImageName(h) ||
+            0 == ::TerminateProcess(h, 1)
+        ) {
+            retval = 1;
+        }
+        ::CloseHandle(h);
     }
-
-    if (!PostMessage(g_networkClientWindowHandle, WM_CLOSE, 0, 0)) {
-        std::wcerr << L"Failed to end Ceno Network Client" << std::endl;
-        return 1;
-    }
-    std::wcout << L"Request to terminate process sent" << std::endl;
-
-    if (handle == NULL) {
-        return 1;
-    }
-
-    std::wcout << L"Waiting for process to finish" << std::endl;
-    if (WAIT_OBJECT_0 != WaitForSingleObject(handle, INFINITE)) {
-        std::wcerr << L"Failed to wait for process: " << GetLastErrorAsWString() << std::endl;
-        return 1;
-    }
-
-    DWORD exitCode;
-    if (0 == GetExitCodeProcess(handle, &exitCode)) {
-        std::wcerr << L"Failed to get process exit value: " << GetLastErrorAsWString() << std::endl;
-        return 1;
-    }
-
-    return exitCode;
+    return retval;
 }

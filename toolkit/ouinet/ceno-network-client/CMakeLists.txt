@@ -45,13 +45,27 @@ add_executable(ceno-network-client WIN32
         NetworkAddressMonitor.h
 )
 
-target_link_libraries(ceno-network-client comctl32 iphlpapi
-    ${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/libclient_lib.dll
+add_library(MinGWLibClient SHARED IMPORTED)
+set_target_properties(MinGWLibClient PROPERTIES
+        IMPORTED_LOCATION
+            "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/libclient_lib.dll"
+        IMPORTED_IMPLIB
+            "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/libclient_lib.lib"
+        INTERFACE_INCLUDE_DIRECTORIES
+            "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/"
 )
-target_include_directories(ceno-network-client PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/)
 
-# No exceptions to match compile options in moz.build,
-# moz.build disabled exceptions by default
-target_compile_options(ceno-network-client PUBLIC -municode -fno-exceptions)
-target_link_options(ceno-network-client PUBLIC -municode)
+if(MSVC)
+    target_link_options(ceno-network-client PRIVATE "/MANIFEST:NO")
+else()
+    # No exceptions to match compile options in moz.build,
+    # moz.build disabled exceptions by default
+    target_compile_options(ceno-network-client PUBLIC -municode -fno-exceptions)
+    target_link_options(ceno-network-client PUBLIC -municode)
+endif()
+target_link_libraries(ceno-network-client comctl32 iphlpapi
+    MinGWLibClient
+)
+
+# uncomment to link vcredist statically
+# set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
