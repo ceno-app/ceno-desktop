@@ -17,7 +17,11 @@ interface nsIOuinetNativeHelpers : nsISupports {
   AString GetRealAppData(in AString virtualAppData);
   AString GetShortPath(in AString longPath);
 
+
+  boolean CheckIfWindowExists(in long pid);
+
   void EndProcess(in long pid);
+  void EndOrKillProcess(in long pid);
 
   void MonitorProcess(in long pid, in nsIObserver callback);
 };

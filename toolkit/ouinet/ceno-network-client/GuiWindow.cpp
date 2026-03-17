@@ -46,6 +46,17 @@ constexpr int ICON_OFFLINE = 5;
 static std::atomic_flag exitRequested;
 static std::atomic_flag isRestarting;
 
+enum OuinetState {
+    Created = 0,  // not told to start yet (initial)
+    Failed,  // told to start, error precludes from continuing (final)
+    Starting,  // told to start, some operations still pending completion
+    Degraded,  // told to start, some operations succeeded but others failed
+    Started,  // told to start, all operations succeeded
+    Stopping,  // told to stop, some operations still pending completion
+    Stopped,  // told to stop, all operations succeeded (final)
+};
+static int ouinet_state = OuinetState::Created;
+
 static LRESULT CALLBACK windowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static void updateNotificationIcon(int iconId);
 
@@ -79,8 +90,7 @@ HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
 
 
 static void requestToCloseProgram(HWND hWnd) {
-    stopStatePoller();
-    updateNotificationIcon(ICON_EXITING);
+    isRestarting.clear();
 
     // If asked twice, don't wait for ouinet to exit by itself.
     // Cleanup GUI program and exit(EXIT_FAILURE);
@@ -91,15 +101,32 @@ static void requestToCloseProgram(HWND hWnd) {
             exit(EXIT_FAILURE);
         }
     } else {
-        ouinet_client_stop_and_detach();
+        updateNotificationIcon(ICON_EXITING);
+        // @TODO: update this once ouinet can be stopped at startup
+        if (ouinet_state == OuinetState::Degraded ||
+            ouinet_state == OuinetState::Started
+        ) {
+            stopStatePoller();
+            ouinet_client_stop_and_detach();
+        }
     }
 }
 
 static void requestToRestartProgram() {
-    stopStatePoller();
-    updateNotificationIcon(ICON_RESTARTING);
-    isRestarting.test_and_set();
-    ouinet_client_stop_and_detach();
+    if (exitRequested.test()) {
+        return;
+    }
+
+    if (!isRestarting.test_and_set()) {
+        updateNotificationIcon(ICON_RESTARTING);
+        // @TODO: update this once ouinet can be stopped at startup
+        if (ouinet_state == OuinetState::Degraded ||
+            ouinet_state == OuinetState::Started
+        ) {
+            stopStatePoller();
+            ouinet_client_stop_and_detach();
+        }
+    }
 }
 
 // onOuinetExit is executed by ouinet's thread
@@ -172,21 +199,32 @@ static void removeNotificationIcon() {
 }
 
 static void onOuinetStateChange(const int ouinetState, const bool isOnline) {
+    ouinet_state = ouinetState;
+
+    if ((ouinet_state == OuinetState::Degraded ||
+        ouinet_state == OuinetState::Started ) && (
+        exitRequested.test() || isRestarting.test()
+    )) {
+        stopStatePoller();
+        ouinet_client_stop_and_detach();
+        return;
+    }
+
     int icon;
     switch (ouinetState) {
-    case 0: // ouinet::Client::RunningState::Created = 0
-    case 2: // ouinet::Client::RunningState::Starting = 2
+    case OuinetState::Created:
+    case OuinetState::Starting:
         icon = ICON_CONNECTING;
         break;
-    case 3: // ouinet::Client::RunningState::Degraded = 3
+    case OuinetState::Degraded:
         icon = isOnline ? ICON_DEGRADED : ICON_OFFLINE;
         break;
-    case 4: // ouinet::Client::RunningState::Started = 4
+    case OuinetState::Started:
         icon = ICON_CONNECTED;
         break;
-    // ouinet::Client::RunningState::Failed = 1
-    // ouinet::Client::RunningState::Stopping = 5
-    // ouinet::Client::RunningState::Stopped = 6
+    // OuinetState::Failed
+    // OuinetState::Stopping
+    // OuinetState::Stopped
     default:
         icon = isRestarting.test() ? ICON_RESTARTING : ICON_EXITING;
         break;
@@ -252,7 +290,12 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPA
     }
     break;
     case WM_CLOSE:
-        requestToCloseProgram(hWnd);
+        if (windowHandleForCommunicatingFromOtherThreads.load() != NULL) {
+            requestToCloseProgram(hWnd);
+        } else {
+            removeNotificationIcon();
+            PostQuitMessage(g_exitCode);
+        }
         break;
     case ouinetDidExitMessage:
         if (isRestarting.test()) {

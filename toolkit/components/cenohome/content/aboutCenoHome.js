@@ -5,6 +5,8 @@ const OuinetStages = Object.freeze({
   ConnectingToNetwork: "ConnectingToNetwork",
   Connected: "Connected",
   Degraded: "Degraded",
+  Exiting: "Exiting",
+  Restarting: "Restarting",
   Exited: "Exited",
   Error: "Error",
 });
@@ -37,7 +39,7 @@ const InternetStatus = Object.freeze({
 
 function ouinetStageToConnectionProgress(ouinetStage) {
   let connectingToNetworkProgress = 0;
-  if (ouinetStage === OuinetStages.StartingProcess) {
+  if (ouinetStage === OuinetStages.StartingProcess || ouinetStage === OuinetStages.Restarting) {
     connectingToNetworkProgress = 1;
   } else if (ouinetStage === OuinetStages.ConnectingToNetwork) {
     connectingToNetworkProgress = 33;

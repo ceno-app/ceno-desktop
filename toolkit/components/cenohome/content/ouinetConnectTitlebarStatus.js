@@ -12,6 +12,8 @@ const OuinetStages = Object.freeze({
   ConnectingToNetwork: "ConnectingToNetwork",
   Connected: "Connected",
   Degraded: "Degraded",
+  Exiting: "Exiting",
+  Restarting: "Restarting",
   Exited: "Exited",
   Error: "Error",
 });

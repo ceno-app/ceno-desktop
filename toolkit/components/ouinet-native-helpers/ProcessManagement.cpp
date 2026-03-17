@@ -39,14 +39,49 @@ BOOL CALLBACK EnumWindowsCallback(HWND hwnd, const LPARAM processId) {
 }
 
 NS_IMETHODIMP
+OuinetNativeHelpers::CheckIfWindowExists(const int32_t pid, bool *aResult) {
+    NS_ENSURE_ARG_POINTER(aResult);
+
+    g_networkClientWindowHandle = nullptr;
+    EnumWindows(EnumWindowsCallback, pid);
+
+    *aResult = nullptr == g_networkClientWindowHandle;
+}
+
+NS_IMETHODIMP
 OuinetNativeHelpers::EndProcess(const int32_t pid) {
     g_networkClientWindowHandle = nullptr;
     EnumWindows(EnumWindowsCallback, pid);
+
     if (nullptr == g_networkClientWindowHandle) {
         return NS_ERROR_INVALID_ARG;
     }
 
-    ::PostMessageW(g_networkClientWindowHandle, WM_CLOSE, 0, 0);
+    if (0 == ::PostMessageW(g_networkClientWindowHandle, WM_CLOSE, 0, 0)) {
+        return NS_ERROR_INVALID_ARG;
+    }
+
+    return NS_OK;
+}
+
+NS_IMETHODIMP
+OuinetNativeHelpers::EndOrKillProcess(const int32_t pid) {
+    HANDLE hProcess = ::OpenProcess(PROCESS_TERMINATE, 0, pid);
+    auto handleGuard = MakeScopeExit([&] { if (NULL != hProcess) { CloseHandle(hProcess);} });
+
+    // Process creation and window handle creation is not atomic
+    // Send WM_CLOSE if window exists
+    if (NS_OK == EndProcess(pid)) {
+        return NS_OK;
+    }
+
+    // Terminate process if window don't exist.
+    // Downside is that the window may have been created right after
+    // the failed call to EndProcess() and before ::TerminateProcess()
+    if (NULL == hProcess || 0 == ::TerminateProcess(hProcess, 1)) {
+        return NS_ERROR_INVALID_ARG;
+    }
+
     return NS_OK;
 }
 
