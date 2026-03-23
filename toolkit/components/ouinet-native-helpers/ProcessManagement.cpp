@@ -1,10 +1,6 @@
-#include "nsCOMPtr.h"
+#include <filesystem>
 
-#include "nsIThreadManager.h"
-#include "nsThreadUtils.h"       // NS_NewNamedThread, NS_DispatchToMainThread
-#include "nsServiceManagerUtils.h" // do_GetService
-#include "nsLiteralString.h"     // NS_LITERAL_CSTRING, _ns
-
+#include "nsServiceManagerUtils.h"
 #include "nsCOMPtr.h"           // nsCOMPtr, do_GetService
 #include "nsIObserver.h"        // nsIObserver interface
 #include "nsIObserverService.h"        // nsIObserver interface
@@ -19,136 +15,121 @@
 
 namespace mozilla {
 
+struct EnumCtx {
+    const DWORD processId;
+    HWND hWndResult;
+};
 
 // EnumWindowsCallback Source:
 // https://stackoverflow.com/questions/11711417/get-hwnd-by-process-id-c/20730976#20730976
 // Posted by Andre Kirpitch
 // Retrieved 2026-01-05, License - CC BY-SA 3.0
-static HWND g_networkClientWindowHandle = nullptr;
+// EnumCtx modification added later
 BOOL CALLBACK EnumWindowsCallback(HWND hwnd, const LPARAM processId) {
+    auto *ctx = reinterpret_cast<EnumCtx*>(processId);
     DWORD windowProcessId;
     ::GetWindowThreadProcessId(hwnd, &windowProcessId);
 
-    if (processId == windowProcessId) {
-        g_networkClientWindowHandle = hwnd;
+    if (ctx->processId == windowProcessId) {
+        ctx->hWndResult = hwnd;
         return FALSE;
     }
     return TRUE;
 }
 
-NS_IMETHODIMP
-OuinetNativeHelpers::CheckIfWindowExists(const int32_t pid, bool *aResult) {
-    NS_ENSURE_ARG_POINTER(aResult);
-
-    g_networkClientWindowHandle = nullptr;
-    EnumWindows(EnumWindowsCallback, pid);
-
-    *aResult = nullptr == g_networkClientWindowHandle;
+static bool CheckProcessImageName(HANDLE processHandle) {
+    constexpr const wchar_t *expectedFilename = L"ceno-network-client.exe";
+    std::wstring path(MAX_PATH, L'\0');
+    DWORD size = MAX_PATH;
+    if (!QueryFullProcessImageNameW(processHandle, 0, path.data(), &size)) {
+        if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
+            return false;
+        }
+        constexpr DWORD NT_MAX_PATH = 32767;
+        path.resize(NT_MAX_PATH);
+        size = NT_MAX_PATH;
+        if (!QueryFullProcessImageNameW(processHandle, 0, path.data(), &size)) {
+            return false;
+        }
+    }
+    path.resize(wcsnlen(path.c_str(), path.size()));
+    return _wcsicmp(std::filesystem::path{path}.filename().c_str(), expectedFilename) == 0;
 }
 
 NS_IMETHODIMP
-OuinetNativeHelpers::EndProcess(const int32_t pid) {
-    g_networkClientWindowHandle = nullptr;
-    EnumWindows(EnumWindowsCallback, pid);
+OuinetNativeHelpers::EndNetworkClientProcess(const int32_t pid) {
+    HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+    if (NULL == hProcess) return NS_ERROR_INVALID_ARG;
+    auto handleGuard = MakeScopeExit([&hProcess] { CloseHandle(hProcess); });
 
-    if (nullptr == g_networkClientWindowHandle) {
-        return NS_ERROR_INVALID_ARG;
-    }
+    if (!CheckProcessImageName(hProcess)) return NS_ERROR_INVALID_ARG;
 
-    if (0 == ::PostMessageW(g_networkClientWindowHandle, WM_CLOSE, 0, 0)) {
-        return NS_ERROR_INVALID_ARG;
-    }
+    EnumCtx ctx { static_cast<DWORD>(pid), nullptr };
+    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&ctx));
+    if (nullptr == ctx.hWndResult) return NS_ERROR_INVALID_ARG;
 
-    return NS_OK;
+    return ::PostMessageW(ctx.hWndResult, WM_CLOSE, 0, 0) ? NS_OK : NS_ERROR_INVALID_ARG;
 }
 
 NS_IMETHODIMP
-OuinetNativeHelpers::EndOrKillProcess(const int32_t pid) {
-    HANDLE hProcess = ::OpenProcess(PROCESS_TERMINATE, 0, pid);
-    auto handleGuard = MakeScopeExit([&] { if (NULL != hProcess) { CloseHandle(hProcess);} });
+OuinetNativeHelpers::EndOrKillNetworkClientProcess(const int32_t pid) {
+    HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_TERMINATE, 0, pid);
+    if (NULL == hProcess) return NS_ERROR_INVALID_ARG;
+    auto handleGuard = MakeScopeExit([&hProcess] { CloseHandle(hProcess); });
+
+    if (!CheckProcessImageName(hProcess)) return NS_ERROR_INVALID_ARG;
 
     // Process creation and window handle creation is not atomic
     // Send WM_CLOSE if window exists
-    if (NS_OK == EndProcess(pid)) {
-        return NS_OK;
+    EnumCtx ctx { static_cast<DWORD>(pid), nullptr };
+    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&ctx));
+    if (nullptr != ctx.hWndResult) {
+        if (::PostMessageW(ctx.hWndResult, WM_CLOSE, 0, 0)) {
+            return NS_OK;
+        }
     }
 
     // Terminate process if window don't exist.
     // Downside is that the window may have been created right after
     // the failed call to EndProcess() and before ::TerminateProcess()
-    if (NULL == hProcess || 0 == ::TerminateProcess(hProcess, 1)) {
-        return NS_ERROR_INVALID_ARG;
-    }
-
-    return NS_OK;
+    return ::TerminateProcess(hProcess, 1) ? NS_OK : NS_ERROR_INVALID_ARG;
 }
 
-
-struct CallbackGuard {
-    nsIObserver* obs;
-    explicit CallbackGuard(nsIObserver* o) : obs(o) {}
-    ~CallbackGuard() { if (obs) NS_RELEASE(obs); }
-
-    // Disable copy to prevent double-release
-    CallbackGuard(const CallbackGuard&) = delete;
-    CallbackGuard& operator=(const CallbackGuard&) = delete;
-
-    // Enable move to transfer ownership
-    CallbackGuard(CallbackGuard&& other) noexcept : obs(other.obs) {
-        other.obs = nullptr;
-    }
-    CallbackGuard& operator=(CallbackGuard&& other) noexcept {
-        if (this != &other) {
-            if (obs) NS_RELEASE(obs);
-            obs = other.obs;
-            other.obs = nullptr;
-        }
-        return *this;
-    }
-};
-
 NS_IMETHODIMP
-OuinetNativeHelpers::MonitorProcess(const int32_t pid, nsIObserver *callback) {
-    if (!hShutdownEvent) {
-        return NS_ERROR_OUT_OF_MEMORY;
-    }
-    if (!monitorThread) {
-        nsresult rv = NS_NewNamedThread("MonitorProcess", getter_AddRefs(monitorThread));
+OuinetNativeHelpers::MonitorNetworkClientProcess(const int32_t pid, nsIObserver *callback) {
+    if (!hShutdownEvent) return NS_ERROR_OUT_OF_MEMORY;
+    if (!clientMonitorThread) {
+        nsresult rv = NS_NewNamedThread("MonitorProcess", getter_AddRefs(clientMonitorThread));
         NS_ENSURE_SUCCESS(rv, rv);
     }
 
     HANDLE hProcess = ::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
-    if (NULL == hProcess) {
-        return NS_ERROR_INVALID_ARG;
-    }
-    NS_ADDREF(callback);
-
-    CallbackGuard callbackGuard (callback);
+    if (NULL == hProcess) return NS_ERROR_INVALID_ARG;
     auto handleGuard = MakeScopeExit([&] { CloseHandle(hProcess); });
+    if (!CheckProcessImageName(hProcess)) return NS_ERROR_INVALID_ARG;
 
     HANDLE hShutdown = hShutdownEvent;
 
-    nsresult rv = monitorThread->Dispatch(NS_NewRunnableFunction("ProcessWait", [hProcess, hShutdown, callbackGuard = std::move(callbackGuard)]() mutable {
-        // observer pointer leaks if NS_DispatchToMainThread fails (returns NS_ERROR_FAILURE).
-        // This is because it can only be released on main thread, not on this current worker thread.
-        // If NS_DispatchToMainThread fails, it means there's no way other reasonable way to release it.
-        nsIObserver* observer = callbackGuard.obs;
-        callbackGuard.obs = nullptr;  // Prevent guard from releasing
+    nsMainThreadPtrHandle<nsIObserver> callbackHandle(new nsMainThreadPtrHolder<nsIObserver>("OuinetMonitorCallback", callback));
 
+    nsresult rv = clientMonitorThread->Dispatch(NS_NewRunnableFunction("ProcessWait", [
+        hProcess, hShutdown, callbackHandle
+    ]() mutable {
         HANDLE handles[2] = { hProcess, hShutdown };
-        DWORD result = ::WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+        if (WAIT_OBJECT_0 + 1 == ::WaitForMultipleObjects(2, handles, FALSE, INFINITE)) {
+            ::CloseHandle(hProcess);
+            return;
+        }
 
         DWORD exitCode = 0;
         ::GetExitCodeProcess(hProcess, &exitCode);
         ::CloseHandle(hProcess);
 
-        NS_DispatchToMainThread(NS_NewRunnableFunction("ProcessExit", [observer, result, exitCode]() mutable {
-            if (result == WAIT_OBJECT_0) {
-                nsAutoString exitCodeStr;
-                exitCodeStr.AppendInt(static_cast<int32_t>(exitCode));
-                observer->Observe(nullptr, "process-exited", exitCodeStr.get());
-            }
-            NS_RELEASE(observer);
+        nsAutoString exitCodeStr;
+        exitCodeStr.AppendInt(static_cast<int32_t>(exitCode));
+
+        NS_DispatchToMainThread(NS_NewRunnableFunction("ProcessExit", [callbackHandle, exitCodeStr = std::move(exitCodeStr)]() mutable {
+            callbackHandle->Observe(nullptr, "process-exited", exitCodeStr.get());
         }), NS_DISPATCH_NORMAL);
     }), NS_DISPATCH_NORMAL);
 

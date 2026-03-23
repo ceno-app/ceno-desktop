@@ -21,8 +21,8 @@ interface nsIOuinetNativeHelpers : nsISupports {
 
   boolean CheckIfWindowExists(in long pid);
 
-  void EndProcess(in long pid);
-  void EndOrKillProcess(in long pid);
+  void EndNetworkClientProcess(in long pid);
+  void EndOrKillNetworkClientProcess(in long pid);
 
-  void MonitorProcess(in long pid, in nsIObserver callback);
+  void MonitorNetworkClientProcess(in long pid, in nsIObserver callback);
 };
