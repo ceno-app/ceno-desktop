@@ -19,8 +19,6 @@ interface nsIOuinetNativeHelpers : nsISupports {
 
   void MonitorFirewall(in AString executable, in nsIObserver callback);
 
-  boolean CheckIfWindowExists(in long pid);
-
   void EndNetworkClientProcess(in long pid);
   void EndOrKillNetworkClientProcess(in long pid);
 
