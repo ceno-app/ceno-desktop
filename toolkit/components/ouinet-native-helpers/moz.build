@@ -8,7 +8,9 @@ XPCOM_MANIFESTS += [ "components.conf" ]
 EXPORTS += [ "OuinetNativeHelpers.h" ]
 
 UNIFIED_SOURCES += [
+    "Firewall.cpp",
     "MetricsGeoTimezone.cpp",
+    "OuinetNativeHelpers.cpp",
     "ProcessManagement.cpp",
     "VirtualAppData.cpp",
 ]

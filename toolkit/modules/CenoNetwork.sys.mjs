@@ -52,12 +52,6 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () =>
   })
 );
 
-// Keep CenoNetworkErrors in sync with aboutCenoHome.js
-export const CenoNetworkErrors = Object.freeze({
-  FailedToStart: "FailedToStart",
-  FailedToStartSuggestLogging: "FailedToStartSuggestLogging",
-});
-
 export const InternetStatus = Object.freeze({
   Unknown: -1,
   Offline: 0,
@@ -143,7 +137,7 @@ function randomString(length) {
 class _CenoNetwork {
   #ouinetStage = OuinetStages.Init;
   #internetStatus = InternetStatus.Unknown;
-  #error = null;
+
   #quickstart = Services.prefs.getBoolPref(CenoNetworkPrefs.quickstart, false);
   #headless = Services.prefs.getBoolPref(CenoNetworkPrefs.headless, false);
 
@@ -171,7 +165,15 @@ class _CenoNetwork {
   #metricsTimezone = Services.OuinetNativeHelpers.timezone;
   #metricsRecordId = undefined;
 
-  #ouinetState = {};
+  // Some state values need to survive network client restart
+  #ouinetState = {
+    connection_was_made: false,
+    blocked_by_firewall: false,
+    errors: {
+      firewall: false,
+    },
+  };
+  // Other state values should be recreated for each connection
   #initOuinetState() {
     this.#ouinetState.origin_access = Services.prefs.getBoolPref(OuinetPrefs.origin_access, true);
     this.#ouinetState.proxy_access = Services.prefs.getBoolPref(OuinetPrefs.proxy_access, true);
@@ -190,13 +192,16 @@ class _CenoNetwork {
     this.#ouinetState.upnp = undefined;
     this.#ouinetState.local_udp = undefined;
     this.#ouinetState.public_udp = undefined;
+
+    this.#ouinetState.errors.failed_to_start = false;
+    this.#ouinetState.errors.failed_to_start_show_log = false;
+    this.#ouinetState.errors.failed_to_start_suggest_logging = false;
   }
 
   CenoNetworkState() {
     let res = structuredClone(this.#ouinetState);
     res['ouinetStage'] = this.#ouinetStage;
     res['internetStatus'] = this.#internetStatus;
-    res['error'] = this.#error
     res['quickstart'] = this.#quickstart;
     res['headless'] = this.#headless;
     const logfile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
@@ -232,17 +237,18 @@ class _CenoNetwork {
     if (this.#ouinetStage === newStageName) {
       return;
     }
-    this.#error = null;
+
+    if (newStageName === OuinetStages.Connected || newStageName === OuinetStages.Degraded) {
+      this.#ouinetState.connection_was_made = true;
+      if (this.#ouinetState.blocked_by_firewall) {
+        this.#ouinetState.errors.firewall = true;
+      }
+    }
+
     this.#ouinetStage = newStageName;
     if (sendNotifications) {
       this.#sendNotifications();
     }
-  }
-
-  #setError(errorName) {
-    this.#ouinetStage = OuinetStages.Error;
-    this.#error = errorName;
-    this.#sendNotifications();
   }
 
   setQuickstart(isEnabled) {
@@ -264,6 +270,44 @@ class _CenoNetwork {
     this.#initOuinetState();
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     await this.#updateInternetStatus();
+
+    try {
+      const firewallUpdate = (firewallStatus) => {
+        lazy.logger.info(`Firewall status: ${firewallStatus}`);
+        // List of firewall status strings defined in toolkit\components\ouinet-native-helpers\Firewall.cpp
+        switch (firewallStatus) {
+          case "Blocked":
+          case "BlockedByDefault":
+            this.#ouinetState.blocked_by_firewall = true;
+            if (this.#ouinetState.connection_was_made) {
+              this.#ouinetState.errors.firewall = true;
+            }
+            break;
+          default:
+          // case "Allowed":
+          // case "AllowedByDefault":
+          // case "FirewallDisabled":
+            {
+              this.#ouinetState.blocked_by_firewall = false;
+              this.#ouinetState.errors.firewall = false;
+            }
+            break;
+        }
+        this.#sendNotifications();
+      };
+      const firewallObserver = {
+        QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
+        observe: function(_subject, _topic, firewallStatus) {
+          firewallUpdate(firewallStatus);
+        }
+      };
+      Services.OuinetNativeHelpers.MonitorFirewall(
+        lazy.OuinetLauncherUtil.getOuinetFile("client", false).path,
+        firewallObserver
+      );
+    } catch (e) {
+      lazy.logger.error(e);
+    }
 
     if (lazy.OuinetProcess.pidExists()) {
       lazy.logger.debug('Trying to inherit previous Ceno Network Connection');
@@ -514,6 +558,10 @@ class _CenoNetwork {
           if (!this.#ouinetState.logging) {
             try {
               lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
+              if (this.#ouinetState.errors.failed_to_start_show_log) {
+                this.#ouinetState.errors.failed_to_start_show_log = false;
+                this.#ouinetState.errors.failed_to_start = true;
+              }
             } catch (e) {
               lazy.logger.error("Failed to remove log file: ", e);
             }
@@ -618,10 +666,14 @@ class _CenoNetwork {
       this.#ouinetStage === OuinetStages.ConnectingToNetwork
     ) {
         if (this.#ouinetState.logging) {
-          this.#setError(CenoNetworkErrors.FailedToStart);
+          if (lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).exists())
+            this.#ouinetState.errors.failed_to_start_show_log = true;
+          else
+            this.#ouinetState.errors.failed_to_start = true;
         } else {
-          this.#setError(CenoNetworkErrors.FailedToStartSuggestLogging);
+          this.#ouinetState.errors.failed_to_start_suggest_logging = true;
         }
+        this.#setOuinetStage(OuinetStages.Error, false);
     }
     else if (
       this.#ouinetStage !== OuinetStages.Exited &&
@@ -629,7 +681,10 @@ class _CenoNetwork {
     ) {
       this.#setOuinetStage(OuinetStages.Init, false);
     }
-    this.#initOuinetState();
+
+    if (this.#ouinetStage !== OuinetStages.Error) {
+      this.#initOuinetState();
+    }
 
     this.#onOuinetExit_post();
     this.#onOuinetExit_post = () => {};

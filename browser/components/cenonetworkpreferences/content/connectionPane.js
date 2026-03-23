@@ -77,6 +77,7 @@ class ConnectionPane {
 
       errors: {
         link_status_offline: document.querySelector("p#error-message-link-status-offline"),
+        firewall: document.querySelector("p#error-message-firewall"),
         failed_to_start: document.querySelector("p#error-message-failed-to-start"),
         failed_to_start_show_log: document.querySelector("p#error-message-failed-to-start-show-log"),
       },
@@ -213,24 +214,11 @@ class ConnectionPane {
         break;
     }
 
-    this.#elements.ouinet_enableloggingandreconnect_button.hidden = true;
-    this.#elements.errors.link_status_offline.hidden = true;
-    this.#elements.errors.failed_to_start.hidden = true;
-    this.#elements.errors.failed_to_start_show_log.hidden = true;
-
-    if (state.ouinetStage === OuinetStages.Error) {
-      if (state.error === CenoNetworkErrors.FailedToStart) {
-        if (state.logfile) {
-          this.#elements.errors.failed_to_start_show_log.hidden = false;
-        } else {
-          this.#elements.errors.failed_to_start.hidden = false;
-        }
-      } else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
-        this.#elements.ouinet_enableloggingandreconnect_button.hidden = false;
-        this.#elements.errors.failed_to_start.hidden = false;
-      }
-    }
     this.#elements.errors.link_status_offline.hidden = state.internetStatus === InternetStatus.Online;
+    this.#elements.errors.firewall.hidden = !state.errors.firewall;
+    this.#elements.ouinet_enableloggingandreconnect_button.hidden = !state.errors.failed_to_start_suggest_logging;
+    this.#elements.errors.failed_to_start.hidden = !state.errors.failed_to_start && !state.errors.failed_to_start_suggest_logging;
+    this.#elements.errors.failed_to_start_show_log.hidden = !state.errors.failed_to_start_show_log;
 
     this.#set_toggle(this.#elements.sources.origin_access, state.origin_access);
     this.#set_toggle(this.#elements.sources.proxy_access, state.proxy_access);
