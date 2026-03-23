@@ -6,9 +6,9 @@
 #include <filesystem>
 #include <string>
 
-constexpr const wchar_t *expectedFilename = L"ceno-network-client.exe";
+static bool CheckProcessImageName(HANDLE myHandle) {
+    constexpr const wchar_t *expectedFilename = L"ceno-network-client.exe";
 
-bool CheckProcessImageName(HANDLE myHandle) {
     std::wstring path(MAX_PATH, L'\0');
     DWORD size = MAX_PATH;
     if (!QueryFullProcessImageNameW(myHandle, 0, path.data(), &size)) {
