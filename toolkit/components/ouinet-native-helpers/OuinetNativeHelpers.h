@@ -29,7 +29,7 @@ class OuinetNativeHelpers final : public nsIOuinetNativeHelpers, public nsIObser
   //   GetIsAlive(bool *aIsAlive)
   NS_DECL_NSIOUINETNATIVEHELPERS
 
-  nsCOMPtr<nsIThread> monitorThread = nullptr;
+  nsCOMPtr<nsIThread> clientMonitorThread = nullptr;
   nsCOMPtr<nsIThread> firewallMonitorThread = nullptr;
   HANDLE hShutdownEvent = nullptr;
   bool isRegistered = false;
