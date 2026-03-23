@@ -114,12 +114,12 @@ export class OuinetProcess {
       }
       const processObserver = {
         QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
-        observe: function(subject, topic, exitCode) {
+        observe: function(_subject, _topic, exitCode) {
           onExitLocalCopy(exitCode);
         }
       };
       try {
-        Services.OuinetNativeHelpers.MonitorProcess(pid, processObserver);
+        Services.OuinetNativeHelpers.MonitorNetworkClientProcess(pid, processObserver);
       } catch (e) {
         lazy.logger.error('Failed to monitor process.', e);
         this.#onExitWrapper(1);
@@ -137,11 +137,11 @@ export class OuinetProcess {
 
     if (lazy.OuinetLauncherUtil.isWindows) {
       try {
-        Services.OuinetNativeHelpers.EndProcess(pid);
+        Services.OuinetNativeHelpers.EndNetworkClientProcess(pid);
       } catch (_) {
         lazy.logger.error('Failed to end process. Retrying with fallback to kill process');
         try {
-          Services.OuinetNativeHelpers.EndOrKillProcess(pid);
+          Services.OuinetNativeHelpers.EndOrKillNetworkClientProcess(pid);
         } catch (e) {
           lazy.logger.error('Failed to end or kill process');
           Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
