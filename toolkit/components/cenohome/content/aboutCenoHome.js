@@ -24,12 +24,6 @@ const CenoHomeTopics = Object.freeze({
   EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
 });
 
-// Keep CenoNetworkErrors in sync with CenoNetwork.sys.mjs
-const CenoNetworkErrors = Object.freeze({
-  FailedToStart: "FailedToStart",
-  FailedToStartSuggestLogging: "FailedToStartSuggestLogging",
-});
-
 // Keep InternetStatus in sync with CenoNetwork.sys.mjs
 const InternetStatus = Object.freeze({
   Unknown: -1,
@@ -70,6 +64,7 @@ class AboutCenoHome {
     },
     errorContainer: {
       linkStatus: "p#link-status",
+      firewallBlocked: "p#error-message-firewall",
       failedToStart: "p#error-message-failed-to-start",
       failedToStartShowLog: "p#error-message-failed-to-start-show-log",
     },
@@ -84,6 +79,7 @@ class AboutCenoHome {
     cancelButton: document.querySelector(this.selectors.buttons.cancel),
     connectButton: document.querySelector(this.selectors.buttons.connect),
     linkStatus: document.querySelector(this.selectors.errorContainer.linkStatus),
+    firewallBlocked: document.querySelector(this.selectors.errorContainer.firewallBlocked),
     failedToStart: document.querySelector(this.selectors.errorContainer.failedToStart),
     failedToStartShowLog: document.querySelector(this.selectors.errorContainer.failedToStartShowLog),
     showLogFile: document.querySelector(this.selectors.showLogFile),
@@ -107,15 +103,32 @@ class AboutCenoHome {
 
   updateState(state, focusConnect = false) {
     this.elements.quickstartToggle.pressed = state.quickstart;
-    this.hide(this.elements.enableLoggingAndReconnectButton);
-    this.hide(this.elements.failedToStart);
-    this.hide(this.elements.failedToStartShowLog);
 
-    if (state.internetStatus === InternetStatus.Online) {
-      this.hide(this.elements.linkStatus);
-    } else {
+    if (state.internetStatus !== InternetStatus.Online)
       this.show(this.elements.linkStatus);
-    }
+    else
+      this.hide(this.elements.linkStatus);
+
+    if (state.errors.firewall)
+      this.show(this.elements.firewallBlocked);
+    else
+      this.hide(this.elements.firewallBlocked);
+
+    if (state.errors.failed_to_start_show_log)
+      this.show(this.elements.failedToStartShowLog);
+    else
+      this.hide(this.elements.failedToStartShowLog);
+
+    this.hide(this.elements.enableLoggingAndReconnectButton);
+
+    if (state.errors.failed_to_start || state.errors.failed_to_start_suggest_logging) {
+      this.show(this.elements.failedToStart);
+      if (state.errors.failed_to_start_suggest_logging) {
+        this.show(this.elements.enableLoggingAndReconnectButton);
+      }
+    } else
+      this.hide(this.elements.failedToStart);
+
     if (
       state.ouinetStage === OuinetStages.Init ||
       state.ouinetStage === OuinetStages.Exited ||
@@ -125,16 +138,6 @@ class AboutCenoHome {
       this.hide(this.elements.cancelButton);
       this.show(this.elements.connectButton);
       this.hide(this.elements.progressMeter);
-
-      if (state.ouinetStage === OuinetStages.Error) {
-        if (state.error === CenoNetworkErrors.FailedToStart) {
-          this.show(this.elements.failedToStartShowLog);
-        }
-        else if (state.error === CenoNetworkErrors.FailedToStartSuggestLogging) {
-          this.show(this.elements.failedToStart);
-          this.show(this.elements.enableLoggingAndReconnectButton);
-        }
-      }
     }
     else if (
       state.ouinetStage === OuinetStages.StartingProcess ||
@@ -223,6 +226,7 @@ class AboutCenoHome {
     this.show(this.elements.connectButton);
     this.hide(this.elements.progressMeter);
 
+    this.hide(this.elements.firewallBlocked);
     this.hide(this.elements.failedToStart);
     this.hide(this.elements.failedToStartShowLog);
     this.hide(this.elements.linkStatus);

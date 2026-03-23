@@ -17,6 +17,7 @@ interface nsIOuinetNativeHelpers : nsISupports {
   AString GetRealAppData(in AString virtualAppData);
   AString GetShortPath(in AString longPath);
 
+  void MonitorFirewall(in AString executable, in nsIObserver callback);
 
   boolean CheckIfWindowExists(in long pid);
 
