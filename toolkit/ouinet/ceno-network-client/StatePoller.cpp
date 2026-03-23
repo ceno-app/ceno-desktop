@@ -31,7 +31,7 @@ static void work(const WPARAM connectionId, const std::chrono::time_point<std::c
     while (true) {
         constexpr auto debounceDuration = std::chrono::milliseconds(500);
         const auto networkAddressChangedAt = network_address_changed_at.load();
-        const auto now = std::chrono::steady_clock().now();
+        const auto now = std::chrono::steady_clock::now();
         if (
             ouinetStartedAt < networkAddressChangedAt &&
             now - networkAddressChangedAt > debounceDuration
