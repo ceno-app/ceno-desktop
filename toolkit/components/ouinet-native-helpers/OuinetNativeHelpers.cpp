@@ -29,8 +29,8 @@ void OuinetNativeHelpers::Shutdown() {
     if (hShutdownEvent != nullptr) {
         SetEvent(hShutdownEvent);
     }
-    if (monitorThread) {
-        monitorThread->Shutdown();
+    if (clientMonitorThread) {
+        clientMonitorThread->Shutdown();
     }
     if (firewallMonitorThread) {
         firewallMonitorThread->Shutdown();
@@ -45,7 +45,7 @@ void OuinetNativeHelpers::Shutdown() {
     }
     hShutdownEvent = nullptr;
     firewallMonitorThread = nullptr;
-    monitorThread = nullptr;
+    clientMonitorThread = nullptr;
     isRegistered = false;
 }
 
