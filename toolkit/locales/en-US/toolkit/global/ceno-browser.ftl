@@ -15,7 +15,9 @@ ceno-browser-about-ceno-home-connect-button = Connect
 ceno-browser-about-ceno-home-disconnect-button = Disconnect
 
 ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
-ceno-browser-about-ceno-home-error-firewall-blocked = Error: Ceno Network Client blocked by firewall.
+ceno-browser-about-ceno-home-error-firewall-blocked = Error: Ceno Network Client is blocked by firewall.
+ceno-browser-about-ceno-home-allow-firewall = Add Firewall Rule
+
 ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile">Show logfile</a>.
 ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
 ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Logging and Retry

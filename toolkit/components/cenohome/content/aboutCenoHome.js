@@ -22,6 +22,7 @@ const CenoHomeTopics = Object.freeze({
   OpenConnectionPreferences: "cenohome:openconnectionpreferences",
   ShowLogFile: "cenohome:showlogfile",
   EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
+  AllowFirewall: "cenohome:allowfirewall",
 });
 
 // Keep InternetStatus in sync with CenoNetwork.sys.mjs
@@ -61,6 +62,7 @@ class AboutCenoHome {
       cancel: "button#cancelButton",
       connect: "button#connectButton",
       enableLoggingAndReconnect: "button#enableloggingandreconnect",
+      allowFirewallButton: "button#allowFirewallButton",
     },
     errorContainer: {
       linkStatus: "p#link-status",
@@ -84,6 +86,7 @@ class AboutCenoHome {
     failedToStartShowLog: document.querySelector(this.selectors.errorContainer.failedToStartShowLog),
     showLogFile: document.querySelector(this.selectors.showLogFile),
     enableLoggingAndReconnectButton: document.querySelector(this.selectors.buttons.enableLoggingAndReconnect),
+    allowFirewallButton: document.querySelector(this.selectors.buttons.allowFirewallButton),
     openConnectionPreferences: document.querySelectorAll(this.selectors.openConnectionPreferences),
   });
 
@@ -109,10 +112,13 @@ class AboutCenoHome {
     else
       this.hide(this.elements.linkStatus);
 
-    if (state.errors.firewall)
+    if (state.errors.firewall) {
       this.show(this.elements.firewallBlocked);
-    else
+      this.show(this.elements.allowFirewallButton);
+    } else {
       this.hide(this.elements.firewallBlocked);
+      this.hide(this.elements.allowFirewallButton);
+    }
 
     if (state.errors.failed_to_start_show_log)
       this.show(this.elements.failedToStartShowLog);
@@ -194,6 +200,9 @@ class AboutCenoHome {
     });
     this.elements.enableLoggingAndReconnectButton.addEventListener("click", () => {
       RPMSendAsyncMessage(CenoHomeTopics.EnableLoggingAndReconnect);
+    });
+    this.elements.allowFirewallButton.addEventListener("click", () => {
+      RPMSendAsyncMessage(CenoHomeTopics.AllowFirewall);
     });
 
     // Prevent repeat triggering on keydown when the Enter key is held down.

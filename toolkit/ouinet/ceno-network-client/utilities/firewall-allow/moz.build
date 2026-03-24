@@ -1,22 +1,18 @@
 # -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
 # vim: set filetype=python:
 
-Program("ceno-network-client")
-SOURCES = [
-  "ArgumentsConverter.cpp",
-  "ceno-network-client.cpp",
-  "ErrorUtils.cpp",
-  "GuiWindow.cpp",
-  "NetworkAddressMonitor.cpp",
-  "NetworkStatusMonitor.cpp",
-  "StatePoller.cpp",
-]
+Program("ceno-network-client-firewall-allow")
+SOURCES = [ "admin.cpp", "ceno-network-client-firewall-allow.cpp", "paths.cpp" ]
 DIST_SUBDIR = "Ouinet"
 RCFILE = "app.rc"
 
 # No need to modify entry point. Default is wWinMan. This program is using wWinMain.
-#if CONFIG["CC_TYPE"] == "clang-cl":
-#    WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
+if CONFIG["CC_TYPE"] == "clang-cl":
+    WIN32_EXE_LDFLAGS += [
+        "-SUBSYSTEM:WINDOWS",
+        "-ENTRY:wWinMainCRTStartup",
+    ]
+    #WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
 
 # gcc and clang (not clang-cl) may need the -municode.
 # If there are issues about undefined WinMain, uncomment following lines.
@@ -24,7 +20,6 @@ RCFILE = "app.rc"
 #    This allows us to use wmain as the entry point on mingw
 #    LDFLAGS += ["-municode"]
 
-# AF_UNIX requires win10
 DEFINES["NTDDI_VERSION"] = "0x0A000000"
 DEFINES["WINVER"] = "0x0A00"
 DEFINES["_WIN32_WINNT"] = "0x0A00"
@@ -37,26 +32,12 @@ DEFINES["_WINDOWS"] = True
 
 DisableStlWrapping()
 
-CXXFLAGS += [ "/std:c++20" ]
+CXXFLAGS += [ "/std:c++20", ]
 
 # VC Redist static link
 CXXFLAGS += ["/MT"]
 
-# Exceptions are disabled by default
-# CXXFLAGS += [ "/EHsc" ]
-
 OS_LIBS += [
+    "advapi32",
     "shell32",
-    "user32",
-    "Comctl32",
-    "ole32",
-    "iphlpapi",
-]
-
-LDFLAGS += [ TOPOBJDIR + '/dist/bin/Ouinet/libclient_lib.dll.a' ]
-CXXFLAGS += [ '-I' + TOPOBJDIR + '/dist/bin/Ouinet/' ]
-
-DIRS += [
-  "utilities/firewall-allow",
-  "utilities/terminator",
 ]

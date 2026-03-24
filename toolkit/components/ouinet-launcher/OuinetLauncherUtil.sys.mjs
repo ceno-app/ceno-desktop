@@ -82,19 +82,12 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDir;
         this.file.append(OuinetLauncherUtil.isWindows ? "ceno-network-client.exe" : "client");
         break;
-      case "client-monitor":
+      case "client-firewall-allow":
         if (!OuinetLauncherUtil.isWindows) {
-          throw new Error("client-monitor available only on windows");
+          throw new Error("client-firewall-allow is available only on windows");
         }
         this.file = OuinetFile.ouinetDir;
-        this.file.append("ceno-network-client-monitor.exe");
-        break;
-      case "client-terminator":
-        if (!OuinetLauncherUtil.isWindows) {
-          throw new Error("client-terminator available only on windows");
-        }
-        this.file = OuinetFile.ouinetDir;
-        this.file.append("ceno-network-client-terminator.exe");
+        this.file.append("ceno-network-client-firewall-allow.exe");
         break;
       case "repo":
         this.file = OuinetFile.ouinetDataDir;
