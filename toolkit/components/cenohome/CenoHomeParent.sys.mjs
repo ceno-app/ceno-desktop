@@ -22,6 +22,7 @@ const CenoHomeTopics = Object.freeze({
   OpenConnectionPreferences: "cenohome:openconnectionpreferences",
   ShowLogFile: "cenohome:showlogfile",
   EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
+  AllowFirewall: "cenohome:allowfirewall",
 });
 
 /*
@@ -108,6 +109,9 @@ export class CenoHomeParent extends JSWindowActorParent {
         break;
       case CenoHomeTopics.EnableLoggingAndReconnect:
         CenoNetwork.enableLoggingAndReconnect();
+        break;
+      case CenoHomeTopics.AllowFirewall:
+        CenoNetwork.allowFirewall();
         break;
     }
     return undefined;

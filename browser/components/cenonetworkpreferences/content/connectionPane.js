@@ -61,6 +61,7 @@ class ConnectionPane {
       ouinet_cancel_button: document.querySelector(this.#selectors.ouinet_cancel_button),
       ouinet_disconnect_button: document.querySelector(this.#selectors.ouinet_disconnect_button),
       ouinet_enableloggingandreconnect_button: document.querySelector("button#network-status-ouinet-enableloggingandreconnect-button"),
+      ouinet_allow_firewall_button: document.querySelector("button#network-status-ouinet-allow-firewall-button"),
 
       ouinet_quickstart_toggle: document.querySelector(this.#selectors.ouinet_quickstart_toggle),
       ouinet_headless_toggle: document.querySelector(this.#selectors.ouinet_headless_toggle),
@@ -123,6 +124,9 @@ class ConnectionPane {
     this.#elements.ouinet_enableloggingandreconnect_button.addEventListener("click", () => {
       CenoNetwork.setOuinetConfigValue('logging', true);
       CenoNetwork.connect();
+    });
+    this.#elements.ouinet_allow_firewall_button.addEventListener("click", () => {
+      CenoNetwork.allowFirewall();
     });
     this.#elements.clear_cache_button.addEventListener("click", () => {
       CenoNetwork.purgeOuinetCache();
@@ -216,6 +220,7 @@ class ConnectionPane {
 
     this.#elements.errors.link_status_offline.hidden = state.internetStatus === InternetStatus.Online;
     this.#elements.errors.firewall.hidden = !state.errors.firewall;
+    this.#elements.ouinet_allow_firewall_button.hidden = !state.errors.firewall;
     this.#elements.ouinet_enableloggingandreconnect_button.hidden = !state.errors.failed_to_start_suggest_logging;
     this.#elements.errors.failed_to_start.hidden = !state.errors.failed_to_start && !state.errors.failed_to_start_suggest_logging;
     this.#elements.errors.failed_to_start_show_log.hidden = !state.errors.failed_to_start_show_log;

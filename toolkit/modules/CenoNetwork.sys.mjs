@@ -10,6 +10,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetLauncherUtil: "resource://gre/modules/OuinetLauncherUtil.sys.mjs",
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
   AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
+  Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
@@ -864,6 +865,27 @@ class _CenoNetwork {
     this.#ouinetState.logging = true;
     Services.prefs.setBoolPref(OuinetPrefs.logging, true);
     this.connect();
+  }
+
+  allowFirewall() {
+    lazy.logger.debug('Attempting to add firewall rules');
+    const options = {
+      command: lazy.OuinetLauncherUtil.getOuinetFile("client-firewall-allow", false).path,
+      stdin: 'devnull',
+      stdout: 'devnull',
+      stderr: 'devnull',
+      workdir: lazy.OuinetLauncherUtil.getOuinetFile("startup-dir", false).path,
+    };
+    lazy.Subprocess.call(options)
+      .then(subprocess => subprocess.wait())
+      .then(({ exitCode }) => {
+        if (exitCode !== 0) {
+          throw new Error(`exit code ${exitCode}`);
+        }
+        lazy.logger.debug('Firewall rules addedd successfully');
+      }).catch (error => {
+        lazy.logger.error("Failed to add firewall rules:", error);
+      })
   }
 };
 
