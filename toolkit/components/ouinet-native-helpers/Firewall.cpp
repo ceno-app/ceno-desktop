@@ -25,67 +25,68 @@
 namespace mozilla {
 
 // Normalize paths: expand env vars, get full path, get long path, lowercase
-static std::wstring NormalizePath(const wchar_t* raw) {
+static std::wstring normalizePath(const wchar_t* raw) {
     if (!raw) return std::wstring{};
 
-    std::wstring expanded;
+    std::wstring result;
 
-    // Helper lambda to reduce duplication
-    auto tryWithRetry = [](auto queryFn, auto execFn, std::wstring &output, const bool sizeIncludesNull) -> bool {
-        int attempts = 0;
-        bool retry;
-        do {
-            retry = false;
-            if (constexpr int maxAttempts = 3; ++attempts > maxAttempts) return false;
-
-            DWORD sizeNeeded = queryFn();
-            if (sizeNeeded == 0) return false;
-
-            std::wstring temp;
-            temp.resize(sizeNeeded - 1);
-            DWORD written = execFn(temp.data(), sizeNeeded);
-
-            if (written <= 0) return false;
-            if (written > sizeNeeded) {
-                // Buffer too small (race condition)
-                retry = true;
-            } else {
-                // Convert to length
-                if (sizeIncludesNull) --written;
-                temp.resize(written);
-                output = std::move(temp);
-                return true;
-            }
-
-        } while (retry);
-        return false;
-    };
-
-    if (!tryWithRetry(
-        [&]() { return ExpandEnvironmentStringsW(raw, nullptr, 0); },
-        [&](wchar_t* buf, DWORD size) { return ExpandEnvironmentStringsW(raw, buf, size); },
-        expanded, true)) {
-        expanded = raw; // Fallback
+    // Expand environment variables (%ProgramFiles%, %AppData%)
+    // Success returns length INCLUDING null, failure returns required size INCLUDING null
+    std::wstring expanded(MAX_PATH, L'\0');
+    if (const DWORD length = ExpandEnvironmentStringsW(raw, expanded.data(), MAX_PATH); length == 0) {
+        // Error, keep original
+        result = raw;
+    } else if (length <= MAX_PATH) {
+        // Success - length includes null terminator
+        expanded.resize(length - 1);
+        result = std::move(expanded);
+    } else if (length <= 32768) { // length is required buffer size (including null)
+        expanded.resize(length - 1);
+        if (ExpandEnvironmentStringsW(raw, expanded.data(), length) != 0) {
+            expanded.resize(length - 1);
+            result = std::move(expanded);
+        }
     }
 
-    std::wstring fullPath;
-    if (tryWithRetry(
-        [&]() { return GetFullPathNameW(expanded.c_str(), 0, nullptr, nullptr); },
-        [&](wchar_t* buf, DWORD size) { return GetFullPathNameW(expanded.c_str(), size, buf, nullptr); },
-        fullPath, false)) {
-        expanded = std::move(fullPath);
+    // Get full path (resolve relative paths)
+    // Success returns length EXCLUDING null, failure returns required size INCLUDING null
+    std::wstring fullPath(MAX_PATH, L'\0');
+    if (const DWORD length = GetFullPathNameW(result.c_str(), MAX_PATH, fullPath.data(), nullptr); length == 0) {
+        // Error
+    } else if (length < MAX_PATH) {
+        // Success - length is length without null terminator
+        fullPath.resize(length);
+        result = std::move(fullPath);
+    } else if (length <= 32767) { // length is required size including null
+        fullPath.resize(length);
+        const DWORD len2 = GetFullPathNameW(result.c_str(), length, fullPath.data(), nullptr);
+        if (len2 != 0 && len2 < length) {
+            fullPath.resize(len2);
+            result = std::move(fullPath);
+        }
     }
 
-    std::wstring longPath;
-    if (tryWithRetry(
-        [&]() { return GetLongPathNameW(expanded.c_str(), nullptr, 0); },
-        [&](wchar_t* buf, DWORD size) { return GetLongPathNameW(expanded.c_str(), buf, size); },
-        longPath, false)) {
-        expanded = std::move(longPath);
+    // Get long path (resolve 8.3 short names like PROGRA~1)
+    // Success returns length EXCLUDING null, failure returns required size INCLUDING null
+    std::wstring longPath(MAX_PATH, L'\0');
+    if (const DWORD length = GetLongPathNameW(result.c_str(), longPath.data(), MAX_PATH); length == 0) {
+        // Error or file doesn't exist - keep current result
+    } else if (length < MAX_PATH) {
+        // Success - length is length without null terminator
+        longPath.resize(length);
+        result = std::move(longPath);
+    } else if (length <= 32767) { // length is required size including null
+        longPath.resize(length);
+        DWORD len2 = GetLongPathNameW(result.c_str(), longPath.data(), length);
+        if (len2 != 0 && len2 < length) {
+            longPath.resize(len2);
+            result = std::move(longPath);
+        }
     }
 
-    CharLowerW(expanded.data());
-    return expanded;
+    CharLowerW(result.data());
+
+    return result;
 }
 
 // Check if rule applies to any currently active profile
@@ -189,9 +190,8 @@ static InboundStatus CheckInboundFirewallStatus(INetFwPolicy2* policy, const std
                         rule->get_ApplicationName(&bstrApp);
 
                         if (bstrApp) {
-                            const auto normalizedRulePath = NormalizePath(bstrApp);
+                            const auto normalizedRulePath = normalizePath(bstrApp);
                             SysFreeString(bstrApp);
-
                             if (normalizedRulePath == normalizedExePath) {
                                 NET_FW_RULE_DIRECTION dir;
                                 rule->get_Direction(&dir);
@@ -278,7 +278,7 @@ OuinetNativeHelpers::MonitorFirewall(const nsAString &executable, nsIObserver *c
         if (!handles[0]) { return; }
         auto eventHandleGuard = MakeScopeExit([&]{ CloseHandle(handles[0]); });
 
-        std::wstring normalizedExePath = NormalizePath(executableStr.c_str());
+        std::wstring normalizedExePath = normalizePath(executableStr.c_str());
         auto firewallStatus = CheckInboundFirewallStatus(policy, normalizedExePath);
 
         bool initialNotificationSent = false;

@@ -1,0 +1,2 @@
+EXTRA_DEPS += \
+  $(srcdir)/ceno.ico \
