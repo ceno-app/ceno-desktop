@@ -74,6 +74,7 @@ export let RemotePageAccessManager = {
         "cenohome:openconnectionpreferences",
         "cenohome:showlogfile",
         "cenohome:enableloggingandreconnect",
+        "cenohome:allowfirewall",
       ],
       RPMSendQuery: [
         "cenohome:get-init-args"
