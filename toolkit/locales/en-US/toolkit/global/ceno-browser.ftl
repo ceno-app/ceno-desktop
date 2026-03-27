@@ -22,6 +22,8 @@ ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Fail
 ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
 ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Logging and Retry
 
+ceno-browser-about-ceno-home-error-udp-port-mismatch = Warning: Failed to acquire requested port <span data-l10n-name="requested">{ $requested }</span>, using port <span data-l10n-name="actual">{ $actual }</span>.
+
 ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
 ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network
 
@@ -61,6 +63,12 @@ ceno-browser-ouinet-preferences-bridge-description = Note that this will make yo
 ceno-browser-ouinet-preferences-bridge-checkbox =
     .label = Enable bridge mode
 
+ceno-browser-ouinet-preferences-udp-mux-port-heading = Incoming Connections Port
+ceno-browser-ouinet-preferences-udp-mux-port-description = Ceno Network Client listens for connections from other nodes on this UDP port.
+ceno-browser-ouinet-preferences-udp-mux-port-random-checkbox =
+    .label = Assign random port
+ceno-browser-ouinet-preferences-udp-mux-port = Custom UDP port
+
 ceno-browser-ouinet-preferences-doh-heading = DNS over HTTPS
 ceno-browser-ouinet-preferences-doh-description = Unencrypted DNS or DNS over HTTPS may be blocked in some areas. Changing DNS settings requires reconnection to Ceno Network.
 ceno-browser-ouinet-preferences-doh-checkbox =
@@ -82,8 +90,7 @@ ceno-browser-ouinet-preferences-sources-personal-unreachable = ⚠ Personal brow
 ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing mode will fail with current settings. Enable direct access, injector access or distributed cache.
 
 ceno-browser-ouinet-preferences-logging-heading = Logging
-ceno-browser-ouinet-preferences-logging-checkbox =
-    .label = Enable local log file
+ceno-browser-ouinet-preferences-logging-description = Local logging is used to debug Ceno Network Client
 ceno-browser-ouinet-preferences-logging-show-logfile = Show logfile
 ceno-browser-ouinet-preferences-logging-level = Logging Level
 logging-level-silly = Silly
@@ -93,11 +100,13 @@ logging-level-info = Info
 logging-level-warn = Warning
 logging-level-error = Error
 logging-level-abort = Abort
+logging-level-disabled = Logging Disabled
 
 ceno-browser-ouinet-preferences-network-heading = Network
 
 ceno-browser-ouinet-preferences-local-cache = Local Cache
-ceno-browser-ouinet-preferences-local-cache-size = Size:
+ceno-browser-ouinet-preferences-local-cache-size = Size: <span data-l10n-name="size">{ $size }</span>
+ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline
 ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
 
 ceno-browser-ouinet-preferences-reachability = Reachability:

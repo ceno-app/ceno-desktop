@@ -88,6 +88,8 @@ class AboutCenoHome {
     enableLoggingAndReconnectButton: document.querySelector(this.selectors.buttons.enableLoggingAndReconnect),
     allowFirewallButton: document.querySelector(this.selectors.buttons.allowFirewallButton),
     openConnectionPreferences: document.querySelectorAll(this.selectors.openConnectionPreferences),
+
+    udp_mux_port_mismatch: document.getElementById("error-message-udp-port-mismatch"),
   });
 
   shownState = OuinetStages.Init;
@@ -126,6 +128,16 @@ class AboutCenoHome {
       this.hide(this.elements.failedToStartShowLog);
 
     this.hide(this.elements.enableLoggingAndReconnectButton);
+
+    if (state.errors.udp_mux_port_mismatch) {
+      this.elements.udp_mux_port_mismatch
+        .setAttribute("data-l10n-args", JSON.stringify({
+          requested: String(state.udp_mux_port),
+          actual: String(state.udp_mux_port_actual),
+        }));
+      this.show(this.elements.udp_mux_port_mismatch);
+    } else
+      this.hide(this.elements.udp_mux_port_mismatch);
 
     if (state.errors.failed_to_start || state.errors.failed_to_start_suggest_logging) {
       this.show(this.elements.failedToStart);
