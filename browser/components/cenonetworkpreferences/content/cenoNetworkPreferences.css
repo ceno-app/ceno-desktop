@@ -15,9 +15,8 @@
   margin-inline-end: 0.75em;
 }
 
-.content-sources moz-toggle {
+.ouinet-moz-toggle {
   margin-top: 0.25em;
-  margin-bottom: 0.25em;
 }
 
 #error-container {
@@ -29,5 +28,12 @@
 }
 
 #logging-level-label {
-  margin-inline: 8px;
+  margin-inline: 0.25em;
+}
+
+#udp-mux-port-hbox {
+  margin-top: 0.25em;
+}
+#udp-mux-port {
+  margin-inline-start: 0;
 }
