@@ -97,7 +97,8 @@ OuinetNativeHelpers::EndOrKillNetworkClientProcess(const int32_t pid) {
 
 NS_IMETHODIMP
 OuinetNativeHelpers::MonitorNetworkClientProcess(const int32_t pid, nsIObserver *callback) {
-    if (!hShutdownEvent) return NS_ERROR_OUT_OF_MEMORY;
+    if (!callback) return NS_ERROR_INVALID_POINTER;
+    if (!shutdownEvent) return NS_ERROR_NOT_INITIALIZED;
     if (!clientMonitorThread) {
         nsresult rv = NS_NewNamedThread("MonitorProcess", getter_AddRefs(clientMonitorThread));
         NS_ENSURE_SUCCESS(rv, rv);
@@ -108,7 +109,7 @@ OuinetNativeHelpers::MonitorNetworkClientProcess(const int32_t pid, nsIObserver 
     auto handleGuard = MakeScopeExit([&] { CloseHandle(hProcess); });
     if (!CheckProcessImageName(hProcess)) return NS_ERROR_INVALID_ARG;
 
-    HANDLE hShutdown = hShutdownEvent;
+    HANDLE hShutdown = shutdownEvent;
 
     nsMainThreadPtrHandle<nsIObserver> callbackHandle(new nsMainThreadPtrHolder<nsIObserver>("OuinetMonitorCallback", callback));
 

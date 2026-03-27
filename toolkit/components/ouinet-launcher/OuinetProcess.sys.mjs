@@ -176,10 +176,11 @@ export class OuinetProcess {
     this.#args.push("--metrics-encryption-key", OuinetProcess.#metricsEncryptionKey);
     this.#args.push("--metrics-server-token", OuinetProcess.#metricsServerToken);
 
-    if (config.logging) {
+    if (config.logging_level !== "disabled") {
       this.#args.push("--enable-log-file");
+      this.#args.push("--log-level", config.logging_level);
     }
-    this.#args.push("--log-level", config.logging_level);
+
     if (config.doh) {
       this.#args.push("--dns-protocol", "https");
     }
@@ -200,6 +201,12 @@ export class OuinetProcess {
     }
     if (!config.distributed_cache) {
       this.#args.push("--disable-cache-access");
+    }
+
+    if (!config.udp_mux_port_random) {
+      this.#args.push("--udp-mux-port", config.udp_mux_port);
+    } else if (lazy.OuinetLauncherUtil.getOuinetFile("last_used_udp_port", false).exists()) {
+      this.#args.push("--udp-mux-port", '0');
     }
   }
 }

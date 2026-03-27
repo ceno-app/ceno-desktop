@@ -10,9 +10,16 @@ OuinetNativeHelpers::OuinetNativeHelpers() {
         if (NS_SUCCEEDED(obs->AddObserver(this, "quit-application-granted", false))) {
             isRegistered = true;
 
-            hShutdownEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-            if (!hShutdownEvent) {
-                hShutdownEvent = nullptr;
+            shutdownEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+            if (!shutdownEvent) {
+                obs->RemoveObserver(this, "quit-application-granted");
+                isRegistered = false;
+            }
+
+            portUpdateEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+            if (!portUpdateEvent) {
+                ::CloseHandle(shutdownEvent);
+                shutdownEvent = nullptr;
 
                 obs->RemoveObserver(this, "quit-application-granted");
                 isRegistered = false;
@@ -26,8 +33,8 @@ OuinetNativeHelpers::~OuinetNativeHelpers() {
 }
 
 void OuinetNativeHelpers::Shutdown() {
-    if (hShutdownEvent != nullptr) {
-        SetEvent(hShutdownEvent);
+    if (shutdownEvent != nullptr) {
+        SetEvent(shutdownEvent);
     }
     if (clientMonitorThread) {
         clientMonitorThread->Shutdown();
@@ -35,15 +42,19 @@ void OuinetNativeHelpers::Shutdown() {
     if (firewallMonitorThread) {
         firewallMonitorThread->Shutdown();
     }
-    if (hShutdownEvent) {
-        ::CloseHandle(hShutdownEvent);
+    if (portUpdateEvent) {
+        ::CloseHandle(portUpdateEvent);
+    }
+    if (shutdownEvent) {
+        ::CloseHandle(shutdownEvent);
     }
     if (isRegistered) {
         if (nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1")) {
             obs->RemoveObserver(this, "quit-application-granted");
         }
     }
-    hShutdownEvent = nullptr;
+    shutdownEvent = nullptr;
+    portUpdateEvent = nullptr;
     firewallMonitorThread = nullptr;
     clientMonitorThread = nullptr;
     isRegistered = false;

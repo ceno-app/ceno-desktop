@@ -17,7 +17,8 @@ interface nsIOuinetNativeHelpers : nsISupports {
   AString GetRealAppData(in AString virtualAppData);
   AString GetShortPath(in AString longPath);
 
-  void MonitorFirewall(in AString executable, in nsIObserver callback);
+  void ModifyFirewallMonitorPort(in long port);
+  void MonitorFirewall(in AString executable, in nsIObserver callback, in long port);
 
   void EndNetworkClientProcess(in long pid);
   void EndOrKillNetworkClientProcess(in long pid);

@@ -10,7 +10,7 @@ Add `desktop2` namespace to `<Package>` tag, include it in `IgnorableNamespaces`
   IgnorableNamespaces="uap uap2 uap3 uap10 rescap com desktop2">
 ```
 
-Firewall rules should be added to `<Package><Extensions></Extensions></Package>`:
+Firewall rule should be added to `<Package><Extensions></Extensions></Package>`:
 ```xml
 <Package ...>
 <Extensions>
@@ -19,12 +19,7 @@ Firewall rules should be added to `<Package><Extensions></Extensions></Package>`
       <desktop2:FirewallRules Executable="VFS\ProgramFilesX64\Ceno Alpha\Ouinet\ceno-network-client.exe">
         <desktop2:Rule Direction="in"
                        IPProtocol="UDP"
-                       LocalPortMin="28729"
-                       LocalPortMax="28729"
-                       Profile="all" />
-        <desktop2:Rule Direction="in"
-                       IPProtocol="UDP"
-                       LocalPortMin="49152"
+                       LocalPortMin="1"
                        LocalPortMax="65535"
                        Profile="all" />
       </desktop2:FirewallRules>
@@ -32,5 +27,3 @@ Firewall rules should be added to `<Package><Extensions></Extensions></Package>`
 </Extensions>
 </Package>
 ```
-
-First rule adds default UDP multiplexer listening on port 28729, second rule is for fallback to ephemeral ports when Ouinet fails to open the main port. Fallback rule works unless the system has a non default ephemeral port range, expanded downwards. A firewall dialog will be shown in that non default case.

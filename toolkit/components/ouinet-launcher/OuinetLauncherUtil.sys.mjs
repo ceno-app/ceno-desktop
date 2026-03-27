@@ -117,6 +117,10 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("log.txt");
         break;
+      case "last_used_udp_port":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("last_used_udp_port");
+        break;
       case "frontend_unix_socket":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("frontend.socket");
