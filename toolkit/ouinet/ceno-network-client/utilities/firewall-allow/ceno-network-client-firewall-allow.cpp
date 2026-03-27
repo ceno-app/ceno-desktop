@@ -1,11 +1,11 @@
 #include <format>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include <windows.h>
 #include <netfw.h>
 #include <comdef.h>
-#include <shellapi.h>
 
 #include "admin.h"
 #include "paths.h"
@@ -28,7 +28,7 @@ static void removeRulesForExecutable(INetFwRules* pRules, const wchar_t *applica
     pUnknown->Release();
     if (FAILED(hr)) return;
 
-    std::vector<BSTR> rulesToRemove;
+    std::vector<std::unique_ptr<OLECHAR, decltype(&SysFreeString)>> rulesToRemove;
     rulesToRemove.reserve(8);
     VARIANT var;
     while (pEnum->Next(1, &var, nullptr) == S_OK) {
@@ -40,7 +40,7 @@ static void removeRulesForExecutable(INetFwRules* pRules, const wchar_t *applica
                     if (normalizePath(bstrAppName) == applicationPath) {
                         BSTR bstrName = nullptr;
                         if (SUCCEEDED(pRule->get_Name(&bstrName)) && bstrName) {
-                            rulesToRemove.push_back(bstrName);
+                            rulesToRemove.emplace_back(bstrName, SysFreeString);
                         }
                     }
                     SysFreeString(bstrAppName);
@@ -54,8 +54,7 @@ static void removeRulesForExecutable(INetFwRules* pRules, const wchar_t *applica
 
     // Now remove collected rules
     for (const auto& name : rulesToRemove) {
-        pRules->Remove(name);
-        SysFreeString(name);
+        pRules->Remove(name.get());
     }
 }
 
@@ -64,7 +63,7 @@ static bool addFirewallRule(
     INetFwRules *pRules,
     const wchar_t *ruleName, const wchar_t *localPorts,
     const long activeProfiles,
-    const NET_FW_IP_PROTOCOL protocol)
+    const NET_FW_IP_PROTOCOL protocol = NET_FW_IP_PROTOCOL_UDP)
 {
     // Create new rule
     INetFwRule* pRule = nullptr;
@@ -73,7 +72,7 @@ static bool addFirewallRule(
                           reinterpret_cast<void**>(&pRule));
     if (FAILED(hr)) return false;
 
-    const auto ruleNameFull = std::format(L"{} ({})", ruleName, applicationPath);
+    const auto ruleNameFull = std::format(L"{} [{:08X}]", ruleName, std::hash<std::wstring>{}(applicationPath));
 
     // Configure rule properties
     pRule->put_Name(_bstr_t(ruleNameFull.c_str()));
@@ -113,13 +112,12 @@ int APIENTRY wWinMain(HINSTANCE /*hInstance*/, HINSTANCE, LPWSTR /*arguments*/, 
     // Create policy manager
     INetFwPolicy2* policy = nullptr;
     hr = CoCreateInstance(__uuidof(NetFwPolicy2), nullptr, CLSCTX_INPROC_SERVER, IID_INetFwPolicy2, reinterpret_cast<void**>(&policy));
-    if (FAILED(hr)) return 1;
-    auto policyGuard = Defer([&]() { if (policy) policy->Release(); });
+    if (FAILED(hr) || !policy) return 1;
+    auto policyGuard = Defer([&policy]() { policy->Release(); });
 
     // Get active profiles (bitmask of NET_FW_PROFILE_TYPE2)
     long activeProfiles = 0;
-    policy->get_CurrentProfileTypes(&activeProfiles);
-    if (0 == activeProfiles) {
+    if (FAILED(policy->get_CurrentProfileTypes(&activeProfiles)) || 0 == activeProfiles) {
         MessageBoxW(NULL, L"Failed to get Active Firewall Profile", L"Ceno Network Client Firewall", MB_OK | MB_ICONERROR);
         return 1;
     }
@@ -132,11 +130,8 @@ int APIENTRY wWinMain(HINSTANCE /*hInstance*/, HINSTANCE, LPWSTR /*arguments*/, 
 
     const auto networkClientPath = getNetworkClientPath(myPath.value().c_str());
     removeRulesForExecutable(rules, networkClientPath.c_str());
-    if (!addFirewallRule(networkClientPath.c_str(), rules, L"Ceno Network Client UDP Multiplexer", L"28729", activeProfiles, NET_FW_IP_PROTOCOL_UDP)) {
-        MessageBoxW(NULL, L"Failed to Add Firewall Rule", L"Ceno Network Client Firewall", MB_OK | MB_ICONERROR);
-        return 1;
-    }
-    if (!addFirewallRule(networkClientPath.c_str(), rules, L"Ceno Network Client UDP Multiplexer fallback", L"49152-65535", activeProfiles, NET_FW_IP_PROTOCOL_UDP)) {
+
+    if (!addFirewallRule(networkClientPath.c_str(), rules, L"Ceno Network Client", L"*", activeProfiles)) {
         MessageBoxW(NULL, L"Failed to Add Firewall Rule", L"Ceno Network Client Firewall", MB_OK | MB_ICONERROR);
         return 1;
     }

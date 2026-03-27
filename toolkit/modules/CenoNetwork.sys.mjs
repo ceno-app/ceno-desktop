@@ -38,12 +38,13 @@ const OuinetPrefs = Object.freeze({
   proxy_access: "ceno.network.proxy_access",
   injector_access: "ceno.network.injector_access",
   distributed_cache: "ceno.network.distributed_cache",
-  logging: "ceno.network.logging",
   logging_level: "ceno.network.logging_level",
   metrics: "ceno.network.metrics",
   doh: "ceno.network.doh",
   unencrypted_dns: "ceno.network.unencrypted_dns",
   bridge: "ceno.network.bridge",
+  udp_mux_port: "ceno.network.udp_mux_port",
+  udp_mux_port_random: "ceno.network.udp_mux_port_random",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
@@ -173,6 +174,8 @@ class _CenoNetwork {
     errors: {
       firewall: false,
     },
+    udp_mux_port: Services.prefs.getIntPref(OuinetPrefs.udp_mux_port, 28729),
+    udp_mux_port_random: Services.prefs.getBoolPref(OuinetPrefs.udp_mux_port_random, true),
   };
   // Other state values should be recreated for each connection
   #initOuinetState() {
@@ -182,8 +185,7 @@ class _CenoNetwork {
     this.#ouinetState.distributed_cache = Services.prefs.getBoolPref(OuinetPrefs.distributed_cache, true);
 
     this.#ouinetState.local_cache_size = undefined;
-    this.#ouinetState.logging = Services.prefs.getBoolPref(OuinetPrefs.logging, false);
-    this.#ouinetState.logging_level = Services.prefs.getStringPref(OuinetPrefs.logging_level, "error");
+    this.#ouinetState.logging_level = Services.prefs.getStringPref(OuinetPrefs.logging_level, "disabled");
     this.#ouinetState.metrics = Services.prefs.getBoolPref(OuinetPrefs.metrics, true);
     this.#ouinetState.doh = Services.prefs.getBoolPref(OuinetPrefs.doh, this.#metricsRegion[1] != "R" || this.#metricsRegion[0] != "I");
     this.#ouinetState.unencrypted_dns = this.#ouinetState.doh ? Services.prefs.getBoolPref(OuinetPrefs.unencrypted_dns, true) : true;
@@ -197,6 +199,8 @@ class _CenoNetwork {
     this.#ouinetState.errors.failed_to_start = false;
     this.#ouinetState.errors.failed_to_start_show_log = false;
     this.#ouinetState.errors.failed_to_start_suggest_logging = false;
+    this.#ouinetState.errors.udp_mux_port_mismatch = false;
+    this.#ouinetState.udp_mux_port_actual = 0;
   }
 
   CenoNetworkState() {
@@ -206,7 +210,7 @@ class _CenoNetwork {
     res['quickstart'] = this.#quickstart;
     res['headless'] = this.#headless;
     const logfile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
-    res['logfile'] = res['logging'] && logfile.exists() ? lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path : false;
+    res['logfile'] = res['logging_level'] !== "disabled" && logfile.exists() ? lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path : false;
     return res;
   }
 
@@ -304,7 +308,8 @@ class _CenoNetwork {
       };
       Services.OuinetNativeHelpers.MonitorFirewall(
         lazy.OuinetLauncherUtil.getOuinetFile("client", false).path,
-        firewallObserver
+        firewallObserver,
+        this.#ouinetState.udp_mux_port_random ? 65535 : this.#ouinetState.udp_mux_port
       );
     } catch (e) {
       lazy.logger.error(e);
@@ -332,10 +337,10 @@ class _CenoNetwork {
           this.#ouinetProcess.stop();
         }
         if (this.#quickstart) {
-          this.#onOuinetExit_post = () => {
+          this.#executeAfterOuinetExits(() => {
             lazy.logger.debug('Quickstart enabled');
             this.connect();
-          }
+          });
         }
       }
     } else if (this.#quickstart) {
@@ -423,12 +428,10 @@ class _CenoNetwork {
         if (connectionId !== this.#connectionId) {
           return;
         }
-
         this.#ouinetState.origin_access = json.origin_access;
         this.#ouinetState.proxy_access = json.proxy_access;
         this.#ouinetState.injector_access = json.injector_access;
         this.#ouinetState.distributed_cache = json.distributed_cache;
-        this.#ouinetState.logging = json.logfile;
         this.#ouinetState.metrics = json.metrics_enabled;
         this.#ouinetState.doh = json.dns_protocols.includes("https");
         this.#ouinetState.unencrypted_dns = json.dns_protocols.includes("plain");
@@ -440,6 +443,20 @@ class _CenoNetwork {
         this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
         this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');
 
+        if (json.local_udp_endpoints.length >= 1) {
+          const ep = json.local_udp_endpoints[0].split(':');
+          if (ep.length === 2) {
+            const portNum = parseInt(ep[1], 10);
+            if (portNum !== 0) {
+              if (this.#ouinetState.udp_mux_port_actual !== portNum) {
+                this.#ouinetState.udp_mux_port_actual = portNum;
+                Services.OuinetNativeHelpers.ModifyFirewallMonitorPort(portNum);
+                this.#ouinetState.errors.udp_mux_port_mismatch = !this.#ouinetState.udp_mux_port_random
+                  && this.#ouinetState.udp_mux_port != this.#ouinetState.udp_mux_port_actual;
+              }
+            }
+          }
+        }
         if (json.state === 'started') {
           this.#setOuinetStage(OuinetStages.Connected, false);
         }
@@ -488,7 +505,9 @@ class _CenoNetwork {
       this.#ouinetStage == OuinetStages.Degraded
     ) {
       this.#restart();
+      return true;
     }
+    return false;
   }
   async #waitForProcessToSettle() {
     while (
@@ -501,20 +520,68 @@ class _CenoNetwork {
     }
   }
 
-  // @TODO: this could be simplified somehow
+  // @TODO: setOuinetConfigValue() could be simplified somehow
   // it got a bit ugly over time
   async setOuinetConfigValue(element_id, newValue) {
     const connectionId = this.#connectionId;
     if (element_id === "logging_level") {
-      if (!["silly", "debug", "verbose", "info", "warn", "error", "abort"].includes(newValue)) {
+      if (!["silly", "debug", "verbose", "info", "warn", "error", "abort", "disabled"].includes(newValue)) {
         lazy.logger.error("Bad logging_level value: ", newValue);
         return;
       }
-      this.#ouinetState["logging_level"] = newValue;
+      this.#ouinetState.logging_level = newValue;
       Services.prefs.setStringPref(OuinetPrefs.logging_level, newValue);
+      if (this.#ouinetState.logging_level === "disabled") {
+        const removeLogfile = () => {
+          if (this.#ouinetState.logging_level === "disabled") {
+            try {
+              const logfile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
+              if (logfile.exists()) {
+                logfile.remove(false);
+              }
+            } catch (e) {
+              lazy.logger.error("Failed to remove log file: ", e);
+            }
+          }
+        };
+        this.#executeWhenOuinetExits(removeLogfile);
+        if (
+          this.#ouinetStage == OuinetStages.Connected ||
+          this.#ouinetStage == OuinetStages.Degraded
+        ) {
+          await this.#setValueInAPI("logfile", false);
+        }
+      }
       await this.#waitForProcessToSettle();
-      if (connectionId === this.#connectionId) {
-        this.#restartIfRunning();
+      if (connectionId !== this.#connectionId || !this.#restartIfRunning()) {
+        this.#sendNotifications();
+      }
+      return;
+    }
+
+    if (element_id === "udp_mux_port_random" || element_id === "udp_mux_port") {
+      if (element_id === "udp_mux_port_random") {
+        Services.prefs.setBoolPref(OuinetPrefs.udp_mux_port_random, newValue);
+        this.#ouinetState.udp_mux_port_random = newValue;
+      } else if (element_id === "udp_mux_port") {
+        Services.prefs.setIntPref(OuinetPrefs.udp_mux_port, newValue);
+        this.#ouinetState.udp_mux_port = newValue;
+      }
+      const removeLastUsedPort = () => {
+        try {
+          const lastUsedPort = lazy.OuinetLauncherUtil.getOuinetFile("last_used_udp_port", false);
+          if (lastUsedPort.exists()) {
+            lastUsedPort.remove(false);
+          }
+        } catch (e) {
+          lazy.logger.error("Failed to remove last_used_udp_port file: ", e);
+        }
+      };
+      this.#executeWhenOuinetExits(removeLastUsedPort);
+      Services.OuinetNativeHelpers.ModifyFirewallMonitorPort(this.#ouinetState.udp_mux_port_random ? 65535 : this.#ouinetState.udp_mux_port);
+      await this.#waitForProcessToSettle();
+      if (connectionId !== this.#connectionId || !this.#restartIfRunning()) {
+        this.#sendNotifications();
       }
       return;
     }
@@ -536,49 +603,14 @@ class _CenoNetwork {
     if (connectionId != this.#connectionId) {
       return;
     }
-
     if (element_id === "doh" || element_id === "unencrypted_dns" || element_id === "bridge") {
       this.#restartIfRunning();
       return;
     }
-
-    if (element_id == "logging" && !this.#ouinetState.logging) {
-      if(
-        this.#ouinetStage == OuinetStages.Init ||
-        this.#ouinetStage == OuinetStages.Exited ||
-        this.#ouinetStage == OuinetStages.Error
-      ) {
-        try {
-          lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
-        } catch (e) {
-          lazy.logger.error("Failed to remove log file: ", e);
-        }
-      } else {
-        this.#onOuinetExit_pre = () => {
-          // Make sure that logging was not toggled back on before removing the log file
-          if (!this.#ouinetState.logging) {
-            try {
-              lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).remove(false);
-              if (this.#ouinetState.errors.failed_to_start_show_log) {
-                this.#ouinetState.errors.failed_to_start_show_log = false;
-                this.#ouinetState.errors.failed_to_start = true;
-              }
-            } catch (e) {
-              lazy.logger.error("Failed to remove log file: ", e);
-            }
-          }
-        }
-      }
-    }
-
     if (
       this.#ouinetStage == OuinetStages.Connected ||
       this.#ouinetStage == OuinetStages.Degraded
     ) {
-      // logging in ouinet is referred to as logfile
-      if (element_id == "logging") {
-        element_id = "logfile"
-      }
       await this.#setValueInAPI(element_id, newValue);
     }
   }
@@ -649,13 +681,44 @@ class _CenoNetwork {
     this.#extensionCallbacks.onDisconnect = null;
   }
 
-  #onOuinetExit_pre = () => {};
-  #onOuinetExit_post = () => {};
+  #executeWhenOuinetExits_ = [];
+  #executeWhenOuinetExits(lambda) {
+    if(
+      this.#ouinetStage == OuinetStages.Init ||
+      this.#ouinetStage == OuinetStages.Exited ||
+      this.#ouinetStage == OuinetStages.Error
+    ) {
+      lambda();
+    } else {
+      this.#executeWhenOuinetExits_.push(lambda);
+    }
+  }
+  #executeAfterOuinetExits_ = [];
+  #executeAfterOuinetExits(lambda) {
+    if(
+      this.#ouinetStage == OuinetStages.Init ||
+      this.#ouinetStage == OuinetStages.Exited ||
+      this.#ouinetStage == OuinetStages.Error
+    ) {
+      lambda();
+    } else {
+      this.#executeAfterOuinetExits_.push(lambda);
+    }
+  }
+
   #onOuinetExit(connectionId, exitCode) {
-    this.#onOuinetExit_pre();
-    this.#onOuinetExit_pre = () => {};
+    for (const lambda of this.#executeWhenOuinetExits_) {
+      try {
+        lambda();
+      } catch (e) {
+        lazy.logger.error(e);
+      }
+    }
+    this.#executeWhenOuinetExits_ = [];
+
     if (connectionId !== this.#connectionId) {
       lazy.logger.debug("Abandoning cancelled connection attempt");
+      this.#executeAfterOuinetExits_ = [];
       return;
     }
 
@@ -666,7 +729,7 @@ class _CenoNetwork {
       this.#ouinetStage === OuinetStages.StartingProcess ||
       this.#ouinetStage === OuinetStages.ConnectingToNetwork
     ) {
-        if (this.#ouinetState.logging) {
+        if (this.#ouinetState.logging_level !== "disabled") {
           if (lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).exists())
             this.#ouinetState.errors.failed_to_start_show_log = true;
           else
@@ -675,6 +738,10 @@ class _CenoNetwork {
           this.#ouinetState.errors.failed_to_start_suggest_logging = true;
         }
         this.#setOuinetStage(OuinetStages.Error, false);
+    }
+    if (this.#ouinetStage === OuinetStages.Restarting) {
+      this.#ouinetStage = OuinetStages.Exited;
+      this.connect();
     }
     else if (
       this.#ouinetStage !== OuinetStages.Exited &&
@@ -687,8 +754,14 @@ class _CenoNetwork {
       this.#initOuinetState();
     }
 
-    this.#onOuinetExit_post();
-    this.#onOuinetExit_post = () => {};
+    for (const lambda of this.#executeAfterOuinetExits_) {
+      try {
+        lambda();
+      } catch (e) {
+        lazy.logger.error(e);
+      }
+    }
+    this.#executeAfterOuinetExits_ = [];
 
     this.#sendNotifications();
   }
@@ -786,14 +859,6 @@ class _CenoNetwork {
     const connectionId = this.#connectionId;
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Restarting);
-      this.#onOuinetExit_post = () => {
-        if (
-          connectionId === this.#connectionId &&
-          this.#ouinetStage === OuinetStages.Restarting
-        ) {
-          this.connect();
-        }
-      }
       this.#ouinetProcess.stop();
       const doubleTapTimeout = 500;
       new Promise(resolve => setTimeout(() => {
@@ -851,7 +916,6 @@ class _CenoNetwork {
   }
 
   showLogFile() {
-    lazy.logger.error("showLogFile");
     Services.wm.getMostRecentWindow("navigator:browser").gBrowser.addTab(
       "file://" + lazy.OuinetLauncherUtil.getOuinetFile("logfile", false).path,
       {
@@ -862,8 +926,8 @@ class _CenoNetwork {
   }
 
   enableLoggingAndReconnect() {
-    this.#ouinetState.logging = true;
-    Services.prefs.setBoolPref(OuinetPrefs.logging, true);
+    Services.prefs.setStringPref(OuinetPrefs.logging_level, "warn");
+    this.#ouinetState.logging_level = "warn";
     this.connect();
   }
 
