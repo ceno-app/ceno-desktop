@@ -4,19 +4,8 @@
 Program("ceno-network-client-terminator")
 SOURCES = [ "ceno-network-client-terminator.cpp" ]
 DIST_SUBDIR = "Ouinet"
-RCFILE = "../app.rc"
+RCFILE = "app.rc"
 
-# No need to modify entry point. Default is wWinMan. This program is using wWinMain.
-#if CONFIG["CC_TYPE"] == "clang-cl":
-#    WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
-
-# gcc and clang (not clang-cl) may need the -municode.
-# If there are issues about undefined WinMain, uncomment following lines.
-#if CONFIG["OS_TARGET"] == "WINNT" and CONFIG["CC_TYPE"] in ("gcc", "clang"):
-#    This allows us to use wmain as the entry point on mingw
-#    LDFLAGS += ["-municode"]
-
-# AF_UNIX requires win10
 DEFINES["NTDDI_VERSION"] = "0x0A000000"
 DEFINES["WINVER"] = "0x0A00"
 DEFINES["_WIN32_WINNT"] = "0x0A00"
