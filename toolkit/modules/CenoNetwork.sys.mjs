@@ -780,10 +780,19 @@ class _CenoNetwork {
       await this.#getFromOuinetFrontend(`${this.#endpoints.frontend_set_value}?purge_cache=do`);
       this.#extensionOnConnect();
     } else {
-      const bep5_http = lazy.OuinetLauncherUtil.getOuinetFile("bep5_http");
-      if (bep5_http.exists()) {
-        bep5_http.remove(true);
-      }
+      try {
+        const bep5_http = lazy.OuinetLauncherUtil.getOuinetFile("bep5_http");
+        if (bep5_http.exists()) {
+          bep5_http.remove(true);
+        }
+      } catch (e) { lazy.logger.error("Failed to remove bep5_http dir:", e); }
+      try {
+        const logfile = lazy.OuinetLauncherUtil.getOuinetFile("logfile", false);
+        if (logfile.exists()) {
+          logfile.remove(false);
+          this.#sendNotifications();
+        }
+      } catch (e) { lazy.logger.error("Failed to remove logfile:", e)}
     }
   }
 
