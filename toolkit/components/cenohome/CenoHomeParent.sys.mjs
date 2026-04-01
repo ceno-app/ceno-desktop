@@ -6,6 +6,7 @@
 import {
   CenoNetwork,
   CenoNetworkTopics,
+  OuinetPrefs,
 } from "resource://gre/modules/CenoNetwork.sys.mjs";
 
 const Prefs = Object.freeze({
@@ -19,6 +20,7 @@ const CenoHomeTopics = Object.freeze({
   Connect: "cenohome:connect",
   Cancel: "cenohome:cancel",
   SetQuickstart: "cenohome:set-quickstart",
+  QuickstartChange: "cenohome:quickstart-change",
   OpenConnectionPreferences: "cenohome:openconnectionpreferences",
   ShowLogFile: "cenohome:showlogfile",
   EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
@@ -51,34 +53,36 @@ export class CenoHomeParent extends JSWindowActorParent {
         const obj = subject?.wrappedJSObject;
         switch (topic) {
           case CenoNetworkTopics.StateChange:
+            obj.quickstart = Services.prefs.getBoolPref(OuinetPrefs.quickstart);
             self.sendAsyncMessage(CenoHomeTopics.StateChange, obj);
             break;
         }
       },
     };
 
-    Services.obs.addObserver(
-      this.connectObserver,
-      CenoNetworkTopics.StateChange
-    );
+    Services.obs.addObserver(this.connectObserver, CenoNetworkTopics.StateChange);
+
+    this.quickstartObserver = {
+      observe(_subject, _topic, _data) {
+        self.sendAsyncMessage(CenoHomeTopics.QuickstartChange, Services.prefs.getBoolPref(OuinetPrefs.quickstart));
+      }
+    };
+    this.quickstartBranch = Services.prefs.getBranch(OuinetPrefs.quickstart);
+    this.quickstartBranch.addObserver("", this.quickstartObserver);
   }
 
   didDestroy() {
-    Services.obs.removeObserver(
-      this.connectObserver,
-      CenoNetworkTopics.StateChange
-    );
+    if (this.quickstartBranch) {
+      this.quickstartBranch.removeObserver("", this.quickstartObserver);
+      this.quickstartBranch = null;
+    }
+    Services.obs.removeObserver(this.connectObserver, CenoNetworkTopics.StateChange);
   }
 
   async receiveMessage(message) {
     switch (message.name) {
-      // case "cenohome:home-page":
-      //   // If there are multiple home pages, just load the first one.
-      //   return Promise.resolve(
-      //     CenoHomeParent.fixupURIs(lazy.HomePage.get())[0]
-      //   );
       case CenoHomeTopics.SetQuickstart:
-        CenoNetwork.setQuickstart(message.data);
+        Services.prefs.setBoolPref(OuinetPrefs.quickstart, message.data);
         break;
       case CenoHomeTopics.Connect:
         Services.prefs.setBoolPref(Prefs.userHasEverClickedConnect, true);
@@ -104,11 +108,12 @@ export class CenoHomeParent extends JSWindowActorParent {
         );
         break;
       case CenoHomeTopics.ShowLogFile:
+        // @TODO:
         console.log("CenoHomeParent: ", CenoHomeTopics.ShowLogFile);
         CenoNetwork.showLogFile();
         break;
       case CenoHomeTopics.EnableLoggingAndReconnect:
-        CenoNetwork.enableLoggingAndReconnect();
+        CenoNetwork.enableLoggingAndConnect();
         break;
       case CenoHomeTopics.AllowFirewall:
         CenoNetwork.allowFirewall();

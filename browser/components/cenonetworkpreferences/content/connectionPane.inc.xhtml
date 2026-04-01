@@ -1,7 +1,6 @@
 <!-- Ceno Network Preferences Panel -->
 
 <script src="chrome://browser/content/cenonetworkpreferences/connectionPane.js" />
-
 <html:template id="template-paneConnection">
 
 <vbox id="ouinetCategory"
@@ -99,6 +98,7 @@
   <html:moz-toggle
     id="ouinet-connection-quickstart-toggle"
     class="moz-toggle ouinet-moz-toggle"
+    preference="ceno.network.quickstart"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-quickstart-checkbox"
     data-l10n-attrs="label"
@@ -118,6 +118,7 @@
   <html:moz-toggle
     id="ouinet-connection-headless-toggle"
     class="moz-toggle ouinet-moz-toggle"
+    preference="ceno.network.headless"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-headless-checkbox"
     data-l10n-attrs="label"
@@ -137,6 +138,7 @@
   <html:moz-toggle
     id="ouinet-connection-bridge-toggle"
     class="moz-toggle ouinet-moz-toggle"
+    preference="ceno.network.bridge"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-bridge-checkbox"
     data-l10n-attrs="label"
@@ -156,6 +158,7 @@
   <html:moz-toggle
     id="udp-mux-port-random-toggle"
     class="moz-toggle ouinet-moz-toggle"
+    preference="ceno.network.udp_mux_port_random"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-udp-mux-port-random-checkbox"
     data-l10n-attrs="label"
@@ -164,6 +167,7 @@
     <html:input
       type="number" id="udp-mux-port"
       min="1" max="65535" step="1"
+      preference="ceno.network.udp_mux_port"
     />
     <label id="udp-mux-port-label" control="udp-mux-port"
       data-l10n-id="ceno-browser-ouinet-preferences-udp-mux-port" />
@@ -188,6 +192,7 @@
   ></h4>
   <html:moz-toggle
     id="ouinet-connection-origin-access"
+    preference="ceno.network.origin_access"
     class="moz-toggle ouinet-moz-toggle"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-sources-origin-access"
@@ -195,6 +200,7 @@
   />
   <html:moz-toggle
     id="ouinet-connection-proxy-access"
+    preference="ceno.network.proxy_access"
     class="moz-toggle ouinet-moz-toggle"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-sources-proxy-access"
@@ -202,6 +208,7 @@
   />
   <html:moz-toggle
     id="ouinet-connection-injector-access"
+    preference="ceno.network.injector_access"
     class="moz-toggle ouinet-moz-toggle"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-sources-injector-access"
@@ -209,37 +216,13 @@
   />
   <html:moz-toggle
     id="ouinet-connection-distributed-cache"
+    preference="ceno.network.distributed_cache"
     class="moz-toggle ouinet-moz-toggle"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-sources-distributed-cache"
     data-l10n-attrs="label"
   />
 </vbox>
-
-<groupbox data-category="paneConnection" hidden="true">
-  <label>
-    <html:h2 data-l10n-id="ceno-browser-ouinet-preferences-doh-heading"></html:h2>
-  </label>
-  <description
-    class="description-deemphasized"
-    flex="1"
-    data-l10n-id="ceno-browser-ouinet-preferences-doh-description"
-  />
-  <html:moz-toggle
-    id="ouinet-doh"
-    class="moz-toggle ouinet-moz-toggle"
-    label-align-after=""
-    data-l10n-id="ceno-browser-ouinet-preferences-doh-checkbox"
-    data-l10n-attrs="label"
-  />
-  <html:moz-toggle
-    id="ouinet-unencrypted-dns"
-    class="moz-toggle ouinet-moz-toggle"
-    label-align-after=""
-    data-l10n-id="ceno-browser-ouinet-preferences-unencrypted-dns-checkbox"
-    data-l10n-attrs="label"
-  />
-</groupbox>
 
 <groupbox data-category="paneConnection" hidden="true">
   <label>
@@ -278,16 +261,18 @@
     data-l10n-id="ceno-browser-ouinet-preferences-logging-description"
   />
   <hbox align="center">
-    <html:select id="logging-level">
-      <html:option data-l10n-id="logging-level-silly" value="silly"/>
-      <html:option data-l10n-id="logging-level-debug" value="debug"/>
-      <html:option data-l10n-id="logging-level-verbose" value="verbose"/>
-      <html:option data-l10n-id="logging-level-info" value="info"/>
-      <html:option data-l10n-id="logging-level-warn" value="warn"/>
-      <html:option data-l10n-id="logging-level-error" value="error"/>
-      <html:option data-l10n-id="logging-level-abort" value="abort"/>
-      <html:option data-l10n-id="logging-level-disabled" value="disabled"/>
-    </html:select>
+    <menulist id="logging-level" preference="ceno.network.logging_level">
+      <menupopup>
+        <menuitem data-l10n-id="logging-level-silly" value="silly"/>
+        <menuitem data-l10n-id="logging-level-debug" value="debug"/>
+        <menuitem data-l10n-id="logging-level-verbose" value="verbose"/>
+        <menuitem data-l10n-id="logging-level-info" value="info"/>
+        <menuitem data-l10n-id="logging-level-warn" value="warn"/>
+        <menuitem data-l10n-id="logging-level-error" value="error"/>
+        <menuitem data-l10n-id="logging-level-abort" value="abort"/>
+        <menuitem data-l10n-id="logging-level-disabled" value="disabled"/>
+      </menupopup>
+    </menulist>
     <label id="logging-level-label" control="logging-level"
       data-l10n-id="ceno-browser-ouinet-preferences-logging-level" />
   </hbox>
@@ -307,6 +292,7 @@
   <html:moz-toggle
     id="ouinet-metrics"
     class="moz-toggle ouinet-moz-toggle"
+    preference="ceno.network.metrics"
     label-align-after=""
     data-l10n-id="ceno-browser-ouinet-preferences-metrics-checkbox"
     data-l10n-attrs="label"
