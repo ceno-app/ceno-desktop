@@ -255,7 +255,7 @@ class _CenoNetwork {
   async init() {
     this.#initOuinetState();
     if (!Services.prefs.prefHasUserValue(OuinetPrefs.doh) && this.#metricsRegion[1] === "R" && this.#metricsRegion[0] === "I") {
-      Services.prefs.setIntPref(OuinetPrefs.doh, DNS_Mode_Plain);
+      Services.prefs.getDefaultBranch("").setIntPref(OuinetPrefs.doh, DNS_Mode_Plain);
     }
 
     Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
