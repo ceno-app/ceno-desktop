@@ -108,8 +108,6 @@ export class CenoHomeParent extends JSWindowActorParent {
         );
         break;
       case CenoHomeTopics.ShowLogFile:
-        // @TODO:
-        console.log("CenoHomeParent: ", CenoHomeTopics.ShowLogFile);
         CenoNetwork.showLogFile();
         break;
       case CenoHomeTopics.EnableLoggingAndReconnect:
