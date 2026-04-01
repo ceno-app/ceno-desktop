@@ -1110,3 +1110,25 @@ pref("browser.laterrun.enabled", false, locked);
 
 // tor-browser#44123: Never trim the protocol off of URLs.
 pref("browser.urlbar.trimURLs", false);
+
+pref("ceno.network.quickstart", false);
+pref("ceno.network.headless", false);
+pref("ceno.network.bridge", true);
+
+pref("ceno.network.origin_access", true);
+pref("ceno.network.proxy_access", true);
+pref("ceno.network.injector_access", true);
+pref("ceno.network.distributed_cache", true);
+pref("ceno.network.logging_level", "disabled");
+pref("ceno.network.metrics", true);
+
+// const DNS_Mode_DoH_Fallback_to_Plain = 2;
+// const DNS_Mode_DoH = 3;
+// const DNS_Mode_Plain = 5;
+pref("network.trr.mode", 5);
+pref("ceno.network.doh_mode", 2);
+
+pref("ceno.network.udp_mux_port", 28729);
+pref("ceno.network.udp_mux_port_random", true);
+
+pref("ceno.browser.log_level", "Debug");

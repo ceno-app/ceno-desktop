@@ -7,6 +7,7 @@
 
 /* import-globals-from /browser/components/preferences/preferences.js */
 /* import-globals-from /browser/components/preferences/search.js */
+/* import-globals-from preferences.js */
 
 const {
   CenoNetwork,
@@ -15,11 +16,29 @@ const {
   internetStatusToL10n,
   InternetStatus,
   OuinetStages,
-  ouinetStageToL10n
+  ouinetStageToL10n,
+  OuinetPrefs,
 } = ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
+
+Preferences.addAll([
+  { id: OuinetPrefs.quickstart, type: "bool" },
+  { id: OuinetPrefs.headless, type: "bool" },
+
+  { id: OuinetPrefs.origin_access, type: "bool" },
+  { id: OuinetPrefs.proxy_access, type: "bool" },
+  { id: OuinetPrefs.injector_access, type: "bool" },
+  { id: OuinetPrefs.distributed_cache, type: "bool" },
+  { id: OuinetPrefs.logging_level, type: "string" },
+  { id: OuinetPrefs.metrics, type: "bool" },
+  { id: OuinetPrefs.doh, type: "int" },
+  { id: OuinetPrefs.bridge, type: "bool" },
+  { id: OuinetPrefs.udp_mux_port, type: "int" },
+  { id: OuinetPrefs.udp_mux_port_random, type: "bool" },
+]);
 
 class ConnectionPane {
   #elements = {};
+
   #initElements() {
     this.#elements = Object.freeze({
       ouinet_connection_status: document.getElementById("network-status-ouinet"),
@@ -28,16 +47,7 @@ class ConnectionPane {
       ouinet_disconnect_button: document.getElementById("network-status-ouinet-disconnect-button"),
       ouinet_enableloggingandreconnect_button: document.getElementById("network-status-ouinet-enableloggingandreconnect-button"),
       ouinet_allow_firewall_button: document.getElementById("network-status-ouinet-allow-firewall-button"),
-
-      ouinet_quickstart_toggle: document.getElementById("ouinet-connection-quickstart-toggle"),
-      ouinet_headless_toggle: document.getElementById("ouinet-connection-headless-toggle"),
-
       sources: {
-        origin_access: document.getElementById("ouinet-connection-origin-access"),
-        proxy_access: document.getElementById("ouinet-connection-proxy-access"),
-        injector_access: document.getElementById("ouinet-connection-injector-access"),
-        distributed_cache: document.getElementById("ouinet-connection-distributed-cache"),
-
         personal_unreachable: document.getElementById("ouinet-connection-personal-unreachable"),
         public_unreachable: document.getElementById("ouinet-connection-public-unreachable"),
       },
@@ -49,14 +59,6 @@ class ConnectionPane {
         failed_to_start_show_log: document.getElementById("error-message-failed-to-start-show-log"),
         udp_mux_port_mismatch: document.getElementById("error-message-udp-port-mismatch"),
       },
-
-      logging_level: document.getElementById("logging-level"),
-
-      metrics: document.getElementById("ouinet-metrics"),
-      doh: document.getElementById("ouinet-doh"),
-      unencrypted_dns: document.getElementById("ouinet-unencrypted-dns"),
-      bridge: document.getElementById("ouinet-connection-bridge-toggle"),
-
       local_cache_size: document.getElementById("local-cache-size"),
       clear_cache_button: document.getElementById("clear-cache-button"),
 
@@ -74,14 +76,6 @@ class ConnectionPane {
     });
   }
 
-  async observe(subject, topic) {
-    switch (topic) {
-      case CenoNetworkTopics.StateChange:
-        this.#update_ui(subject?.wrappedJSObject);
-        break;
-    }
-  }
-
   #addEventListeners() {
     this.#elements.ouinet_connect_button.addEventListener("click", () => {
       CenoNetwork.connect();
@@ -93,8 +87,7 @@ class ConnectionPane {
       CenoNetwork.cancel();
     });
     this.#elements.ouinet_enableloggingandreconnect_button.addEventListener("click", () => {
-      CenoNetwork.setOuinetConfigValue('logging', true);
-      CenoNetwork.connect();
+      CenoNetwork.enableLoggingAndConnect();
     });
     this.#elements.ouinet_allow_firewall_button.addEventListener("click", () => {
       CenoNetwork.allowFirewall();
@@ -102,56 +95,9 @@ class ConnectionPane {
     this.#elements.clear_cache_button.addEventListener("click", () => {
       CenoNetwork.purgeOuinetCache();
     });
-
-    this.#elements.ouinet_quickstart_toggle.addEventListener("toggle", () => {
-      CenoNetwork.setQuickstart(this.#elements.ouinet_quickstart_toggle.pressed);
-    });
-
-    this.#elements.ouinet_headless_toggle.addEventListener("toggle", () => {
-      CenoNetwork.setHeadless(this.#elements.ouinet_headless_toggle.pressed);
-    });
-
-    this.#elements.sources.origin_access.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('origin_access', this.#elements.sources.origin_access.pressed);
-    });
-    this.#elements.sources.proxy_access.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('proxy_access', this.#elements.sources.proxy_access.pressed);
-    });
-    this.#elements.sources.injector_access.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('injector_access', this.#elements.sources.injector_access.pressed);
-    });
-    this.#elements.sources.distributed_cache.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('distributed_cache', this.#elements.sources.distributed_cache.pressed);
-    });
-
-    this.#elements.logging_level.addEventListener("change", (e) => {
-      CenoNetwork.setOuinetConfigValue('logging_level', e.target.value);
-    });
-
-    this.#elements.metrics.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('metrics', this.#elements.metrics.pressed);
-    });
-    this.#elements.doh.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('doh', this.#elements.doh.pressed);
-    });
-    this.#elements.unencrypted_dns.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('unencrypted_dns', this.#elements.unencrypted_dns.pressed);
-    });
-    this.#elements.bridge.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('bridge', this.#elements.bridge.pressed);
-    });
-
-    this.#elements.udp_mux_port_random_toggle.addEventListener("toggle", () => {
-      CenoNetwork.setOuinetConfigValue('udp_mux_port_random', this.#elements.udp_mux_port_random_toggle.pressed);
-    });
-    this.#elements.udp_mux_port.addEventListener("change", () => {
-      const value = parseInt(this.#elements.udp_mux_port.value, 10);
-      if (value >= 1 && value <= 65535) {
-        CenoNetwork.setOuinetConfigValue('udp_mux_port', this.#elements.udp_mux_port.value);
-      }
-    });
   }
 
+  #prefs;
   init() {
     const onUnload = () => {
       window.removeEventListener("unload", onUnload);
@@ -162,18 +108,20 @@ class ConnectionPane {
     this.#initElements();
     this.#addEventListeners();
 
+    this.#prefs = Services.prefs.getBranch("");
+    this.#prefs.addObserver(OuinetPrefs.udp_mux_port_random, this);
     Services.obs.addObserver(this, CenoNetworkTopics.StateChange);
     this.#update_ui(CenoNetwork.CenoNetworkState());
   };
 
   uninit() {
+    this.#prefs.removeObserver("", this);
+    this.#prefs = null;
     Services.obs.removeObserver(this, CenoNetworkTopics.StateChange);
   }
 
   #update_ui(state) {
     document.l10n.setAttributes(this.#elements.ouinet_connection_status, ouinetStageToL10n(state.ouinetStage, state.internetStatus));
-    this.#elements.ouinet_quickstart_toggle.pressed = state.quickstart;
-    this.#elements.ouinet_headless_toggle.pressed = state.headless;
 
     this.#elements.ouinet_connect_button.hidden = true;
     this.#elements.ouinet_cancel_button.hidden = true;
@@ -206,46 +154,25 @@ class ConnectionPane {
     if (state.errors.udp_mux_port_mismatch) {
       this.#elements.errors.udp_mux_port_mismatch
         .setAttribute("data-l10n-args", JSON.stringify({
-          requested: String(state.udp_mux_port),
+          requested: String(state.udp_mux_port_requested),
           actual: String(state.udp_mux_port_actual),
         }));
-      this.#elements.errors.udp_mux_port_mismatch.hidden = false;
-    } else
-      this.#elements.errors.udp_mux_port_mismatch.hidden = true;
-
-    this.#set_toggle(this.#elements.sources.origin_access, state.origin_access);
-    this.#set_toggle(this.#elements.sources.proxy_access, state.proxy_access);
-    this.#set_toggle(this.#elements.sources.injector_access, state.injector_access);
-    this.#set_toggle(this.#elements.sources.distributed_cache, state.distributed_cache);
-
-    if (state.origin_access === undefined || state.origin_access || state.proxy_access) {
-      this.#elements.sources.personal_unreachable.hidden = 'true';
-    } else {
-      this.#elements.sources.personal_unreachable.removeAttribute('hidden');
     }
+    this.#showOrHide(this.#elements.errors.udp_mux_port_mismatch, state.errors.udp_mux_port_mismatch);
 
-    if (state.origin_access === undefined || state.origin_access || state.injector_access || state.distributed_cache) {
-      this.#elements.sources.public_unreachable.hidden = 'true';
-    } else {
-      this.#elements.sources.public_unreachable.removeAttribute('hidden');
-    }
+    const mux_port_random = Services.prefs.getBoolPref(OuinetPrefs.udp_mux_port_random);
+    this.#elements.udp_mux_port.disabled = mux_port_random;
+    this.#elements.udp_mux_port_label.disabled = mux_port_random;
+
+    this.#showOrHide(this.#elements.sources.personal_unreachable, state.personal_unreachable);
+    this.#showOrHide(this.#elements.sources.public_unreachable, state.public_unreachable);
 
     if (state.logfile) {
       this.#elements.logfile_err_msg.href = 'file://' + state.logfile;
       this.#elements.logfile.href = 'file://' + state.logfile;
-      this.#elements.logfile.removeAttribute('hidden');
-    } else {
-      this.#elements.logfile.hidden = true;
     }
-    this.#elements.logging_level.value = state.logging_level;
+    this.#showOrHide(this.#elements.logfile, state.logfile);
 
-    this.#set_toggle(this.#elements.metrics, state.metrics);
-    this.#set_toggle(this.#elements.doh, state.doh);
-    this.#set_toggle(this.#elements.unencrypted_dns, state.unencrypted_dns);
-    this.#elements.unencrypted_dns.disabled = !state.doh;
-    this.#set_toggle(this.#elements.bridge, state.bridge);
-
-    this.#elements.clear_cache_button.hidden = state.local_cache_size === undefined;
     if (state.local_cache_size !== undefined) {
       document.l10n.setAttributes(
         this.#elements.local_cache_size,
@@ -254,7 +181,7 @@ class ConnectionPane {
     } else {
       document.l10n.setAttributes(
         this.#elements.local_cache_size,
-        "ceno-browser-ouinet-preferences-local-cache-size-unknown"
+        "ceno-browser-ouinet-preferences-local-cache-size-unknown", { size: 0 }
       );
     }
 
@@ -262,23 +189,19 @@ class ConnectionPane {
     this.#elements.upnp.textContent = state.upnp;
     this.#elements.local_udp.textContent = state.local_udp;
     this.#elements.public_udp.textContent = state.public_udp;
-
-    this.#set_toggle(this.#elements.udp_mux_port_random_toggle, state.udp_mux_port_random);
-    this.#elements.udp_mux_port.value = state.udp_mux_port;
-
-    this.#elements.udp_mux_port.disabled = state.udp_mux_port_random;
-    this.#elements.udp_mux_port_label.disabled = state.udp_mux_port_random;
   }
 
-  #set_toggle(element, value) {
-    if (value === undefined) {
-      element.disabled = true;
-      element.pressed = undefined;
-    } else {
-      element.disabled = false;
-      element.pressed = value;
+  observe(subject, topic, _data) {
+    if (topic === CenoNetworkTopics.StateChange) {
+      this.#update_ui(subject?.wrappedJSObject);
+      return;
     }
-  };
+
+    // if (topic === "nsPref:changed") {}
+    const udp_mux_port_random = Services.prefs.getBoolPref(OuinetPrefs.udp_mux_port_random);
+    this.#elements.udp_mux_port.disabled = udp_mux_port_random;
+    this.#elements.udp_mux_port_label.disabled = udp_mux_port_random;
+  }
 
   #calculateSize(value) {
     var b = Number(value);
@@ -294,5 +217,13 @@ class ConnectionPane {
     var u = "KMGTPEZY"[i-1] + "iB";
     return `${v.toFixed(2)} ${u}`;
   };
+
+  #showOrHide(element, shouldShow) {
+    if (shouldShow) {
+      element.removeAttribute('hidden');
+    } else {
+      element.hidden = 'true';
+    }
+  }
 };
 const gConnectionPane = new ConnectionPane();

@@ -19,6 +19,7 @@ const CenoHomeTopics = Object.freeze({
   Connect: "cenohome:connect",
   Cancel: "cenohome:cancel",
   SetQuickstart: "cenohome:set-quickstart",
+  QuickstartChange: "cenohome:quickstart-change",
   OpenConnectionPreferences: "cenohome:openconnectionpreferences",
   ShowLogFile: "cenohome:showlogfile",
   EnableLoggingAndReconnect: "cenohome:enableloggingandreconnect",
@@ -132,7 +133,7 @@ class AboutCenoHome {
     if (state.errors.udp_mux_port_mismatch) {
       this.elements.udp_mux_port_mismatch
         .setAttribute("data-l10n-args", JSON.stringify({
-          requested: String(state.udp_mux_port),
+          requested: String(state.udp_mux_port_requested),
           actual: String(state.udp_mux_port_actual),
         }));
       this.show(this.elements.udp_mux_port_mismatch);
@@ -256,6 +257,9 @@ class AboutCenoHome {
   initObservers() {
     RPMAddMessageListener(CenoHomeTopics.StateChange, ({data}) => {
       this.updateState(data);
+    });
+    RPMAddMessageListener(CenoHomeTopics.QuickstartChange, ({data}) => {
+      this.elements.quickstartToggle.pressed = data;
     });
   }
 

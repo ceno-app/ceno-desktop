@@ -8,14 +8,16 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
 });
 
-const Prefs = Object.freeze({
-  log_level: "browser.ouinet_process.log_level",
-  launch_delay: "browser.ouinet_process.launch_delay",
-});
+const {
+  OuinetPrefs,
+  DNS_Mode_DoH_Fallback_to_Plain,
+  DNS_Mode_DoH,
+  DNS_Mode_Plain,
+} = ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () => {
   return console.createInstance({
-    maxLogLevelPref: Prefs.log_level,
+    maxLogLevelPref: OuinetPrefs.browser_log_level,
     prefix: "OuinetProcess",
   });
 });
@@ -168,7 +170,7 @@ export class OuinetProcess {
 
     this.#args.push("--drop-saved-opts");
 
-    if (config.metrics) {
+    if (Services.prefs.getBoolPref(OuinetPrefs.metrics)) {
       this.#args.push("--metrics-enable-on-start");
     }
     this.#args.push("--metrics-server-url", OuinetProcess.#metricsServerUrl);
@@ -176,35 +178,41 @@ export class OuinetProcess {
     this.#args.push("--metrics-encryption-key", OuinetProcess.#metricsEncryptionKey);
     this.#args.push("--metrics-server-token", OuinetProcess.#metricsServerToken);
 
-    if (config.logging_level !== "disabled") {
-      this.#args.push("--enable-log-file");
-      this.#args.push("--log-level", config.logging_level);
+    const logging_level = Services.prefs.getStringPref(OuinetPrefs.logging_level);
+    if (logging_level !== "disabled") {
+      this.#args.push("--enable-log-file", "--log-level", logging_level);
     }
 
-    if (config.doh) {
-      this.#args.push("--dns-protocol", "https");
-    }
-    if (config.unencrypted_dns) {
-      this.#args.push("--dns-protocol", "plain");
+    switch (Services.prefs.getIntPref(OuinetPrefs.doh)) {
+      case DNS_Mode_DoH_Fallback_to_Plain:
+        this.#args.push("--dns-protocol", "https");
+        this.#args.push("--dns-protocol", "plain");
+        break;
+      case DNS_Mode_DoH:
+        this.#args.push("--dns-protocol", "https");
+        break;
+      case DNS_Mode_Plain:
+        this.#args.push("--dns-protocol", "plain");
+        break;
     }
     if (!config.bridge) {
       this.#args.push("--disable-bridge-announcement");
     }
-    if (!config.origin_access) {
+    if (!Services.prefs.getBoolPref(OuinetPrefs.origin_access)) {
       this.#args.push("--disable-origin-access");
     }
-    if (!config.proxy_access) {
+    if (!Services.prefs.getBoolPref(OuinetPrefs.proxy_access)) {
       this.#args.push("--disable-proxy-access");
     }
-    if (!config.injector_access) {
+    if (!Services.prefs.getBoolPref(OuinetPrefs.injector_access)) {
       this.#args.push("--disable-injector-access");
     }
-    if (!config.distributed_cache) {
+    if (!Services.prefs.getBoolPref(OuinetPrefs.distributed_cache)) {
       this.#args.push("--disable-cache-access");
     }
 
-    if (!config.udp_mux_port_random) {
-      this.#args.push("--udp-mux-port", config.udp_mux_port);
+    if (!Services.prefs.getBoolPref(OuinetPrefs.udp_mux_port_random)) {
+      this.#args.push("--udp-mux-port", Services.prefs.getIntPref(OuinetPrefs.udp_mux_port));
     } else if (lazy.OuinetLauncherUtil.getOuinetFile("last_used_udp_port", false).exists()) {
       this.#args.push("--udp-mux-port", '0');
     }
