@@ -272,7 +272,9 @@ Preferences.addAll([
   { id: "cookiebanners.service.mode.privateBrowsing", type: "int" },
 
   // DoH
-  { id: "network.trr.mode", type: "int" },
+  // { id: "network.trr.mode", type: "int" },
+  // network.trr.mode is replaced with ceno.network.doh_mode
+  // { id: "ceno.network.doh_mode", type: "int" },
   { id: "network.trr.uri", type: "string" },
   { id: "network.trr.default_provider_uri", type: "string" },
   { id: "network.trr.custom_uri", type: "string" },
@@ -800,7 +802,8 @@ var gPrivacyPane = {
   },
 
   highlightDoHCategoryAndUpdateStatus() {
-    let value = Preferences.get("network.trr.mode").value;
+    // let value = Preferences.get("network.trr.mode").value;
+    let value = Preferences.get("ceno.network.doh_mode").value;
     let defaultOption = document.getElementById("dohOptionDefault");
     let enabledOption = document.getElementById("dohOptionEnabled");
     let strictOption = document.getElementById("dohOptionStrict");
@@ -875,7 +878,8 @@ var gPrivacyPane = {
     function modeButtonPressed(e) {
       // Clicking the active mode again should not generate another event
       if (
-        parseInt(e.target.value) == Preferences.get("network.trr.mode").value
+        // parseInt(e.target.value) == Preferences.get("network.trr.mode").value
+        parseInt(e.target.value) == Preferences.get("ceno.network.doh_mode").value
       ) {
         return;
       }
@@ -899,7 +903,8 @@ var gPrivacyPane = {
     });
 
     // Update status box and hightlightling when the pref changes
-    Preferences.get("network.trr.mode").on(
+    // Preferences.get("network.trr.mode").on(
+    Preferences.get("ceno.network.doh_mode").on(
       "change",
       gPrivacyPane.highlightDoHCategoryAndUpdateStatus
     );
@@ -925,7 +930,8 @@ var gPrivacyPane = {
       );
     }
 
-    if (Services.prefs.prefIsLocked("network.trr.mode")) {
+    // if (Services.prefs.prefIsLocked("network.trr.mode")) {
+    if (Services.prefs.prefIsLocked("ceno.network.doh_mode")) {
       document.getElementById("dohCategoryRadioGroup").disabled = true;
       Services.prefs.setStringPref("network.trr.custom_uri", uriPref);
     }
