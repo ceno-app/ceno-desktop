@@ -166,16 +166,18 @@
 @RESPATH@/components/ouinet-launcher.manifest
 @BINPATH@/distribution/extensions/uBlock0@raymondhill.net.xpi
 @BINPATH@/Ouinet/cacert.pem
-@BINPATH@/Ouinet/client@BIN_SUFFIX@
 @BINPATH@/Ouinet/ssl-inj-cert.pem
 @BINPATH@/Ouinet/metrics-server-cacert.pem
 @BINPATH@/Ouinet/lib*@DLL_SUFFIX@
-@BINPATH@/Ouinet/lib*@DLL_SUFFIX@.a
+; Do not ship .a libraries
+; @BINPATH@/Ouinet/lib*@DLL_SUFFIX@.a
 @BINPATH@/Ouinet/zlib*@DLL_SUFFIX@
 #if defined(XP_WIN)
 @BINPATH@/Ouinet/ceno-network-client.exe
 @BINPATH@/Ouinet/ceno-network-client-terminator.exe
 @BINPATH@/Ouinet/ceno-network-client-firewall-allow.exe
+#else
+@BINPATH@/Ouinet/client@BIN_SUFFIX@
 #endif
 
 ; [Components]
