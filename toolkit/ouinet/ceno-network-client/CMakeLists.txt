@@ -94,5 +94,13 @@ target_link_libraries(ceno-network-client comctl32 iphlpapi
     MinGWLibClient
 )
 
+file(GLOB OUINET_DLLS "${OUINET_DIR}/*.dll")
+add_custom_command(TARGET ceno-network-client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${OUINET_DLLS}
+    $<TARGET_FILE_DIR:ceno-network-client>
+    COMMENT "Copying DLLs from ${OUINET_DIR}"
+)
+
 # uncomment to link vcredist statically
 # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
