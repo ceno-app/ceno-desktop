@@ -181,7 +181,7 @@ class ConnectionPane {
     } else {
       document.l10n.setAttributes(
         this.#elements.local_cache_size,
-        "ceno-browser-ouinet-preferences-local-cache-size-unknown", { size: 0 }
+        "ceno-browser-ouinet-preferences-local-cache-size-unknown"
       );
     }
 
