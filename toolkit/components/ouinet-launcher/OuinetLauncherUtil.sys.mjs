@@ -19,15 +19,16 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
 });
 
-const Prefs = Object.freeze({
-  log_level: "ceno.network.log_level",
-  prefs_prefix: "extensions.ouinetlauncher",
-});
+const prefs_prefix = "extensions.ouinetlauncher";
+
+const {
+  OuinetPrefs,
+} = ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
 
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
   return console.createInstance({
-    maxLogLevelPref: Prefs.log_level,
-    prefix: "OuinetLauncherUtil",
+    maxLogLevelPref: OuinetPrefs.browser_log_level,
+    prefix: "OuinetProcess",
   });
 });
 
@@ -64,7 +65,7 @@ class OuinetFile {
   }
 
   getFromPref() {
-    const prefName = `${Prefs.prefs_prefix}.${this.fileType}_path`;
+    const prefName = `${prefs_prefix}.${this.fileType}_path`;
     const path = Services.prefs.getCharPref(prefName, "");
     if (path) {
       const isUserData =
@@ -203,10 +204,7 @@ class OuinetFile {
         const _realDataDir = Services.OuinetNativeHelpers.GetRealAppData(_dataDir.path);
         const realDataDirFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
         realDataDirFile.initWithPath(_realDataDir);
-
-        // @TODO:
-        lazy.log.error("DataDir:", _dataDir.path);
-        lazy.log.error("RealDataDir:", realDataDirFile.path);
+        lazy.log.debug("DataDir:", _dataDir.path, "RealDataDir:", realDataDirFile.path);
         this._dataDir = realDataDirFile;
       } else {
         this._dataDir = _dataDir;
@@ -222,16 +220,14 @@ class OuinetFile {
       // The directory that contains firefox
       let ouinetDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
       if (OuinetLauncherUtil.isWindows) {
-        // @TODO:
-        lazy.log.error("ouinetDirParent long: ", ouinetDir.path)
+        lazy.log.debug("ouinetDirParent long:", ouinetDir.path)
         
         // Convert the path into a shortPath. Converts unicode chars to ascii
         const shortDirPath = Services.OuinetNativeHelpers.GetShortPath(ouinetDir.path);
         ouinetDir = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
         ouinetDir.initWithPath(shortDirPath);
 
-        // @TODO:
-        lazy.log.error("ouinetDirParent short: ", ouinetDir.path)
+        lazy.log.debug("ouinetDirParent short:", ouinetDir.path)
       }
       if (!OuinetLauncherUtil.isMac) {
         ouinetDir.append("Ouinet");

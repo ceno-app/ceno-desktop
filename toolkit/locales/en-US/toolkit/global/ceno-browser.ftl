@@ -69,13 +69,6 @@ ceno-browser-ouinet-preferences-udp-mux-port-random-checkbox =
     .label = Assign random port
 ceno-browser-ouinet-preferences-udp-mux-port = Custom UDP port
 
-ceno-browser-ouinet-preferences-doh-heading = DNS over HTTPS
-ceno-browser-ouinet-preferences-doh-description = Unencrypted DNS or DNS over HTTPS may be blocked in some areas. Changing DNS settings requires reconnection to Ceno Network.
-ceno-browser-ouinet-preferences-doh-checkbox =
-    .label = Use DNS over HTTPS
-ceno-browser-ouinet-preferences-unencrypted-dns-checkbox =
-    .label = Fallback to unencrypted DNS if DNS over HTTPS is unavailable
-
 ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
 ceno-browser-ouinet-preferences-sources-origin-access =
     .label = (Origin access) Direct from website
@@ -87,26 +80,34 @@ ceno-browser-ouinet-preferences-sources-distributed-cache =
     .label = (Distributed cache) From other Ceno users
 
 ceno-browser-ouinet-preferences-sources-personal-unreachable = ⚠ Personal browsing mode will fail with current settings. Enable origin access or proxy access.
-ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing mode will fail with current settings. Enable direct access, injector access or distributed cache.
+ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing mode will fail with current settings. Enable origin access, injector access or distributed cache.
 
 ceno-browser-ouinet-preferences-logging-heading = Logging
 ceno-browser-ouinet-preferences-logging-description = Local logging is used to debug Ceno Network Client
 ceno-browser-ouinet-preferences-logging-show-logfile = Show logfile
 ceno-browser-ouinet-preferences-logging-level = Logging Level
 logging-level-silly = Silly
+    .label = Silly
 logging-level-debug = Debug
+    .label = Debug
 logging-level-verbose = Verbose
+    .label = Verbose
 logging-level-info = Info
+    .label = Info
 logging-level-warn = Warning
+    .label = Warning
 logging-level-error = Error
+    .label = Error
 logging-level-abort = Abort
+    .label = Abort
 logging-level-disabled = Logging Disabled
+    .label = Logging Disabled
 
 ceno-browser-ouinet-preferences-network-heading = Network
 
 ceno-browser-ouinet-preferences-local-cache = Local Cache
 ceno-browser-ouinet-preferences-local-cache-size = Size: <span data-l10n-name="size">{ $size }</span>
-ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline
+ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline<span data-l10n-name="size"></span>
 ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
 
 ceno-browser-ouinet-preferences-reachability = Reachability:
@@ -118,3 +119,13 @@ ceno-browser-ouinet-preferences-metrics-heading = Background metrics
 ceno-browser-ouinet-preferences-metrics-description = Submit anonymous, privacy respecting metrics to developers
 ceno-browser-ouinet-preferences-metrics-checkbox =
     .label = Enable Ceno metrics
+
+ceno-preferences-doh-setting-enabled =
+  .label = Default Protection
+  .accesskey = D
+
+ceno-preferences-doh-enabled-desc = { -brand-short-name } decides when to use secure DNS to protect your privacy.
+ceno-preferences-doh-enabled-detailed-desc-2 = Only use your default DNS resolver if there is a problem with secure DNS
+
+ceno-preferences-doh-strict-desc = { -brand-short-name } will always use secure DNS.
+ceno-preferences-doh-strict-detailed-desc-3 = If secure DNS is not available sites will not load or function properly
