@@ -55,6 +55,19 @@ set_target_properties(MinGWLibClient PROPERTIES
             "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/"
 )
 
+# Ouinet is shipped as .dll and .a library files.
+# .lib is needed here. It can be generated from .dll using
+# gendef (mingw64-w64-tools package) and lib.exe from MSVC Build Tools:
+
+# $ gendef libclient_lib.dll
+# * [libclient_lib.dll] Found PE+ image
+#
+# $ ~/.mozbuild/vs/VC/Tools/MSVC/14.39.33519/bin/Hostx64/x64/lib.exe /def:libclient_lib.def /out:libclient_lib.lib /machine:x64
+# Microsoft (R) Library Manager Version 14.39.33519.0
+# Copyright (C) Microsoft Corporation.  All rights reserved.
+#
+# Creating library libclient_lib.lib and object libclient_lib.exp
+
 if(MSVC)
     target_link_options(ceno-network-client PRIVATE "/MANIFEST:NO")
 else()
