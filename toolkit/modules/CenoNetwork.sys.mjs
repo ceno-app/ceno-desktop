@@ -714,7 +714,7 @@ class _CenoNetwork {
   }
 
   cancel() {
-    lazy.logger.debug("CenoNetwork.cancel() ", this.#ouinetStage);
+    lazy.logger.debug("CenoNetwork.cancel() previous stage:", this.#ouinetStage);
     const connectionId = this.#connectionId;
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Exiting);
