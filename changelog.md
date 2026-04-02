@@ -1,6 +1,10 @@
-# Changelog
+# Ceno Browser for Desktop Changelog
 
-## Ceno Browser 0.0.12
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+##  [0.0.12] - 2026-04-02
 
 ### Added
 - Added Firewall integration. Add firewall rule for Microsoft Store builds during install, currently needs to be done manually when generating msix, see [msix-firewall-guide.md](msix-firewall-guide.md). Detect if Ceno Network Client is blocked by firewall. Show button to add firewall rule if blocking is detected.
@@ -24,9 +28,10 @@
 ### Removed
 - Removed Ouinet's client.exe and .a libraries from installer packages.
 
-# Ceno Browser 0.0.11
-
-- Fixed issue in microsoft store build which prevented Ceno network client from starting.
+## [0.0.11]
+### Changed
 - Updated base browser to version 140.7.1esr
+### Fixed
+- Fixed issue in microsoft store build which prevented Ceno network client from starting.
 - Fixed issue which prevented uninstaller from being built.
 - Fixed logging settings toggle for Ceno network client.
