@@ -1,9 +1,28 @@
-# Ceno Browser 0.0.12
-- Update default options for Ceno Network Client
-- Update Ceno Network Client to use Ouinet DLL instead of wrapping client.exe. Failed startup errors displayed as error windows instead of silent exits. Network status displayed visually as different icons (gray vs colored) and tooltip text.
-- Updates to Connection preferences page. Show detected errors (failed startup, no internet).
-- Update DNS over HTTPS config, allowing both HTTPS and unencrypted DNS requests.
-- Detect if Ceno Network Client is blocked by firewall. Add firewall rule for Microsoft Store builds during install.
+# Changelog
+
+## Ceno Browser 0.0.12
+
+### Added
+- Added Firewall integration. Add firewall rule for Microsoft Store builds during install, currently needs to be done manually when generating msix, see [msix-firewall-guide.md](msix-firewall-guide.md). Detect if Ceno Network Client is blocked by firewall. Show button to add firewall rule if blocking is detected.
+- Option to control what UDP port should Ceno Network Client listen on for connections from other nodes. UDP Mux Port. Defaults to random port, but allowing custom ports. Error is shown if requested custom port was not acquired and a random port was used instead.
+
+### Changed
+- Major update to Ceno Network Client
+    - Ouinet integrated as a .dll library instead of wrapping client.exe.
+    - Ouinet's state displayed visually as different tray icons, either colored or gray Ceno C letter with different tooltip texts.
+    - Network state is monitored to detect changes which trigger an internal restart of Ouinet. Changes such as wifi connection or disconnection, IP address modification and so on. Tray icon turns gray during the restart.
+    - Failed program startup errors displayed as error windows instead of silent exits.
+- Updated DNS over HTTPS config, allowing both HTTPS and unencrypted DNS requests. Setting moved to "Privacy & Security" where Firefox usually has it.
+- Updates to Connection preferences page. Show detected errors (failed Ceno-Network-Client startup, no internet). Button to enable logging is shown on failed Ceno-Network-Client startup if logging is disabled, if logging is enabled and logfile exists, a link to logfile is shown instead.
+- Updates to manage lifecycle of Ceno-Network-Client in Ceno Browser, removed startup timeouts which were commonly exceeded on first startup in Microsoft store builds.
+- Logging level and enable/disable toggle merged into single drop down menu.
+- uBlock origin updated to 1.70.0
+
+### Fixed
+- logfile link no longer displayed when logging is not enabled.
+
+### Removed
+- Removed Ouinet's client.exe and .a libraries from installer packages.
 
 # Ceno Browser 0.0.11
 
