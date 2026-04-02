@@ -184,6 +184,7 @@ class ConnectionPane {
         "ceno-browser-ouinet-preferences-local-cache-size-unknown"
       );
     }
+    this.#showOrHide(this.#elements.clear_cache_button, state.local_cache_size !== undefined);
 
     this.#elements.reachability.textContent = state.reachability;
     this.#elements.upnp.textContent = state.upnp;
