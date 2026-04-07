@@ -21,13 +21,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 const prefs_prefix = "extensions.ouinetlauncher";
 
-const {
-  OuinetPrefs,
-} = ChromeUtils.importESModule("resource://gre/modules/CenoNetwork.sys.mjs");
-
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
   return console.createInstance({
-    maxLogLevelPref: OuinetPrefs.browser_log_level,
+    maxLogLevelPref: "ceno.browser.log_level",
     prefix: "OuinetProcess",
   });
 });
