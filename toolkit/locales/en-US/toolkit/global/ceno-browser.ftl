@@ -110,7 +110,6 @@ ceno-browser-ouinet-preferences-local-cache-size = Size: { $size }
 ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline
 ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
 
-ceno-browser-ouinet-preferences-reachability = Reachability:
 ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints:
 ceno-browser-ouinet-preferences-external-udp = External UDP endpoints:
 ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints:
