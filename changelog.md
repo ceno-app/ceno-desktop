@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Ceno Network Client icon is colored when it's at least somewhat usable. Connected, degraded or degraded while offline. If it can be used, the connection is colored. Icon is gray if it's in an unusable state, such as starting, exiting or restarting.
+- Updated Ouinet to [v1.6.6](https://gitlab.com/equalitie/ouinet/-/releases/v1.6.6)
 
 ### Fixed
 - Fixed an error which prevented disabling of origin_access, proxy_access, injector_access, distributed_cache and logfile at runtime
