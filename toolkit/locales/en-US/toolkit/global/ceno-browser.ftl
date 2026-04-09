@@ -106,7 +106,7 @@ logging-level-disabled = Logging Disabled
 ceno-browser-ouinet-preferences-network-heading = Network
 
 ceno-browser-ouinet-preferences-local-cache = Local Cache
-ceno-browser-ouinet-preferences-local-cache-size = Size: <span data-l10n-name="size">{ $size }</span>
+ceno-browser-ouinet-preferences-local-cache-size = Size: { $size }
 ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline
 ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
 
