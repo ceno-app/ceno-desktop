@@ -183,7 +183,6 @@ class _CenoNetwork {
   #initOuinetState() {
     this.#ouinetState.local_cache_size = undefined;
 
-    this.#ouinetState.reachability = undefined;
     this.#ouinetState.upnp = undefined;
     this.#ouinetState.local_udp = undefined;
     this.#ouinetState.public_udp = undefined;
@@ -391,7 +390,6 @@ class _CenoNetwork {
           return;
         }
         this.#ouinetState.local_cache_size = json.local_cache_size;
-        this.#ouinetState.reachability = json.udp_world_reachable;
         this.#ouinetState.upnp = json.is_upnp_active;
         this.#ouinetState.local_udp = json.local_udp_endpoints.join(', ');
         this.#ouinetState.public_udp = json.public_udp_endpoints.join(', ');

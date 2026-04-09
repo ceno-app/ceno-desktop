@@ -62,7 +62,6 @@ class ConnectionPane {
       local_cache_size: document.getElementById("local-cache-size"),
       clear_cache_button: document.getElementById("clear-cache-button"),
 
-      reachability: document.getElementById('reachability-status'),
       upnp: document.getElementById('upnp-status'),
       local_udp: document.getElementById('local-udp'),
       public_udp: document.getElementById('public-udp'),
@@ -186,7 +185,6 @@ class ConnectionPane {
     }
     this.#showOrHide(this.#elements.clear_cache_button, state.local_cache_size !== undefined);
 
-    this.#elements.reachability.textContent = state.reachability;
     this.#elements.upnp.textContent = state.upnp;
     this.#elements.local_udp.textContent = state.local_udp;
     this.#elements.public_udp.textContent = state.public_udp;
