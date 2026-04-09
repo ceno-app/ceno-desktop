@@ -165,11 +165,11 @@ static bool loadIcons(HWND hWnd) {
 
     return
         load(icons[ICON_CONNECTING], IDS_TOOLTIP_CONNECTING, IDI_ICON_GRAY) &&
-        load(icons[ICON_DEGRADED], IDS_TOOLTIP_DEGRADED, IDI_ICON_GRAY) &&
+        load(icons[ICON_DEGRADED], IDS_TOOLTIP_DEGRADED, IDI_ICON_ACTIVE) &&
         load(icons[ICON_CONNECTED], IDS_TOOLTIP_CONNECTED, IDI_ICON_ACTIVE) &&
         load(icons[ICON_EXITING], IDS_TOOLTIP_EXITING, IDI_ICON_GRAY) &&
         load(icons[ICON_RESTARTING], IDS_TOOLTIP_RESTARTING, IDI_ICON_GRAY) &&
-        load(icons[ICON_OFFLINE], IDS_TOOLTIP_OFFLINE, IDI_ICON_GRAY);
+        load(icons[ICON_OFFLINE], IDS_TOOLTIP_OFFLINE, IDI_ICON_ACTIVE);
 }
 
 static bool createNotificationIcon(HWND hWnd) {
