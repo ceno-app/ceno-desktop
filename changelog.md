@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.0.13]
+
+### Changed
+- Ceno Network Client icon is colored when it's at least somewhat usable. Connected, degraded or degraded while offline. If it can be used, the connection is colored. Icon is gray if it's in an unusable state, such as starting, exiting or restarting.
+
+### Fixed
+- Fixed an error which prevented disabling of origin_access, proxy_access, injector_access, distributed_cache and logfile at runtime
+
 ##  [0.0.12] - 2026-04-02
 
 ### Added
