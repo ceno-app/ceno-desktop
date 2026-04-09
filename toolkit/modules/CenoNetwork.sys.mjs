@@ -371,7 +371,9 @@ class _CenoNetwork {
 
   async #pollApiStatus(connectionId) {
     const interval_startup = 1000;
-    const interval_runtime = 5000;
+    const interval_runtime = 1000;
+    const offlineTimeAllowed = 2100;
+    let restartTimeout = null;
     while (
       connectionId === this.#connectionId && (
       this.#ouinetStage === OuinetStages.ConnectingToNetwork ||
@@ -381,6 +383,10 @@ class _CenoNetwork {
       try {
         const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_api_status);
         const json = await response.json();
+        if (restartTimeout !== null) {
+          clearTimeout(restartTimeout);
+          restartTimeout = null;
+        }
         if (connectionId !== this.#connectionId) {
           return;
         }
@@ -432,6 +438,15 @@ class _CenoNetwork {
         if (this.#ouinetStage === OuinetStages.ConnectingToNetwork) {
           break;
         }
+        if (restartTimeout === null && (
+          this.#ouinetStage === OuinetStages.Connected ||
+          this.#ouinetStage === OuinetStages.Degraded
+        )) {
+          restartTimeout = setTimeout(() => {
+            lazy.logger.error("Restarting stuck network client");
+            this.#restart(connectionId);
+          }, offlineTimeAllowed);
+        }
       }
 
       const poll_interval = this.#ouinetStage !== OuinetStages.Connected ? interval_startup : interval_runtime;
@@ -459,11 +474,10 @@ class _CenoNetwork {
     }
 
     if (
-      connectionId === this.#connectionId && (
       this.#ouinetStage == OuinetStages.Connected ||
       this.#ouinetStage == OuinetStages.Degraded
-    )) {
-      this.#restart();
+    ) {
+      this.#restart(connectionId);
     }
   }
 
@@ -737,23 +751,24 @@ class _CenoNetwork {
     this.#sendNotifications();
   }
 
-  #restart() {
-    const connectionId = this.#connectionId;
+  #restart(connectionId) {
+    if (connectionId !== this.#connectionId) {
+      return;
+    }
     if (null !== this.#ouinetProcess) {
       this.#setOuinetStage(OuinetStages.Restarting);
       this.#ouinetProcess.stop();
       const doubleTapTimeout = 500;
-      new Promise(resolve => setTimeout(() => {
+      setTimeout(() => {
         if (
           connectionId === this.#connectionId &&
           this.#ouinetStage === OuinetStages.Restarting
         ){
           this.#ouinetProcess.stop();
         }
-        resolve();
-      }, doubleTapTimeout));
+      }, doubleTapTimeout);
     } else {
-      lazy.logger.warn("No connection to cancel");
+      lazy.logger.warn("No connection to restart");
     }
     this.#sendNotifications();
   }
@@ -904,7 +919,6 @@ class _CenoNetwork {
   }
 
   enableLoggingAndConnect() {
-    // @TODO: this triggers a restart because observe() runs this.#restartIfRunning()
     Services.prefs.setStringPref(OuinetPrefs.logging_level, "info");
     return CenoNetwork.connect();
   }
