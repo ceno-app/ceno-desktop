@@ -215,16 +215,6 @@ class OuinetFile {
     if (!this._ouinetDir) {
       // The directory that contains firefox
       let ouinetDir = Services.dirsvc.get("XREExeF", Ci.nsIFile).parent;
-      if (OuinetLauncherUtil.isWindows) {
-        lazy.log.debug("ouinetDirParent long:", ouinetDir.path)
-        
-        // Convert the path into a shortPath. Converts unicode chars to ascii
-        const shortDirPath = Services.OuinetNativeHelpers.GetShortPath(ouinetDir.path);
-        ouinetDir = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-        ouinetDir.initWithPath(shortDirPath);
-
-        lazy.log.debug("ouinetDirParent short:", ouinetDir.path)
-      }
       if (!OuinetLauncherUtil.isMac) {
         ouinetDir.append("Ouinet");
       }
