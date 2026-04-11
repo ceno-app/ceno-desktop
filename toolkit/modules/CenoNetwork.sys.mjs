@@ -436,14 +436,20 @@ class _CenoNetwork {
         if (this.#ouinetStage === OuinetStages.ConnectingToNetwork) {
           break;
         }
-        if (restartTimeout === null && (
+        if (
           this.#ouinetStage === OuinetStages.Connected ||
           this.#ouinetStage === OuinetStages.Degraded
-        )) {
-          restartTimeout = setTimeout(() => {
-            lazy.logger.error("Restarting stuck network client");
-            this.#restart(connectionId);
-          }, offlineTimeAllowed);
+        ) {
+          if (lazy.OuinetLauncherUtil.getOuinetFile("exit_cookie", false).exists()) {
+            this.#setOuinetStage(OuinetStages.Exiting);
+            this.#initOuinetState();
+            this.#sendNotifications();
+          } else if(restartTimeout === null) {
+            restartTimeout = setTimeout(() => {
+              lazy.logger.error("Restarting stuck network client");
+              this.#restart(connectionId);
+            }, offlineTimeAllowed);
+          }
         }
       }
 
