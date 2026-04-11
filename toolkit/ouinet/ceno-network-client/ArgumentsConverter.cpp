@@ -64,6 +64,10 @@ ArgvConverter::ArgvConverter(const wchar_t *wArgsStr) {
         WideCharToMultiByte(CP_UTF8, 0, wArgv.data[i], -1, narrow.data(), length, nullptr, nullptr);
         storage.push_back(std::move(narrow));
         argv.push_back(storage.back().c_str());
+
+        if (constexpr std::string_view repoArgument("--repo");  i + 1 < argc && repoArgument == storage.back()) {
+            repo_path = std::filesystem::path( wArgv.data[i+1]);
+        }
     }
     argc++;
 

@@ -122,6 +122,10 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("frontend.socket");
         break;
+      case "exit_cookie":
+        this.file = OuinetFile.ouinetDataDir;
+        this.file.append("exitCookie");
+        break;
       case "bep5_http":
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("bep5_http");

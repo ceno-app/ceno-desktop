@@ -1,6 +1,7 @@
 #include <array>
 #include <atomic>
 #include <format>
+#include <fstream>
 #include <thread>
 
 #include <windows.h>
@@ -31,6 +32,7 @@ static HINSTANCE hInstance{};
 std::atomic<HWND> windowHandleForCommunicatingFromOtherThreads { NULL };
 
 static ArgvConverter *args;
+static std::optional<std::filesystem::path> exitCookie;
 
 static std::filesystem::path cenoExecutablePath;
 
@@ -65,6 +67,11 @@ HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     args = _args;
 
     cenoExecutablePath = args->ceno_network_client_path.value().parent_path().parent_path().append(L"ceno-alpha.exe");
+    if (args->repo_path.has_value()) {
+        exitCookie = args->repo_path.value() / "exitCookie";
+        std::error_code ec;
+        std::filesystem::remove(exitCookie.value(), ec);
+    }
 
     constexpr wchar_t windowClassName[] = L"CenoNetworkClientWindowClass";
 
@@ -258,6 +265,18 @@ static void showContextMenu(HWND hWnd, POINT pt) {
     }
 }
 
+// Ceno Browser needs to know if CenoNetworkClient is unresponsive because it's trying to exit
+static void writeExitCookie() {
+    if (!exitCookie.has_value())
+        return;
+
+    std::ofstream stream {exitCookie.value()};
+    if (!stream.good())
+        return;
+    stream << "1";
+    stream.close();
+}
+
 static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam) {
     static WPARAM connectionId = 0;
     switch (message) {
@@ -282,6 +301,7 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPA
             openCeno(hWnd);
             break;
         case IDM_EXIT:
+            writeExitCookie();
             requestToCloseProgram(hWnd);
             break;
         default:
@@ -290,6 +310,7 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPA
     }
     break;
     case WM_CLOSE:
+        writeExitCookie();
         if (windowHandleForCommunicatingFromOtherThreads.load() != NULL) {
             requestToCloseProgram(hWnd);
         } else {
