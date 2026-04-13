@@ -24,4 +24,6 @@ interface nsIOuinetNativeHelpers : nsISupports {
   void EndOrKillNetworkClientProcess(in long pid);
 
   void MonitorNetworkClientProcess(in long pid, in nsIObserver callback);
+
+  void MonitorNetworkStatus(in nsIObserver callback);
 };

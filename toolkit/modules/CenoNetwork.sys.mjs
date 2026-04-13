@@ -13,16 +13,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
 });
 
-ChromeUtils.defineLazyGetter(lazy, "NetworkLinkService", () => {
-  // NetworkLinkService is unavailable on some platforms like openBSD.
-  // See tor-browser#43628.
-  return Cc["@mozilla.org/network/network-link-service;1"]?.getService(
-    Ci.nsINetworkLinkService
-  );
-});
-
-const NETWORK_LINK_TOPIC = Object.freeze("network:link-status-changed");
-
 // keep OuinetPrefs in sync with connectionPane.inc.xhtml
 export const OuinetPrefs = Object.freeze({
   browser_log_level: "ceno.browser.log_level",
@@ -220,18 +210,6 @@ class _CenoNetwork {
     }
   }
 
-  async #updateInternetStatus() {
-    let newStatus = InternetStatus.Unknown;
-    if (lazy.NetworkLinkService?.linkStatusKnown) {
-      newStatus = lazy.NetworkLinkService.isLinkUp ? InternetStatus.Online : InternetStatus.Offline;
-    }
-    if (this.#internetStatus === newStatus) {
-      return;
-    }
-    this.#internetStatus = newStatus;
-    this.#sendNotifications();
-  }
-
   #setOuinetStage(newStageName, sendNotifications) {
     if (this.#ouinetStage === newStageName) {
       return;
@@ -257,9 +235,7 @@ class _CenoNetwork {
       Services.prefs.getDefaultBranch("").setIntPref(OuinetPrefs.doh, DNS_Mode_Plain);
     }
 
-    Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
     OuinetPrefsBranch.addObserver("", this);
-    await this.#updateInternetStatus();
 
     await this.#loadOuinetCredentials();
     try {
@@ -268,6 +244,10 @@ class _CenoNetwork {
         this,
         Services.prefs.getBoolPref(OuinetPrefs.udp_mux_port_random) ? 65535 : Services.prefs.getIntPref(OuinetPrefs.udp_mux_port)
       );
+    } catch (e) { lazy.logger.error(e); }
+
+    try {
+      Services.OuinetNativeHelpers.MonitorNetworkStatus(this);
     } catch (e) { lazy.logger.error(e); }
 
     if (lazy.OuinetProcess.pidExists()) {
@@ -306,7 +286,6 @@ class _CenoNetwork {
 
   uninit() {
     OuinetPrefsBranch.removeObserver("", this);
-    Services.obs.removeObserver(this, NETWORK_LINK_TOPIC);
     if (!Services.prefs.getBoolPref(OuinetPrefs.headless)) {
       this.cancel();
     }
@@ -817,12 +796,7 @@ class _CenoNetwork {
     }
   }
 
-  async observe(_subject, topic, data) {
-    if (topic === NETWORK_LINK_TOPIC) {
-      this.#updateInternetStatus();
-      return;
-    }
-
+  async observe(subject, topic, data) {
     if (topic === "nsPref:changed") {
       const fullPrefName = "ceno.network." + data;
       switch (fullPrefName) {
@@ -886,29 +860,38 @@ class _CenoNetwork {
       ];
       if (restartablePrefs.includes(fullPrefName)) {
         this.#restartIfRunning();
-      } else {
       }
     } else if (topic === "firewall-modified") {
-        lazy.logger.debug(`Firewall status: ${data}`);
-        // List of firewall status strings defined in toolkit\components\ouinet-native-helpers\Firewall.cpp
-        switch (data) {
-          case "Blocked":
-          case "BlockedByDefault":
-            this.#ouinetState.blocked_by_firewall = true;
-            if (this.#ouinetState.connection_was_made) {
-              this.#ouinetState.errors.firewall = true;
-            }
-            break;
+      lazy.logger.debug(`Firewall status: ${data}`);
+      // List of firewall status strings defined in toolkit\components\ouinet-native-helpers\Firewall.cpp
+      switch (data) {
+        case "Blocked":
+        case "BlockedByDefault":
+          this.#ouinetState.blocked_by_firewall = true;
+          if (this.#ouinetState.connection_was_made) {
+            this.#ouinetState.errors.firewall = true;
+          }
+          break;
 
-          // case "Allowed":
-          // case "AllowedByDefault":
-          // case "FirewallDisabled":
-          default:
-            this.#ouinetState.blocked_by_firewall = false;
-            this.#ouinetState.errors.firewall = false;
-            break;
-        }
-        this.#sendNotifications();
+        // case "Allowed":
+        // case "AllowedByDefault":
+        // case "FirewallDisabled":
+        default:
+          this.#ouinetState.blocked_by_firewall = false;
+          this.#ouinetState.errors.firewall = false;
+          break;
+      }
+      this.#sendNotifications();
+    } else if (topic === "network-status-changed") {
+      lazy.logger.debug(`Network status: ${data}`);
+      const newStatus = data === "Online" ? InternetStatus.Online : InternetStatus.Offline;
+      if (this.#internetStatus === newStatus) {
+        return;
+      }
+      this.#internetStatus = newStatus;
+      this.#sendNotifications();
+    } else {
+      lazy.logger.error("Unknown message: ", subject, topic, data);
     }
   }
 
