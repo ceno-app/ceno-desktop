@@ -24,6 +24,7 @@ class OuinetNativeHelpers final : public nsIOuinetNativeHelpers, public nsIObser
 
   nsCOMPtr<nsIThread> clientMonitorThread = nullptr;
   nsCOMPtr<nsIThread> firewallMonitorThread = nullptr;
+  nsCOMPtr<nsIThread> networkStatusMonitorThread = nullptr;
   std::atomic<int32_t> udpPort;
 
   HANDLE shutdownEvent = nullptr;

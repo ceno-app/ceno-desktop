@@ -10,6 +10,7 @@ EXPORTS += [ "OuinetNativeHelpers.h" ]
 UNIFIED_SOURCES += [
     "Firewall.cpp",
     "MetricsGeoTimezone.cpp",
+    "NetworkStatusMonitor.cpp",
     "OuinetNativeHelpers.cpp",
     "ProcessManagement.cpp",
     "VirtualAppData.cpp",

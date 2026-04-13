@@ -39,6 +39,9 @@ void OuinetNativeHelpers::Shutdown() {
     if (clientMonitorThread) {
         clientMonitorThread->Shutdown();
     }
+    if (networkStatusMonitorThread) {
+        networkStatusMonitorThread->Shutdown();
+    }
     if (firewallMonitorThread) {
         firewallMonitorThread->Shutdown();
     }
