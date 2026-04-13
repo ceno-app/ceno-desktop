@@ -1,0 +1,16 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+FINAL_TARGET_FILES.actors += [
+    # Exclude AboutTranslationsChild.sys.mjs, AboutTranslationsParent.sys.mjs
+    # because translations are disabled. tor-browser#44045.
+    "TranslationsChild.sys.mjs",
+    # Exclude TranslationsEngineChild.sys.mjs and
+    # TranslationsEngineParent.sys.mjs because we do not want to include the ML
+    # engine in our build. tor-browser#44045.
+    # NOTE: Whilst we might want to exclude TranslationsParent.sys.mjs, which is
+    # not functional, this module is called from a few places, including
+    # geckoview, which would be difficult to disentangle.
+    "TranslationsParent.sys.mjs",
+]
