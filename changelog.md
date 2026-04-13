@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Fixed an error which prevented disabling of origin_access, proxy_access, injector_access, distributed_cache and logfile at runtime
+- Fixed an error where Ceno Browser would fail to open properly from Ceno Network Client. It used to show an error about unresponsive instance.
 
 ##  [0.0.12] - 2026-04-02
 
