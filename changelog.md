@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.0.13] - 2026-04-13
 
 ### Changed
-- Ceno Network Client icon is colored when it's at least somewhat usable. Connected, degraded or degraded while offline. If it can be used, the connection is colored. Icon is gray if it's in an unusable state, such as starting, exiting or restarting.
+- Ceno Network Client icon is colored when it's at least somewhat usable. Connected, degraded or degraded while offline. If it can be used, the connection is colored. Icon is gray if it's in an unusable state, such as starting, exiting or restarting. Same logic for icon browser's titlebar.
 - Updated Ouinet to [v1.6.6](https://gitlab.com/equalitie/ouinet/-/releases/v1.6.6)
 - Detect when Ceno Network Client is unresponsive and restart it if it does not become responsive in couple of seconds.
 - Updated network state (online/offline) detection in Ceno Browser to match the state of Ceno Network client. Previously browser would use code from Firefox, which only checks if there are any active interfaces. Current code lets Windows decide if the network connection is active. This network status is used to display warnings which could help undertand why the browser cannot load anything.

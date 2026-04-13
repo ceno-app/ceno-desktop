@@ -121,23 +121,26 @@ class OuinetConnectTitlebarStatus {
     const textId = ouinetStageToL10n(state.ouinetStage, state.internetStatus);
     document.l10n.setAttributes(this.#label, textId);
 
+    const coloredIcon = state.ouinetStage === OuinetStages.Connected || state.ouinetStage === OuinetStages.Degraded;
+    if (coloredIcon) {
+      this.#iconNotConnected.hidden = true;
+      this.#iconConnected.hidden = false;
+    } else {
+      this.#iconConnected.hidden = true;
+      this.#iconNotConnected.hidden = false;
+    }
+
     const connected = state.ouinetStage == OuinetStages.Connected;
     if (this.#connected !== connected) {
       this.#node.classList.toggle("ouinet-connect-status-connected", connected);
       this.#connected = connected;
       if (connected) {
         this.#startHiding();
-
-        this.#iconNotConnected.hidden = true;
-        this.#iconConnected.hidden = false;
       } else {
         // We can leave the connected state when we are no longer Bootstrapped
         // because the underlying ouinet process exited early and needs a
         // restart. In this case we want to re-show the status.
         this.#stopHiding();
-
-        this.#iconConnected.hidden = true;
-        this.#iconNotConnected.hidden = false;
       }
     }
   }
