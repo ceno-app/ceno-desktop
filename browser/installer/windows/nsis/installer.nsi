@@ -484,6 +484,15 @@ Section "-Application" APP_IDX
   ${AddDisabledDDEHandlerValues} "FirefoxURL-$AppUserModelID" "$2" "$8,${IDI_DOCUMENT_ZERO_BASED}" \
                                  "${AppRegName} URL" "true"
 
+  ; .ceno file association
+  ${WriteRegStr2} $RegHive "Software\Classes\.ceno" "" "CenoBrowser.eQsatPackage" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\.ceno" "Content Type" "application/x-ceno" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\CenoBrowser.eQsatPackage" "" "eQsat Package" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\CenoBrowser.eQsatPackage" "FriendlyTypeName" "eQsat Package" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\CenoBrowser.eQsatPackage\shell" "" "open" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\CenoBrowser.eQsatPackage\DefaultIcon" "" "$INSTDIR\browser\dot-ceno.ico" 0
+  ${WriteRegStr2} $RegHive "Software\Classes\CenoBrowser.eQsatPackage\shell\open\command" "" "$\"$INSTDIR\${FileMainEXE}$\" $\"%1$\"" 0
+
   ; The keys below can be set in HKCU if needed.
   ${If} $RegHive == "HKLM"
     ; Set the Start Menu Internet and Registered App HKLM registry keys.

@@ -235,6 +235,11 @@ var gBrowserInit = {
     gOuinetConnectTitlebarStatus.init();
     gOuinetConnectUrlbarButton.init();
 
+    const { eQsatToolbar } = ChromeUtils.importESModule(
+      "resource:///modules/eQsatToolbar.sys.mjs"
+    );
+    eQsatToolbar.init(window);
+
     // Certain kinds of automigration rely on this notification to complete
     // their tasks BEFORE the browser window is shown. SessionStore uses it to
     // restore tabs into windows AFTER important parts like gMultiProcessBrowser

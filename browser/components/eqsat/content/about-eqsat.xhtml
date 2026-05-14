@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8"/>
+  <title data-l10n-id="eqsat-title">eQsat Extractor</title>
+  <link rel="localization" href="toolkit/global/ceno-browser.ftl"/>
+<style>
+<![CDATA[
+#include about-eqsat.css
+]]>
+</style>
+</head>
+<body>
+  <h1 data-l10n-id="eqsat-title">eQsat Extractor</h1>
+
+  <div id="loading-card" class="card" hidden="hidden">
+    <h2 id="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</h2>
+
+    <div id="parsingZipFile" data-l10n-id="eqsat-analyzing">Analyzing package...</div>
+    <div id="extracting" data-l10n-id="eqsat-extracting">Extracting files: 0/0</div>
+    <div id="processingDHT" data-l10n-id="eqsat-processingDHT">Processing pages...</div>
+    <div id="progressContainer"><div id="progress-bar"></div></div>
+
+    <div id="cancelButtons">
+      <button id="cancelCurrent" data-l10n-id="eqsat-cancel-current">Cancel</button>
+      <button id="cancelAll" data-l10n-id="eqsat-cancel-all">Cancel All</button>
+    </div>
+
+    <div id="zipFilesQueue">
+      <!-- <template id="zipFileInQueueTemplate"> will be inserted here -->
+    </div>
+  </div>
+
+  <div id="no-results" class="card" data-l10n-id="eqsat-no-results">No eQsat packages extracted. Use the toolbar button to extract eQsat packages.</div>
+
+  <template id="zipFileInQueueTemplate">
+    <div class="zipFileInQueue" id="zipFileInQueue-xxx">
+      <a class="zipQueueRemove" href="#" title="remove from queue">×</a>
+      <span class="zipQueueFile" title="C:\Downloads\www.eQualitie.org-latest.zip">www.eQualitie.org-latest.zip</span>
+    </div>
+  </template>
+
+  <!-- <template id="result-template"> will be inserted here -->
+  <template id="result-template">
+    <div class="card result-card" id="extracted-package-xxx">
+      <h2 class="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</h2>
+
+      <div class="errors">
+        <!-- <template id="error-template"> will be inserted here -->
+        <div class="no-pages error" hidden="hidden" data-l10n-id="eqsat-result-no-pages"></div>
+      </div>
+
+      <ul class="pages">
+        <!-- <template id="page-template"> will be inserted here -->
+      </ul>
+    </div>
+  </template>
+
+  <template id="error-template">
+    <div class="error">
+      www.eQualitie.org-base.zip: metadata file not found
+    </div>
+  </template>
+
+  <template id="page-template">
+    <li class="page"><a href="" target="_blank"></a></li>
+  </template>
+
+<script>
+<![CDATA[
+#include about-eqsat.js
+]]>
+</script>
+</body>
+</html>

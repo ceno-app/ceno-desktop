@@ -10,3 +10,9 @@ LangString add_shortcuts ${LANG_ENGLISH} "&Add Start menu and desktop icons"
 LangString destination_exists ${LANG_ENGLISH} "The destination folder already exists. Do you want to continue anyway?"
 
 LangString uninstall_readme ${LANG_ENGLISH} "Delete entire ${BrandFullName} directory and shortcuts to uninstall."
+LangString uninstall_file_assoc ${LANG_ENGLISH} "To remove the .ceno file association, double-click remove-ceno-association.reg in the uninstall folder before deleting it."
+
+LangString ASSOC_PAGE_TITLE     ${LANG_ENGLISH} "File Association"
+LangString ASSOC_PAGE_SUBTITLE  ${LANG_ENGLISH} "Choose whether to associate .ceno files with Ceno Browser."
+LangString ASSOC_PAGE_TEXT      ${LANG_ENGLISH} "You can make Ceno Browser the default application for eQsat package files (.ceno)."
+LangString ASSOC_PAGE_CHECKBOX  ${LANG_ENGLISH} "Associate .ceno files with Ceno Browser"

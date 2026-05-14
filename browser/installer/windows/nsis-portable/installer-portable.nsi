@@ -128,11 +128,40 @@ InstallDir "$DESKTOP\${BrandFullName}"
 ; !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryExists
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryIsSuitable
 !insertmacro MUI_PAGE_DIRECTORY
+Page custom preAssocPage leaveAssocPage
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
 ; Languages must be defined after pages
 !include "languages.nsh"
+
+Var CreateFileAssoc
+Function preAssocPage
+  !insertmacro MUI_HEADER_TEXT "$(ASSOC_PAGE_TITLE)" "$(ASSOC_PAGE_SUBTITLE)"
+
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Settings" NumFields "2"
+
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Type  "label"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Left  "0"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Right "-1"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Top   "0"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Bottom "20"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 1" Text  "$(ASSOC_PAGE_TEXT)"
+
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Type   "checkbox"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Left   "0"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Right  "-1"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Top    "30"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Bottom "40"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" Text   "$(ASSOC_PAGE_CHECKBOX)"
+  WriteINIStr "$PLUGINSDIR\assocpage.ini" "Field 2" State  "1"
+
+  !insertmacro MUI_INSTALLOPTIONS_INITDIALOG "assocpage.ini"
+  !insertmacro MUI_INSTALLOPTIONS_SHOW
+FunctionEnd
+Function leaveAssocPage
+  !insertmacro MUI_INSTALLOPTIONS_READ $CreateFileAssoc "assocpage.ini" "Field 2" "State"
+FunctionEnd
 
 Function .onInit
   Call CheckRequirements
@@ -159,9 +188,31 @@ FunctionEnd
 Section "Browser" SecBrowser
     SetOutPath "$INSTDIR"
     File /r /x "helper.exe" "${PROGRAM_SOURCE}\*"
+
+    ; eQsat file association (portable = HKCU only)
+    ${If} $CreateFileAssoc == "1"
+      WriteRegStr HKCU "Software\Classes\.ceno" "" "CenoBrowser.eQsatPackage"
+      WriteRegStr HKCU "Software\Classes\.ceno" "Content Type" "application/x-ceno"
+      WriteRegStr HKCU "Software\Classes\CenoBrowser.eQsatPackage" "" "eQsat Package"
+      WriteRegStr HKCU "Software\Classes\CenoBrowser.eQsatPackage" "FriendlyTypeName" "eQsat Package"
+      WriteRegStr HKCU "Software\Classes\CenoBrowser.eQsatPackage\shell" "" "open"
+      WriteRegStr HKCU "Software\Classes\CenoBrowser.eQsatPackage\DefaultIcon" "" "$INSTDIR\browser\dot-ceno.ico"
+      WriteRegStr HKCU "Software\Classes\CenoBrowser.eQsatPackage\shell\open\command" "" '"$INSTDIR\${FileMainEXE}" "%1"'
+    ${EndIf}
+
+    FileOpen $0 "$INSTDIR\uninstall\remove-ceno-association.reg" w
+    FileWrite $0 'Windows Registry Editor Version 5.00$\r$\n$\r$\n'
+    FileWrite $0 '[-HKEY_CURRENT_USER\Software\Classes\.ceno]$\r$\n'
+    FileWrite $0 '[-HKEY_CURRENT_USER\Software\Classes\CenoBrowser.eQsatPackage]$\r$\n'
+    FileClose $0
+
     FileOpen $0 $INSTDIR\uninstall\README.txt w
     IfErrors done
     FileWrite $0 $(uninstall_readme)
+    ${If} $CreateFileAssoc == "1"
+      FileWrite $0 '$\r$\n$\r$\n'
+      FileWrite $0 $(uninstall_file_assoc)
+    ${EndIf}
     FileClose $0
     done:
 SectionEnd

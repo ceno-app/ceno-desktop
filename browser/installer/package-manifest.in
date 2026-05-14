@@ -179,6 +179,7 @@
 #else
 @BINPATH@/Ouinet/client@BIN_SUFFIX@
 #endif
+@BINPATH@/browser/dot-ceno.ico
 
 ; [Components]
 #ifdef ACCESSIBILITY
