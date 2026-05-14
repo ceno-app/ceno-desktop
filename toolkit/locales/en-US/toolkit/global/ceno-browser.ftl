@@ -128,3 +128,34 @@ ceno-preferences-doh-enabled-detailed-desc-2 = Only use your default DNS resolve
 
 ceno-preferences-doh-strict-desc = { -brand-short-name } will always use secure DNS.
 ceno-preferences-doh-strict-detailed-desc-3 = If secure DNS is not available sites will not load or function properly
+
+eqsat-toolbar-button =
+  .label = eQsat Importer
+  .tooltiptext = Import Extracted eQsat Packages
+
+eqsat-title = eQsat Importer
+eqsat-analyzing = Analyzing package...
+eqsat-extracting = Extracting files: { $processed }/{ $total }
+eqsat-processingDHT = Processing pages...
+eqsat-progress = { $percent }%
+
+eqsat-error-zip-file-malformed = Zip file malformed: { $filename }
+eqsat-error-missing-metadata = Metadata file missing or malformed: { $filename }
+eqsat-error-update-without-base = Tried to import update file without importing base file first: { $filename }
+eqsat-error-invalid-filename = Invalid filename: { $filename }
+eqsat-error-unsupported-package-version = Unsupported package version. Please update { -brand-short-name }
+
+eqsat-no-results = No eQsat packages imported. Use the toolbar button to import extracted eQsat packages.
+eqsat-result-no-pages = No pages found in imported package.
+eqsat-queue-remove =
+  .title = Remove { $filename } from queue
+eqsat-cancel-current = Cancel
+eqsat-cancel-all = Cancel All
+
+eqsat-quit-title = eQsat Importer
+eqsat-quit-message = An eQsat package is being imported. Closing now will interrupt the process.
+eqsat-quit-keep-importing = Keep Importing
+eqsat-quit-exit = Exit
+
+eqsat-filepicker-title = Select eQsat Package Files
+eqsat-filepicker-filter = eQsat Packages

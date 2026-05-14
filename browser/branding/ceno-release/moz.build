@@ -11,3 +11,7 @@ export("DIST_SUBDIR")
 
 include("../branding-common.mozbuild")
 FirefoxBranding()
+
+FINAL_TARGET_FILES += [
+    'dot-ceno.ico',
+]

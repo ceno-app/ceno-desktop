@@ -510,6 +510,11 @@ Section "Uninstall"
 
   ${un.RegCleanFileHandler}  ".pdf"   "FirefoxPDF-$AppUserModelID"
 
+  DeleteRegKey HKCU "Software\Classes\.ceno"
+  DeleteRegKey HKCU "Software\Classes\CenoBrowser.eQsatPackage"
+  DeleteRegKey HKLM "Software\Classes\.ceno"
+  DeleteRegKey HKLM "Software\Classes\CenoBrowser.eQsatPackage"
+
   SetShellVarContext all  ; Set SHCTX to HKLM
   ${un.GetSecondInstallPath} "Software\eQualitie" $R9
   ${If} $R9 == "false"
