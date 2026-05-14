@@ -365,6 +365,29 @@ var BrowserCommands = {
               );
             }
           } catch (ex) {}
+
+          // eQsat import
+          const filePath = fp.file?.path?.toLowerCase();
+          if (filePath && (filePath.endsWith(".ceno") || filePath.endsWith(".zip"))) {
+            const { eQsatExtractor } = ChromeUtils.importESModule("resource:///modules/eQsatExtractor.sys.mjs");
+            eQsatExtractor.processZipFiles([fp.file]);
+
+            let eqsatTab = null;
+            for (const tab of gBrowser.tabs) {
+              if (tab.linkedBrowser.currentURI.spec.startsWith("about:eqsat")) {
+                eqsatTab = tab;
+                break;
+              }
+            }
+            if (eqsatTab) {
+              gBrowser.selectedTab = eqsatTab;
+            } else {
+              openTrustedLinkIn("about:eqsat", "tab");
+            }
+            return;
+          }
+          // end of eQsat import
+
           openTrustedLinkIn(fp.fileURL.spec, "current");
         }
       };
@@ -382,6 +405,16 @@ var BrowserCommands = {
           nsIFilePicker.filterHTML |
           nsIFilePicker.filterPDF
       );
+      // eQsat import
+      let eqsatFilterLabel;
+      try {
+        eqsatFilterLabel = window.document.l10n.formatValueSync("eqsat-filepicker-filter");
+      } catch (e) {
+        eqsatFilterLabel = "eQsat Packages";
+      }
+      fp.appendFilter(eqsatFilterLabel, "*.ceno;*.zip");
+      // end of eQsat import
+
       fp.displayDirectory = gLastOpenDirectory.path;
       fp.open(fpCallback);
     } catch (ex) {}

@@ -38,6 +38,7 @@ DIRS += [
     "customizableui",
     "downloads",
     "enterprisepolicies",
+    "eqsat",
     "extensions",
     # Exclude "genai" component. tor-browser#44045.
     "messagepreview",
