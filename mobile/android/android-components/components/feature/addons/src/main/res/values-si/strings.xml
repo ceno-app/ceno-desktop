@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- Description for privacy add-on permission. -->
+  <string name="mozac_feature_addons_permissions_privacy_description">රහස්‍යතා සැකසුම් කියවීම හා සංශෝධනය</string>
+  <!-- Description for all_urls add-on permission. -->
+  <string name="mozac_feature_addons_permissions_all_urls_description">සියළු අඩවි සඳහා ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_one_site_description">%1$s සඳහා ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_sites_in_domain_description">%1$s වසමෙහි අඩවි සඳහා ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!--
+    When an add-on requires access to more than 4 sites, for example the add-on requires access for 5 sites. We will show the first 4 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description,
+    then we will show another collapsed entry saying "Access your data on 1 other site". This entry it's for the singular case, when the add-on is only accessing one extra site.
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_site_description" tools:ignore="PluralsCandidate">අන් අඩවියකට ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!--
+    When an add-on requires access to more than 4 sites, for example the add-on requires access for 6 sites. We will show the first 4 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description,
+    then we will show another collapsed entry saying "Access your data on 2 other sites". This entry it's for the plural case, when the add-on is accessing more than one extra site.
+    %1$d will be replaced by an integer indicating the number of additional hosts for which this web extension is requesting permission.
+  -->
+  <string name="mozac_feature_addons_permissions_extra_sites_description" tools:ignore="PluralsCandidate">අන් අඩවි %1$d කට ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!--
+    When an add-on requires access to more than 4 domains, for example the add-on requires access for 5 domains. We will show the first 4 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description,
+    then we will show another collapsed entry saying "Access your data on 1 other domain". This entry it's for the singular case, when the add-on is only accessing one extra domain.
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_domain_description" tools:ignore="PluralsCandidate">අන් වසමකට ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!--
+    When an add-on requires access to more than 4 domains, for example the add-on requires access for 6 domains. We will show the first 4 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description,
+    then we will show another collapsed entry saying "Access your data on 2 other domains". This entry it's for the plural case, when the add-on is accessing more than one extra domain.
+    %1$d will be replaced by an integer indicating the number of additional domains for which this web extension is requesting permission.
+  -->
+  <string name="mozac_feature_addons_permissions_extra_domains_description_plural" tools:ignore="PluralsCandidate">අන් වසම් %1$d කට ඔබගේ දත්ත වෙත ප්‍රවේශය</string>
+  <!-- Content description for a permission item, for an installed add-on details page. %1$s will be replaced with the permission text name, %2$d will be replaced with the permission position in the list and %3$d will be replaced with the total number of permissions in the list.Taking as an example "Read and modify privacy settings" the whole text will read Read and modify privacy settings, 2 of 6. -->
+  <string name="mozac_feature_addons_permissions_content_description_item">%3$d න් %1$s, %2$d</string>
+  <!-- Description for tabs add-on permission. -->
+  <string name="mozac_feature_addons_permissions_tabs_description">අතිරික්සුවේ පටිති වෙත ප්‍රවේශය</string>
+  <!-- Description for navigation permission. -->
+  <string name="mozac_feature_addons_permissions_web_navigation_description">යාත්‍රණය අතරතුර අතිරික්සුවේ ක්‍රියාකාරකම් වෙත ප්‍රවේශය</string>
+  <!-- Description for bookmarks permission. -->
+  <string name="mozac_feature_addons_permissions_bookmarks_description">පොත්යොමු කියවීම හා සංශෝධනය</string>
+  <!-- Description for browser_setting permission. -->
+  <string name="mozac_feature_addons_permissions_browser_setting_description">අතිරික්සුවේ සැකසුම් කියවීම හා සංශෝධනය</string>
+  <!-- Description for browser_data permission. -->
+  <string name="mozac_feature_addons_permissions_browser_data_description">මෑත පිරික්සුම් ඉතිහාසය, දත්තකඩ හා ආශ්‍රිත දත්ත මැකීම</string>
+  <!-- Description for clipboard_read permission. -->
+  <string name="mozac_feature_addons_permissions_clipboard_read_description">පසුරු පුවරුවෙන් දත්ත ගැනීම</string>
+  <!-- Description for clipboard_write permission. -->
+  <string name="mozac_feature_addons_permissions_clipboard_write_description">පසුරු පුවරුවට දත්ත ආදාන කරන්න</string>
+  <!-- Description for declarativeNetRequest permission. -->
+  <string name="mozac_feature_addons_permissions_declarative_net_request_description">ඕනෑම පිටුවක අන්තර්ගත අවහිරය</string>
+  <!-- Description for declarativeNetRequestFeedback permission. -->
+  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">පිරික්සුම් ඉතිහාසය කියවීම</string>
+  <!-- Description for downloads permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_description">ගොනු බාගැනීම සහ අතිරික්සුවේ බාගැනීම් ඉතිහාසය කියවීම, වෙනස් කිරීම</string>
+  <!-- Description for downloads_open permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_open_description">ඔබගේ පරිගණකයට බාගත වූ ගොනු ඇරීම</string>
+  <!-- Description for find permission. -->
+  <string name="mozac_feature_addons_permissions_find_description">සියළුම විවෘත පටිතිවල පෙළ කියවීම</string>
+  <!-- Description for geolocation permission. -->
+  <string name="mozac_feature_addons_permissions_geolocation_description">ඔබගේ ස්ථානයට ප්‍රවේශය</string>
+  <!-- Description for history permission. -->
+  <string name="mozac_feature_addons_permissions_history_description">පිරික්සුම් ඉතිහාසයට ප්‍රවේශය</string>
+  <!-- Description for management permission. -->
+  <string name="mozac_feature_addons_permissions_management_description">දිගු භාවිතය නිරීක්‍ෂණය හා තේමා කළමනාකරණය</string>
+  <!-- Description for native_messaging permission. -->
+  <string name="mozac_feature_addons_permissions_native_messaging_description">මෙය හැර වෙනත් යෙදුම් සමඟ පණිවිඩ හුවමාරු කිරීම</string>
+  <!-- Description for notifications permission. -->
+  <string name="mozac_feature_addons_permissions_notifications_description">ඔබට දැනුම්දීම් පෙන්වන්න</string>
+  <!-- Description for proxy permission. -->
+  <string name="mozac_feature_addons_permissions_proxy_description">අතිරික්සුවේ ප්‍රතියුක්ත සැකසුම් පාලනය</string>
+  <!-- Description for sessions permission. -->
+  <string name="mozac_feature_addons_permissions_sessions_description">මෑත දී වසා දැමූ පටිති වෙත ප්‍රවේශය</string>
+  <!-- Description for tab_hide permission. -->
+  <string name="mozac_feature_addons_permissions_tab_hide_description">අතිරික්සුවේ පටිති සැඟවීම හා පෙන්වීම</string>
+  <!-- Description for top_sites permission. -->
+  <string name="mozac_feature_addons_permissions_top_sites_description">පිරික්සුම් ඉතිහාසයට ප්‍රවේශය</string>
+  <!-- Description for devtools permission. -->
+  <string name="mozac_feature_addons_permissions_devtools_description">විවෘත පටිතිවල ඔබගේ දත්ත වෙත ප්‍රවේශයට සංවර්ධක මෙවලම් විස්තීරණය</string>
+  <!-- The version on of add-on. -->
+  <string name="mozac_feature_addons_version">අනුවාදය</string>
+  <!-- The author of an add-on. -->
+  <string name="mozac_feature_addons_author">කර්තෘ</string>
+  <!-- The last date that the add-on was updated. -->
+  <string name="mozac_feature_addons_last_updated">අවසාන යාවත්කාලය</string>
+  <!-- The developer website (Homepage) of the add-on. -->
+  <string name="mozac_feature_addons_home_page">මුල් පිටුව</string>
+  <!-- A link where users can find more information about add-ons permissions. -->
+  <string name="mozac_feature_addons_learn_more">අවසර ගැන තව දැනගන්න</string>
+  <!-- The rating of the add-on. -->
+  <string name="mozac_feature_addons_rating">ඇගැයුම</string>
+  <!-- A link that points to the detail page of the extension. -->
+  <string name="mozac_feature_addons_more_info_link_2">මෙම දිගුව ගැන</string>
+  <!-- The settings of the add-on. -->
+  <string name="mozac_feature_addons_settings">සැකසුම්</string>
+  <!-- Indicates the add-on is enabled. -->
+  <string name="mozac_feature_addons_settings_on">සක්‍රිය</string>
+  <!-- Indicates the add-on is allowed in private browsing mode. -->
+  <string name="mozac_feature_addons_settings_allow_in_private_browsing">පෞද්. පිරික්සීමෙහි ඉඩදෙන්න</string>
+  <!-- Indicates the add-on is allowed in private browsing mode. -->
+  <string name="mozac_feature_addons_settings_run_in_private_browsing">පෞද්. පිරික්සීමෙහි ධාවනය</string>
+  <!-- This is displayed when the add-on is not allowed to run in private browsing. -->
+  <string name="mozac_feature_addons_not_allowed_in_private_browsing">පෞද්. කවුළු තුළ ඉඩ නොදේ</string>
+  <!-- Indicates the add-on is enabled. -->
+  <string name="mozac_feature_addons_enabled">සබලයි</string>
+  <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the installed section. -->
+  <string name="mozac_feature_addons_installed_section">ස්ථාපිතයි</string>
+  <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the recommended section. -->
+  <string name="mozac_feature_addons_recommended_section">නිර්දේශිත</string>
+  <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the not yet supported section. -->
+  <string name="mozac_feature_addons_unsupported_section">තවමත් සහාය නොදක්වයි</string>
+  <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the not yet available section. -->
+  <string name="mozac_feature_addons_unavailable_section">තවමත් නොතිබේ</string>
+  <!-- This is displayed in a page where the user can see the installed and recommended(not installed yet) add-ons, this string indicates the disabled section. -->
+  <string name="mozac_feature_addons_disabled_section">අබලයි</string>
+  <!-- Displays a page with all the details of an add-on. -->
+  <string name="mozac_feature_addons_details">විස්තර</string>
+  <!-- Displays a page with all the permissions of an add-on. -->
+  <string name="mozac_feature_addons_permissions">අවසර</string>
+  <!-- This is a button to remove (i.e. uninstall) an add-on. -->
+  <string name="mozac_feature_addons_remove">ඉවත් කරන්න</string>
+  <!-- This is a button to report an add-on. -->
+  <string name="mozac_feature_addons_report">වාර්තා කරන්න</string>
+  <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_permissions_dialog_title">%1$s එක් කරන්නද?</string>
+  <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_dialog_title">%1$s අතිරේක අවසර ඉල්ලා සිටියි.</string>
+  <!-- This is the subtitle of a dialog that asks the users if they want to install or not an add-on, the subtitle lists the permissions that this add-on requires, the permissions will dynamically be listed after the ":". -->
+  <string name="mozac_feature_addons_permissions_dialog_subtitle">එයට ඔබගේ අවසරය අවශ්‍ය වන්නේ:</string>
+  <!-- This is the subtitle of a dialog that asks the users to grant optional permissions, the subtitle lists the permissions that this add-on requests, the permissions will dynamically be listed after the ":". -->
+  <string name="mozac_feature_addons_optional_permissions_dialog_subtitle">වුවමනා වන්නේ:</string>
+  <!-- This is a button to add (install) an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_add">එකතු</string>
+  <!-- This is a button to allow the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_allow">ඉඩ දෙන්න</string>
+  <!-- This is a button to deny the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_deny">ප්‍රතික්‍ෂේප</string>
+  <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
+  <string name="mozac_feature_addons_permissions_dialog_learn_more">තව දැනගන්න</string>
+  <!-- This is a button to cancel the add-on installation . -->
+  <string name="mozac_feature_addons_permissions_dialog_cancel">අවලංගු</string>
+  <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_install_addon_content_description_2">%1$s ස්ථාපනය කරන්න</string>
+  <!-- This is the label of a button to cancel an ongoing add-on installation. -->
+  <string name="mozac_feature_addons_install_addon_dialog_cancel">අවලංගු</string>
+  <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
+  <string name="mozac_feature_addons_user_rating_count_2">සමාලෝචන: %1$s</string>
+  <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->
+  <string name="mozac_feature_addons_rating_content_description_2">ඇගැයීම: 5 න් %1$.02f</string>
+  <!-- This is the title of page where all the add-ons are listed -->
+  <string name="mozac_feature_addons_addons">එක්කහු</string>
+  <!-- Label for add-ons sub menu item for add-ons manager -->
+  <string name="mozac_feature_addons_addons_manager">එක්කහු කළමනාකරු</string>
+  <!-- The title of the "crash" notification in the extensions manager -->
+  <string name="mozac_feature_extensions_manager_notification_title_text">දිගු තාවකාලිකව අබල කර ඇත</string>
+  <!-- Button to re-enable the extensions in the "crash" notification -->
+  <string name="mozac_feature_extensions_manager_notification_restart_button">දිගු යළි අරඹන්න</string>
+  <!-- Button in the extensions manager that opens AMO in a tab -->
+  <string name="mozac_feature_addons_find_more_extensions_button_text">තවත් දිගු සොයන්න</string>
+  <!-- The label of the allow button, this will be shown to the user when an add-on needs new permissions, with the button the user will indicate that they want to accept the new permissions and update the add-on -->
+  <string name="mozac_feature_addons_updater_notification_allow_button">ඉඩ දෙන්න</string>
+  <!-- The label of the deny button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
+  <string name="mozac_feature_addons_updater_notification_deny_button">ප්‍රතික්‍ෂේප</string>
+  <!-- The tile of the notification, this will be shown to the user when an add-on needs new permissions, to be updated. %1$s is the name of the add-ons -->
+  <string name="mozac_feature_addons_updater_notification_title">%1$s සඳහා නව යාවත්කාලයක් තිිබේ</string>
+  <!-- The content of the notification, this will be shown when an add-on needs new permissions, to be updated. %1$d is the amount of new permissions -->
+  <string name="mozac_feature_addons_updater_notification_content" tools:ignore="PluralsCandidate">නව අවසර %1$d ක් අවශ්‍යයි</string>
+  <!-- The content of the notification displayed when an add-on needs a new permission -->
+  <string name="mozac_feature_addons_updater_notification_content_singular">නව අවසරයක් අවශ්‍යයි</string>
+  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
+  <string name="mozac_feature_addons_updater_notification_channel_2">දිගු යාවත්කාල</string>
+  <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
+  <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">සහාය දක්වන එක්කහු සෝදිසිකරු</string>
+  <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->
+  <string name="mozac_feature_addons_supported_checker_notification_title" tools:ignore="UnusedResources">නව එක්කහුවක් තිබේ</string>
+  <!-- The tile of the notification, this will be shown to the user when more than one newly supported add-ons are available. -->
+  <string name="mozac_feature_addons_supported_checker_notification_title_plural" tools:ignore="UnusedResources">නව එක්කහු තිබේ</string>
+  <!-- The content of the notification, this will be shown to the user when one newly supported add-on is available. %1$s is the add-on name and %2$s is the app name (in most cases Firefox). -->
+  <string name="mozac_feature_addons_supported_checker_notification_content_one">%2$s වෙත %1$s එක් කරන්න</string>
+  <!-- The content of the notification, this will be shown to the user when two newly supported add-ons are available. %1$s is the first add-on name. %2$s is the second add-on name. %3$s is the app name (in most cases Firefox). -->
+  <string name="mozac_feature_addons_supported_checker_notification_content_two">%3$s වෙත %1$s හා %2$s එක් කරන්න</string>
+  <!-- The content of the notification, this will be shown to the user when more than two newly supported add-ons are available. %1$s is the app name (in most cases Firefox). -->
+  <string name="mozac_feature_addons_supported_checker_notification_content_more_than_two">%1$s වෙත තේමාව යොදන්න</string>
+  <!-- This is the caption for not yet supported screen caption -->
+  <string name="mozac_feature_addons_not_yet_supported_caption2">දැනට නිර්දේශිත දිගුවල ප්‍රාරම්භ තේරීමක් සඳහා සහාය තනමින් සිටියි.</string>
+  <!-- This is the caption for the extension installation progress overlay -->
+  <string name="mozac_extension_install_progress_caption">දිගුව බාගැනෙමින් හා සත්‍යාපනය වෙමින්…</string>
+  <!-- Error shown when something unexpected happened while trying to get the extension list from the server -->
+  <string name="mozac_feature_addons_failed_to_query_extensions">දිගු විමසීමට අසමත් විය!</string>
+  <!-- Error shown when unable to find a translation for an add-on field. %1$s is the locale of the user and %2$s is the default language of the add-on -->
+  <string name="mozac_feature_addons_failed_to_translate">%1$s සඳහා හෝ පෙරනිමි භාෂාව %2$s සඳහා පරිවර්තනය හමු නොවුණි</string>
+  <!-- Text shown after successfully installed an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_successfully_installed">%1$s සාර්ථකව ස්ථාපිතයි</string>
+  <!-- Text shown after failing to install an add-on (when add-on type isn't supported or an unknown has errored). %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_install">%1$s ස්ථාපනයට අසමත් විය</string>
+  <!-- Text shown after failing to install an extension for which we don't have its name (when add-on type isn't supported or an unknown has errored). -->
+  <string name="mozac_feature_addons_extension_failed_to_install">මෙම දිගුව ස්ථාපනයට අසමත් විය.</string>
+  <!-- Text shown when installing an add-on has failed. -->
+  <string name="mozac_feature_addons_cant_install_extension">දිගුව ස්ථාපනයට නොහැකිය</string>
+  <!-- Text shown when attempting to install an extension and a network error happened. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_network_error">සම්බන්ධතාවට බාධා වීමක් නිසා දිගුව බාගැනීමට නොහැකි විය.</string>
+  <!-- Text shown when attempting to install an extension and the downloaded file is corrupted. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_corrupt_error">හානි වූ බව පෙනෙන නිසා මෙම දිගුව ස්ථාපනයට නොහැකිය.</string>
+  <!-- Text shown when attempting to install an add-on and an error occurred because the extension was not signed. -->
+  <string name="mozac_feature_addons_extension_failed_to_install_not_signed_error">සත්‍යාපනය නොකළ දිගුවක් බැවින් ස්ථාපනයට නොහැකිය.</string>
+  <!-- Text shown when attempting to install an add-on and an error occurred because the extension was incompatible. %1$s is the add-on name, %2$s is the app name and %3$s is the app version. -->
+  <string name="mozac_feature_addons_failed_to_install_incompatible_error">%2$s %3$s සමඟ නොගැළපෙන නිසා %1$s ස්ථාපනයට නොහැකිය.</string>
+  <!-- Text shown after successfully enabled an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_successfully_enabled">%1$s සාර්ථකව සබල විය</string>
+  <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_enable">%1$s සබල වීමට අසමත් විය</string>
+  <!-- Text shown after successfully disabled an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_successfully_disabled">%1$s සාර්ථකව අබල විය</string>
+  <!-- Text shown after failed to disable an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_disable">%1$s අබල වීමට අසමත් විය</string>
+  <!-- Text shown after successfully uninstalled an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_successfully_uninstalled">%1$s සාර්ථකව අස්ථාපිතයි</string>
+  <!-- Text shown after failed to uninstall an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_uninstall">%1$s අස්ථාපනයට අසමත් විය</string>
+  <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_successfully_removed" tools:ignore="UnusedResources">%1$s සාර්ථකව ඉවත් කෙරිණි</string>
+  <!-- Text shown after failed to remove an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_remove" tools:ignore="UnusedResources">%1$s ඉවත් කිරීමට අසමත් විය</string>
+  <!-- Label shown to indicate that the add-on was migrated from a previous version of the app. %1$s is the app name most of the case it will be Firefox. -->
+  <string name="mozac_feature_addons_migrated_from_a_previous_version_label" tools:ignore="UnusedResources">මෙම එක්කහුව %1$s පෙර අනුවාදයකින් සංක්‍රමණය විය</string>
+  <!-- Text shown in not yet supported add-ons section. -->
+  <string name="mozac_feature_addons_unsupported_caption_2">දිගු 1</string>
+  <!-- Text shown in not yet supported add-ons section - plural. %1$s is the number of unsupported extensions. -->
+  <string name="mozac_feature_addons_unsupported_caption_plural_2">දිගු %1$s</string>
+  <!-- Text link to a sumo page for learning more about unsupported add-ons. -->
+  <string name="mozac_feature_addons_unsupported_learn_more">තව දැනගන්න</string>
+  <!-- Displayed in the "Status" field for the updater when an add-on has been correctly updated. -->
+  <string name="mozac_feature_addons_updater_status_successfully_updated">සාර්ථකව යාවත්කාල විය</string>
+  <!-- Displayed in the "Status" field for the updater when an add-on has no updates available. -->
+  <string name="mozac_feature_addons_updater_status_no_update_available">යාවත්කාල නැත</string>
+  <!-- Displayed in the "Status" field for the updater when there was an error during the add-on update. -->
+  <string name="mozac_feature_addons_updater_status_error">දෝෂයකි</string>
+  <!-- Text shown in a dialog that displays information about the last attempt to update an add-on. This is the title of the dialog. -->
+  <string name="mozac_feature_addons_updater_dialog_title">යාවත්කාල තොරතුරු</string>
+  <!-- Label in the dialog displaying information for the last attempt to update add-ons. It's followed by the date of the last attempt. -->
+  <string name="mozac_feature_addons_updater_dialog_last_attempt">අවසාන උත්සාහය:</string>
+  <!-- Displayed in the "Status" field for the updater when an add-on has been correctly updated -->
+  <string name="mozac_feature_addons_updater_dialog_status">තත්‍වය:</string>
+  <!-- Text shown in the dialog when add-on installation is completed. %1$s is the add-on name. %2$s is the app name. -->
+  <string name="mozac_feature_addons_installed_dialog_title">%2$s වෙත %1$s එක් කර ඇත</string>
+  <!-- Confirmation button text for the dialog when add-on installation is completed. -->
+  <string name="mozac_feature_addons_installed_dialog_okay_button_2">හරි</string>
+  <!-- "Learn more" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_learn_more">තව දැනගන්න</string>
+  <!-- "See details" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_see_details">විස්තර බලන්න</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on hasn't been signed correctly. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_status_unsigned">%1$s ආරක්‍ෂිත බව සත්‍යාපනයට නොහැකි වූ බැවින් අබල කර ඇත.</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on isn't compatible with the application version. %1$s is the add-on name, %2$s is the app name and %3$s is the app version. -->
+  <string name="mozac_feature_addons_status_incompatible">%1$s ඔබගේ %2$s අනුවාදයට (%3$s) නොගැළපේ.</string>
+</resources>
