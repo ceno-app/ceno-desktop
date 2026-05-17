@@ -66,7 +66,7 @@ HWND createGuiWindow(HINSTANCE _hInstance, ArgvConverter *_args) {
     hInstance = _hInstance;
     args = _args;
 
-    cenoExecutablePath = args->ceno_network_client_path.value().parent_path().parent_path().append(L"ceno-alpha.exe");
+    cenoExecutablePath = args->ceno_network_client_path.value().parent_path().parent_path().append(L"ceno.exe");
     if (args->repo_path.has_value()) {
         exitCookie = args->repo_path.value() / "exitCookie";
         std::error_code ec;
