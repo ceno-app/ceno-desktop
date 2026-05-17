@@ -1,4 +1,4 @@
-. $topsrcdir/browser/config/mozconfigs/ceno-alpha
+. $topsrcdir/browser/config/mozconfigs/ceno-release
 
 ac_add_options --with-redist
 
