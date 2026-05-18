@@ -131,7 +131,9 @@ class OuinetConnectUrlbarButton {
       this.#inAboutCenoHomeTab ||
       ouinetStage === OuinetStages.Connected ||
       ouinetStage === OuinetStages.Degraded ||
-      ouinetStage === OuinetStages.OuinetStages ||
+      ouinetStage === OuinetStages.ConnectingToNetwork ||
+      ouinetStage === OuinetStages.Exiting ||
+      ouinetStage === OuinetStages.Restarting ||
       ouinetStage === OuinetStages.StartingProcess;
     this.#button.hidden = hide;
     if (hide && hadFocus) {
