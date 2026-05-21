@@ -12,7 +12,7 @@ OUINET_OUTPUT_DIR = $(OBJDIR)/dist/bin/Ouinet
 $(OUINET_OUTPUT_DIR)/libclient_lib.dll.a:
 	@echo "Downloading Ouinet files..."
 	@mkdir -p $(OUINET_OUTPUT_DIR)
-	@cd $(DIST)/bin/Ouinet && $(PYTHON3) download_ouinet.py $(OUINET_OUTPUT_DIR)
+	$(PYTHON3) $(topsrcdir)/toolkit/ouinet/download_ouinet.py $(OUINET_OUTPUT_DIR)
 
 export:: $(OUINET_OUTPUT_DIR)/libclient_lib.dll.a
 
