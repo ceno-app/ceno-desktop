@@ -27,6 +27,12 @@ ac_add_options --disable-eme
 # tor-browser#320: Temporarily disable until we resolve the mingw problems.
 ac_add_options --disable-default-browser-agent
 
+ac_add_options --with-base-browser-version=dev-build
+
+ac_add_options --with-l10n-base="c:\path\to\firefox-l10n"
+
+ac_add_options --disable-artifact-builds
+
 ###############################
 # Tor/Ceno build differences. #
 # From [Tor Wiki](https://gitlab.torproject.org/tpo/applications/wiki/-/wikis/Development-Information/Tor-Browser/Windows-dev-builds)
