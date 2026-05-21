@@ -25,6 +25,15 @@ ac_add_options --disable-notification-server
 # Let's make sure no preference is enabling either Adobe's or Google's CDM.
 ac_add_options --disable-eme
 
+ac_add_options --with-base-browser-version=dev-build
+
+MOZ_CHROME_MULTILOCALE="ar de es-ES fa fr ko my nb-NO pl pt-BR pt-PT ru sv-SE ta tr uk ur zh-CN zh-TW"
+export MOZ_CHROME_MULTILOCALE
+
+ac_add_options --with-l10n-base="c:\path\to\firefox-l10n"
+
+ac_add_options --disable-artifact-builds
+
 ###############################
 # Tor/Ceno build differences. #
 # From [Tor Wiki](https://gitlab.torproject.org/tpo/applications/wiki/-/wikis/Development-Information/Tor-Browser/Windows-dev-builds)
