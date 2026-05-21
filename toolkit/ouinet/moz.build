@@ -2,7 +2,6 @@
 # vim: set filetype=python:
 
 FINAL_TARGET_FILES["Ouinet"] += [
-    "download_ouinet.py",
     "metrics-server-cacert.pem",
     "ssl-inj-cert.pem",
 ]
