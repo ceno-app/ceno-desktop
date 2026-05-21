@@ -56,6 +56,13 @@ CUSTOM_UI = \
 	nsisui.exe \
 	$(NULL)
 
+include $(topsrcdir)/build/codesign-options-parser.mk
+
+sign-installers: installer
+	@echo "Signing installers..."
+	@echo $(SIGN_CALL) --input "$(DIST)/install/sea"
+	$(SIGN_CALL) --input "$(DIST)/install/sea"
+
 $(CONFIG_DIR)/setup.exe::
 	$(INSTALL) $(addprefix $(MOZILLA_DIR)/toolkit/mozapps/installer/windows/nsis/,$(TOOLKIT_NSIS_FILES)) $(CONFIG_DIR)
 	$(INSTALL) $(addprefix $(MOZILLA_DIR)/other-licenses/nsis/Plugins/,$(CUSTOM_NSIS_PLUGINS)) $(CONFIG_DIR)
