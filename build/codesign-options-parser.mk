@@ -1,3 +1,5 @@
+include $(DEPTH)/.mozconfig-client-mk
+
 SIGNING_MODE ?= autosign
 
 SIGN_CALL := $(PYTHON3) $(topsrcdir)/build/codesign.py \

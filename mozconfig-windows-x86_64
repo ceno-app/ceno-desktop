@@ -29,6 +29,9 @@ ac_add_options --disable-default-browser-agent
 
 ac_add_options --with-base-browser-version=dev-build
 
+MOZ_CHROME_MULTILOCALE=$(cat locales)
+export MOZ_CHROME_MULTILOCALE
+
 ac_add_options --with-l10n-base="c:\path\to\firefox-l10n"
 
 ac_add_options --disable-artifact-builds
