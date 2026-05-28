@@ -35,6 +35,8 @@ DEFINES["WIN32_LEAN_AND_MEAN"] = True
 DEFINES["_UNICODE"] = True
 DEFINES["_WINDOWS"] = True
 
+DEFINES["MOZ_APP_NAME"] = '"%s"' % CONFIG["MOZ_APP_NAME"]
+
 DisableStlWrapping()
 
 CXXFLAGS += [ "/std:c++20" ]
