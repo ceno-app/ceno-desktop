@@ -23,6 +23,8 @@ add_definitions(
     -DWIN32_LEAN_AND_MEAN=1
     -D_WINDOWS=1
     -DWIN32_EXECUTABLE=1
+
+    -DMOZ_APP_NAME="ceno"
 )
 
 add_executable(ceno-network-client WIN32
