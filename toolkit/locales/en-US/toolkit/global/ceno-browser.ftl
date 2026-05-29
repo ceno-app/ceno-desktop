@@ -139,11 +139,14 @@ eqsat-extracting = Extracting files: { $processed }/{ $total }
 eqsat-processingDHT = Processing pages...
 eqsat-progress = { $percent }%
 
-eqsat-error-zip-file-malformed = Zip file malformed: { $filename }
-eqsat-error-missing-metadata = Metadata file missing or malformed: { $filename }
-eqsat-error-update-without-base = Tried to import update file without importing base file first: { $filename }
+eqsat-error-zip-file-malformed = Package file error
+
+eqsat-error-update-without-base = Base package not found. Import { $filename }
+eqsat-error-update-without-base-filename-unknown = Base package not found. Import base package first.
+
 eqsat-error-invalid-filename = Invalid filename: { $filename }
-eqsat-error-unsupported-package-version = Unsupported package version. Please update { -brand-short-name }
+eqsat-error-package-too-old = Outdated package version.
+eqsat-error-package-too-new = Unsupported package version. Please update { -brand-short-name }
 
 eqsat-no-results = No eQsat packages imported. Use the toolbar button to import extracted eQsat packages.
 eqsat-result-no-pages = No pages found in imported package.

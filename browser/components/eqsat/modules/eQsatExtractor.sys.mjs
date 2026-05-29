@@ -6,10 +6,11 @@ const SUPPORTED_PACKAGE_VERSION = 1;
 // Keep eQsatExtractorErrors in sync with about-eqsat.js
 const eQsatExtractorErrors = Object.freeze({
   ZipFileMalformed: "eqsat-error-zip-file-malformed",
-  MissingMetadata: "eqsat-error-missing-metadata",
   UpdateWithoutBase: "eqsat-error-update-without-base",
+  UpdateWithoutBase_FilenameUnknown: "eqsat-error-update-without-base-filename-unknown",
   InvalidFilename: "eqsat-error-invalid-filename",
-  UnsupportedPackageVersion: "eqsat-error-unsupported-package-version",
+  PackageTooOld: "eqsat-error-package-too-old",
+  PackageTooNew: "eqsat-error-package-too-new",
 });
 
 // Keep eQsatExtractorStage in sync with about-eqsat.js
@@ -140,11 +141,19 @@ class eQsatExtractorClass {
     await this.#notifyProgress();
 
     result.dhtGroups = [];
+
+    const domainsWithMissingWWW = Services.prefs.getStringPref("ceno.eqsat.add_www_subdomain", "").split(",").filter(d => d.length > 0);
     try {
       const groupsText = readZipEntryText(zipReader, "groups");
-      for (const rawLine of groupsText.split(/\r?\n|\r/)) {
-        const line = rawLine.trim();
+      for (let line of groupsText.split(/\r?\n|\r/)) {
+        line = line.trim();
         if (line) {
+          for (const domain of domainsWithMissingWWW) {
+            if (line.startsWith(domain)) {
+              line = "www." + line;
+              break;
+            }
+          }
           result.dhtGroups.push(line);
         }
       }
@@ -189,12 +198,12 @@ class eQsatExtractorClass {
       metadata = JSON.parse(jsonText);
     } catch (e) {
       console.error(e);
-      throw new Error(eQsatExtractorErrors.MissingMetadata);
+      throw new Error(eQsatExtractorErrors.PackageTooOld);
     }
     if (typeof metadata.id !== "string" || typeof metadata.type !== "string"
       || (metadata.type !== "update" && metadata.type !== "base")
     ) {
-      throw new Error(eQsatExtractorErrors.MissingMetadata);
+      throw new Error(eQsatExtractorErrors.PackageTooOld);
     }
 
     if (typeof metadata.version === "string") {
@@ -204,7 +213,7 @@ class eQsatExtractorClass {
       metadata.version = 1;
     }
     if (metadata.version !== SUPPORTED_PACKAGE_VERSION) {
-      throw new Error(eQsatExtractorErrors.UnsupportedPackageVersion);
+      throw new Error(eQsatExtractorErrors.PackageTooNew);
     }
 
     metadata.packageIdFile = PathUtils.join(this.#eQsatExtractedPackagesDir, metadata.id);
@@ -329,7 +338,7 @@ class eQsatExtractorClass {
           continue;
         }
       } catch (e) {
-        if (e.result === Cr.NS_ERROR_FILE_CORRUPTED || e.result === 0x80520001) {
+        if (e.result === Cr.NS_ERROR_FILE_CORRUPTED || e.result === 0x80520001 || e.result === 0x80004005) {
           result.errors.push({ file: zipFile.fileName, error: eQsatExtractorErrors.ZipFileMalformed});
         } else if (e.message === eQsatExtractorErrors.UpdateWithoutBase
             && this.#state.zipFileIdQueue.length > 0
@@ -343,6 +352,26 @@ class eQsatExtractorClass {
           attemptedBaselessUpdates.add(readdedZipFile.id);
           this.#state.zipFileIdQueue.push(readdedZipFile.id);
           this.#zipFileQueueStore.set(readdedZipFile.id, readdedZipFile);
+        } else if (e.message === eQsatExtractorErrors.UpdateWithoutBase) {
+          let expectedBaseFileName = null;
+          const suffix_1 = '-latest.zip';
+          const suffix_2 = '-latest.ceno';
+          const needle = '-latest ';
+          let needlePos = -1;
+          if (zipFile.fileName.endsWith(suffix_1)) {
+            expectedBaseFileName = zipFile.fileName.slice(0, 0 - suffix_1.length) + '-base.zip';
+          }
+          else if (zipFile.fileName.endsWith(suffix_2)) {
+            expectedBaseFileName = zipFile.fileName.slice(0, 0 - suffix_2.length) + '-base.ceno';
+          }
+          else if ((needlePos = zipFile.fileName.indexOf(needle)) !== -1) {
+            const extensionIsZip = zipFile.fileName.endsWith('.zip');
+            expectedBaseFileName = zipFile.fileName.slice(0, needlePos) + '-base' + (extensionIsZip ? '.zip' : '.ceno');
+          }
+          result.errors.push({
+            file: expectedBaseFileName,
+            error: expectedBaseFileName !== null ? e.message : eQsatExtractorErrors.UpdateWithoutBase_FilenameUnknown,
+          });
         } else {
           result.errors.push({ file: zipFile.fileName, error: e.message });
         }

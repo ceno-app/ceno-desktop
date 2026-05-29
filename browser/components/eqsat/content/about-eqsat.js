@@ -1,10 +1,11 @@
 // Keep eQsatExtractorErrors in sync with eQsatExtractor.sys.mjs
 const eQsatExtractorErrors = Object.freeze({
   ZipFileMalformed: "eqsat-error-zip-file-malformed",
-  MissingMetadata: "eqsat-error-missing-metadata",
   UpdateWithoutBase: "eqsat-error-update-without-base",
+  UpdateWithoutBase_FilenameUnknown: "eqsat-error-update-without-base-filename-unknown",
   InvalidFilename: "eqsat-error-invalid-filename",
-  UnsupportedPackageVersion: "eqsat-error-unsupported-package-version",
+  PackageTooOld: "eqsat-error-package-too-old",
+  PackageTooNew: "eqsat-error-package-too-new",
 });
 
 // Keep eQsatExtractorStage in sync with eQsatExtractor.sys.mjs
@@ -178,7 +179,7 @@ function syncResultCards(resultIds) {
       link.textContent = decodeURI(page);
       pagesContainer.appendChild(pageElement);
     }
-    if (item.dhtGroups.length === 0) {
+    if (item.dhtGroups.length === 0 && item.errors.length === 0) {
       newResultElement.querySelector(".no-pages").hidden = false;
     }
 
