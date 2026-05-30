@@ -27,7 +27,6 @@ const dom = Object.seal({
   zipFilesQueueTemplate: null,
   activeExtractionFilename: null,
   loadingCard: null,
-  noResults: null,
   progressBar: null,
   progressContainer: null,
   parsing: null,
@@ -59,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dom.loadingCard = document.getElementById("loading-card");
 
-  dom.noResults = document.getElementById("no-results");
   dom.progressBar = document.getElementById('progress-bar');
   dom.progressContainer = document.getElementById('progressContainer');
   dom.parsing = document.getElementById('parsingZipFile');
@@ -70,6 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
   dom.cancelAll = document.getElementById('cancelAll');
   dom.cancelCurrent.addEventListener("click", () => sendAction("cancelCurrentExtraction"));
   dom.cancelAll.addEventListener("click", () => sendAction("cancelAll"));
+
+  document.getElementById("experimental-dismiss").addEventListener("click", () => {
+    document.getElementById("experimental").hidden = true;
+  });
 
   Object.freeze(dom);
 });
@@ -140,7 +142,7 @@ function syncResultCards(resultIds) {
     }
   }
 
-  let insertAfterThis = dom.noResults;
+  let insertAfterThis = dom.loadingCard;
   for (const id of resultIds) {
     const item = resultsStorage.get(id);
     if (!item) {
@@ -190,6 +192,7 @@ function syncResultCards(resultIds) {
 
 function syncZipFileQueue(zipFileQueueIds) {
   dom.cancelAll.hidden = zipFileQueueIds.length === 0;
+  dom.zipFilesQueueContainer.hidden = zipFileQueueIds.length === 0;
   const freshIds = new Set(zipFileQueueIds.map(id => `zipFileInQueue-${id}`));
   for (const el of dom.zipFilesQueueContainer.querySelectorAll(".zipFileInQueue")) {
     if (!freshIds.has(el.id)) {
@@ -237,7 +240,6 @@ function refresh() {
 
   const ae = state.activeExtraction;
   const isIdle = ae.stage === eQsatExtractorStage.Idle;
-  dom.noResults.hidden = !(isIdle && state.completedResultsIds.length === 0);
   dom.loadingCard.hidden = isIdle;
   if (!isIdle) {
     updateActiveExtraction(ae);

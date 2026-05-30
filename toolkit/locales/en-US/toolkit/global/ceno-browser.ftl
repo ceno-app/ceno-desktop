@@ -133,7 +133,10 @@ eqsat-toolbar-button =
   .label = eQsat Importer
   .tooltiptext = Import Extracted eQsat Packages
 
-eqsat-title = eQsat Importer
+eqsat-title = eQsat Package Importer
+eqsat-description-1 = eQsat has 2 types of packages. Big and rare base package and small and frequent update packages. Combination of base package and a recent update package creates a recent version of website.
+eqsat-description-2 = To import packages use the eQsat toolbar button. Folders with packages can also be dragged and dropped to browser window.
+
 eqsat-analyzing = Analyzing package...
 eqsat-extracting = Extracting files: { $processed }/{ $total }
 eqsat-processingDHT = Processing pages...
@@ -148,17 +151,25 @@ eqsat-error-invalid-filename = Invalid filename: { $filename }
 eqsat-error-package-too-old = Outdated package version.
 eqsat-error-package-too-new = Unsupported package version. Please update { -brand-short-name }
 
-eqsat-no-results = No eQsat packages imported. Use the toolbar button to import extracted eQsat packages.
 eqsat-result-no-pages = No pages found in imported package.
+eqsat-queue-title = Processing Queue
 eqsat-queue-remove =
   .title = Remove { $filename } from queue
 eqsat-cancel-current = Cancel
 eqsat-cancel-all = Cancel All
 
-eqsat-quit-title = eQsat Importer
+eqsat-quit-title = eQsat Package Importer
 eqsat-quit-message = An eQsat package is being imported. Closing now will interrupt the process.
 eqsat-quit-keep-importing = Keep Importing
 eqsat-quit-exit = Exit
 
 eqsat-filepicker-title = Select eQsat Package Files
 eqsat-filepicker-filter = eQsat Packages
+
+eqsat-experimental-title = eQsat Package Importer is still experimental
+eqsat-experimental-1 = To achieve the best results follow these steps:
+eqsat-experimental-2 = 1. Ceno Network should be disconnected.
+eqsat-experimental-3 = 2. Import base and update packages together.
+eqsat-experimental-4 = 3. Connect to Ceno Network.
+eqsat-experimental-5 = Importing update package is less reliable if connection to Ceno Network is made between import of base and import of update packages. If connection has already been made, disconnect and import base package again.
+eqsat-dismiss = Dismiss

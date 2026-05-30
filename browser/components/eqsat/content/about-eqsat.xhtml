@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <title data-l10n-id="eqsat-title">eQsat Extractor</title>
+  <link rel="localization" href="branding/brand.ftl"/>
   <link rel="localization" href="toolkit/global/ceno-browser.ftl"/>
 <style>
 <![CDATA[
@@ -11,7 +12,21 @@
 </style>
 </head>
 <body>
-  <h1 data-l10n-id="eqsat-title">eQsat Extractor</h1>
+  <div class="card">
+    <h1 data-l10n-id="eqsat-title">eQsat Package Importer</h1>
+    <p data-l10n-id="eqsat-description-1"></p>
+    <p data-l10n-id="eqsat-description-2"></p>
+  </div>
+
+  <div id="experimental" class="card">
+    <h3 data-l10n-id="eqsat-experimental-title">eQsat importer is experimental</h3>
+    <p data-l10n-id="eqsat-experimental-1">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-2">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-3">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-4">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-5">eQsat importer is experimental</p>
+    <button data-l10n-id="eqsat-dismiss" id="experimental-dismiss">Dismiss</button>
+  </div>
 
   <div id="loading-card" class="card" hidden="hidden">
     <h2 id="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</h2>
@@ -27,11 +42,10 @@
     </div>
 
     <div id="zipFilesQueue">
+      <h4 data-l10n-id="eqsat-queue-title">Processing Queue</h4>
       <!-- <template id="zipFileInQueueTemplate"> will be inserted here -->
     </div>
   </div>
-
-  <div id="no-results" class="card" data-l10n-id="eqsat-no-results">No eQsat packages extracted. Use the toolbar button to extract eQsat packages.</div>
 
   <template id="zipFileInQueueTemplate">
     <div class="zipFileInQueue" id="zipFileInQueue-xxx">
@@ -42,9 +56,8 @@
 
   <!-- <template id="result-template"> will be inserted here -->
   <template id="result-template">
-    <div class="card result-card" id="extracted-package-xxx">
-      <h2 class="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</h2>
-
+    <details class="card result-card" id="extracted-package-xxx" open="open">
+      <summary class="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</summary>
       <div class="errors">
         <!-- <template id="error-template"> will be inserted here -->
         <div class="no-pages error" hidden="hidden" data-l10n-id="eqsat-result-no-pages"></div>
@@ -53,7 +66,7 @@
       <ul class="pages">
         <!-- <template id="page-template"> will be inserted here -->
       </ul>
-    </div>
+    </details>
   </template>
 
   <template id="error-template">
