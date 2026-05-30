@@ -8,7 +8,6 @@ body {
 }
 h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
 
-/* Progress bar */
 div#progressContainer {
   width: 100%;
   height: 24px;
@@ -30,7 +29,6 @@ div#progress-bar {
   font-weight: 600;
 }
 
-/* Cards */
 .card {
   background: #fff;
   border-radius: 8px;
@@ -39,10 +37,8 @@ div#progress-bar {
   margin-bottom: 20px;
 }
 
-/* Extraction stages */
 .active-stage { font-weight: bold; }
 
-/* Tooltips for file paths */
 .package-file, .zipQueueFile, #package-file {
   color: #666;
   font-size: 0.85rem;
@@ -52,7 +48,6 @@ div#progress-bar {
   cursor: help;
 }
 
-/* Errors */
 .error {
   color: #d70022;
   background: #fff0f0;
@@ -61,7 +56,6 @@ div#progress-bar {
   margin: 6px 0;
 }
 
-/* Extracted page list */
 .pages {
   list-style: none;
   padding: 0;
@@ -82,8 +76,7 @@ div#progress-bar {
   text-decoration: underline;
 }
 
-/* Queue list */
-#zipFilesQueue {
+div#zipFilesQueue {
   margin-top: 12px;
 }
 .zipFileInQueue {
@@ -127,12 +120,12 @@ div#progress-bar {
   background: #ffd7d7;
 }
 
-#cancelButtons {
+div#cancelButtons {
   display: flex;
   gap: 8px;
   margin-top: 12px;
 }
-#cancelCurrent, #cancelAll {
+button#cancelCurrent, #cancelAll, #experimental-dismiss {
   background: #fff;
   border: 1px solid #d70022;
   color: #d70022;
@@ -141,6 +134,19 @@ div#progress-bar {
   cursor: pointer;
   font-size: 0.85rem;
 }
-#cancelCurrent:hover, #cancelAll:hover {
+button#cancelCurrent:hover, #cancelAll:hover {
   background: #fff0f0;
+}
+
+div#experimental p {
+  margin: 0;
+}
+button#experimental-dismiss {
+  margin-top: 1em;
+  border: 1px solid #c9c9d4;
+  color: #52525e;
+}
+button#experimental-dismiss:hover {
+  background: #e7e7ea;
+  border-color: #8f8f9d;
 }
