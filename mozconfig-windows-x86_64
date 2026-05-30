@@ -50,9 +50,9 @@ export CXXFLAGS="-DNOMINMAX=1"
 # Code Signing Variables and Defaults #
 #######################################
 
-# export SIGNING_MODE=autosign
-# SIGNING_MODE defaults to autosign
-# autosign: sign automatically during "./mach package".
+# mk_add_options SIGNING_MODE=none
+# SIGNING_MODE defaults to none
+# autosign: sign automatically during "./mach package". autosign mode will automatically generate a self signed certificate if SIGNING_CERTIFICATE_PFX is unset or set to a non existing file.
 # airgap: pause build process during "./mach package" with a prompt to sign manually. Signed files are timestamped from this machine.
 # none: skip binary signing.
 

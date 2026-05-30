@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - eQsat package importer. There are 2 types of packages, base and update. First import base package, then it's possible to import incremental update packages. eQsat package importer is accessible by a toolbar button. Packages can also be imported by dragging and dropping into the Ceno Browser or using regular file open dialog from the browser. eQsat packages have .zip or .ceno file extension. Installer suggests adding .ceno file association for Ceno Browser
+- Added code signing code to build process to sign .exe's and .dll's which are packaged to installers. (Currently we are still using self-signed certificate)
 
 ### Changed
 - Updated Base Browser to 140.11.0esr

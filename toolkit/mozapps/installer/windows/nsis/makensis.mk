@@ -58,10 +58,16 @@ CUSTOM_UI = \
 
 include $(topsrcdir)/build/codesign-options-parser.mk
 
+GIT_COMMIT_SHORT_HASH := $(shell git rev-parse --short=8 HEAD)
+
 sign-installers: installer
 	@echo "Signing installers..."
-	@echo $(SIGN_CALL) --input "$(DIST)/install/sea"
-	$(SIGN_CALL) --input "$(DIST)/install/sea"
+	@echo $(SIGN_CALL) --name installers \
+		--input "$(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe" \
+		--input "$(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe"
+	$(SIGN_CALL) --name installer \
+		--input "$(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe" \
+		--input "$(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe"
 
 $(CONFIG_DIR)/setup.exe::
 	$(INSTALL) $(addprefix $(MOZILLA_DIR)/toolkit/mozapps/installer/windows/nsis/,$(TOOLKIT_NSIS_FILES)) $(CONFIG_DIR)
@@ -71,8 +77,6 @@ $(CONFIG_DIR)/setup.exe::
 ifdef MOZ_STUB_INSTALLER
 	cd $(CONFIG_DIR) && $(MAKENSISU) $(MAKENSISU_FLAGS) stub.nsi
 endif
-
-GIT_COMMIT_HASH := $(shell git rev-parse HEAD)
 
 ifdef ZIP_IN
 installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(PORTABLE_CONFIG_DIR)/setup-portable.exe
@@ -86,8 +90,8 @@ installer:: $(CONFIG_DIR)/setup.exe $(ZIP_IN) $(PORTABLE_CONFIG_DIR)/setup-porta
 	  --setupexe $(CONFIG_DIR)/setup.exe \
 	  --sfx-stub $(SFX_MODULE) \
 	  $(USE_UPX)
-	mv $(ABS_DIST)/$(PKG_INST_PATH)$(PKG_INST_BASENAME).exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_HASH).exe
-	mv $(ABS_PORTABLE_CONFIG_DIR)/setup-portable.exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_HASH).exe
+	mv $(ABS_DIST)/$(PKG_INST_PATH)$(PKG_INST_BASENAME).exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-system-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe
+	mv $(ABS_PORTABLE_CONFIG_DIR)/setup-portable.exe $(ABS_DIST)/$(PKG_INST_PATH)$(MOZ_PKG_APPNAME)-$(MOZ_PKG_PLATFORM)-portable-$(BASE_BROWSER_VERSION)-$(GIT_COMMIT_SHORT_HASH).exe
 
 ifdef MOZ_STUB_INSTALLER
 	$(PYTHON3) $(MOZILLA_DIR)/mach repackage installer \

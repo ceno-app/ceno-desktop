@@ -164,70 +164,113 @@ def verify_pe_signature(signtool, is_windows_signtool, filepath, allow_untrusted
   print(f"{filepath}\n  {result.stderr}", file=sys.stderr)
   return False
 
-def get_input_files(input_path, exemptions_arg):
+hashfile_name = 'hashes.sha256'
+
+def collect_entries(input_paths, exempt_paths=None):
   exemptions = set()
-  if exemptions_arg:
-    exempt_path = Path(exemptions_arg)
+  if exempt_paths:
+    for raw in exempt_paths:
+      if raw is None:
+        continue
+      normalized = raw.strip().lower().replace('\\', '/')
+      if normalized:
+        exemptions.add(normalized)
+    if exemptions:
+      print(f"Exemptions: {exemptions}")
 
-    if exempt_path.exists():
-      for line in exempt_path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith('#'):
-          # Normalize backslashes to forward slashes and lowercase
-          exemptions.add(line.lower().replace('\\', '/'))
+  entries = []
+  archive_names_seen = set()
+
+  for raw in input_paths:
+    input_path_raw = Path(raw)
+    input_path = input_path_raw.resolve()
+    if not input_path.exists():
+      raise RuntimeError(f"Input not found: {input_path}")
+
+    name_source = input_path_raw
+    while name_source.name == '' and name_source != name_source.parent:
+      name_source = name_source.parent
+    zip_prefix = name_source.name
+    if not zip_prefix:
+      raise RuntimeError(
+        f"Cannot determine a safe archive prefix for input: {raw!r}. "
+        f"Use an explicit directory name instead of '.' or the root path."
+      )
+
+    is_file_input = input_path.is_file()
+
+    if is_file_input:
+      if input_path.suffix.lower() not in {'.exe', '.dll'}:
+        raise RuntimeError(f"Input file is not a PE file: {input_path}")
+      files_iter = [input_path]
+      base_dir = input_path.parent
     else:
-      exemptions = {
-        name.strip().lower().replace('\\', '/')
-        for name in exemptions_arg.split(',')
-      }
+      files_iter = input_path.rglob('*')
+      base_dir = input_path
 
-  if exemptions:
-    print(f"Exemptions: {exemptions}")
+    for f in files_iter:
+      if f.suffix.lower() not in {'.exe', '.dll'}:
+        continue
 
-  if input_path.is_file():
-    if input_path.suffix.lower() not in {'.exe', '.dll'}:
-      raise RuntimeError(f"Input file is not a PE file: {input_path}")
-    files_to_sign_ = [input_path]
-    base_dir = input_path.parent
-  else:
-    files_to_sign_ = input_path.rglob('*')
-    base_dir = input_path
+      try:
+        rel_path = f.relative_to(base_dir).as_posix()
+      except ValueError:
+        rel_path = f.name
 
-  files_to_sign = []
-  for f in files_to_sign_:
-    if f.suffix.lower() not in {'.exe', '.dll'}:
-      continue
+      rel_norm = rel_path.lower()
+      if exemptions:
+        exempted = False
+        for ex in exemptions:
+          if rel_norm == ex or rel_norm.startswith(ex + '/'):
+            exempted = True
+            break
+        if exempted:
+          continue
 
-    try:
-      rel_path = f.relative_to(base_dir).as_posix()
-    except ValueError:
-      rel_path = f.name
+      if rel_path == hashfile_name:
+        raise RuntimeError(f"Input contains problematic filename: {hashfile_name}")
 
-    if rel_path not in exemptions:
-      files_to_sign.append(rel_path)
+      if is_file_input:
+        archive_name = rel_path
+      else:
+        archive_name = f"{zip_prefix}/{rel_path}"
 
-  return base_dir, files_to_sign
+      if archive_name in archive_names_seen:
+        raise RuntimeError(
+          f"Duplicate archive path across inputs: {archive_name!r}. "
+          f"Ensure input directories/files have unique base names or contain unique filenames."
+        )
+      archive_names_seen.add(archive_name)
+
+      entries.append((base_dir, rel_path, archive_name))
+
+  return entries
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--input', required=True, help='Directory to scan for PE files or a single PE file')
-  parser.add_argument('--exemptions', default=None, help='File with exemptions or comma-separated list (paths relative to dist_dir)')
-  parser.add_argument('--cert', default=None, help='PFX certificate path')
+  parser.add_argument('--name', default='binaries', help='Package name. Will be used as airgap .zip filename')
+  parser.add_argument('--input', required=True, action='append',
+                      help='File or directory to scan for PE files (path is relative to dist_dir). Can be used multiple times')
+  parser.add_argument('--exempt', default=None, action='append',
+                      help='File or directory to exempt from signing (path is relative to dist_dir). Can be used multiple times')
+  parser.add_argument('--cert', default=None, help='PFX certificate path. Environment variable SIGNING_CERTIFICATE_PFX overrides this argument')
   parser.add_argument('--auto-generate-cert', action='store_true', help='Automatically generate self-signed signature')
-  parser.add_argument('--password', default='', help='PFX password')
+  parser.add_argument('--password', default='', help='PFX password. Environment variable SIGNING_CERTIFICATE_PASSWORD overrides this argument')
   parser.add_argument('--timestamp', default='')
   parser.add_argument('--airgap', default=None, help='Destination dir where to put archive with gathered binaries for airgapped signing')
   parser.add_argument('--allow-untrusted', action='store_true', help='Allow self-signed/untrusted signatures')
   args = parser.parse_args()
 
-  input_path = Path(args.input).resolve()
-  print(f"Signing binaries in: {input_path}")
+  if not args.name or args.name in ('.', '..') or any(c in args.name for c in '\\/:*?"<>|\x00'):
+    parser.error(f"Invalid --name, unsafe for use as filename: {args.name!r}")
+
+  print(f"Signing binaries: {', '.join(args.input)}")
 
   signtool, is_windows_signtool = get_signtool()
   print(f"Signing tool: {signtool}")
 
   timestamp_url = os.environ.get('SIGNING_TIMESTAMP_URL') or args.timestamp
-  base_dir, files_to_sign = get_input_files(input_path, args.exemptions)
+  entries = collect_entries(args.input, args.exempt)
 
   if args.airgap:
     airgap_dir = Path(args.airgap)
@@ -235,26 +278,24 @@ def main():
     if not airgap_dir.is_dir():
       raise RuntimeError(f"--airgap argument {airgap_dir} is not a directory")
 
-    hashfile_name = 'hashes.sha256'
-    if hashfile_name in files_to_sign:
-      raise RuntimeError(F"Input files contain problematic and unexpected filename: {hashfile_name}")
+    abs_map = {}
+    for base_dir, rel_path, archive_name in entries:
+      abs_map[archive_name] = base_dir / rel_path
 
-    airgap_archive_name = airgap_dir / (input_path.name + '.zip')
-    airgap_archive = zipfile.ZipFile(airgap_archive_name, 'w', zipfile.ZIP_DEFLATED)
-    # checksum_file = base_dir / hashfile_name
-    airgap_archive_signed = airgap_dir / (input_path.name + '.signed.zip')
+    airgap_archive_name = airgap_dir / (args.name + '.zip')
+    airgap_archive_signed = airgap_dir / (args.name + '.signed.zip')
 
     if airgap_archive_signed.exists():
       os.remove(airgap_archive_signed)
 
-    checksums = []
-    for f in files_to_sign:
-      file_path = base_dir / f
-      airgap_archive.write(file_path, f)
-      checksums.append(sha256(file_path.read_bytes()).hexdigest() + '  ' + f)
+    with zipfile.ZipFile(airgap_archive_name, 'w', zipfile.ZIP_DEFLATED) as zf:
+      checksums = []
+      for base_dir, rel_path, archive_name in entries:
+        file_path = base_dir / rel_path
+        zf.write(file_path, archive_name)
+        checksums.append(sha256(file_path.read_bytes()).hexdigest() + '  ' + archive_name)
 
-    airgap_archive.writestr(hashfile_name, '\n'.join(checksums) + '\n')
-    airgap_archive.close()
+      zf.writestr(hashfile_name, '\n'.join(checksums) + '\n')
 
     if sys.platform == 'win32':
       subprocess.run(['explorer', str(airgap_dir)])
@@ -265,33 +306,56 @@ def main():
 
     while not airgap_archive_signed.exists():
       print(f"""
-      =========================================================
-      AIRGAP SIGNING CHECKPOINT
-      =========================================================
-      Archive with files to sign: {airgap_archive_name}
-      Expecting to find signed archive: {airgap_archive_signed}
-      =========================================================
-      Press Enter to continue or Ctrl+C to abort.
-      """)
+==============================================================
+AIRGAP SIGNING CHECKPOINT
+==============================================================
+Archive with files to sign: {airgap_archive_name}
+Expecting signed archive:   {airgap_archive_signed}
+
+On the air-gapped machine run:
+  ./build/codesign-on-airgapped-machine.py \\
+      --input-zip  {airgap_archive_name} \\
+      --output-zip {airgap_archive_signed}
+==============================================================
+Press Enter to continue or Ctrl+C to abort.
+""")
       try:
         input()
       except KeyboardInterrupt:
         sys.exit(1)
 
-    print(f"Extracting {airgap_archive_signed} to {base_dir}")
     with zipfile.ZipFile(airgap_archive_signed, 'r') as zf:
+      print(f"Reading {airgap_archive_signed}")
       if bad_file := zf.testzip():
         raise RuntimeError(f"CRC error in zip file: {bad_file}")
-      zf.extractall(base_dir)
 
-    if subprocess.run(['sha256sum', '--check', hashfile_name], cwd = base_dir).returncode != 0:
-      raise RuntimeError(f"Checksum verification failed!")
-    os.remove(base_dir / hashfile_name)
+      for info in zf.infolist():
+        if info.filename == hashfile_name:
+          continue
+        abs_path = abs_map.get(info.filename)
+        if not abs_path:
+          raise RuntimeError(f"Signed archive contains unexpected file: {info.filename}")
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        with zf.open(info) as src, open(abs_path, 'wb') as dst:
+          shutil.copyfileobj(src, dst)
 
-    for f in files_to_sign:
+      if hashfile_name not in zf.namelist():
+        raise RuntimeError(f"Signed archive missing {hashfile_name}")
+      for line in zf.read(hashfile_name).decode().splitlines():
+        if not line.strip():
+          continue
+        expected_hash, _, filename = line.partition('  ')
+        abs_path = abs_map.get(filename)
+        if not abs_path or not abs_path.exists():
+          raise RuntimeError(f"Missing file for checksum verification: {filename}")
+        actual_hash = sha256(abs_path.read_bytes()).hexdigest()
+        if actual_hash != expected_hash:
+          raise RuntimeError(f"Checksum verification failed for {abs_path}")
+
+    for base_dir, rel_path, archive_name in entries:
       if timestamp_url:
-        if not timestamp_file(signtool, is_windows_signtool, base_dir / f, timestamp_url):
-          raise RuntimeError(f"Failed to timestamp file: {f}")
+        if not timestamp_file(signtool, is_windows_signtool, base_dir / rel_path, timestamp_url):
+          raise RuntimeError(f"Failed to timestamp file: {base_dir / rel_path}")
 
   else: # not args.airgap
     cert_path = os.environ.get('SIGNING_CERTIFICATE_PFX') or args.cert
@@ -309,15 +373,17 @@ def main():
     if not cert_path.exists():
       raise RuntimeError(f"Certificate not found: {cert_path}")
 
-    for f in files_to_sign:
-      if not sign_file(signtool, is_windows_signtool, base_dir / f, cert_path, password, timestamp_url):
-        raise RuntimeError(f"Failed to sign: {f}")
+    for base_dir, rel_path, archive_name in entries:
+      filepath = base_dir / rel_path
+      if not sign_file(signtool, is_windows_signtool, filepath, cert_path, password, timestamp_url):
+        raise RuntimeError(f"Failed to sign: {filepath}")
 
   verification_success = True
-  for f in files_to_sign:
-    signed_file_path = base_dir / f
+  for base_dir, rel_path, archive_name in entries:
+    signed_file_path = base_dir / rel_path
     if not verify_pe_signature(signtool, is_windows_signtool, signed_file_path, args.allow_untrusted):
       verification_success = False
+
   if not verification_success:
     raise RuntimeError('Signed binary verification failed!')
 

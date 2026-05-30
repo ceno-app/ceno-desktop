@@ -70,8 +70,8 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--input-zip', required=True, help='ZIP file containing files to be signed')
   parser.add_argument('--output-zip', required=True, help='ZIP file containing signed files')
-  parser.add_argument('--cert', default=None, help='PFX certificate path')
-  parser.add_argument('--password', default='', help='PFX password')
+  parser.add_argument('--cert', default=None, help='PFX certificate path. Environment variable SIGNING_CERTIFICATE_PFX overrides this argument')
+  parser.add_argument('--password', default='', help='PFX password. Environment variable SIGNING_CERTIFICATE_PASSWORD overrides this argument')
 
   args = parser.parse_args()
 
