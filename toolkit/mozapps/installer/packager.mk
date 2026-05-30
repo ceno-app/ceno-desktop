@@ -130,8 +130,8 @@ include $(topsrcdir)/build/codesign-options-parser.mk
 
 sign-binaries: prepare-package
 	@echo "Signing PE binaries..."
-	@echo $(SIGN_CALL) --input "$(DIST)/$(MOZ_PKG_DIR)"
-	$(SIGN_CALL) --input "$(DIST)/$(MOZ_PKG_DIR)" --exemptions msvcp140.dll,vcruntime140.dll,vcruntime140_1.dll
+	@echo $(SIGN_CALL) --name "$(MOZ_PKG_APPNAME)" --input "$(DIST)/$(MOZ_PKG_DIR)" --exempt msvcp140.dll --exempt vcruntime140.dll --exempt vcruntime140_1.dll
+	$(SIGN_CALL) --name "$(MOZ_PKG_APPNAME)" --input "$(DIST)/$(MOZ_PKG_DIR)" --exempt msvcp140.dll --exempt vcruntime140.dll --exempt vcruntime140_1.dll
 
 make-package-internal: prepare-package make-sourcestamp-file sign-binaries
 	@echo 'Compressing...'

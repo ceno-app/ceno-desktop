@@ -1,6 +1,6 @@
 include $(DEPTH)/.mozconfig-client-mk
 
-SIGNING_MODE ?= autosign
+SIGNING_MODE ?= none
 
 SIGN_CALL := $(PYTHON3) $(topsrcdir)/build/codesign.py \
 --cert "$(DIST)/certs/private.pfx" \
@@ -20,7 +20,7 @@ ifeq ($(SIGNING_MODE),airgap)
 else ifeq ($(SIGNING_MODE),none)
   SIGN_CALL := shell echo "Skipping code signing"
 else ifeq ($(SIGNING_MODE),autosign)
-  # Default behavior
+  SIGN_CALL += --auto-generate-cert
 else
   $(error "Unknown SIGNING_MODE '$(SIGNING_MODE)', allowed values autosign, airgap or none")
 endif
