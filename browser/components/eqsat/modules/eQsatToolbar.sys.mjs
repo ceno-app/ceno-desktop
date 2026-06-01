@@ -1,5 +1,6 @@
 const { eQsatExtractor } = ChromeUtils.importESModule("resource:///modules/eQsatExtractor.sys.mjs");
 const { getPendingFiles } = ChromeUtils.importESModule("resource:///modules/eQsatCommandLine.sys.mjs");
+const { CustomizableUI } = ChromeUtils.importESModule("resource:///modules/CustomizableUI.sys.mjs");
 
 let eqsatQuitObserverStrings = null;
 
@@ -55,19 +56,75 @@ const quitObserver = {
         }
       }
     }
-  }
+  },
+  QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
 };
 
 Services.obs.addObserver(quitObserver, "quit-application-requested");
 
+const featureGate = "ceno.eqsat.enabled";
+
 export const eQsatToolbar = {
-  init(window) {
+  _started: false,
+  async init(window) {
     this._registerActor();
+    if (window.MozXULElement) {
+      window.MozXULElement.insertFTLIfNeeded("toolkit/global/ceno-browser.ftl");
+    }
+    await this._getL10nStrings(window);
+
     this._injectFilePicker(window);
-    this._createToolbarButton(window);
     this._processPendingFiles(window);
     this._interceptFileOpens(window);
     this._interceptFileDrops(window);
+
+    if (!this._started) {
+      this._started = true;
+
+      this._prefObserver = {
+        observe: (subject, topic, data) => {
+          if (data === featureGate) {
+            if (Services.prefs.getBoolPref(featureGate)) {
+              this._createToolbarButton();
+            } else {
+              this._removeToolbarButton();
+            }
+          }
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
+      };
+      Services.prefs.addObserver(featureGate, this._prefObserver, false);
+      if (Services.prefs.getBoolPref(featureGate)) {
+        this._createToolbarButton();
+      }
+
+      this._quitObserver = {
+        observe: (subject, topic) => {
+          if (topic === "quit-application") {
+            this.shutdown();
+          }
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
+      };
+      Services.obs.addObserver(this._quitObserver, "quit-application");
+    }
+  },
+
+  shutdown() {
+    if (!this._started) {
+      return;
+    }
+    this._started = false;
+
+    if (this._prefObserver) {
+      Services.prefs.removeObserver(featureGate, this._prefObserver);
+      this._prefObserver = null;
+    }
+
+    if (this._quitObserver) {
+      Services.obs.removeObserver(this._quitObserver, "quit-application");
+      this._quitObserver = null;
+    }
   },
 
   _interceptFileOpens(window) {
@@ -319,20 +376,15 @@ export const eQsatToolbar = {
   },
 
   _widgetCreated: false,
-  _createToolbarButton(window) {
+  _widgetId: "eqsat-extractor-button",
+  _createToolbarButton() {
     if (this._widgetCreated) {
       return;
     }
     this._widgetCreated = true;
 
-    if (window.MozXULElement) {
-      window.MozXULElement.insertFTLIfNeeded("toolkit/global/ceno-browser.ftl");
-    }
-    this._getL10nStrings(window);
-
-    const { CustomizableUI } = ChromeUtils.importESModule("resource:///modules/CustomizableUI.sys.mjs");
     CustomizableUI.createWidget({
-      id: "eqsat-extractor-button",
+      id: this._widgetId,
       type: "button",
       defaultArea: CustomizableUI.AREA_NAVBAR,
       label: "eQsat Importer",
@@ -364,5 +416,17 @@ export const eQsatToolbar = {
         eQsatExtractor.processZipFiles(zipFiles);
       }
     });
-  }
+  },
+
+  _removeToolbarButton() {
+    if (!this._widgetCreated) {
+      return;
+    }
+    try {
+      CustomizableUI.destroyWidget(this._widgetId);
+    } catch (e) {
+      console.error("Failed to destroy eqsat-extractor-button:", e);
+    }
+    this._widgetCreated = false;
+  },
 };

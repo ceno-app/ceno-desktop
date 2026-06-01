@@ -1129,4 +1129,5 @@ pref("ceno.network.udp_mux_port_random", true);
 
 pref("ceno.browser.log_level", "Debug");
 
+pref("ceno.eqsat.enabled", false);
 pref("ceno.eqsat.add_www_subdomain", "bbc.com,iranwire.com,iranintl.com,radiofarda.com,radiozamaneh.com");

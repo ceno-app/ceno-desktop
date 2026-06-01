@@ -128,7 +128,8 @@ InstallDir "$DESKTOP\${BrandFullName}"
 ; !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryExists
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckIfTargetDirectoryIsSuitable
 !insertmacro MUI_PAGE_DIRECTORY
-Page custom preAssocPage leaveAssocPage
+; @TODO: re-enable once eQsat is enabled by default
+; Page custom preAssocPage leaveAssocPage
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
