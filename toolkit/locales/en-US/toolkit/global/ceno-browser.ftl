@@ -144,8 +144,9 @@ eqsat-progress = { $percent }%
 
 eqsat-error-zip-file-malformed = Package file error
 
-eqsat-error-update-without-base = Base package not found. Import { $filename }
-eqsat-error-update-without-base-filename-unknown = Base package not found. Import base package first.
+eqsat-error-update-without-base = Base package not found. Import { $baseFileName } released on { DATETIME($baseDate, dateStyle: "long") }
+eqsat-base-package-release-date = Base package, released on { DATETIME($baseDate, dateStyle: "long") }
+eqsat-update-package-release-dates = Update package, released on { DATETIME($updateDate, dateStyle: "long") }, depends on base package released on { DATETIME($baseDate, dateStyle: "long") }
 
 eqsat-error-invalid-filename = Invalid filename: { $filename }
 eqsat-error-package-too-old = Outdated package version.

@@ -1135,3 +1135,4 @@ pref("ceno.browser.log_level", "Debug");
 
 pref("ceno.eqsat.enabled", false);
 pref("ceno.eqsat.add_www_subdomain", "bbc.com,iranwire.com,iranintl.com,radiofarda.com,radiozamaneh.com");
+pref("ceno.eqsat.append_slash", "tg.ceno.app");

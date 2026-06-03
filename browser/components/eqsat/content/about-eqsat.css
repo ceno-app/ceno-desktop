@@ -48,6 +48,10 @@ div#progress-bar {
   cursor: help;
 }
 
+.package-file:hover {
+  color: #0a84ff;
+}
+
 .error {
   color: #d70022;
   background: #fff0f0;

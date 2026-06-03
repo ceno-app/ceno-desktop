@@ -758,6 +758,8 @@ class _CenoNetwork {
 
   async purgeOuinetCache() {
     lazy.logger.debug("Purging Ouinet cache");
+    const { eQsatExtractor } = ChromeUtils.importESModule("resource:///modules/eQsatExtractor.sys.mjs");
+    eQsatExtractor.cachePurge();
 
     await this.#waitForProcessToSettle();
     if (

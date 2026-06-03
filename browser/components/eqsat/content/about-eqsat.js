@@ -2,7 +2,6 @@
 const eQsatExtractorErrors = Object.freeze({
   ZipFileMalformed: "eqsat-error-zip-file-malformed",
   UpdateWithoutBase: "eqsat-error-update-without-base",
-  UpdateWithoutBase_FilenameUnknown: "eqsat-error-update-without-base-filename-unknown",
   InvalidFilename: "eqsat-error-invalid-filename",
   PackageTooOld: "eqsat-error-package-too-old",
   PackageTooNew: "eqsat-error-package-too-new",
@@ -162,27 +161,69 @@ function syncResultCards(resultIds) {
     packageFile.textContent = item.zipFileName;
     packageFile.title = item.zipFilePath;
 
+    let baseDate = null;
+    let updateDate = null;
+    if (item.basedate !== "") {
+      const [y, m, d] = item.basedate.split("-").map(Number);
+      // months are 0 indexed
+      baseDate = new Date(y, m - 1, d).getTime();
+      if (isNaN(baseDate)) {
+        baseDate = null;
+      }
+    }
+    if (item.updatets !== "") {
+      updateDate = new Date(item.updatets).getTime();
+      if (isNaN(updateDate)) {
+        updateDate = null;
+      }
+    }
+    const packageDate = newResultElement.querySelector(".package-date");
+    if (item.type === "base" && baseDate) {
+      document.l10n.setAttributes(packageDate, "eqsat-base-package-release-date", { site: item.site, baseDate: baseDate });
+    } else if (item.type === "update" && baseDate && updateDate) {
+      document.l10n.setAttributes(packageDate, "eqsat-update-package-release-dates", { site: item.site, baseDate: baseDate, updateDate: updateDate } );
+    } else {
+      packageDate.hidden = true;
+    }
+
     const errorsContainer = newResultElement.querySelector(".errors");
-    for (const err of item.errors) {
+    for (let err of item.errors) {
       const errorElement = dom.errorTemplate.cloneNode(true);
+      if (err.error === eQsatExtractorErrors.UpdateWithoutBase) {
+        if (item.basefilename !== "" && baseDate) {
+          err.l10n_args = {
+            baseFileName: item.basefilename,
+            baseDate: baseDate,
+          };
+        } else {
+          // else branch can be removed once all packages are regenerated.
+          err.error = "Base package not found. Import base package first";
+          err.file = ""
+        }
+      }
+
       if (Object.values(eQsatExtractorErrors).includes(err.error)) {
-        document.l10n.setAttributes(errorElement, err.error, { filename: err.file || ""});
+        document.l10n.setAttributes(errorElement, err.error, err.l10n_args || { filename: err.file || ""});
       } else {
         errorElement.textContent = (err.file ? err.file + ': ' : '') + err.error;
       }
       errorsContainer.appendChild(errorElement);
     }
-
     const pagesContainer = newResultElement.querySelector(".pages");
-    for (const page of item.dhtGroups) {
+    for (let page of item.dhtGroups) {
       const pageElement = dom.dhtPageTemplate.cloneNode(true);
       const link = pageElement.querySelector("a");
-      link.href = page.startsWith("https://") || page.startsWith("http://") ? page : 'https://' + page;
-      link.textContent = decodeURI(page);
+      link.href = page.link;
+      link.textContent = page.display;
       pagesContainer.appendChild(pageElement);
     }
     if (item.dhtGroups.length === 0 && item.errors.length === 0) {
       newResultElement.querySelector(".no-pages").hidden = false;
+    }
+
+    const defaultCollapseThreshold = 32;
+    if (item.dhtGroups.length > defaultCollapseThreshold) {
+      newResultElement.removeAttribute("open");
     }
 
     insertAfterThis.after(newResultElement);
