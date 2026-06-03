@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - eQsat Package Importer is hidden behind `about:config` preference `ceno.eqsat.enabled`
+- Clearing Ceno Network cache clears results from about:eqsat
+- Visual updates in about:eqsat
 
 ## [0.1.1] - 2026-06-01
 

@@ -344,7 +344,7 @@ export const eQsatToolbar = {
   },
 
   _injectFilePicker(window) {
-    if (!window.eQsatPickZipFile) {
+    if (!window.eQsatPickZipFiles) {
       Services.scriptloader.loadSubScript("resource:///modules/eQsatFilePicker.js", window);
     }
   },

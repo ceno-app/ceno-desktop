@@ -7,7 +7,6 @@ const SUPPORTED_PACKAGE_VERSION = 1;
 const eQsatExtractorErrors = Object.freeze({
   ZipFileMalformed: "eqsat-error-zip-file-malformed",
   UpdateWithoutBase: "eqsat-error-update-without-base",
-  UpdateWithoutBase_FilenameUnknown: "eqsat-error-update-without-base-filename-unknown",
   InvalidFilename: "eqsat-error-invalid-filename",
   PackageTooOld: "eqsat-error-package-too-old",
   PackageTooNew: "eqsat-error-package-too-new",
@@ -40,11 +39,14 @@ function readZipEntryText(zipReader, entryName) {
   }
 }
 
+const preferences = Object.freeze({
+  domainsWithMissingWWW: "ceno.eqsat.add_www_subdomain",
+  appendSlash: "ceno.eqsat.append_slash",
+});
+
 class eQsatExtractorClass {
   #bep5HttpDir = Object.freeze(OuinetLauncherUtil.getOuinetFile("bep5_http", false).path);
   #eQsatExtractedPackagesDir = Object.freeze(PathUtils.join(this.#bep5HttpDir, "eQsat_extracted_packages"));
-
-  #MAX_COMPLETED_RESULTS = 10;
 
   #idForExtraction = 1;
   #zipFileId = 1;
@@ -68,13 +70,86 @@ class eQsatExtractorClass {
   #requestToCancelCurrentExtraction = false;
   #requestToCancelAllExtractions = false;
 
+  #preferencesObserver = null;
+  #preferencesChanged = false;
+  constructor() {
+    this.#preferencesObserver = {
+      observe: (subject, topic, data) => {
+        if (this.isExtracting) {
+          this.#preferencesChanged = true;
+        } else {
+          this.#recreateLinks();
+        }
+      },
+      QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
+    };
+
+    Services.prefs.addObserver(preferences.domainsWithMissingWWW, this.#preferencesObserver, false);
+    Services.prefs.addObserver(preferences.appendSlash, this.#preferencesObserver, false);
+  }
+
+  #postProcessDhtGroupUrls(domainsWithMissingWWW, appendSlash, input) {
+    const output = [];
+    for (const page of input) {
+      const pageDisplay = decodeURI(page.orig);
+      let pageLink = page.orig;
+
+      for (const domain of appendSlash) {
+        if (pageLink.startsWith(domain)) {
+          if (!pageLink.endsWith('/')) {
+            pageLink = pageLink + '/';
+          }
+          break;
+        }
+      }
+
+      for (const domain of domainsWithMissingWWW) {
+        if (pageLink.startsWith(domain)) {
+          if (!pageLink.startsWith('www.')) {
+            pageLink = "www." + pageLink;
+          }
+          break;
+        }
+      }
+
+      if (!pageLink.startsWith("https://") && !pageLink.startsWith("http://")) {
+        pageLink = 'https://' + pageLink;
+      }
+
+      output.push({orig: page.orig, display: pageDisplay, link: pageLink});
+    }
+    return Object.freeze(output);
+  }
+
+  #recreateLinks() {
+    const domainsWithMissingWWW = Services.prefs.getStringPref("ceno.eqsat.add_www_subdomain", "").split(",").filter(d => d.length > 0);
+    const appendSlash = Services.prefs.getStringPref("ceno.eqsat.append_slash", "").split(",").filter(d => d.length > 0);
+
+    const updatedResultsIds = [];
+    const updatedResultsStore = new Map();
+
+    for (const resultId of this.#state.completedResultsIds) {
+      const newId = this.#idForExtraction++;
+
+      const completedResults = this.#completedResultsStore.get(resultId);
+      completedResults.dhtGroups = this.#postProcessDhtGroupUrls(domainsWithMissingWWW, appendSlash, completedResults.dhtGroups);
+      completedResults.id = newId;
+      updatedResultsIds.push(newId);
+      updatedResultsStore.set(newId, completedResults);
+    }
+    this.#state.completedResultsIds = updatedResultsIds;
+    this.#completedResultsStore = updatedResultsStore;
+    this.#preferencesChanged = false;
+    this.#notifyProgress(true);
+  }
+
   async #resetActiveExtractionState(stage, zipFileName, zipFilePath) {
     this.#state.activeExtraction.stage = stage;
     this.#state.activeExtraction.filename = zipFileName;
     this.#state.activeExtraction.filepath = zipFilePath;
     this.#state.activeExtraction.extract.total = 0;
     this.#state.activeExtraction.extract.processed = 0;
-    await this.#notifyProgress();
+    await this.#notifyProgress(true);
   }
 
   get isExtracting() {
@@ -114,15 +189,32 @@ class eQsatExtractorClass {
     this.#requestToCancelCurrentExtraction = true;
     this.#requestToCancelAllExtractions = true;
   }
+  #purgeCache = false;
+  async cachePurge() {
+    if (this.isExtracting) {
+      this.#requestToCancelCurrentExtraction = true;
+      this.#requestToCancelAllExtractions = true;
+      this.#purgeCache = true;
+    } else {
+      this.#state.completedResultsIds.length = 0;
+      this.#completedResultsStore.clear();
+      try {
+        await IOUtils.remove(this.#eQsatExtractedPackagesDir, { recursive: true, ignoreAbsent: true});
+      } catch (e) {
+        console.error("Failed to remove eQsatExtractedPackagesDir dir:", e);
+      }
+      await this.#notifyProgress(true);
+    }
+  }
 
   #lastNotifyTime = 0;
   #lastNotifyStage = null;
   #lastYieldTime = Date.now();
-  async #notifyProgress() {
+  async #notifyProgress(forcedNotify) {
     const notifyThrottleMs = 100;
 
     const now = Date.now();
-    if (this.#lastNotifyStage !== this.#state.activeExtraction.stage || (now - this.#lastNotifyTime) >= notifyThrottleMs) {
+    if (forcedNotify || this.#lastNotifyStage !== this.#state.activeExtraction.stage || (now - this.#lastNotifyTime) >= notifyThrottleMs) {
       Services.obs.notifyObservers(null, "eqsat:update", JSON.stringify(this.#state));
       this.#lastNotifyStage = this.#state.activeExtraction.stage;
       this.#lastNotifyTime = now;
@@ -140,28 +232,22 @@ class eQsatExtractorClass {
     this.#state.activeExtraction.stage = eQsatExtractorStage.ProcessingDHTGroups;
     await this.#notifyProgress();
 
-    result.dhtGroups = [];
-
-    const domainsWithMissingWWW = Services.prefs.getStringPref("ceno.eqsat.add_www_subdomain", "").split(",").filter(d => d.length > 0);
+    const dhtGroupsUnprocessed = [];
     try {
       const groupsText = readZipEntryText(zipReader, "groups");
-      for (let line of groupsText.split(/\r?\n|\r/)) {
-        line = line.trim();
-        if (line) {
-          for (const domain of domainsWithMissingWWW) {
-            if (line.startsWith(domain)) {
-              line = "www." + line;
-              break;
-            }
-          }
-          result.dhtGroups.push(line);
+      for (let page of groupsText.split(/\r?\n|\r/)) {
+        page = page.trim();
+        if (page) {
+          dhtGroupsUnprocessed.push({orig: page});
         }
       }
     } catch (e) {
       console.error(e);
     }
 
-    Object.freeze(result.dhtGroups);
+    const domainsWithMissingWWW = Services.prefs.getStringPref("ceno.eqsat.add_www_subdomain", "").split(",").filter(d => d.length > 0);
+    const appendSlash = Services.prefs.getStringPref("ceno.eqsat.append_slash", "").split(",").filter(d => d.length > 0);
+    result.dhtGroups = this.#postProcessDhtGroupUrls(domainsWithMissingWWW, appendSlash, dhtGroupsUnprocessed);
   }
 
   async processZipFiles(zipFiles) {
@@ -191,7 +277,7 @@ class eQsatExtractorClass {
     }
   }
 
-  async #parseZipFile(zipReader, result) {
+  #parseMetadata(zipReader, result) {
     let metadata;
     try {
       const jsonText = readZipEntryText(zipReader, "metadata");
@@ -200,29 +286,42 @@ class eQsatExtractorClass {
       console.error(e);
       throw new Error(eQsatExtractorErrors.PackageTooOld);
     }
-    if (typeof metadata.id !== "string" || typeof metadata.type !== "string"
-      || (metadata.type !== "update" && metadata.type !== "base")
-    ) {
+    if (typeof metadata.id !== "string" || typeof metadata.type !== "string") {
       throw new Error(eQsatExtractorErrors.PackageTooOld);
     }
-
     if (typeof metadata.version === "string") {
       metadata.version = Number(metadata.version);
     }
     if (typeof metadata.version !== "number") {
       metadata.version = 1;
     }
-    if (metadata.version !== SUPPORTED_PACKAGE_VERSION) {
+    if (metadata.version !== SUPPORTED_PACKAGE_VERSION || (metadata.type !== "update" && metadata.type !== "base")) {
       throw new Error(eQsatExtractorErrors.PackageTooNew);
     }
-
     metadata.packageIdFile = PathUtils.join(this.#eQsatExtractedPackagesDir, metadata.id);
-    if (metadata.type === "update") {
-      if (!(await IOUtils.exists(metadata.packageIdFile))) {
-        throw new Error(eQsatExtractorErrors.UpdateWithoutBase);
-      }
-    }
+    result.type = metadata.type;
 
+    if (typeof metadata.basefilename !== "string") {
+      metadata.basefilename = "";
+    }
+    result.basefilename = metadata.basefilename;
+
+    if (typeof metadata.basedate !== "string") {
+      metadata.basedate = "";
+    }
+    result.basedate = metadata.basedate;
+
+    if (typeof metadata.updatets !== "string") {
+      metadata.updatets = "";
+    }
+    result.updatets = metadata.updatets;
+
+    result.site = metadata.site || "";
+
+    return Object.freeze(metadata);
+  }
+
+  async #parseZipFile(zipReader, result) {
     const fileEntries = [];
     const entries = zipReader.findEntries('bep5_http/*');
     while (entries.hasMore()) {
@@ -244,10 +343,7 @@ class eQsatExtractorClass {
         }
       }
     }
-    return [
-      Object.freeze(metadata),
-      Object.freeze(fileEntries),
-    ];
+    return Object.freeze(fileEntries);
   }
 
   async #extractFilesFromZip(zipReader, fileEntries, result, createdDirs) {
@@ -312,14 +408,28 @@ class eQsatExtractorClass {
         zipFilePath: Object.freeze(zipFile.filePath),
         dhtGroups: [],
         errors: [],
+        type: "",
+        site: "",
+        basefilename: "",
+        basedate: "",
+        updatets: "",
       });
 
       const zipReader = Cc["@mozilla.org/libjar/zip-reader;1"].createInstance(Ci.nsIZipReader);
       const nsIZipFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+      let metadata = null;
       try {
         nsIZipFile.initWithPath(zipFile.filePath);
         zipReader.open(nsIZipFile);
-        const [metadata, fileEntries] = await this.#parseZipFile(zipReader, result);
+
+        metadata = this.#parseMetadata(zipReader, result);
+        if (metadata.type === "update") {
+          if (!(await IOUtils.exists(metadata.packageIdFile))) {
+            throw new Error(eQsatExtractorErrors.UpdateWithoutBase);
+          }
+        }
+
+        const fileEntries = await this.#parseZipFile(zipReader, result);
         if (this.#requestToCancelCurrentExtraction) {
           continue;
         }
@@ -344,34 +454,10 @@ class eQsatExtractorClass {
             && this.#state.zipFileIdQueue.length > 0
             && !attemptedBaselessUpdates.has(zipFile.id)
         ) {
-          const readdedZipFile = {
-            id: this.#zipFileId++,
-            fileName: zipFile.fileName,
-            filePath: zipFile.filePath,
-          }
-          attemptedBaselessUpdates.add(readdedZipFile.id);
-          this.#state.zipFileIdQueue.push(readdedZipFile.id);
-          this.#zipFileQueueStore.set(readdedZipFile.id, readdedZipFile);
-        } else if (e.message === eQsatExtractorErrors.UpdateWithoutBase) {
-          let expectedBaseFileName = null;
-          const suffix_1 = '-latest.zip';
-          const suffix_2 = '-latest.ceno';
-          const needle = '-latest ';
-          let needlePos = -1;
-          if (zipFile.fileName.endsWith(suffix_1)) {
-            expectedBaseFileName = zipFile.fileName.slice(0, 0 - suffix_1.length) + '-base.zip';
-          }
-          else if (zipFile.fileName.endsWith(suffix_2)) {
-            expectedBaseFileName = zipFile.fileName.slice(0, 0 - suffix_2.length) + '-base.ceno';
-          }
-          else if ((needlePos = zipFile.fileName.indexOf(needle)) !== -1) {
-            const extensionIsZip = zipFile.fileName.endsWith('.zip');
-            expectedBaseFileName = zipFile.fileName.slice(0, needlePos) + '-base' + (extensionIsZip ? '.zip' : '.ceno');
-          }
-          result.errors.push({
-            file: expectedBaseFileName,
-            error: expectedBaseFileName !== null ? e.message : eQsatExtractorErrors.UpdateWithoutBase_FilenameUnknown,
-          });
+          attemptedBaselessUpdates.add(zipFileId);
+          this.#state.zipFileIdQueue.push(zipFileId);
+          this.#zipFileQueueStore.set(zipFileId, zipFile);
+          continue;
         } else {
           result.errors.push({ file: zipFile.fileName, error: e.message });
         }
@@ -379,15 +465,17 @@ class eQsatExtractorClass {
       } finally {
         try { zipReader.close(); } catch (e) {}
       }
-
       Object.freeze(result.errors);
-      this.#completedResultsStore.set(result.id, Object.freeze(result));
-
+      this.#completedResultsStore.set(result.id, result);
       this.#state.completedResultsIds.unshift(result.id);
-      while (this.#state.completedResultsIds.length > this.#MAX_COMPLETED_RESULTS) {
-        const droppedId = this.#state.completedResultsIds.pop();
-        this.#completedResultsStore.delete(droppedId);
-      }
+    }
+    if (this.#purgeCache) {
+      this.#state.completedResultsIds.length = 0;
+      this.#completedResultsStore.clear();
+      this.#purgeCache = false;
+    }
+    if (this.#preferencesChanged) {
+      this.#recreateLinks();
     }
     await this.#resetActiveExtractionState(eQsatExtractorStage.Idle, "");
   }
