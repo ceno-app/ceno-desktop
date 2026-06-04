@@ -29,7 +29,7 @@ ac_add_options --disable-default-browser-agent
 
 ac_add_options --with-base-browser-version=dev-build
 
-ac_add_options --with-l10n-base="firefox-l10n"
+ac_add_options --with-l10n-base="$topsrcdir/firefox-l10n"
 
 ac_add_options --disable-artifact-builds
 
