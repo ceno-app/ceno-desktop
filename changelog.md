@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## [0.1.2] - 2026-06-04
 
 ### Changed
 - eQsat Package Importer is hidden behind `about:config` preference `ceno.eqsat.enabled`
 - Clearing Ceno Network cache clears results from about:eqsat
 - Visual updates in about:eqsat
+- Updated translations
 
 ## [0.1.1] - 2026-06-01
 
