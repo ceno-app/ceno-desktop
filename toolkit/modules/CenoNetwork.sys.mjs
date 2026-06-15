@@ -1,5 +1,4 @@
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
-import { AsyncSocket } from "resource://gre/modules/AsyncSocket.sys.mjs";
 
 const lazy = {};
 
@@ -148,12 +147,10 @@ class _CenoNetwork {
   }
   #endpoints = {
     proxy: null,
-    frontend_unix_socket: lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false),
     frontend_tcp: null,
 
     frontend_get_api_status: '/api/status',
     frontend_set_value: '/',
-    frontend_get_endpoints: '/api/endpoints',
     frontend_metrics_set_key: '/api/metrics/set_key_value',
   }
 
@@ -291,38 +288,67 @@ class _CenoNetwork {
     }
   }
 
+  async #sha256hex(input) {
+    const msgUint8 = new TextEncoder().encode(input);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+    const hashHex = new Uint8Array(hashBuffer).toHex().toUpperCase();
+    return hashHex;
+  }
+
   async #getFromOuinetFrontend(url) {
-    let socket = AsyncSocket.fromIpcFile(this.#endpoints.frontend_unix_socket);
-    await socket.write(
-      `GET ${url} HTTP/1.1\r\n` +
-      `X-Ouinet-Front-End-Token: ${this.#credentials.frontend_token}\r\n` +
-      '\r\n'
-    );
-    const response = await socket.read();
-
-    const header_and_body = response.split("\r\n\r\n", 2);
-    const header = header_and_body[0].split("\r\n");
-
-    const isOk = header[0].includes('200');
-    if (!isOk) {
-      throw new Error("Frontend request failed: ", header_and_body);
+    if (this.#endpoints.frontend_tcp === null) {
+      throw new Error("getFromOuinetFrontend() called with unknown frontend address");
     }
-    return {
-      ok: isOk,
-      header: header,
-      body: header_and_body.length === 2 ? header_and_body[1] : null,
-      json: async function() {
-        return JSON.parse(header_and_body[1]);
+
+    const request_timestamp = Date.now();
+    const frontend_token_hash = await this.#sha256hex(`${url}:${this.#credentials.frontend_token}:${request_timestamp}`);
+    const response = await fetch(`${this.#endpoints.frontend_tcp}${url}`, {
+      headers: {
+        "X-Ouinet-Front-End-Token-Hash": frontend_token_hash,
+        "X-Ouinet-Request-Timestamp": request_timestamp,
       }
-    };
+    });
+
+    const response_timestamp = Number(response.headers.get("X-Ouinet-Response-Timestamp"));
+    const allowed_delay_in_verification_ms = 3000;
+    const timestamp_after_request = Date.now();
+    if (
+      // Reject responses made before the request
+      response_timestamp <= request_timestamp ||
+      // Reject responses from the future
+      response_timestamp >= timestamp_after_request ||
+      // Reject too old responses (protection against replay attacks)
+      response_timestamp + allowed_delay_in_verification_ms < timestamp_after_request
+    ) {
+      throw new Error("Failed to verify response timestamp");
+    }
+
+    const response_hash = response.headers.get("X-Ouinet-Front-End-Token-Hash");
+    const expected_response_hash = await this.#sha256hex(`${url}:${this.#credentials.frontend_token}:${response_timestamp}`);
+    if (expected_response_hash !== response_hash) {
+      lazy.logger.error(response.headers);
+      throw new Error(`Failed to verify response hash. Expected '${expected_response_hash}', Received '${response_hash}'`);
+    }
+    return response;
   }
 
   async #getApiEndpoints() {
+    const endpointsFile = lazy.OuinetLauncherUtil.getOuinetFile("endpoints", false);
+    if (!endpointsFile.exists()) {
+      return false;
+    }
     try {
-      const response = await this.#getFromOuinetFrontend(this.#endpoints.frontend_get_endpoints);
-      const json = await response.json();
+      const text = await IOUtils.readUTF8(endpointsFile.path);
+      const json = JSON.parse(text);
       this.#endpoints.proxy = json.proxy_endpoint;
       this.#endpoints.frontend_tcp = 'http://' + json.frontend_tcp_endpoint;
+
+      const ping_response = await this.#getFromOuinetFrontend("/ping");
+      const ping_response_text = await ping_response.text();
+      if (ping_response_text.trim() !== "pong") {
+        lazy.logger.error("Unexpected response to ping:", ping_response_text);
+        return false;
+      }
       return true;
     } catch (e) {
       lazy.logger.info('Failed to get ouinet endpoints', e);

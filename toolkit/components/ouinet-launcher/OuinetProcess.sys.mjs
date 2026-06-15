@@ -67,9 +67,10 @@ export class OuinetProcess {
     // Create empty ouinet-client.conf file, required to start ouinet
     lazy.OuinetLauncherUtil.getOuinetFile("conf", true);
 
-    this.#makeArgs(credentials, config);
+    this.#makeArgs(config);
 
     lazy.logger.debug(`Starting ${OuinetProcess.#exeFile.path}`, this.#args.join(' '));
+
     const options = {
       command: OuinetProcess.#exeFile.path,
       arguments: this.#args,
@@ -77,16 +78,18 @@ export class OuinetProcess {
       stdout: 'devnull',
       stderr: 'devnull',
       workdir: lazy.OuinetLauncherUtil.getOuinetFile("startup-dir", false).path,
+      environment: {
+        FRONT_END_ACCESS_TOKEN: credentials.frontend_token,
+        CLIENT_CREDENTIALS: `${credentials.proxy_user}:${credentials.proxy_password}`,
+      },
+      environmentAppend: true,
     };
     if (lazy.OuinetLauncherUtil.isLinux) {
       let ldLibPath = Services.env.get("LD_LIBRARY_PATH") ?? "";
       if (ldLibPath) {
         ldLibPath = ":" + ldLibPath;
       }
-      options.environment = {
-        LD_LIBRARY_PATH: OuinetProcess.#exeFile.parent.path + ldLibPath,
-      };
-      options.environmentAppend = true;
+      options.environment.LD_LIBRARY_PATH = OuinetProcess.#exeFile.parent.path + ldLibPath;
     }
     this.#subprocess = await lazy.Subprocess.call(options);
     Services.prefs.setIntPref(OuinetProcess.#pidPref, this.#subprocess.pid);
@@ -154,7 +157,7 @@ export class OuinetProcess {
     }
   }
 
-  #makeArgs(credentials, config) {
+  #makeArgs(config) {
     this.#args = [];
     this.#args.push("--repo", OuinetProcess.#dataDir.path);
     this.#args.push("--cache-type", OuinetProcess.#cacheType);
@@ -163,11 +166,7 @@ export class OuinetProcess {
     this.#args.push("--injector-tls-cert-file", OuinetProcess.#injectorTlsCertFile.path);
     this.#args.push("--tls-ca-cert-store-path", OuinetProcess.#tlsCaCertStorePath.path);
     this.#args.push("--listen-on-tcp", '127.0.0.1:0');
-    this.#args.push("--client-credentials", `${credentials.proxy_user}:${credentials.proxy_password}`)
-    this.#args.push("--front-end-unix-socket-ep", lazy.OuinetLauncherUtil.getOuinetFile("frontend_unix_socket", false).path);
     this.#args.push("--front-end-ep", '127.0.0.1:0');
-    this.#args.push("--front-end-access-token", credentials.frontend_token)
-
     this.#args.push("--drop-saved-opts");
 
     if (Services.prefs.getBoolPref(OuinetPrefs.metrics)) {

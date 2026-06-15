@@ -118,9 +118,9 @@ class OuinetFile {
         this.file = OuinetFile.ouinetDataDir;
         this.file.append("last_used_udp_port");
         break;
-      case "frontend_unix_socket":
+      case "endpoints":
         this.file = OuinetFile.ouinetDataDir;
-        this.file.append("frontend.socket");
+        this.file.append("endpoints.json");
         break;
       case "exit_cookie":
         this.file = OuinetFile.ouinetDataDir;
