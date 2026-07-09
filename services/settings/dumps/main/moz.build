@@ -1,0 +1,28 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+if CONFIG["MOZ_BUILD_APP"] == "browser":
+    # These collections are only referenced from browser/
+    FINAL_TARGET_FILES.defaults.settings.main += [
+        "language-dictionaries.json",
+   ]
+
+# These collections are referenced in toolkit/ or other core code, however
+# Android/iOS don't use/want the dumps.
+if not CONFIG["MOZ_BUILD_APP"].startswith("mobile/"):
+    FINAL_TARGET_FILES.defaults.settings.main += [
+        "anti-tracking-url-decoration.json",
+        "cookie-banner-rules-list.json",
+        "devtools-compatibility-browsers.json",
+        "devtools-devices.json",
+        "example.json",
+        "hijack-blocklists.json",
+        "moz-essential-domain-fallbacks.json",
+        "password-rules.json",
+        "search-default-override-allowlist.json",
+        "translations-models.json",
+        "translations-wasm.json",
+        "url-parser-default-unknown-schemes-interventions.json",
+        "websites-with-shared-credential-backends.json",
+    ]

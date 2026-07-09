@@ -1,0 +1,7 @@
+[DEFAULT]
+firefox-appdir = "browser"
+head = "../../../../extensions/newtab/test/xpcshell/head.js"
+
+["test_AboutNewTab.js"]
+
+["test_AboutNewTabRedirector.js"]
