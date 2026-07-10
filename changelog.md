@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.1.3] - 2026-07-11
 ### Changed
 - Updated Base Browser to 140.12.0esr
+- Updated Ouinet to 1.6.8 (improvements in exiting and restarting ceno-network-client)
 
 ## [0.1.2] - 2026-06-04
 
