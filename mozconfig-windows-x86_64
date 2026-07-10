@@ -46,6 +46,14 @@ ac_add_options --disable-artifact-builds
 # which build breaks `std::numeric_limits<T>::max()`.
 export CXXFLAGS="-DNOMINMAX=1"
 
+##################################
+# Base Browser warning silencers #
+##################################
+
+export CXXFLAGS="$CXXFLAGS -w"
+export CFLAGS="-w"
+export LDFLAGS="$LDFLAGS /ignore:4217"
+
 #######################################
 # Code Signing Variables and Defaults #
 #######################################
