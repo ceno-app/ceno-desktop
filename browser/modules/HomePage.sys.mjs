@@ -14,7 +14,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 const kPrefName = "browser.startup.homepage";
-const kDefaultHomePage = "about:mullvad-browser";
+const kDefaultHomePage = "about:cenohome";
 const kExtensionControllerPref =
   "browser.startup.homepage_override.extensionControlled";
 const kHomePageIgnoreListId = "homepage-urls";
