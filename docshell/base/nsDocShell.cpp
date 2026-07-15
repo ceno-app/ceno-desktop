@@ -4326,6 +4326,8 @@ nsDocShell::LoadPageAsViewSource(nsIDocShell* aOtherDocShell,
   // is only exposed to system code.  The triggering principal for this load
   // should be the system principal.
   loadState->SetTriggeringPrincipal(nsContentUtils::GetSystemPrincipal());
+  loadState->SetPrincipalToInherit(nullptr);
+  loadState->SetPartitionedPrincipalToInherit(nullptr);
   loadState->SetOriginalURI(nullptr);
   loadState->SetResultPrincipalURI(nullptr);
 
@@ -10919,7 +10921,9 @@ nsresult nsDocShell::OpenRedirectedChannel(nsDocShellLoadState* aLoadState) {
     // it under the provided identifier.
     RefPtr<ParentChannelWrapper> wrapper =
         new ParentChannelWrapper(channel, loader);
-    wrapper->Register(aLoadState->GetPendingRedirectChannelRegistrarId());
+    // We're in the parent process, so the redirect is owned by the parent
+    // process (ContentParentId 0).
+    wrapper->Register(aLoadState->GetPendingRedirectChannelRegistrarId(), 0);
 
     mLoadGroup->AddRequest(channel, nullptr);
   } else if (nsCOMPtr<nsIChildChannel> childChannel =
