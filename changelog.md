@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.1.4] - 2026-07-16
 ### Changed
 - Updated Base Browser to 140.12.0esr-15.0-1-build3 (previously was build2)
+- Updated CA Certificates
 
 ## [0.1.3] - 2026-07-15
 ### Changed
