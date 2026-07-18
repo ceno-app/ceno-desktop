@@ -618,7 +618,7 @@ LauncherRegistryInfo::BuildDefaultBlocklistFilename() {
       // already changes them to backslashes.
       const std::filesystem::path blocklistPath =
           std::filesystem::weakly_canonical(
-              appDir / L"Browser" / L"blocklist", ec);
+              appDir / L"" RELATIVE_DATA_DIR / L"blocklist", ec);
       if (ec) {
         return LAUNCHER_ERROR_GENERIC();
       }

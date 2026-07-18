@@ -35,6 +35,8 @@ ac_add_options --with-l10n-base="$topsrcdir/firefox-l10n"
 
 ac_add_options --disable-artifact-builds
 
+ac_add_options --with-relative-data-dir=BaseBrowser/Data/Browser
+
 ###############################
 # Tor/Ceno build differences. #
 # From [Tor Wiki](https://gitlab.torproject.org/tpo/applications/wiki/-/wikis/Development-Information/Tor-Browser/Windows-dev-builds)
