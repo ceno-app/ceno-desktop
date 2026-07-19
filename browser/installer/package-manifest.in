@@ -162,6 +162,25 @@
 @BINPATH@/@DLL_PREFIX@mozavutil@DLL_SUFFIX@
 @BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
 
+; [Ceno Files]
+@RESPATH@/components/ouinet-launcher.manifest
+@BINPATH@/distribution/extensions/uBlock0@raymondhill.net.xpi
+@BINPATH@/Ouinet/cacert.pem
+@BINPATH@/Ouinet/ssl-inj-cert.pem
+@BINPATH@/Ouinet/metrics-server-cacert.pem
+@BINPATH@/Ouinet/lib*@DLL_SUFFIX@
+; Do not ship .a libraries
+; @BINPATH@/Ouinet/lib*@DLL_SUFFIX@.a
+@BINPATH@/Ouinet/zlib*@DLL_SUFFIX@
+#if defined(XP_WIN)
+@BINPATH@/Ouinet/ceno-network-client.exe
+@BINPATH@/Ouinet/ceno-network-client-terminator.exe
+@BINPATH@/Ouinet/ceno-network-client-firewall-allow.exe
+#else
+@BINPATH@/Ouinet/client@BIN_SUFFIX@
+#endif
+@BINPATH@/browser/dot-ceno.ico
+
 ; [Components]
 #ifdef ACCESSIBILITY
 #ifdef XP_WIN
@@ -258,14 +277,16 @@
 
 ; [Default Preferences]
 ; All the pref files must be part of base to prevent migration bugs
-@RESPATH@/browser/@PREF_DIR@/firefox.js
 @RESPATH@/browser/@PREF_DIR@/firefox-branding.js
 @RESPATH@/greprefs.js
 @RESPATH@/defaults/autoconfig/prefcalls.js
 @RESPATH@/browser/defaults/permissions
 ; Remote Settings JSON dumps
 @RESPATH@/browser/defaults/settings
-@RESPATH@/browser/@PREF_DIR@/001-base-profile.js
+; @RESPATH@/browser/@PREF_DIR@/001-base-profile.js
+; @RESPATH@/browser/@PREF_DIR@/firefox.js
+; 001-base-profile.js and firefox.js prefs are included by pre-processor in ceno-profile.js
+@RESPATH@/browser/@PREF_DIR@/ceno-profile.js
 
 # channel-prefs.js has been removed on macOS.
 #ifndef XP_MACOSX

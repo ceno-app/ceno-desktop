@@ -100,6 +100,16 @@
 #include private-browsing-indicator.inc.xhtml
     <toolbarbutton class="content-analysis-indicator toolbarbutton-1 content-analysis-indicator-icon"/>
 
+      <html:div id="ouinet-connect-titlebar-status" role="status">
+        <html:img alt=""
+          id="ouinet-connect-titlebar-status-icon-not-connected"
+          src="chrome://global/content/cenohome/ceno-not-connected.svg" />
+        <html:img alt=""
+          id="ouinet-connect-titlebar-status-icon-connected"
+          src="chrome://global/content/cenohome/ceno-connected.svg" hidden="true" />
+        <html:span id="ouinet-connect-titlebar-status-label"></html:span>
+      </html:div>
+
 #include titlebar-items.inc.xhtml
 
   </toolbar>
@@ -221,6 +231,7 @@
               <box id="identity-icon-box"
                    role="button"
                    align="center"
+                   hidden="true"
                    data-l10n-id="urlbar-identity-button"
                    class="identity-box-button">
                 <image id="identity-icon"/>
@@ -416,6 +427,12 @@
                 <image id="star-button"
                        class="urlbar-icon"/>
               </hbox>
+            </hbox>
+            <hbox id="ouinet-connect-urlbar-button"
+              role="button"
+              class="ceno-button ouinet-urlbar-button ouinet-urlbar-button-plain"
+              hidden="true">
+              <label id="ouinet-connect-urlbar-button-label" data-l10n-id="ceno-browser-ouinet-urlbar-connect-button"/>
             </hbox>
           </hbox>
         </html:div>

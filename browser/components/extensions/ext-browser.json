@@ -119,6 +119,14 @@
     "manifest": ["omnibox"],
     "paths": [["omnibox"]]
   },
+  "ouinet": {
+    "url": "chrome://browser/content/parent/ext-ouinet.js",
+    "schema": "chrome://browser/content/schemas/ouinet.json",
+    "scopes": ["addon_parent"],
+    "events": ["onConnect", "onDisconnect"],
+    "manifest": ["ouinet"],
+    "paths": [["ouinet"]]
+  },
   "pageAction": {
     "url": "chrome://browser/content/parent/ext-pageAction.js",
     "schema": "chrome://extensions/content/schemas/page_action.json",

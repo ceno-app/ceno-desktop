@@ -1,0 +1,156 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 0 20px;
+  color: #333;
+  background: #f9f9fa;
+}
+h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+
+div#progressContainer {
+  width: 100%;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+div#progress-bar {
+  height: 100%;
+  background: #0a84ff;
+  width: 0%;
+  transition: width 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.active-stage { font-weight: bold; }
+
+.package-file, .zipQueueFile, #package-file {
+  color: #666;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: help;
+}
+
+.package-file:hover {
+  color: #0a84ff;
+}
+
+.error {
+  color: #d70022;
+  background: #fff0f0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 6px 0;
+}
+
+.pages {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.pages li {
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+.pages li:last-child {
+  border-bottom: none;
+}
+.pages a {
+  color: #0a84ff;
+  text-decoration: none;
+}
+.pages a:hover {
+  text-decoration: underline;
+}
+
+div#zipFilesQueue {
+  margin-top: 12px;
+}
+.zipFileInQueue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+.zipFileInQueue:last-child {
+  border-bottom: none;
+}
+.zipQueueFileName {
+  font-weight: 500;
+  flex: 1;
+}
+.zipQueueRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: #d70022;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.15s ease;
+  margin-right: 8px;        /* space between X and filename */
+  flex-shrink: 0;
+}
+
+.zipQueueRemove:hover {
+  background: #fff0f0;
+}
+
+.zipQueueRemove:active {
+  background: #ffd7d7;
+}
+
+div#cancelButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+button#cancelCurrent, #cancelAll, #experimental-dismiss {
+  background: #fff;
+  border: 1px solid #d70022;
+  color: #d70022;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+button#cancelCurrent:hover, #cancelAll:hover {
+  background: #fff0f0;
+}
+
+div#experimental p {
+  margin: 0;
+}
+button#experimental-dismiss {
+  margin-top: 1em;
+  border: 1px solid #c9c9d4;
+  color: #52525e;
+}
+button#experimental-dismiss:hover {
+  background: #e7e7ea;
+  border-color: #8f8f9d;
+}

@@ -126,7 +126,14 @@ endif # MOZ_ARTIFACT_BUILDS
 
 prepare-package: stage-package
 
-make-package-internal: prepare-package make-sourcestamp-file
+include $(topsrcdir)/build/codesign-options-parser.mk
+
+sign-binaries: prepare-package
+	@echo "Signing PE binaries..."
+	@echo $(SIGN_CALL) --name "$(MOZ_PKG_APPNAME)" --input "$(DIST)/$(MOZ_PKG_DIR)" --exempt msvcp140.dll --exempt vcruntime140.dll --exempt vcruntime140_1.dll
+	$(SIGN_CALL) --name "$(MOZ_PKG_APPNAME)" --input "$(DIST)/$(MOZ_PKG_DIR)" --exempt msvcp140.dll --exempt vcruntime140.dll --exempt vcruntime140_1.dll
+
+make-package-internal: prepare-package make-sourcestamp-file sign-binaries
 	@echo 'Compressing...'
 	$(call MAKE_PACKAGE,$(DIST))
 	echo $(PACKAGE) > $(ABS_DIST)/package_name.txt
@@ -135,7 +142,10 @@ make-package: FORCE
 	$(MAKE) make-package-internal
 ifeq (WINNT,$(OS_ARCH))
 ifeq ($(MOZ_PKG_FORMAT),ZIP)
-#	$(MAKE) -C windows ZIP_IN='$(ABS_DIST)/$(PACKAGE)' installer
+	# Tor's BaseBrowser doesn't build installer:
+	# https://gitlab.torproject.org/tpo/applications/tor-browser/-/commit/c9f511730d31c17f502fc50a7c75da6b2332b804
+	# We (Ceno) do build it, reenable it
+	$(MAKE) -C windows ZIP_IN='$(ABS_DIST)/$(PACKAGE)' installer sign-installers
 endif
 endif
 ifdef MOZ_AUTOMATION
