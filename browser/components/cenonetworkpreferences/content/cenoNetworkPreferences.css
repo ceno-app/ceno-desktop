@@ -1,0 +1,39 @@
+#category-connection > .category-icon {
+  list-style-image: url("chrome://browser/content/cenonetworkpreferences/ceno-icon.svg");
+}
+
+.network-status-label {
+  font-weight: bold;
+  margin-inline-end: 0.75em;
+}
+
+.network-status-label-not-bold {
+  margin-inline-end: 0.75em;
+}
+
+.network-status-result {
+  margin-inline-end: 0.75em;
+}
+
+.ouinet-moz-toggle {
+  margin-top: 0.25em;
+}
+
+#error-container {
+  font-weight: bold;
+}
+
+#logging-level {
+  margin-inline-start: 0;
+}
+
+#logging-level-label {
+  margin-inline: 0.25em;
+}
+
+#udp-mux-port-hbox {
+  margin-top: 0.25em;
+}
+#udp-mux-port {
+  margin-inline-start: 0;
+}

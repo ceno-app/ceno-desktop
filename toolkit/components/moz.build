@@ -27,6 +27,7 @@ DIRS += [
     "browser",
     "captchadetection",
     "cascade_bloom_filter",
+    "cenohome",
     "certviewer",
     "cleardata",
     "clearsitedata",
@@ -57,6 +58,8 @@ DIRS += [
     # Exclude the "ml" component. tor-browser#44045.
     "mozintl",
     "mozprotocol",
+    "ouinet-launcher",
+    "ouinet-native-helpers",
     "parentalcontrols",
     "passwordmgr",
     "pdfjs",

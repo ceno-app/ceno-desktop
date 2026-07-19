@@ -1,0 +1,19 @@
+XPIDL_SOURCES += [ "nsIOuinetNativeHelpers.idl" ]
+
+XPIDL_MODULE = "nsIOuinetNativeHelpers"
+FINAL_LIBRARY = "xul"
+
+XPCOM_MANIFESTS += [ "components.conf" ]
+
+EXPORTS += [ "OuinetNativeHelpers.h" ]
+
+UNIFIED_SOURCES += [
+    "Firewall.cpp",
+    "MetricsGeoTimezone.cpp",
+    "NetworkStatusMonitor.cpp",
+    "OuinetNativeHelpers.cpp",
+    "ProcessManagement.cpp",
+    "VirtualAppData.cpp",
+]
+
+CXXFLAGS += [ "/std:c++20" ]

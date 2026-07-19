@@ -76,6 +76,7 @@ def preprocess(base, input, flags):
     args, remainder = parser.parse_known_args(flags)
     preprocessor = (
         list(filter_preprocessor(buildconfig.substs["CXXCPP"]))
+        + ["-Wno-nonportable-include-path", "-Wno-unused-command-line-argument"]
         # Ideally we'd use the real midl version, but querying it adds a
         # significant overhead to configure. In practice, the version number
         # doesn't make a difference at the moment.

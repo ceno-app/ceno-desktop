@@ -1183,7 +1183,6 @@
   </hbox>
 </groupbox>
 
-<!-- DoH -->
 <hbox id="DoHCategory"
       class="subcategory"
       hidden="true"
@@ -1199,9 +1198,10 @@
             id="dohLearnMore"
             class="learnMore"
             support-page="dns-over-https"
+            hidden="true"
     />
   </vbox>
-  <vbox id="dohStatusSection" class="privacy-detailedoption info-box-container">
+  <vbox id="dohStatusSection" class="privacy-detailedoption info-box-container" hidden="true">
     <hbox>
       <label id="dohStatus" class="doh-status-label tail-with-learn-more"/>
       <html:a is="moz-support-link"
@@ -1210,13 +1210,14 @@
             support-page="doh-status"
             hidden="true"/>
     </hbox>
-    <label class="doh-status-label" id="dohResolver"/>
+    <label class="doh-status-label" id="dohResolver" hidden="true"/>
     <label class="doh-status-label" id="dohSteeringStatus" data-l10n-id="preferences-doh-steering-status" hidden="true"/>
   </vbox>
   <button id="dohExceptionsButton"
           is="highlightable-button"
           class="accessory-button"
           data-l10n-id="preferences-doh-manage-exceptions"
+          hidden="true"
           search-l10n-ids="
             permissions-doh-entry-field,
             permissions-doh-add-exception.label,
@@ -1229,8 +1230,8 @@
     <label><html:h2 id="dohGroupMessage" data-l10n-id="preferences-doh-group-message2"/></label>
     <vbox id="dohCategories">
       <radiogroup id="dohCategoryRadioGroup"
-                  preference="network.trr.mode" aria-labelledby="dohGroupMessage">
-        <vbox id="dohOptionDefault" class="privacy-detailedoption info-box-container">
+                  preference="ceno.network.doh_mode" aria-labelledby="dohGroupMessage">
+        <vbox id="dohOptionDefault" class="privacy-detailedoption info-box-container" hidden="true">
           <hbox>
             <radio id="dohDefaultRadio"
                    value="0"
@@ -1279,26 +1280,26 @@
           <hbox>
             <radio id="dohEnabledRadio"
                    value="2"
-                   data-l10n-id="preferences-doh-setting-enabled"
+                   data-l10n-id="ceno-preferences-doh-setting-enabled"
                    flex="1"/>
             <button id="dohEnabledArrow"
                     is="highlightable-button"
                     class="arrowhead doh-expand-section"
                     data-l10n-id="preferences-doh-expand-section"
-                    aria-expanded="false"/>
+                    aria-expanded="true"/>
           </hbox>
           <vbox class="indent">
-            <label data-l10n-id="preferences-doh-enabled-desc"></label>
+            <label data-l10n-id="ceno-preferences-doh-enabled-desc"></label>
             <vbox class="privacy-extra-information">
               <vbox class="indent">
-                <hbox class="extra-information-label">
+                <hbox class="extra-information-label" hidden="true">
                   <label class="doh-label" data-l10n-id="preferences-doh-enabled-detailed-desc-1"/>
                 </hbox>
                 <hbox class="extra-information-label">
-                  <label class="doh-label" data-l10n-id="preferences-doh-enabled-detailed-desc-2"/>
+                  <label class="doh-label" data-l10n-id="ceno-preferences-doh-enabled-detailed-desc-2"/>
                 </hbox>
               </vbox>
-              <vbox class="extra-information-label">
+              <vbox class="extra-information-label" hidden="true">
                 <label data-l10n-id="preferences-doh-select-resolver"/>
                 <menulist id="dohEnabledResolverChoices"
                           sizetopopup="none">
@@ -1319,23 +1320,23 @@
                     is="highlightable-button"
                     class="arrowhead doh-expand-section"
                     data-l10n-id="preferences-doh-expand-section"
-                    aria-expanded="false"/>
+                    aria-expanded="true"/>
           </hbox>
           <vbox class="indent">
-            <label data-l10n-id="preferences-doh-strict-desc"></label>
+            <label data-l10n-id="ceno-preferences-doh-strict-desc"></label>
             <vbox class="privacy-extra-information">
               <vbox class="indent">
-                <hbox class="extra-information-label">
+                <hbox class="extra-information-label" hidden="true">
                   <label class="doh-label" data-l10n-id="preferences-doh-strict-detailed-desc-1"/>
                 </hbox>
-                <hbox class="extra-information-label">
+                <hbox class="extra-information-label" hidden="true">
                   <label class="doh-label" data-l10n-id="preferences-doh-strict-detailed-desc-2"/>
                 </hbox>
                 <hbox class="extra-information-label">
-                  <label class="doh-label" data-l10n-id="preferences-doh-strict-detailed-desc-3"/>
+                  <label class="doh-label" data-l10n-id="ceno-preferences-doh-strict-detailed-desc-3"/>
                 </hbox>
               </vbox>
-              <vbox class="extra-information-label">
+              <vbox class="extra-information-label" hidden="true">
                 <label data-l10n-id="preferences-doh-select-resolver"/>
                 <menulist id="dohStrictResolverChoices"
                           sizetopopup="none">

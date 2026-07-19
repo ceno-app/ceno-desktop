@@ -1,0 +1,29 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// This is the base include which defines nsISupports. This class defines
+// the QueryInterface method.
+#include "nsISupports.idl"
+
+interface nsIObserver;
+
+// `scriptable` designates that this object will be used with JavaScript
+[scriptable, uuid(5ad3ef67-af51-4a67-9756-ca37388db375)]
+interface nsIOuinetNativeHelpers : nsISupports {
+  readonly attribute AString region;
+  readonly attribute AString timezone;
+
+  AString GetRealAppData(in AString virtualAppData);
+  AString GetShortPath(in AString longPath);
+
+  void ModifyFirewallMonitorPort(in long port);
+  void MonitorFirewall(in AString executable, in nsIObserver callback, in long port);
+
+  void EndNetworkClientProcess(in long pid);
+  void EndOrKillNetworkClientProcess(in long pid);
+
+  void MonitorNetworkClientProcess(in long pid, in nsIObserver callback);
+
+  void MonitorNetworkStatus(in nsIObserver callback);
+};

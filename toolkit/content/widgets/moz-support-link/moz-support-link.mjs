@@ -124,24 +124,27 @@ export default class MozSupportLink extends HTMLAnchorElement {
       this.href = href;
       return;
     }
-    let supportPage = this.getAttribute("support-page") ?? "";
-    // For base-browser we sometimes want to override firefox support links with
-    // our own.
-    // See tor-browser#40899.
-    switch (supportPage) {
-      case "preferences":
-        // Shown twice in preferences, both as `{ -brand-short-name } Support`.
-        // Instead of directing to support for preferences, we link to general
-        // tor browser support.
-        // See tor-browser#32092.
-        this.href = Services.prefs.getStringPref(
-          "browser.base-browser-support-url",
-          ""
-        );
-        return;
-      // Fall through to support.mozilla.org
-    }
-    let base = MozSupportLink.SUPPORT_URL + supportPage;
+    // let supportPage = this.getAttribute("support-page") ?? "";
+    // // For base-browser we sometimes want to override firefox support links with
+    // // our own.
+    // // See tor-browser#40899.
+    // switch (supportPage) {
+    //   case "preferences":
+    //     // Shown twice in preferences, both as `{ -brand-short-name } Support`.
+    //     // Instead of directing to support for preferences, we link to general
+    //     // tor browser support.
+    //     // See tor-browser#32092.
+    //     this.href = Services.prefs.getStringPref(
+    //       "browser.base-browser-support-url",
+    //       ""
+    //     );
+    //     return;
+    //   // Fall through to support.mozilla.org
+    // }
+    // let base = MozSupportLink.SUPPORT_URL + supportPage;
+
+    let base = "https://ceno.app/en/support.html";
+
     this.href = this.hasAttribute("utm-content")
       ? formatUTMParams(this.getAttribute("utm-content"), base)
       : base;

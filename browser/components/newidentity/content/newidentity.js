@@ -1,5 +1,9 @@
 "use strict";
 
+ChromeUtils.defineESModuleGetters(lazy, {
+  CenoNetwork: "resource://gre/modules/CenoNetwork.sys.mjs",
+});
+
 // Use a lazy getter because NewIdentityButton is declared more than once
 // otherwise.
 ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
@@ -100,6 +104,7 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
       await this.reloadAddons();
       this.clearConnections();
       this.clearPrivateSession();
+      await lazy.CenoNetwork.newIdentity();
     }
 
     clearSiteSpecificZoom() {
@@ -402,8 +407,7 @@ ChromeUtils.defineLazyGetter(this, "NewIdentityButton", () => {
         const isCustomHome =
           Services.prefs.getIntPref("browser.startup.page") === 1;
         const win = OpenBrowserWindow({
-          private: true,
-          skipCustomHome: !(isCustomHome && isTrustedHome),
+          private: false,
         });
         // This mechanism to know when the new window is ready is used by
         // OpenBrowserWindow itself (see its definition in browser.js).

@@ -20,8 +20,10 @@ DIRS += [
     "mozapps/downloads",
     "mozapps/extensions",
     "mozapps/preferences",
+    "ouinet",
     "profile",
     "themes",
+    "ublock",
 ]
 
 if CONFIG["OS_ARCH"] == "WINNT":
