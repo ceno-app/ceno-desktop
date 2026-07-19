@@ -1628,7 +1628,7 @@ preferences-doh-expand-section =
 
 preferences-doh-setting-default =
   .label = Default Protection
-  .accesskey = D
+#  .accesskey = D
 preferences-doh-default-desc = { -brand-short-name } decides when to use secure DNS to protect your privacy.
 preferences-doh-default-detailed-desc-1 = Use secure DNS in regions where it’s available
 preferences-doh-default-detailed-desc-2 = Use your default DNS resolver if there is a problem with the secure DNS provider

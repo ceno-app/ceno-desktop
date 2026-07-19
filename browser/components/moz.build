@@ -33,11 +33,13 @@ DIRS += [
     "asrouter",
     "attribution",
     "backup",
+    "cenonetworkpreferences",
     "contentanalysis",
     "contextualidentity",
     "customizableui",
     "downloads",
     "enterprisepolicies",
+    "eqsat",
     "extensions",
     # Exclude "genai" component. tor-browser#44045.
     "messagepreview",

@@ -565,6 +565,11 @@ class Process extends BaseProcess {
       win32.CREATE_SUSPENDED |
       win32.CREATE_UNICODE_ENVIRONMENT;
 
+    if (PathUtils.filename(command).startsWith("ceno-network-client")) {
+      const CREATE_DEFAULT_ERROR_MODE = 0x04000000;
+      processFlags |= CREATE_DEFAULT_ERROR_MODE;
+    }
+
     let startupInfoEx = new win32.STARTUPINFOEXW();
     let startupInfo = startupInfoEx.StartupInfo;
 

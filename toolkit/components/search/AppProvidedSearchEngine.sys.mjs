@@ -225,7 +225,7 @@ class IconHandler {
         Object.entries(
           await (
             await fetch(
-              "chrome://global/content/search/base-browser-search-engine-icons.json"
+              "chrome://global/content/search/cenoBrowserSearchEngineIcons.json"
             )
           ).json()
         )

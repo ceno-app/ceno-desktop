@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8"/>
+  <title data-l10n-id="eqsat-title">eQsat Extractor</title>
+  <link rel="localization" href="branding/brand.ftl"/>
+  <link rel="localization" href="toolkit/global/ceno-browser.ftl"/>
+<style>
+<![CDATA[
+#include about-eqsat.css
+]]>
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1 data-l10n-id="eqsat-title">eQsat Package Importer</h1>
+    <p data-l10n-id="eqsat-description-1"></p>
+    <p data-l10n-id="eqsat-description-2"></p>
+  </div>
+
+  <div id="experimental" class="card">
+    <h3 data-l10n-id="eqsat-experimental-title">eQsat importer is experimental</h3>
+    <p data-l10n-id="eqsat-experimental-1">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-2">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-3">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-4">eQsat importer is experimental</p>
+    <p data-l10n-id="eqsat-experimental-5">eQsat importer is experimental</p>
+    <button data-l10n-id="eqsat-dismiss" id="experimental-dismiss">Dismiss</button>
+  </div>
+
+  <div id="loading-card" class="card" hidden="hidden">
+    <h2 id="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</h2>
+
+    <div id="parsingZipFile" data-l10n-id="eqsat-analyzing">Analyzing package...</div>
+    <div id="extracting" data-l10n-id="eqsat-extracting">Extracting files: 0/0</div>
+    <div id="processingDHT" data-l10n-id="eqsat-processingDHT">Processing pages...</div>
+    <div id="progressContainer"><div id="progress-bar"></div></div>
+
+    <div id="cancelButtons">
+      <button id="cancelCurrent" data-l10n-id="eqsat-cancel-current">Cancel</button>
+      <button id="cancelAll" data-l10n-id="eqsat-cancel-all">Cancel All</button>
+    </div>
+
+    <div id="zipFilesQueue">
+      <h4 data-l10n-id="eqsat-queue-title">Processing Queue</h4>
+      <!-- <template id="zipFileInQueueTemplate"> will be inserted here -->
+    </div>
+  </div>
+
+  <template id="zipFileInQueueTemplate">
+    <div class="zipFileInQueue" id="zipFileInQueue-xxx">
+      <a class="zipQueueRemove" href="#" title="remove from queue">×</a>
+      <span class="zipQueueFile" title="C:\Downloads\www.eQualitie.org-latest.zip">www.eQualitie.org-latest.zip</span>
+    </div>
+  </template>
+
+  <!-- <template id="result-template"> will be inserted here -->
+  <template id="result-template">
+    <details class="card result-card" id="extracted-package-xxx" open="open">
+      <summary class="package-file" title="C:\Downloads\www.eQualitie.org-base.zip">www.eQualitie.org-base.zip</summary>
+      <div class="package-date"></div>
+      <div class="errors">
+        <!-- <template id="error-template"> will be inserted here -->
+        <div class="no-pages error" hidden="hidden" data-l10n-id="eqsat-result-no-pages"></div>
+      </div>
+      <ul class="pages">
+        <!-- <template id="page-template"> will be inserted here -->
+      </ul>
+    </details>
+  </template>
+
+  <template id="error-template">
+    <div class="error">
+      www.eQualitie.org-base.zip: metadata file not found
+    </div>
+  </template>
+
+  <template id="page-template">
+    <li class="page"><a href="" target="_blank"></a></li>
+  </template>
+
+<script>
+<![CDATA[
+#include about-eqsat.js
+]]>
+</script>
+</body>
+</html>
