@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   OuinetProcess: "resource://gre/modules/OuinetProcess.sys.mjs",
   AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
   Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
+  NavigationBlocker: "resource://gre/modules/NavigationBlocker.sys.mjs",
 });
 
 // keep OuinetPrefs in sync with connectionPane.inc.xhtml
@@ -226,11 +227,26 @@ class _CenoNetwork {
     if (sendNotifications) {
       this.#sendNotifications();
     }
+
+    switch (newStageName) {
+      case OuinetStages.Exited:
+      case OuinetStages.Error:
+        lazy.NavigationBlocker.resume();
+        break;
+      case OuinetStages.Connected:
+      case OuinetStages.Degraded:
+        // Navigation is unblocked in #extensionOnConnect()
+        break;
+      default:
+        lazy.NavigationBlocker.pause();
+        break;
+    }
   }
 
   // init() is called by OuinetStartupService
   async init() {
     this.#initOuinetState();
+    lazy.NavigationBlocker.pause(true);
     if (!Services.prefs.prefHasUserValue(OuinetPrefs.doh) && this.#metricsRegion[1] === "R" && this.#metricsRegion[0] === "I") {
       Services.prefs.getDefaultBranch("").setIntPref(OuinetPrefs.doh, DNS_Mode_Plain);
     }
@@ -258,6 +274,7 @@ class _CenoNetwork {
       this.#ouinetProcess.inherit();
 
       if (await this.#getApiEndpoints()) {
+        lazy.NavigationBlocker.unlockPause();
         if (connectionId !== this.#connectionId) {
           lazy.logger.debug("Abandoning cancelled connection attempt");
           return;
@@ -274,6 +291,7 @@ class _CenoNetwork {
         if (Services.prefs.getBoolPref(OuinetPrefs.quickstart)) {
           this.#executeAfterOuinetExits(() => {
             lazy.logger.debug('Quickstart enabled');
+            lazy.NavigationBlocker.unlockPause();
             this.connect();
           });
         }
@@ -513,11 +531,16 @@ class _CenoNetwork {
       this.#extensionCallbacks.onConnect !== null &&
       !this.#extensionCallbacks.onConnectCalled
     ) {
+      const connectionId = this.#connectionId;
       this.#extensionCallbacks.onConnect(
         this.#endpoints.proxy,
         this.#credentials.proxy_user,
         this.#credentials.proxy_password
-      );
+      ).then(() => {
+        if (connectionId == this.#connectionId) {
+          lazy.NavigationBlocker.resume();
+        }
+      });
       this.#extensionCallbacks.onConnectCalled = true;
     }
     this.#extensionCallbacks.onDisconnectCalled = false;

@@ -14,7 +14,7 @@ this.ouinet = class extends ExtensionAPI {
           event: "onConnect",
           register: fire => {
             const callback = async (proxy_endpoint, proxy_user, proxy_pass) => {
-              fire.async(proxy_endpoint, proxy_user, proxy_pass);
+              return fire.async(proxy_endpoint, proxy_user, proxy_pass);
             };
             CenoNetwork.RegisterExtensionOnConnectCallback(callback);
             return () => {
@@ -28,7 +28,7 @@ this.ouinet = class extends ExtensionAPI {
           event: "onDisconnect",
           register: fire => {
             const callback = async () => {
-              fire.async();
+              return fire.async();
             };
             CenoNetwork.RegisterExtensionOnDisconnectCallback(callback);
             return () => {
