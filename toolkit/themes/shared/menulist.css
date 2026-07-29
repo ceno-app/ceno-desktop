@@ -1,0 +1,119 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host([native]) {
+  appearance: auto;
+  -moz-default-appearance: menulist;
+  text-shadow: none;
+  @media (-moz-platform: linux) {
+    font: menu;
+  }
+  @media (-moz-platform: linux) or (-moz-platform: windows) {
+    margin: var(--space-xxsmall) var(--space-xsmall);
+    color: ButtonText;
+    padding: var(--space-xxsmall) var(--space-xsmall);
+    border: 1px solid ButtonBorder;
+
+    dropmarker {
+      align-self: stretch;
+    }
+  }
+  @media (-moz-platform: macos) {
+    margin: var(--space-xsmall) var(--space-xxsmall);
+    min-height: var(--size-item-small);
+    color: -moz-DialogText;
+
+    #label-box {
+      margin-bottom: 1px;
+    }
+
+    label {
+      margin: var(--space-xsmall);
+    }
+
+    dropmarker {
+      display: none;
+    }
+  }
+}
+
+@media (-moz-platform: linux) or (-moz-platform: windows) {
+  :host([native]:where(:hover)) {
+    color: -moz-buttonhovertext;
+  }
+  :host([native]:where(:hover:active, [open="true"])) {
+    color: -moz-buttonactivetext;
+  }
+}
+
+:host([native][disabled]) {
+  color: var(--text-color-disabled);
+}
+
+:host(:not([native])) {
+  appearance: none;
+  background-color: var(--button-background-color);
+  color: var(--button-text-color);
+  border-radius: var(--button-border-radius);
+  padding-block: var(--space-xsmall);
+  padding-inline: var(--space-medium) var(--space-small);
+  margin: var(--space-xsmall) var(--space-xxsmall);
+}
+
+:host(:not([native])[size="medium"]) {
+  padding-block: var(--space-xsmall);
+  padding-inline: var(--space-large) var(--space-small);
+}
+
+:host(:not([native])[size="large"]) {
+  padding-block: var(--space-small);
+  padding-inline: var(--space-large) var(--space-medium);
+}
+
+:host(:not([native]):hover) {
+  background-color: var(--button-background-color-hover);
+}
+
+:host(:not([native]):hover:active) {
+  background-color: var(--button-background-color-active);
+}
+
+:host(:not([native]):focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+#label-box {
+  min-width: 0;
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+
+  :host(:not([native])) & {
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+dropmarker {
+  pointer-events: none;
+  flex: 0;
+  align-self: center;
+
+  :host(:not([native])) & {
+    display: flex;
+    appearance: none;
+    content: url(chrome://global/skin/icons/arrow-down-12.svg);
+    -moz-context-properties: fill;
+    fill: currentColor;
+  }
+}
+
+:host(:not([highlightable])) #highlightable-label,
+:host([highlightable]) #label {
+  display: none;
+}
+
+label {
+  margin: 0 var(--space-xsmall);
+}

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "importHelpers": true,
+    "noImplicitOverride": true,
+    "noErrorTruncation": true,
+    "experimentalDecorators": true
+  },
+  "exclude": [
+    "website",
+    "build/*.ts"
+  ]
+}

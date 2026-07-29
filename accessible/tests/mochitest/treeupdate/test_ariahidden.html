@@ -1,0 +1,61 @@
+<html>
+
+<head>
+  <title>aria-hidden tree update tests</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    async function doTests() {
+      ok(!isAccessible("t1_child"), "No accessible for aria-hidden");
+
+      let reordered = waitForEvent(EVENT_REORDER, "t1");
+      getNode("t1_child").removeAttribute("aria-hidden");
+      await reordered;
+      ok(isAccessible("t1_child"), "No aria-hidden, has to be accessible");
+
+      reordered = waitForEvent(EVENT_REORDER, "t1");
+      getNode("t1_child").setAttribute("aria-hidden", "true");
+      await reordered;
+      ok(!isAccessible("t1_child"), "No accessible for aria-hidden");
+
+      reordered = waitForEvent(EVENT_REORDER, "t2");
+      getNode("t2_child").setAttribute("aria-hidden", "true");
+      await reordered;
+      testAccessibleTree("t2", { SECTION: []});
+
+      let unexpected = new UnexpectedEvents([[EVENT_REORDER, "t2"]]);
+      getNode("t2_child").innerHTML = "<input>";
+      await unexpected.flush();
+      unexpected.stop();
+      testAccessibleTree("t2", { SECTION: []});
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="t1"><div id="t1_child" aria-hidden="true">Hi</div><div>there</div></div>
+  <div id="t2">
+    <span id="t2_child">hoho</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test playback of HLS with simple m3u8 that should play OK</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+var manager = new MediaTestManager;
+
+gTestPrefs.push(["media.hls.enabled", true]);
+
+function startTest(test, token) {
+  const video = document.createElement('video');
+  video.preload = "metadata";
+  video.token = token;
+  video.prevTime = 0;
+  video.seenEnded = false;
+
+  var handler = {
+    "ontimeout": function() {
+      Log(token, "timed out: ended=" + video.seenEnded);
+    }
+  };
+  manager.started(token, handler);
+
+  video.src = test.name;
+  video.name = test.name;
+
+  var check = function() {
+    is(test.name, video.name, test.name + ": Name should match #1");
+    checkMetadata(test.name, video, test);
+  };
+
+  var noLoad = function() {
+    ok(false, test.name + " should not fire 'load' event");
+  };
+
+  var finish = function() {
+    video.finished = true;
+    video.removeEventListener("timeupdate", timeUpdate);
+    removeNodeAndSource(video);
+    manager.finished(video.token);
+  };
+
+  // We should get "ended" events to finish the test.
+  var mayFinish = function() {
+    if (video.seenEnded) {
+      finish();
+    }
+  };
+
+  var checkEnded = function() {
+    is(test.name, video.name, test.name + ": Name should match #2");
+    checkMetadata(test.name, video, test);
+    is(video.readyState, video.HAVE_CURRENT_DATA, test.name + " checking readyState");
+    ok(video.ended, test.name + " checking playback has ended");
+    ok(!video.finished, test.name + " shouldn't be finished");
+    ok(!video.seenEnded, test.name + " shouldn't be ended");
+
+    video.seenEnded = true;
+    mayFinish();
+  };
+
+  var timeUpdate = function() {
+    if (video.prevTime > video.currentTime) {
+      ok(false, test.name + " time should run forwards: p=" +
+                video.prevTime + " c=" + video.currentTime);
+    }
+    video.prevTime = video.currentTime;
+  };
+
+  video.addEventListener("load", noLoad);
+  video.addEventListener("loadedmetadata", check);
+  video.addEventListener("timeupdate", timeUpdate);
+
+  // We should get "ended" events for the hls resource
+  video.addEventListener("ended", checkEnded);
+
+  document.body.appendChild(video);
+  video.play();
+}
+
+manager.runTests(gHLSTests, startTest);
+
+</script>
+</pre>
+</body>
+</html>

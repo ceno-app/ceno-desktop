@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face {
+  font-family: 'Ahem';
+  src: url('../fonts/Ahem.ttf');
+}
+
+body {
+  position: relative;
+  font: 40px/1 Ahem;
+}
+
+#ref {
+  writing-mode: vertical-lr;
+}
+
+.baseline {
+  position: absolute;
+  top: 50px;
+}
+
+.baseline.top div { translate: -1em; }
+.baseline.middle div { translate: -0.5em; }
+.baseline.alphabetic div { translate: -0.2em; }
+.baseline.bottom div { translate: 0; }
+
+/* Visualizes the baseline */
+.baseline::before {
+  content: "|";
+  position: absolute;
+  top: -20px;
+  bottom: -20px;
+  display: block;
+  width: 2px;
+  background: #0008;
+  translate: -50%;
+  color: transparent;
+}
+</style>
+</head>
+<body>
+<div id="ref">
+  <div class="baseline alphabetic" style="left: 100px;"><div>ApÉx</div></div>
+</div>

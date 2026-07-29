@@ -1,0 +1,159 @@
+[DEFAULT]
+support-files = [
+  "../shared-head.js",
+  "head.js",
+]
+skip-if = [
+  "tsan", # Bug 1804081 - TSan times out on pretty much all of these tests
+]
+
+["browser_test_feature_ipcmessages.js"]
+support-files = ["simple.html"]
+
+["browser_test_feature_js_source_table.js"]
+support-files = ["simple.html", "inline_script_test.html"]
+
+["browser_test_feature_js_sourceindex.js"]
+support-files = ["simple.html", "tracing.html"]
+
+["browser_test_feature_js_sources_deduplication.js"]
+support-files = ["simple.html", "test_dedup_script.js"]
+
+["browser_test_feature_js_sources_retrieval.js"]
+skip-if = [
+  "os == 'win' && os_version == '11.26200' && asan", # Bug 2019745
+]
+support-files = [
+  "simple.html",
+  "page_with_external_js.html",
+  "external_script.js"
+]
+
+["browser_test_feature_js_sources_shutdown_process.js"]
+support-files = ["simple.html"]
+
+["browser_test_feature_jsallocations.js"]
+support-files = ["do_work_500ms.html"]
+
+["browser_test_feature_jstracing.js"]
+support-files = ["tracing.html"]
+skip-if = [
+  "!nightly_build", # This features is only enabled on nightly via MOZ_EXECUTION_TRACING build flag
+]
+
+["browser_test_feature_jstracing_filter_values.js"]
+skip-if = [
+  "!nightly_build", # This features is only enabled on nightly via MOZ_EXECUTION_TRACING build flag
+]
+
+["browser_test_feature_jstracing_objtestutils.js"]
+support-files = [
+  "browser_test_feature_jstracing_objtestutils.snapshot.mjs",
+]
+skip-if = [
+  "!nightly_build", # This features is only enabled on nightly via MOZ_EXECUTION_TRACING build flag
+]
+
+["browser_test_feature_jstracing_values.js"]
+support-files = ["tracing_values.html"]
+skip-if = [
+  "!nightly_build", # This features is only enabled on nightly via MOZ_EXECUTION_TRACING build flag
+]
+
+["browser_test_feature_multiprocess_capture_with_signal.js"]
+support-files = ["do_work_500ms.html"]
+skip-if = [
+  "ccov", #            The signals for the profiler conflict with the ccov signals
+  "os == 'win'", # than these tests, so we're disabling them for now. See Bug 1904897.
+  "debug && verify",
+]
+
+["browser_test_feature_nostacksampling.js"]
+support-files = ["do_work_500ms.html"]
+
+["browser_test_marker_network_cancel.js"]
+support-files = ["simple.html"]
+
+["browser_test_marker_network_private_browsing.js"]
+support-files = ["simple.html"]
+
+["browser_test_marker_network_redirect.js"]
+support-files = [
+  "redirect.sjs",
+  "simple.html",
+  "page_with_resources.html",
+  "firefox-logo-nightly.svg",
+]
+
+["browser_test_marker_network_serviceworker_cache_first.js"]
+support-files = [
+  "serviceworkers/serviceworker-utils.js",
+  "serviceworkers/serviceworker_register.html",
+  "serviceworkers/serviceworker_page.html",
+  "serviceworkers/firefox-logo-nightly.svg",
+  "serviceworkers/serviceworker_cache_first.js",
+]
+
+["browser_test_marker_network_serviceworker_no_fetch_handler.js"]
+support-files = [
+  "serviceworkers/serviceworker-utils.js",
+  "serviceworkers/serviceworker_register.html",
+  "serviceworkers/serviceworker_page.html",
+  "serviceworkers/firefox-logo-nightly.svg",
+  "serviceworkers/serviceworker_no_fetch_handler.js",
+]
+
+["browser_test_marker_network_serviceworker_no_respondWith_in_fetch_handler.js"]
+support-files = [
+  "serviceworkers/serviceworker-utils.js",
+  "serviceworkers/serviceworker_register.html",
+  "serviceworkers/serviceworker_page.html",
+  "serviceworkers/firefox-logo-nightly.svg",
+  "serviceworkers/serviceworker_no_respondWith_in_fetch_handler.js",
+]
+
+["browser_test_marker_network_serviceworker_synthetized_response.js"]
+support-files = [
+  "serviceworkers/serviceworker-utils.js",
+  "serviceworkers/serviceworker_register.html",
+  "serviceworkers/serviceworker_simple.html",
+  "serviceworkers/firefox-logo-nightly.svg",
+  "serviceworkers/serviceworker_synthetized_response.js",
+]
+
+["browser_test_marker_network_simple.js"]
+support-files = ["simple.html"]
+
+["browser_test_marker_network_sts.js"]
+support-files = ["simple.html"]
+
+["browser_test_markers_console_timing.js"]
+support-files = ["single_frame.html"]
+
+["browser_test_markers_gc_cc.js"]
+
+["browser_test_markers_parent_process.js"]
+
+["browser_test_markers_preferencereads.js"]
+support-files = ["single_frame.html"]
+
+["browser_test_profile_capture_by_pid.js"]
+support-files = ["single_frame.html"]
+
+["browser_test_profile_fission.js"]
+support-files = ["single_frame.html"]
+
+["browser_test_profile_multi_frame_page_info.js"]
+support-files = [
+  "multi_frame.html",
+  "single_frame.html",
+]
+
+["browser_test_profile_single_frame_page_info.js"]
+support-files = ["single_frame.html"]
+
+["browser_test_profile_slow_capture.js"]
+support-files = ["single_frame.html"]
+run-if = [
+  "debug",
+]

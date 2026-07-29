@@ -1,0 +1,74 @@
+[DEFAULT]
+support-files = [
+  "amosigned.xpi",
+  "cookieRedirect.sjs",
+  "corrupt.xpi",
+  "empty.xpi",
+  "hashRedirect.sjs",
+  "head.js",
+  "incompatible.xpi",
+  "mozaddonmanager.html",
+  "navigate.html",
+  "recommended.xpi",
+  "redirect.sjs",
+  "unsigned.xpi",
+  "unsigned_mv3.xpi",
+  "../xpcshell/data/signing_checks/privileged.xpi",
+]
+
+["browser_amosigned_url.js"]
+https_first_disabled = true # Bug 1737265
+
+["browser_auth.js"]
+https_first_disabled = true # Bug 1737265
+
+["browser_block_fullscreen_prompt.js"]
+https_first_disabled = true # Bug 1737265
+
+["browser_containers.js"]
+
+["browser_cookies.js"]
+
+["browser_corrupt.js"]
+https_first_disabled = true # Bug 1737265
+
+["browser_datauri.js"]
+skip-if = ["true"]  # Bug 2014500
+
+["browser_doorhanger_installs.js"]
+support-files = ["helpers_addons_install_dialogs.js"]
+https_first_disabled = true # Bug 1737265
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt", # Bug 1815128
+]
+
+["browser_empty.js"]
+
+["browser_httphash.js"]
+
+["browser_localfile.js"]
+
+["browser_localfile3.js"]
+
+["browser_localfile4.js"]
+
+["browser_localfile4_postDownload.js"]
+
+["browser_localfile_navigation.js"]
+
+["browser_newwindow.js"]
+run-if = [
+  "debug", # This is a test for leaks, see comment in the test.
+]
+
+["browser_offline.js"]
+
+["browser_privatebrowsing.js"]
+
+["browser_required_useractivation.js"]
+
+["browser_unsigned_url.js"]
+https_first_disabled = true # Bug 1737265
+run-if = [
+  "!require_signing",
+]

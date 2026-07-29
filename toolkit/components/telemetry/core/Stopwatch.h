@@ -1,0 +1,38 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef Stopwatch_h_
+#define Stopwatch_h_
+
+#include "mozilla/dom/UserInteractionBinding.h"
+
+namespace mozilla {
+namespace telemetry {
+
+class UserInteractionStopwatch {
+  using GlobalObject = mozilla::dom::GlobalObject;
+
+ public:
+  static bool Start(const GlobalObject& aGlobal,
+                    const nsAString& aUserInteraction, const nsACString& aValue,
+                    JS::Handle<JSObject*> aObj);
+  static bool Running(const GlobalObject& aGlobal,
+                      const nsAString& aUserInteraction,
+                      JS::Handle<JSObject*> aObj);
+  static bool Update(const GlobalObject& aGlobal,
+                     const nsAString& aUserInteraction,
+                     const nsACString& aValue, JS::Handle<JSObject*> aObj);
+  static bool Cancel(const GlobalObject& aGlobal,
+                     const nsAString& aUserInteraction,
+                     JS::Handle<JSObject*> aObj);
+  static bool Finish(const GlobalObject& aGlobal,
+                     const nsAString& aUserInteraction,
+                     JS::Handle<JSObject*> aObj,
+                     const dom::Optional<nsACString>& aAdditionalText);
+};
+
+}  // namespace telemetry
+}  // namespace mozilla
+
+#endif  // Stopwatch_h_

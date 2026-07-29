@@ -1,0 +1,45 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: "Security: PSM"
+
+origin:
+  name: NSS
+  description: nss
+  url: https://hg-edge.mozilla.org/projects/nss
+
+  release: 108de14257bf363cf53a42e1ef382d44fe39c599 (2026-06-11T17:41:34Z).
+  revision: 108de14257bf363cf53a42e1ef382d44fe39c599
+
+  license: MPL-2.0
+  license-file: COPYING
+
+vendoring:
+  url: https://github.com/mozilla/nss
+  source-hosting: github
+  vendor-directory: security/nss/
+  skip-vendoring-steps:
+    - update-moz-build
+  exclude:
+    - .hgignore
+    - .hgtags
+  keep:
+    - TAG-INFO
+  update-actions:
+    - action: run-script
+      cwd: '{topsrcdir}'
+      script: '{cwd}/security/manager/tools/regen_root_ca_metadata.py'
+
+updatebot:
+  maintainer-phab: "#nss-reviewers"
+  maintainer-bz: jschanck@mozilla.com
+  fuzzy-paths:
+    - netwerk/base
+    - security/certverifier
+    - security/manager/ssl
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: 1 week
+      blocking: 2046901

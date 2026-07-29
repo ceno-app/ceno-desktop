@@ -1,0 +1,46 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef DOM_QUOTA_ERRORHANDLING_H_
+#define DOM_QUOTA_ERRORHANDLING_H_
+
+#include "ErrorList.h"
+#include "mozilla/dom/quota/ForwardDecls.h"
+#include "mozilla/ipc/ProtocolUtils.h"
+
+namespace mozilla::dom::quota {
+
+template <typename ResolverType>
+class ResolveAndReturn {
+ public:
+  explicit ResolveAndReturn(const ResolverType& aResolver)
+      : mResolver(aResolver) {}
+
+  mozilla::ipc::IPCResult operator()(const nsresult rv) {
+    mResolver(rv);
+    return IPC_OK();
+  }
+
+ private:
+  const ResolverType& mResolver;
+};
+
+using ResolveNSResultAndReturn =
+    ResolveAndReturn<mozilla::ipc::NSResultResolver>;
+
+using ResolveBoolResponseAndReturn =
+    ResolveAndReturn<mozilla::ipc::BoolResponseResolver>;
+using ResolveUInt64ResponseAndReturn =
+    ResolveAndReturn<mozilla::ipc::UInt64ResponseResolver>;
+using ResolveCStringArrayResponseAndReturn =
+    ResolveAndReturn<mozilla::ipc::CStringArrayResponseResolver>;
+
+using ResolveOriginUsageMetadataArrayResponseAndReturn =
+    ResolveAndReturn<OriginUsageMetadataArrayResponseResolver>;
+using ResolveUsageInfoResponseAndReturn =
+    ResolveAndReturn<UsageInfoResponseResolver>;
+
+}  // namespace mozilla::dom::quota
+
+#endif  // DOM_QUOTA_ERRORHANDLING_H_

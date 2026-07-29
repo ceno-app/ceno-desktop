@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible focus event testing">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+
+    async function doTests() {
+      // Test focus events.
+      let focused = waitForEvent(EVENT_FOCUS, "rlb_item1");
+      getNode("richlistbox").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "rlb_item2");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "msrlb_item1");
+      getNode("multiselrichlistbox").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "msrlb_item2");
+      synthesizeKey("VK_DOWN", { shiftKey: true });
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "emptyrichlistbox");
+      getNode("emptyrichlistbox").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "menulist");
+      getNode("menulist").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "ml_tangerine");
+      synthesizeMouseAtCenter(getNode("menulist"), {});
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "ml_marmalade");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "menulist");
+      synthesizeKey("VK_ESCAPE", {});
+      await focused;
+
+      // On Windows, items get selected during navigation.
+      let expectedItem = WIN ? "ml_strawberry" : ( MAC ? "ml_tangerine" : "ml_marmalade" );
+      synthesizeKey("VK_DOWN", {});
+
+      focused = waitForEvent(EVENT_FOCUS, expectedItem);
+      synthesizeKey("VK_DOWN", { altKey: true });
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "menulist");
+      synthesizeKey("VK_RETURN", {});
+      await focused;
+
+      // no focus events for unfocused list controls when current item is
+      // changed.
+      focused = waitForEvent(EVENT_FOCUS, "emptyrichlistbox");
+      getNode("emptyrichlistbox").focus();
+      await focused;
+
+      getNode("richlistbox").currentItem = getNode("rlb_item1");
+      getNode("menulist").selectedItem = getNode(
+        WIN ? "ml_marmalade" : "ml_tangerine"
+      );
+
+      // When a menulist contains something other than XUL menuitems, we need
+      // to manage focus with aria-activedescendant.
+      info("Testing opening a menupopup with aria-activedescendant");
+      let popupDiv1 = getNode("menupopup_ad_div1");
+      focused = waitForEvent(EVENT_FOCUS, popupDiv1);
+      let popup = getNode("menupopup_ad");
+      popup.openPopup();
+      await focused;
+      info(
+        "Testing removal of previous active descendant + setting new active descendant"
+      );
+      focused = waitForEvent(EVENT_FOCUS, "menupopup_ad_div2");
+      popupDiv1.remove();
+      popup.setAttribute("aria-activedescendant", "menupopup_ad_div2");
+      await focused;
+      popup.hidePopup();
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=433418"
+         title="Accessibles for focused HTML Select elements are not getting focused state">
+        Mozilla Bug 433418
+      </a>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=474893"
+         title="List controls should fire a focus event on the selected child when tabbing or when the selected child changes while the list is focused">
+        Mozilla Bug 474893
+      </a>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=552368"
+         title=" fire focus event on document accessible whenever the root or body element is focused">
+        Mozilla Bug 552368
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <richlistbox id="richlistbox">
+        <richlistitem id="rlb_item1">
+          <description>A XUL Description!</description>
+        </richlistitem>
+        <richlistitem id="rlb_item2">
+          <button label="A XUL Button"/>
+        </richlistitem>
+      </richlistbox>
+      <richlistbox id="multiselrichlistbox" seltype="multiple">
+        <richlistitem id="msrlb_item1">
+          <description>A XUL Description!</description>
+        </richlistitem>
+        <richlistitem id="msrlb_item2">
+          <button label="A XUL Button"/>
+        </richlistitem>
+      </richlistbox>
+      <richlistbox id="emptyrichlistbox" seltype="multiple"/>
+
+      <menulist id="menulist">
+        <menupopup nonnative="">
+          <menuitem id="ml_tangerine" label="tangerine trees"/>
+          <menuitem id="ml_marmalade" label="marmalade skies"/>
+          <menuitem id="ml_strawberry" label="strawberry fields"/>
+        </menupopup>
+      </menulist>
+
+      <menulist>
+        <menupopup id="menupopup_ad" aria-activedescendant="menupopup_ad_div1" nonnative="">
+          <div id="menupopup_ad_div1" role="option"></div>
+          <div id="menupopup_ad_div2" role="option"></div>
+        </menupopup>
+      </menulist>
+
+      <vbox id="eventdump"/>
+    </vbox>
+  </hbox>
+</window>

@@ -1,0 +1,400 @@
+/* Any copyright is dedicated to the Public Domain.
+   http://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+function assertPixel(actual, expected, message) {
+  info(message);
+  isfuzzy(actual[0], expected[0], 1, "R color value");
+  isfuzzy(actual[1], expected[1], 1, "G color value");
+  isfuzzy(actual[2], expected[2], 1, "B color value");
+}
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["test.wait300msAfterTabSwitch", true]],
+  });
+});
+
+add_task(async function test_visibleScreenshot() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: TEST_PAGE,
+    },
+    async browser => {
+      let helper = new ScreenshotsHelper(browser);
+      let contentInfo = await helper.getContentDimensions();
+      ok(contentInfo, "Got dimensions back from the content");
+      let devicePixelRatio = await getContentDevicePixelRatio(browser);
+
+      let expectedWidth = Math.floor(
+        devicePixelRatio * contentInfo.clientWidth
+      );
+      let expectedHeight = Math.floor(
+        devicePixelRatio * contentInfo.clientHeight
+      );
+
+      // click toolbar button so panel shows
+      helper.triggerUIFromToolbar();
+
+      await helper.waitForOverlay();
+
+      let screenshotReady = TestUtils.topicObserved(
+        "screenshots-preview-ready"
+      );
+
+      let panel = gBrowser.selectedBrowser.ownerDocument.querySelector(
+        helper.selector.panel
+      );
+
+      // click the visible page button in panel
+      let visiblePageButton = panel
+        .querySelector("screenshots-buttons")
+        .shadowRoot.querySelector("#visible-page");
+      visiblePageButton.click();
+
+      await screenshotReady;
+
+      let copyButton = helper.getDialogButton("copy");
+      ok(copyButton, "Got the copy button");
+
+      let clipboardChanged = helper.waitForRawClipboardChange(
+        expectedWidth,
+        expectedHeight
+      );
+
+      // click copy button on dialog box
+      copyButton.click();
+
+      info("Waiting for clipboard change");
+      let result = await clipboardChanged;
+
+      info("result: " + JSON.stringify(result, null, 2));
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+
+      Assert.equal(result.width, expectedWidth, "Widths should be equal");
+      Assert.equal(result.height, expectedHeight, "Heights should be equal");
+
+      assertPixel(result.color.topLeft, [111, 111, 111], "Top left pixel");
+      assertPixel(result.color.topRight, [111, 111, 111], "Top right pixel");
+      assertPixel(
+        result.color.bottomLeft,
+        [111, 111, 111],
+        "Bottom left pixel"
+      );
+      assertPixel(
+        result.color.bottomRight,
+        [111, 111, 111],
+        "Bottom right pixel"
+      );
+    }
+  );
+});
+
+add_task(async function test_visibleScreenshotScrolledY() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: TEST_PAGE,
+    },
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        content.scrollTo(0, 2008);
+      });
+
+      let helper = new ScreenshotsHelper(browser);
+      let contentInfo = await helper.getContentDimensions();
+      ok(contentInfo, "Got dimensions back from the content");
+      let devicePixelRatio = await getContentDevicePixelRatio(browser);
+
+      let expectedWidth = Math.floor(
+        devicePixelRatio * contentInfo.clientWidth
+      );
+      let expectedHeight = Math.floor(
+        devicePixelRatio * contentInfo.clientHeight
+      );
+
+      // click toolbar button so panel shows
+      helper.triggerUIFromToolbar();
+      await helper.waitForOverlay();
+
+      let panel = gBrowser.selectedBrowser.ownerDocument.querySelector(
+        helper.selector.panel
+      );
+
+      let screenshotReady = TestUtils.topicObserved(
+        "screenshots-preview-ready"
+      );
+
+      // click the visible page button in panel
+      let visiblePageButton = panel
+        .querySelector("screenshots-buttons")
+        .shadowRoot.querySelector("#visible-page");
+      visiblePageButton.click();
+
+      await screenshotReady;
+
+      let copyButton = helper.getDialogButton("copy");
+      ok(copyButton, "Got the copy button");
+
+      let clipboardChanged = helper.waitForRawClipboardChange(
+        expectedWidth,
+        expectedHeight
+      );
+
+      // click copy button on dialog box
+      copyButton.click();
+
+      info("Waiting for clipboard change");
+      let result = await clipboardChanged;
+
+      info("result: " + JSON.stringify(result, null, 2));
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+
+      Assert.equal(result.width, expectedWidth, "Widths should be equal");
+      Assert.equal(result.height, expectedHeight, "Heights should be equal");
+
+      assertPixel(result.color.topLeft, [105, 55, 105], "Top left pixel");
+      assertPixel(result.color.topRight, [105, 55, 105], "Top right pixel");
+      assertPixel(result.color.bottomLeft, [105, 55, 105], "Bottom left pixel");
+      assertPixel(
+        result.color.bottomRight,
+        [105, 55, 105],
+        "Bottom right pixel"
+      );
+    }
+  );
+});
+
+add_task(async function test_visibleScreenshotScrolledX() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: TEST_PAGE,
+    },
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        content.scrollTo(2004, 0);
+      });
+
+      let helper = new ScreenshotsHelper(browser);
+      let contentInfo = await helper.getContentDimensions();
+      ok(contentInfo, "Got dimensions back from the content");
+      let devicePixelRatio = await getContentDevicePixelRatio(browser);
+
+      let expectedWidth = Math.floor(
+        devicePixelRatio * contentInfo.clientWidth
+      );
+      let expectedHeight = Math.floor(
+        devicePixelRatio * contentInfo.clientHeight
+      );
+
+      // click toolbar button so panel shows
+      helper.triggerUIFromToolbar();
+      await helper.waitForOverlay();
+
+      let panel = gBrowser.selectedBrowser.ownerDocument.querySelector(
+        helper.selector.panel
+      );
+
+      let screenshotReady = TestUtils.topicObserved(
+        "screenshots-preview-ready"
+      );
+
+      // click the visible page button in panel
+      let visiblePageButton = panel
+        .querySelector("screenshots-buttons")
+        .shadowRoot.querySelector("#visible-page");
+      visiblePageButton.click();
+
+      await screenshotReady;
+
+      let copyButton = helper.getDialogButton("copy");
+      ok(copyButton, "Got the copy button");
+
+      let clipboardChanged = helper.waitForRawClipboardChange(
+        expectedWidth,
+        expectedHeight
+      );
+
+      // click copy button on dialog box
+      copyButton.click();
+
+      info("Waiting for clipboard change");
+      let result = await clipboardChanged;
+
+      info("result: " + JSON.stringify(result, null, 2));
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+
+      Assert.equal(result.width, expectedWidth, "Widths should be equal");
+      Assert.equal(result.height, expectedHeight, "Heights should be equal");
+
+      assertPixel(result.color.topLeft, [55, 155, 155], "Top left pixel");
+      assertPixel(result.color.topRight, [55, 155, 155], "Top right pixel");
+      assertPixel(result.color.bottomLeft, [55, 155, 155], "Bottom left pixel");
+      assertPixel(
+        result.color.bottomRight,
+        [55, 155, 155],
+        "Bottom right pixel"
+      );
+    }
+  );
+});
+
+add_task(async function test_visibleScreenshotScrolledXAndY() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: TEST_PAGE,
+    },
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        content.scrollTo(2004, 2008);
+      });
+
+      let helper = new ScreenshotsHelper(browser);
+      let contentInfo = await helper.getContentDimensions();
+      ok(contentInfo, "Got dimensions back from the content");
+      let devicePixelRatio = await getContentDevicePixelRatio(browser);
+
+      let expectedWidth = Math.floor(
+        devicePixelRatio * contentInfo.clientWidth
+      );
+      let expectedHeight = Math.floor(
+        devicePixelRatio * contentInfo.clientHeight
+      );
+
+      // click toolbar button so panel shows
+      helper.triggerUIFromToolbar();
+      await helper.waitForOverlay();
+
+      let panel = gBrowser.selectedBrowser.ownerDocument.querySelector(
+        helper.selector.panel
+      );
+
+      let screenshotReady = TestUtils.topicObserved(
+        "screenshots-preview-ready"
+      );
+
+      // click the visible page button in panel
+      let visiblePageButton = panel
+        .querySelector("screenshots-buttons")
+        .shadowRoot.querySelector("#visible-page");
+      visiblePageButton.click();
+
+      await screenshotReady;
+
+      let copyButton = helper.getDialogButton("copy");
+      ok(copyButton, "Got the copy button");
+
+      let clipboardChanged = helper.waitForRawClipboardChange(
+        expectedWidth,
+        expectedHeight
+      );
+
+      // click copy button on dialog box
+      copyButton.click();
+
+      info("Waiting for clipboard change");
+      let result = await clipboardChanged;
+
+      info("result: " + JSON.stringify(result, null, 2));
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+
+      Assert.equal(result.width, expectedWidth, "Widths should be equal");
+      Assert.equal(result.height, expectedHeight, "Heights should be equal");
+
+      assertPixel(result.color.topLeft, [52, 127, 152], "Top left pixel");
+      assertPixel(result.color.topRight, [52, 127, 152], "Top right pixel");
+      assertPixel(result.color.bottomLeft, [52, 127, 152], "Bottom left pixel");
+      assertPixel(
+        result.color.bottomRight,
+        [52, 127, 152],
+        "Bottom right pixel"
+      );
+    }
+  );
+});
+
+add_task(async function test_visibleScreenshotRTL() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: RTL_TEST_PAGE,
+    },
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        content.scrollTo(-1000, 0);
+      });
+
+      let helper = new ScreenshotsHelper(browser);
+      let contentInfo = await helper.getContentDimensions();
+      ok(contentInfo, "Got dimensions back from the content");
+      let devicePixelRatio = await getContentDevicePixelRatio(browser);
+
+      let expectedWidth = Math.floor(
+        devicePixelRatio * contentInfo.clientWidth
+      );
+      let expectedHeight = Math.floor(
+        devicePixelRatio * contentInfo.clientHeight
+      );
+
+      // click toolbar button so panel shows
+      helper.triggerUIFromToolbar();
+      await helper.waitForOverlay();
+
+      let panel = await helper.waitForPanel();
+
+      let screenshotReady = TestUtils.topicObserved(
+        "screenshots-preview-ready"
+      );
+
+      // click the full page button in panel
+      let visiblePage = panel
+        .querySelector("screenshots-buttons")
+        .shadowRoot.querySelector("#visible-page");
+      visiblePage.click();
+
+      await screenshotReady;
+
+      let copyButton = helper.getDialogButton("copy");
+      ok(copyButton, "Got the copy button");
+
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+      info(
+        "expecting: " +
+          JSON.stringify({ expectedWidth, expectedHeight }, null, 2)
+      );
+      let clipboardChanged = helper.waitForRawClipboardChange(
+        expectedWidth,
+        expectedHeight
+      );
+
+      // click copy button on dialog box
+      copyButton.click();
+
+      info("Waiting for clipboard change");
+      let result = await clipboardChanged;
+
+      info("result: " + JSON.stringify(result, null, 2));
+      info("contentInfo: " + JSON.stringify(contentInfo, null, 2));
+
+      Assert.equal(result.width, expectedWidth, "Widths should be equal");
+      Assert.equal(result.height, expectedHeight, "Heights should be equal");
+
+      assertPixel(result.color.topLeft, [255, 255, 255], "Top left pixel");
+      assertPixel(result.color.topRight, [255, 255, 255], "Top right pixel");
+      assertPixel(
+        result.color.bottomLeft,
+        [255, 255, 255],
+        "Bottom left pixel"
+      );
+      assertPixel(
+        result.color.bottomRight,
+        [255, 255, 255],
+        "Bottom right pixel"
+      );
+    }
+  );
+});

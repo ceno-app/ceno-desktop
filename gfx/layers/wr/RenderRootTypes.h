@@ -1,0 +1,67 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef GFX_RENDERROOTTYPES_H
+#define GFX_RENDERROOTTYPES_H
+
+#include "mozilla/webrender/WebRenderAPI.h"
+#include "mozilla/webrender/WebRenderTypes.h"
+#include "mozilla/layers/WebRenderMessages.h"
+#include "mozilla/layers/WebRenderScrollData.h"
+
+namespace mozilla {
+
+namespace layers {
+
+struct DisplayListData {
+  wr::IdNamespace mIdNamespace;
+  LayoutDeviceRect mRect;
+  nsTArray<WebRenderParentCommand> mCommands;
+  Maybe<mozilla::ipc::ByteBuf> mDLItems;
+  Maybe<mozilla::ipc::ByteBuf> mDLSpatialTree;
+  wr::BuiltDisplayListDescriptor mDLDesc;
+  nsTArray<OpUpdateResource> mResourceUpdates;
+  nsTArray<RefCountedShmem> mSmallShmems;
+  nsTArray<mozilla::ipc::Shmem> mLargeShmems;
+  Maybe<WebRenderScrollData> mScrollData;
+};
+
+struct TransactionData {
+  wr::IdNamespace mIdNamespace;
+  nsTArray<WebRenderParentCommand> mCommands;
+  nsTArray<OpUpdateResource> mResourceUpdates;
+  nsTArray<RefCountedShmem> mSmallShmems;
+  nsTArray<mozilla::ipc::Shmem> mLargeShmems;
+  ScrollUpdatesMap mScrollUpdates;
+  uint32_t mPaintSequenceNumber;
+};
+
+typedef Maybe<TransactionData> MaybeTransactionData;
+
+}  // namespace layers
+}  // namespace mozilla
+
+namespace IPC {
+
+template <>
+struct ParamTraits<mozilla::layers::DisplayListData> {
+  typedef mozilla::layers::DisplayListData paramType;
+
+  static void Write(MessageWriter* aWriter, paramType&& aParam);
+
+  static bool Read(MessageReader* aReader, paramType* aResult);
+};
+
+template <>
+struct ParamTraits<mozilla::layers::TransactionData> {
+  typedef mozilla::layers::TransactionData paramType;
+
+  static void Write(MessageWriter* aWriter, paramType&& aParam);
+
+  static bool Read(MessageReader* aReader, paramType* aResult);
+};
+
+}  // namespace IPC
+
+#endif /* GFX_RENDERROOTTYPES_H */

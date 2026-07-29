@@ -1,0 +1,173 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "CrossGraphPort.h"
+
+#include "AudioDeviceInfo.h"
+#include "AudioStreamTrack.h"
+#include "MediaTrackGraph.h"
+#include "mozilla/Logging.h"
+#include "mozilla/Preferences.h"
+
+namespace mozilla {
+
+extern LazyLogModule gMediaTrackGraphLog;
+#define LOG(type, ...) \
+  MOZ_LOG_FMT(gMediaTrackGraphLog, type, MOZ_LOG_EXPAND_ARGS __VA_ARGS__)
+#define LOG_TEST(type) MOZ_LOG_TEST(gMediaTrackGraphLog, type)
+
+UniquePtr<CrossGraphPort> CrossGraphPort::Connect(
+    const RefPtr<dom::AudioStreamTrack>& aStreamTrack,
+    MediaTrackGraph* aPartnerGraph) {
+  MOZ_ASSERT(aStreamTrack);
+  MOZ_ASSERT(aPartnerGraph);
+  if (aStreamTrack->Graph() == aPartnerGraph) {
+    // Primary graph the same as partner graph, just remove the existing cross
+    // graph connection
+    return nullptr;
+  }
+
+  RefPtr<CrossGraphReceiver> receiver = aPartnerGraph->CreateCrossGraphReceiver(
+      aStreamTrack->Graph()->GraphRate());
+
+  RefPtr<CrossGraphTransmitter> transmitter =
+      aStreamTrack->Graph()->CreateCrossGraphTransmitter(receiver);
+
+  RefPtr<MediaInputPort> port =
+      aStreamTrack->ForwardTrackContentsTo(transmitter);
+
+  LOG(LogLevel::Verbose,
+      ("Created CrossGraphPort transmitter {} (rate {}, from AudioStreamTrack "
+       "{}) and receiver {} (rate {}) between graphs {} and {}",
+       fmt::ptr(transmitter.get()), transmitter->mSampleRate,
+       fmt::ptr(aStreamTrack.get()), fmt::ptr(receiver.get()),
+       receiver->mSampleRate, fmt::ptr(aStreamTrack->Graph()),
+       fmt::ptr(aPartnerGraph)));
+
+  return WrapUnique(new CrossGraphPort(std::move(port), std::move(transmitter),
+                                       std::move(receiver)));
+}
+
+CrossGraphPort::~CrossGraphPort() {
+  LOG(LogLevel::Verbose,
+      ("Destroying CrossGraphPort transmitter {} (rate {}) and receiver {} "
+       "(rate {}) between graphs {} and {}",
+       fmt::ptr(mTransmitter.get()), mTransmitter->mSampleRate,
+       fmt::ptr(mReceiver.get()), mReceiver->mSampleRate,
+       fmt::ptr(mTransmitter->Graph()), fmt::ptr(mReceiver->Graph())));
+  mTransmitter->Destroy();
+  mReceiver->Destroy();
+  mTransmitterPort->Destroy();
+}
+
+/** CrossGraphTransmitter **/
+
+CrossGraphTransmitter::CrossGraphTransmitter(
+    TrackRate aSampleRate, RefPtr<CrossGraphReceiver> aReceiver)
+    : ProcessedMediaTrack(aSampleRate, MediaSegment::AUDIO,
+                          nullptr /* aSegment */),
+      mReceiver(std::move(aReceiver)) {}
+
+void CrossGraphTransmitter::ProcessInput(GraphTime aFrom, GraphTime aTo,
+                                         uint32_t aFlags) {
+  MOZ_ASSERT(!mInputs.IsEmpty());
+  MOZ_ASSERT(mDisabledMode == DisabledTrackMode::ENABLED);
+
+  MediaTrack* input = mInputs[0]->GetSource();
+
+  if (input->Ended() &&
+      (input->GetEnd() <= input->GraphTimeToTrackTimeWithBlocking(aFrom))) {
+    mEnded = true;
+    return;
+  }
+
+  LOG(LogLevel::Verbose, ("Transmitter ({}) from {}, to {}, ticks {}",
+                          fmt::ptr(this), aFrom, aTo, aTo - aFrom));
+
+  AudioSegment audio;
+  GraphTime next;
+  for (GraphTime t = aFrom; t < aTo; t = next) {
+    MediaInputPort::InputInterval interval =
+        MediaInputPort::GetNextInputInterval(mInputs[0], t);
+    interval.mEnd = std::min(interval.mEnd, aTo);
+
+    TrackTime ticks = interval.mEnd - interval.mStart;
+    next = interval.mEnd;
+
+    if (interval.mStart >= interval.mEnd) {
+      break;
+    }
+
+    if (interval.mInputIsBlocked) {
+      audio.AppendNullData(ticks);
+    } else if (input->IsSuspended()) {
+      audio.AppendNullData(ticks);
+    } else {
+      MOZ_ASSERT(GetEnd() == GraphTimeToTrackTimeWithBlocking(interval.mStart),
+                 "Samples missing");
+      TrackTime inputStart =
+          input->GraphTimeToTrackTimeWithBlocking(interval.mStart);
+      TrackTime inputEnd =
+          input->GraphTimeToTrackTimeWithBlocking(interval.mEnd);
+      audio.AppendSlice(*input->GetData(), inputStart, inputEnd);
+    }
+  }
+
+  mStartTime = aTo;
+
+  for (AudioSegment::ChunkIterator iter(audio); !iter.IsEnded(); iter.Next()) {
+    (void)mReceiver->EnqueueAudio(*iter);
+  }
+}
+
+/** CrossGraphReceiver **/
+
+CrossGraphReceiver::CrossGraphReceiver(TrackRate aSampleRate,
+                                       TrackRate aTransmitterRate)
+    : ProcessedMediaTrack(aSampleRate, MediaSegment::AUDIO,
+                          static_cast<MediaSegment*>(new AudioSegment())),
+      mDriftCorrection(aTransmitterRate, aSampleRate, PRINCIPAL_HANDLE_NONE) {}
+
+uint32_t CrossGraphReceiver::NumberOfChannels() const {
+  return GetData<AudioSegment>()->MaxChannelCount();
+}
+
+void CrossGraphReceiver::ProcessInput(GraphTime aFrom, GraphTime aTo,
+                                      uint32_t aFlags) {
+  LOG(LogLevel::Verbose,
+      ("Receiver ({}) mSegment: duration: {}, from {}, to {}, ticks {}",
+       fmt::ptr(this), mSegment->GetDuration(), aFrom, aTo, aTo - aFrom));
+
+  AudioSegment transmittedAudio;
+  while (mCrossThreadFIFO.AvailableRead()) {
+    AudioChunk chunk;
+    (void)mCrossThreadFIFO.Dequeue(&chunk, 1);
+    transmittedAudio.AppendAndConsumeChunk(std::move(chunk));
+    mTransmitterHasStarted = true;
+  }
+
+  if (mTransmitterHasStarted) {
+    // If it does not have enough frames the result will be silence.
+    AudioSegment audioCorrected =
+        mDriftCorrection.RequestFrames(transmittedAudio, aTo - aFrom);
+    if (LOG_TEST(LogLevel::Verbose) && audioCorrected.IsNull()) {
+      LOG(LogLevel::Verbose,
+          ("Receiver({}): Silence has been added, not enough input",
+           fmt::ptr(this)));
+    }
+    mSegment->AppendFrom(&audioCorrected);
+  } else {
+    mSegment->AppendNullData(aTo - aFrom);
+  }
+}
+
+int CrossGraphReceiver::EnqueueAudio(AudioChunk& aChunk) {
+  // This will take place on transmitter graph thread only.
+  return mCrossThreadFIFO.Enqueue(aChunk);
+}
+
+}  // namespace mozilla
+
+#undef LOG
+#undef LOG_TEST

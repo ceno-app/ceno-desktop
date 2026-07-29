@@ -1,0 +1,153 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+"""
+Transform the partner repack task into an actual task description.
+"""
+
+from mozilla_taskgraph.worker_types import get_release_config
+from taskgraph.transforms.base import TransformSequence
+from taskgraph.util.dependencies import get_dependencies
+
+from gecko_taskgraph.util.partners import (
+    apply_partner_priority,
+    check_if_partners_enabled,
+    get_partner_config_by_kind,
+    get_partner_url_config,
+    get_repack_ids_by_platform,
+)
+
+transforms = TransformSequence()
+transforms.add(check_if_partners_enabled)
+transforms.add(apply_partner_priority)
+
+
+@transforms.add
+def skip_unnecessary_platforms(config, tasks):
+    for task in tasks:
+        if config.kind == "release-partner-repack":
+            platform = task["attributes"]["build_platform"]
+            repack_ids = get_repack_ids_by_platform(config, platform)
+            if not repack_ids:
+                continue
+        yield task
+
+
+@transforms.add
+def remove_mac_dependency(config, tasks):
+    """Remove mac dependency depending on current level
+    to accomodate for mac notarization not running on level 1
+    """
+    level = int(config.params.get("level", 0))
+    for task in tasks:
+        if "macosx" not in task["attributes"]["build_platform"]:
+            yield task
+            continue
+        skipped_kind = "mac-signing" if level == 3 else "mac-notarization"
+        for dep_label in list(task["dependencies"].keys()):
+            if skipped_kind in dep_label:
+                del task["dependencies"][dep_label]
+        yield task
+
+
+@transforms.add
+def populate_repack_manifests_url(config, tasks):
+    for task in tasks:
+        partner_url_config = get_partner_url_config(config.params, config.graph_config)
+
+        for k in partner_url_config:
+            if config.kind.startswith(k):
+                task["worker"].setdefault("env", {})["REPACK_MANIFESTS_URL"] = (
+                    partner_url_config[k]
+                )
+                break
+        else:
+            raise Exception("Can't find partner REPACK_MANIFESTS_URL")
+
+        if task["worker"]["env"]["REPACK_MANIFESTS_URL"].startswith("git@"):
+            task.setdefault("scopes", []).append(
+                "secrets:get:project/releng/gecko/build/level-{level}/partner-github-ssh".format(
+                    **config.params
+                )
+            )
+
+        yield task
+
+
+@transforms.add
+def make_label(config, tasks):
+    for task in tasks:
+        task["label"] = "{}-{}".format(config.kind, task["name"])
+        yield task
+
+
+@transforms.add
+def add_command_arguments(config, tasks):
+    release_config = get_release_config(config)
+
+    # staging releases - pass reduced set of locales to the repacking script
+    all_locales = set()
+    partner_config = get_partner_config_by_kind(config, config.kind)
+    for partner in partner_config.values():
+        for sub_partner in partner.values():
+            all_locales.update(sub_partner.get("locales", []))
+
+    for task in tasks:
+        # add the MOZHARNESS_OPTIONS, eg version=61.0, build-number=1, platform=win64
+        if not task["attributes"]["build_platform"].endswith("-shippable"):
+            raise Exception(
+                "Unexpected partner repack platform: {}".format(
+                    task["attributes"]["build_platform"],
+                ),
+            )
+        platform = task["attributes"]["build_platform"].partition("-shippable")[0]
+        task["run"]["options"] = [
+            "version={}".format(release_config["version"]),
+            "build-number={}".format(release_config["build_number"]),
+            f"platform={platform}",
+        ]
+        if task["extra"]["limit-locales"]:
+            for locale in all_locales:
+                task["run"]["options"].append(f"limit-locale={locale}")
+        if "partner" in config.kind and config.params["release_partners"]:
+            for partner in config.params["release_partners"]:
+                task["run"]["options"].append(f"partner={partner}")
+
+        # The upstream taskIds are stored a special environment variable, because we want to use
+        # task-reference's to resolve dependencies, but the string handling of MOZHARNESS_OPTIONS
+        # blocks that. It's space-separated string of ids in the end.
+        task["worker"]["env"]["UPSTREAM_TASKIDS"] = {
+            # We only want signing related tasks here, not build (used by mac builds for signing artifact resolution)
+            "task-reference": " ".join([
+                f"<{dep}>"
+                for dep in task["dependencies"]
+                if ("signing" in dep or "notarization" in dep)
+            ])
+        }
+
+        # Forward the release type for bouncer product construction
+        task["worker"]["env"]["RELEASE_TYPE"] = config.params["release_type"]
+
+        yield task
+
+
+@transforms.add
+def add_macos_signing_artifacts(config, tasks):
+    for task in tasks:
+        if "macosx" not in task["name"]:
+            yield task
+            continue
+        build_dep = None
+        for dep_task in get_dependencies(config, task):
+            if dep_task.kind == "build":
+                build_dep = dep_task
+                break
+        assert build_dep, f"repackage job {task['name']} has no build dependency"
+        for path, artifact in build_dep.task["payload"]["artifacts"].items():
+            if path.startswith("public/build/security/"):
+                task["worker"].setdefault("artifacts", []).append({
+                    "name": path,
+                    "path": artifact["path"],
+                    "type": "file",
+                })
+        yield task

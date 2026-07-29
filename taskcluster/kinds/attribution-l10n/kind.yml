@@ -1,0 +1,108 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.attribution:resolve_keyed_by_transforms
+    - taskgraph.transforms.task_context
+    - gecko_taskgraph.transforms.attribution:transforms
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - toolchain
+    # Windows
+    - repackage-signing-l10n
+    # Mac
+    - repackage-l10n
+
+task-defaults:
+    run-on-repo-type: [hg]
+    description: Attribute release builds
+    shipping-phase: promote
+    # never run as part of CI
+    run-on-projects: []
+    worker-type: b-linux
+    attributes:
+        build_type: opt
+        release_artifacts:
+            by-build-platform:
+                win.*:
+                    - public/build/target.installer.exe
+                mac.*:
+                    - public/build/target.dmg
+    treeherder:
+        symbol: Attr-L10n({locale})
+        kind: other
+        tier: 1
+    task-context:
+        from-file: browser/installer/attribution.yml
+        substitution-fields:
+            - run.command
+            - dlsource
+    dlsource: "{attribution_code[json][dlsource]}"
+    worker:
+        artifacts:
+            - name: public/build
+              type: directory
+              path: /builds/worker/artifacts
+        docker-image:
+            in-tree: "partner-repack"
+        chain-of-trust: true
+        # Each task only processes one installer...this should be quick.
+        max-run-time: 600
+    run:
+        using: run-task
+        cwd: "{checkout}"
+        command:
+            by-build-platform:
+                win.*:
+                    - ./mach
+                    - python
+                    - python/mozrelease/mozrelease/attribute_builds.py
+                    - --attribution
+                    - dlsource={attribution_code[json][dlsource]}
+                    - --output
+                    - /builds/worker/artifacts
+                    # All jobs require attribution of target.installer.exe. Some may require
+                    # attribution of other files, which they can append themselves.
+                    - --input
+                    - /builds/worker/fetches/target.installer.exe
+                mac.*: []   # Defined in transforms
+    use-python: default
+
+tasks:
+    windows:
+        from-deps:
+            kinds:
+                - repackage-signing-l10n
+            with-attributes:
+                build_platform:
+                    - win32-devedition
+                    - win32-shippable
+                    - win64-aarch64-devedition
+                    - win64-aarch64-shippable
+                    - win64-devedition
+                    - win64-shippable
+                build_type: opt
+            copy-attributes: true
+            fetches:
+                repackage-signing-l10n:
+                    - artifact: "{locale}/target.installer.exe"
+
+    macosx:
+        from-deps:
+            kinds:
+                - repackage-l10n
+            with-attributes:
+                build_platform:
+                    - macosx64-devedition
+                    - macosx64-shippable
+                build_type: opt
+            copy-attributes: true
+            fetches:
+                repackage-l10n:
+                    - artifact: "{locale}/target.dmg"

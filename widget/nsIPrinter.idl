@@ -1,0 +1,92 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIPaper.idl"
+#include "nsIPrintSettings.idl"
+#include "nsISupports.idl"
+
+[scriptable, uuid(855ae9dd-62a4-64aa-9c60-b1078ff028f1)]
+interface nsIPrinterInfo : nsISupports
+{
+  /**
+   * An array of nsIPaper instances that represents the available paper sizes.
+   */
+  readonly attribute Array<nsIPaper> paperList;
+  /**
+   * nsIPrintSettings object containing the default settings for a printer.
+   */
+  readonly attribute nsIPrintSettings defaultSettings;
+};
+
+[scriptable, uuid(c8b2f4a6-3d91-4e7b-a052-9f1d8e6b4c27)]
+interface nsIPrinter : nsISupports
+{
+  /**
+   * The name of the printer.
+   */
+  readonly attribute AString name;
+
+  /**
+   * The system name of the printer.
+   *
+   * This may be faster for lookup in nsIPrinterList functions, but will only
+   * work for functions that will accept the system name.
+   */
+  readonly attribute AString systemName;
+
+  /**
+   * Display-only sort hint: when true, the print UI sorts this printer below
+   * the printers for which it is false. This is intentionally not a precise
+   * "is this auto-discovered" claim -- it maps to CUPS_PRINTER_DISCOVERED on
+   * CUPS (macOS/Linux) but to PRINTER_ATTRIBUTE_NETWORK on Windows, because
+   * Windows doesn't expose a clean discovered-only signal. Treat as a UX hint
+   * for list ordering, not as authoritative provenance metadata.
+   */
+  readonly attribute boolean sortAfterLocal;
+
+  /**
+   * Returns a Promise that resolves to a nsIPrinterInfo.
+   * This will contain the default printer settings, and the list of paper
+   * sizes supported by the printer.
+   */
+  [implicit_jscontext]
+  readonly attribute Promise printerInfo;
+
+  /**
+   * Returns a Promise that resolves to a new settings object that contains all
+   * of the settings from aSettingsToCopyFrom that are valid for this printer.
+   * Any settings that are not valid for the printer are set to default/fallback
+   * values.
+   */
+  [implicit_jscontext]
+  Promise copyFromWithValidation(in nsIPrintSettings aSettingsToCopyFrom);
+
+  /**
+   * Returns a Promise that resolves to true or false to indicate whether this
+   * printer supports duplex printing.
+   */
+  [implicit_jscontext]
+  readonly attribute Promise supportsDuplex;
+
+  /**
+   * Returns a Promise that resolves to true or false to indicate whether this
+   * printer supports color printing.
+   */
+  [implicit_jscontext]
+  readonly attribute Promise supportsColor;
+
+  /**
+   * Returns a Promise that resolves to true or false to indicate whether this
+   * printer supports monochrome printing.
+   */
+  [implicit_jscontext]
+  readonly attribute Promise supportsMonochrome;
+
+  /**
+   * Returns a Promise that resolves to true or false to indicate whether this
+   * printer supports collation.
+   */
+  [implicit_jscontext]
+  readonly attribute Promise supportsCollation;
+};

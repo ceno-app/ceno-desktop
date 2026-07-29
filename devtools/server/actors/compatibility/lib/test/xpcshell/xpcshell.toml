@@ -1,0 +1,6 @@
+[DEFAULT]
+tags = "devtools devtools-compat-data"
+head = "head.js"
+firefox-appdir = "browser"
+
+["test_mdn-compatibility.js"]

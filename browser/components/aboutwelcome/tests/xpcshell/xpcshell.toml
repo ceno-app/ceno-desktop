@@ -1,0 +1,11 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+firefox-appdir = "browser"
+
+["test_AboutWelcomeAttribution.js"]
+
+["test_AboutWelcomeTelemetry.js"]
+
+["test_AboutWelcomeTelemetry_exposure.js"]

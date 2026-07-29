@@ -1,0 +1,43 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#ifndef include_mozilla_gfx_ipc_RemoteCompositorSession_h
+#define include_mozilla_gfx_ipc_RemoteCompositorSession_h
+
+#include "CompositorSession.h"
+#include "mozilla/gfx/Point.h"
+#include "Units.h"
+
+class nsIWidget;
+
+namespace mozilla {
+namespace layers {
+
+class APZCTreeManagerChild;
+
+class RemoteCompositorSession final : public CompositorSession {
+ public:
+  RemoteCompositorSession(nsIWidget* aWidget, CompositorBridgeChild* aChild,
+                          CompositorWidgetDelegate* aWidgetDelegate,
+                          RefPtr<APZCTreeManagerChild>&& aAPZ,
+                          const LayersId& aRootLayerTreeId);
+  virtual ~RemoteCompositorSession();
+
+  CompositorBridgeParent* GetInProcessBridge() const override;
+  void SetContentController(GeckoContentController* aController) override;
+  GeckoContentController* GetContentController();
+  nsIWidget* GetWidget() const;
+  RefPtr<IAPZCTreeManager> GetAPZCTreeManager() const override;
+  void Shutdown() override;
+
+  void NotifySessionLost();
+
+ private:
+  RefPtr<APZCTreeManagerChild> mAPZ;
+  RefPtr<GeckoContentController> mContentController;
+};
+
+}  // namespace layers
+}  // namespace mozilla
+
+#endif  // include_mozilla_gfx_ipc_RemoteCompositorSession_h

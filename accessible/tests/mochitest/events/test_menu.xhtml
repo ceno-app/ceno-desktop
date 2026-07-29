@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible menu events testing for XUL menu">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script><![CDATA[
+    /**
+     * Do tests.
+     */
+
+    async function doTests() {
+      if (!WIN && !LINUX) {
+        todo(false, "Enable this test on other platforms.");
+        SimpleTest.finish();
+        return;
+      }
+
+      todo(
+        false,
+        "Fix intermitent failures. Focus may randomly occur before or after menupopup events!"
+      );
+
+      // open file menu by alt+F press
+      let menuStartPromise = waitForEvent(EVENT_MENU_START, "menubar");
+      let popupShownFilePromise = new Promise(r =>
+        getNode("menupopup-file").addEventListener("popupshown", r, {
+          once: true,
+        })
+      );
+      synthesizeKey("F", {altKey: true, shiftKey: true});
+      await menuStartPromise;
+      await popupShownFilePromise;
+
+      // open edit menu by left arrow press
+      let popupHiddenFilePromise = new Promise(r =>
+        getNode("menupopup-file").addEventListener("popuphidden", r, {
+          once: true,
+        })
+      );
+      let popupShownEditPromise = new Promise(r =>
+        getNode("menupopup-edit").addEventListener("popupshown", r, {
+          once: true,
+        })
+      );
+      synthesizeKey("KEY_ArrowRight");
+      await popupHiddenFilePromise;
+      await popupShownEditPromise;
+
+      // close edit menu
+      let popupHiddenEditPromise = new Promise(r =>
+        getNode("menupopup-edit").addEventListener("popuphidden", r, {
+          once: true,
+        })
+      );
+      synthesizeKey("KEY_Escape");
+      await popupHiddenEditPromise;
+
+      // leave menubar
+      let menuEndPromise = waitForEvent(EVENT_MENU_END, "menubar");
+      synthesizeKey("KEY_Escape");
+      await menuEndPromise;
+
+      // Alt key is used to active menubar and focus menu item on Windows,
+      // other platforms requires setting a ui.key.menuAccessKeyFocuses
+      // preference.
+      if (WIN || LINUX) {
+        // activate menubar, focus file menu (alt press)
+        let focusFileMenuStartPromise = waitForEvent(
+          EVENT_MENU_START,
+          getNode("menubar")
+        );
+        synthesizeKey("KEY_Alt");
+        await focusFileMenuStartPromise;
+
+        // focus edit menu
+        let focusEditMenuPromise = waitForEvent(
+          EVENT_FOCUS,
+          getNode("menuitem-edit")
+        );
+        synthesizeKey("KEY_ArrowRight");
+        await focusEditMenuPromise;
+
+        // leave menubar
+        let menuEndPromise2 = waitForEvent(EVENT_MENU_END, "menubar");
+        synthesizeKey("KEY_Escape");
+        await menuEndPromise2;
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  ]]></script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=615189"
+         title="Clean up FireAccessibleFocusEvent">
+        Mozilla Bug 615189
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <menubar id="menubar">
+        <menu id="menuitem-file" label="File" accesskey="F">
+          <menupopup id="menupopup-file">
+            <menuitem id="menuitem-newtab" label="New Tab"/>
+          </menupopup>
+        </menu>
+        <menu id="menuitem-edit" label="Edit" accesskey="E">
+          <menupopup id="menupopup-edit">
+            <menuitem id="menuitem-undo" label="Undo"/>
+          </menupopup>
+        </menu>
+      </menubar>
+
+      <vbox id="eventdump" role="log"/>
+    </vbox>
+  </hbox>
+</window>

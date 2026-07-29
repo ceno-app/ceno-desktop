@@ -1,0 +1,50 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef CacheControlParser_h_
+#define CacheControlParser_h_
+
+#include "mozilla/Tokenizer.h"
+
+namespace mozilla {
+namespace net {
+
+class CacheControlParser final : Tokenizer {
+ public:
+  explicit CacheControlParser(nsACString const& header);
+
+  [[nodiscard]] bool MaxAge(uint32_t* seconds);
+  [[nodiscard]] bool MaxStale(uint32_t* seconds);
+  [[nodiscard]] bool MinFresh(uint32_t* seconds);
+  [[nodiscard]] bool StaleWhileRevalidate(uint32_t* seconds);
+  bool NoCache();
+  bool NoStore();
+  bool Public();
+  bool Private();
+  bool Immutable();
+
+ private:
+  void Directive();
+  void IgnoreDirective();
+  [[nodiscard]] bool SecondsValue(uint32_t* seconds, uint32_t defaultVal = 0);
+
+  bool mMaxAgeSet;
+  uint32_t mMaxAge;
+  bool mMaxStaleSet;
+  uint32_t mMaxStale;
+  bool mMinFreshSet;
+  uint32_t mMinFresh;
+  bool mStaleWhileRevalidateSet;
+  uint32_t mStaleWhileRevalidate;
+  bool mNoCache;
+  bool mNoStore;
+  bool mPublic;
+  bool mPrivate;
+  bool mImmutable;
+};
+
+}  // namespace net
+}  // namespace mozilla
+
+#endif

@@ -1,0 +1,23 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_ipc_ShmemMessageUtils_h
+#define mozilla_ipc_ShmemMessageUtils_h
+
+#include "ipc/IPCMessageUtils.h"
+#include "mozilla/ipc/Shmem.h"
+
+namespace IPC {
+
+template <>
+struct ParamTraits<mozilla::ipc::Shmem> {
+  using paramType = mozilla::ipc::Shmem;
+
+  static void Write(IPC::MessageWriter* aWriter, paramType&& aParam);
+  static bool Read(IPC::MessageReader* aReader, paramType* aResult);
+};
+
+}  // namespace IPC
+
+#endif  // ifndef mozilla_ipc_ShmemMessageUtils_h

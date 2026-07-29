@@ -1,0 +1,288 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        role="document"
+        id="preferences-root">
+
+<head>
+  <!-- @CSP: We should remove 'unsafe-inline' from style-src, see Bug 1579160 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src chrome:; img-src chrome: moz-icon: moz-remote-image: https: blob: data:; style-src chrome: data: 'unsafe-inline'; object-src 'none'" />
+
+  <title data-l10n-id="settings-page-title"></title>
+
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="chrome://global/skin/global.css" />
+
+  <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+  <link
+    rel="stylesheet"
+    href="chrome://browser/skin/preferences/preferences.css"
+  />
+  <link
+    rel="stylesheet"
+    href="chrome://browser/content/preferences/dialogs/handlers.css"
+  />
+  <link
+    rel="stylesheet"
+    href="chrome://browser/skin/preferences/applications.css"
+  />
+  <link rel="stylesheet" href="chrome://browser/skin/preferences/search.css" />
+  <link rel="stylesheet" href="chrome://browser/content/usercontext/usercontext.css" />
+  <link rel="stylesheet" href="chrome://browser/skin/preferences/privacy.css" />
+  <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-group.css" />
+  <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-pane.css" />
+  <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-control.css" />
+  <link
+    rel="stylesheet"
+    href="chrome://browser/content/preferences/letterboxing.css"
+  />
+
+  <link rel="stylesheet" href="chrome://browser/content/securitylevel/securityLevelPreferences.css" />
+
+  <link rel="localization" href="branding/brand.ftl"/>
+  <link rel="localization" href="browser/browser.ftl"/>
+    <!-- Used by fontbuilder.js -->
+  <link rel="localization" href="browser/preferences/fonts.ftl"/>
+  <link rel="localization" href="browser/preferences/moreFromMozilla.ftl"/>
+  <link rel="localization" href="browser/preferences/preferences.ftl"/>
+  <link rel="localization" href="toolkit/branding/brandings.ftl"/>
+  <link rel="localization" href="toolkit/firefoxlabs/features.ftl"/>
+
+  <!-- Temporary until localization is done -->
+  <link rel="localization" href="preview/smartTabGroups.ftl"/>
+  <link rel="localization" href="preview/privacyPreferences.ftl"/>
+  <link rel="localization" href="browser/ipProtection.ftl"/>
+  <link rel="localization" href="preview/aiFeatures.ftl"/>
+
+  <!-- Links below are only used for search-l10n-ids into subdialogs -->
+  <link rel="localization" href="browser/aboutDialog.ftl"/>
+  <link rel="localization" href="browser/backupSettings.ftl"/>
+  <link rel="localization" href="browser/genai.ftl"/>
+  <link rel="localization" href="browser/search.ftl"/>
+  <link rel="localization" href="browser/preferences/clearSiteData.ftl"/>
+  <link rel="localization" href="browser/preferences/colors.ftl"/>
+  <link rel="localization" href="browser/preferences/connection.ftl"/>
+  <link rel="localization" href="browser/preferences/formAutofill.ftl"/>
+  <link rel="localization" href="browser/preferences/languages.ftl"/>
+  <link rel="localization" href="browser/preferences/permissions.ftl"/>
+  <link rel="localization" href="browser/preferences/selectBookmark.ftl"/>
+  <link rel="localization" href="browser/preferences/siteDataSettings.ftl"/>
+  <link rel="localization" href="browser/sanitize.ftl"/>
+  <link rel="localization" href="browser/translations.ftl"/>
+  <link rel="localization" href="preview/enUS-searchFeatures.ftl"/>
+  <link rel="localization" href="security/certificates/certManager.ftl"/>
+  <link rel="localization" href="security/certificates/deviceManager.ftl"/>
+  <link rel="localization" href="toolkit/updates/history.ftl"/>
+  <link rel="localization" href="toolkit/global/profileSelection.ftl"/>
+  <link rel="localization" href="toolkit/global/base-browser.ftl"/>
+
+  <link rel="shortcut icon" href="chrome://global/skin/icons/settings.svg"/>
+
+  <script src="chrome://browser/content/utilityOverlay.js"/>
+  <script src="chrome://global/content/preferencesBindings.js"/>
+  <script src="chrome://browser/content/preferences/preferences.js"/>
+  <script src="chrome://browser/content/preferences/extensionControlled.js"/>
+  <script src="chrome://browser/content/preferences/findInPage.js"/>
+  <script src="chrome://browser/content/migration/migration-wizard.mjs" type="module"></script>
+  <script type="module" src="chrome://browser/content/backup/backup-settings.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/dialog-button.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/placeholder-message.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/browser-language-restart-message.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/nav-notice.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/setting-pane.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/setting-group.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/setting-control.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/security-privacy-card.mjs"></script>
+  <script type="module" src="chrome://global/content/elements/moz-input-color.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/sync-device-name.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/sync-engines-list.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/update-information.mjs"></script>
+  <script type="module" src="chrome://browser/content/preferences/widgets/update-state.mjs"></script>
+  <script type="module" src="chrome://browser/content/ipprotection/bandwidth-usage.mjs"></script>
+</head>
+
+<html:body xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+           id="preferences-body">
+
+  <stringbundle id="pkiBundle"
+                src="chrome://pippki/locale/pippki.properties"/>
+  <stringbundle id="browserBundle"
+                src="chrome://browser/locale/browser.properties"/>
+
+  <stack id="preferences-stack" flex="1">
+  <hbox flex="1">
+
+    <html:moz-page-nav id="categories" data-l10n-id="category-nav-heading" allownoselection="true">
+      <html:moz-page-nav-button id="category-general"
+        hidden="true"
+        view="paneGeneral"
+        iconsrc="chrome://browser/skin/preferences/category-general.svg"
+        data-l10n-id="pane-general-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-sync"
+        hidden="true"
+        view="paneSync"
+        iconsrc="chrome://browser/skin/preferences/category-sync.svg"
+        data-l10n-id="pane-sync-title3">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-home"
+        view="paneHome"
+        iconsrc="chrome://browser/skin/home.svg"
+        data-l10n-id="pane-home-startup-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-search"
+        view="paneSearch"
+        iconsrc="chrome://browser/skin/preferences/category-search.svg"
+        data-l10n-id="pane-search-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-privacy"
+        view="panePrivacy"
+        iconsrc="chrome://browser/skin/preferences/category-privacy-security.svg"
+        data-l10n-id="pane-privacy-title3">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-passwords-autofill"
+        view="panePasswordsAutofill"
+        iconsrc="chrome://browser/skin/login.svg"
+        data-l10n-id="pane-passwords-autofill-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-appearance"
+        view="paneAppearance"
+        iconsrc="chrome://global/skin/icons/eye.svg"
+        data-l10n-id="pane-appearance-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-downloads"
+        view="paneDownloads"
+        iconsrc="chrome://browser/skin/downloads/downloads.svg"
+        data-l10n-id="pane-downloads-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-tabs-browsing"
+        view="paneTabsBrowsing"
+        iconsrc="chrome://global/skin/icons/cursor-arrow.svg"
+        data-l10n-id="pane-tabs-browsing-title2">
+      </html:moz-page-nav-button>
+      <html:hr class="nav-separator" id="nav-separator" role="presentation" />
+      <html:moz-page-nav-button id="category-accessibility"
+        view="paneAccessibility"
+        iconsrc="chrome://browser/skin/preferences/category-accessibility.svg"
+        data-l10n-id="pane-accessibility-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-languages"
+        view="paneLanguages"
+        iconsrc="chrome://browser/skin/translations.svg"
+        data-l10n-id="pane-languages-title2">
+      </html:moz-page-nav-button>
+      <!-- We skip registering the "ai" pane (aiFeatures.mjs), which means
+         - this item is non-functional and unmanaged. We have to
+         - manually hide it instead. See tor-browser#44709. -->
+      <html:moz-page-nav-button id="category-ai-features"
+        hidden="true"
+        view="paneAi"
+        iconsrc="chrome://global/skin/icons/highlights.svg"
+        data-l10n-id="pane-ai-controls-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-permissions-data"
+        view="panePermissionsData"
+        iconsrc="chrome://browser/skin/permissions.svg"
+        data-l10n-id="pane-permissions-data-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-experimental"
+        hidden="true"
+        view="paneExperimental"
+        iconsrc="chrome://browser/skin/labs-16.svg"
+        data-l10n-id="settings-pane-labs-title2">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-about-firefox"
+        view="paneAbout"
+        iconsrc="chrome://browser/skin/sidebar/firefox.svg"
+        data-l10n-id="pane-about-firefox-title">
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="category-more-from-mozilla"
+        hidden="true"
+        view="paneMoreFromMozilla"
+        iconsrc="chrome://browser/skin/preferences/mozilla-16.svg"
+        data-l10n-id="more-from-moz-title2">
+      </html:moz-page-nav-button>
+
+      <!-- Hidden sub-page entries (CSS display:none via .hidden-category).
+           These keep gotoPref() routing working for sub-pages that are
+           navigated to from within other panes. -->
+      <html:moz-page-nav-button class="hidden-category" view="paneProfiles"/>
+      <!-- Hide the translations sub-pane. tor-browser#44710. -->
+      <html:moz-page-nav-button hidden="true" class="hidden-category" view="paneTranslations"/>
+
+      <!-- Footer links -->
+      <html:moz-page-nav-button id="addonsButton"
+        slot="secondary-nav"
+        iconsrc="chrome://mozapps/skin/extensions/extension.svg"
+        data-l10n-id="addons-button-label2"
+        href="about:addons"
+      >
+      </html:moz-page-nav-button>
+      <html:moz-page-nav-button id="helpButton"
+        slot="secondary-nav"
+        support-page="preferences"
+        iconsrc="chrome://global/skin/icons/help.svg"
+        data-l10n-id="help-button-label2">
+      </html:moz-page-nav-button>
+    </html:moz-page-nav>
+
+    <keyset>
+      <key data-l10n-id="focus-search" key="" modifiers="accel" id="focusSearch1"/>
+    </keyset>
+
+    <vbox class="main-content" flex="1" align="start">
+      <vbox class="pane-container">
+        <html:div id="search-container">
+          <html:nav-notice
+            id="policies-container-content"
+            hidden="true"
+            href="about:policies"
+            iconsrc="chrome://global/skin/icons/organizational-unit.svg"
+            data-l10n-id="managed-notice-nav"
+          />
+          <html:moz-input-search
+            id="searchInput"
+            data-l10n-id="search-input-box2"
+            data-l10n-attrs="placeholder"
+          />
+        </html:div>
+        <vbox id="mainPrefPane">
+#include searchResults.inc.xhtml
+#include main.inc.xhtml
+#include home.inc.xhtml
+#include search.inc.xhtml
+#include privacy.inc.xhtml
+#include sync.inc.xhtml
+#include moreFromMozilla.inc.xhtml
+        </vbox>
+      </vbox>
+    </vbox>
+  </hbox>
+
+  <stack id="dialogStack" hidden="true"/>
+  <vbox id="dialogTemplate" class="dialogOverlay" align="center" pack="center" topmost="true" hidden="true">
+    <vbox class="dialogBox"
+          pack="end"
+          role="dialog"
+          aria-labelledby="dialogTitle">
+      <hbox class="dialogTitleBar" align="center">
+        <label class="dialogTitle" flex="1"/>
+        <button class="dialogClose close-icon"
+                data-l10n-id="close-button"/>
+      </hbox>
+      <browser class="dialogFrame"
+               autoscroll="false"
+               disablehistory="true"/>
+    </vbox>
+  </vbox>
+  </stack>
+
+  <html:dialog id="migrationWizardDialog"></html:dialog>
+</html:body>
+</html>

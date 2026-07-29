@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+.network-monitor .learn-more-link {
+  display: inline-flex;
+  padding: 2px;
+  --icon-color: var(--theme-icon-color);
+
+  &::before {
+    background-image: url(chrome://devtools/skin/images/help.svg);
+    background-size: contain;
+    -moz-context-properties: fill;
+    fill: var(--icon-color);
+    height: 16px;
+    width: 16px;
+    margin: 0;
+  }
+
+  &.mdn-link::before {
+    background-image: url(chrome://devtools/skin/images/mdn.svg);
+    height: 12px;
+    width: 12px;
+    border: 1px solid var(--icon-color);
+  }
+}
+
+.network-monitor .treeTable .treeRow {
+  .learn-more-link:not(:hover) {
+    --icon-color: var(--theme-icon-dimmed-color);
+  }
+
+  &.selected .learn-more-link:not(:hover)::before {
+    --icon-color: var(--theme-selection-color);
+  }
+}

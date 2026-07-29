@@ -1,0 +1,596 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/in-content/info-pages.css");
+
+@media not (prefers-contrast) {
+  html.private {
+    --background-color-canvas: #25003e;
+    --link-color: white;
+    --link-color-hover: white;
+    --link-color-active: white;
+    --in-content-banner-background: #f9f9fe;
+    --in-content-banner-text-color: #0c0c0d;
+    --button-background-color-hover: rgba(12, 12, 13, 0.1);
+    --button-background-color-active: rgba(12, 12, 13, 0.15);
+
+    color-scheme: dark;
+  }
+}
+
+/**
+ * When the showBanner class is applied, the banner is displayed at the top
+ * of the page, and we need to adjust the padding, so that the banner is
+ * spread across the full page width.
+ */
+body.showBanner {
+  padding: 0 0 40px;
+  min-height: 0;
+}
+
+.showBanner > .showPrivate {
+  padding: 40px 48px 0;
+}
+
+a:link,
+.text-link {
+  color: inherit;
+  text-decoration: underline;
+
+  &:hover {
+    color: inherit;
+
+    &:active {
+      text-decoration: none;
+    }
+  }
+}
+
+.container {
+  max-width: 768px;
+}
+
+p {
+  line-height: 1.5em;
+}
+
+.logo-and-wordmark {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 50px;
+}
+
+.logo {
+  background: image-set(url("chrome://branding/content/about-logo-private.png"), url("chrome://branding/content/about-logo-private@2x.png") 2x) no-repeat center
+    center;
+  background-size: var(--size-image-xxlarge);
+  display: inline-block;
+  height: var(--size-image-xxlarge);
+  width: var(--size-image-xxlarge);
+}
+
+.wordmark {
+  display: inline-block;
+  background: url("chrome://branding/content/firefox-wordmark.svg") no-repeat center center;
+  background-size: 172px;
+  margin-inline-start: 15px;
+  -moz-context-properties: fill;
+  fill: currentColor;
+  height: 96px;
+  width: 172px;
+}
+
+.search-inner-wrapper {
+  display: flex;
+  height: 52px;
+  padding: 0;
+  min-width: 70vw;
+}
+
+.promo-image-large {
+  margin-inline-end: 6px;
+  min-width: 160px;
+}
+
+.promo-image-small {
+  display: none;
+}
+
+.promo.top {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  background: var(--color-white-alpha-20);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.promo.top .promo-image-large {
+  min-width: 100px;
+  margin-inline: 6px;
+}
+
+.promo.top ~ .container {
+  margin-top: 120px;
+}
+
+@media (min-width: 764px) {
+  .search-inner-wrapper {
+    min-width: 680px;
+  }
+
+  .promo-image-large {
+    margin-inline-end: 36px;
+    min-width: 200px;
+  }
+
+  .promo-image-small {
+    display: block;
+  }
+
+  .promo.top {
+    padding: 10px 22%;
+  }
+
+  .promo.top .promo-image-large {
+    min-width: 120px;
+  }
+
+  .promo.top .vpn-promo {
+    margin: 10px 0;
+  }
+}
+
+@media (max-height: 780px) {
+  /* On screens with not enough height we need to push down the content
+   * to make room for the banner */
+  .promo.top ~ .container {
+    margin-top: 140px;
+  }
+}
+
+content-search-handoff-ui {
+  --content-search-handoff-ui-background-color: #321c64;
+  --content-search-handoff-ui-color: #fbfbfe;
+  --content-search-handoff-ui-fill: rgb(251, 251, 254);
+  --content-search-handoff-ui-caret-color: #fbfbfe;
+  --content-search-handoff-ui-border-width: 3px;
+  --content-search-handoff-ui-unfocused-border-color: rgb(149, 43, 185);
+  --content-search-handoff-ui-fakefocus-border-color: #0060df;
+  --content-search-handoff-ui-fakefocus-box-shadow-inner: #0060df;
+  --content-search-handoff-ui-fakefocus-box-shadow-outer: rgba(0, 96, 223, 0.3);
+  --content-search-handoff-ui-engine-icon: url(chrome://global/skin/icons/search-glass.svg);
+
+  @media (forced-colors) {
+    --content-search-handoff-ui-background-color: ButtonFace;
+    --content-search-handoff-ui-color: ButtonText;
+    --content-search-handoff-ui-fill: ButtonText;
+    --content-search-handoff-ui-caret-color: ButtonText;
+    --content-search-handoff-ui-fakefocus-border-color: ButtonText;
+  }
+}
+
+.search-banner {
+  width: 100%;
+  background-color: var(--in-content-banner-background);
+  color: var(--in-content-banner-text-color);
+}
+
+.banner-body {
+  margin: auto;
+  width: max-content;
+  background-image: url("chrome://global/skin/icons/settings.svg");
+  background-position: left 0 top 50px;
+  background-repeat: no-repeat;
+  background-size: 32px;
+  letter-spacing: -0.2px;
+  padding: 50px 0;
+  padding-inline-start: 44px;
+}
+
+.banner-body:dir(rtl) {
+  background-position-x: right;
+}
+
+.banner-body h1 {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  color: var(--in-content-banner-text-color);
+  line-height: 1em;
+  margin: 7px 0;
+}
+
+.banner-body p {
+  font-size: 15px;
+  line-height: 1em;
+  margin: 4px 0;
+}
+
+.info h1,
+.promo h1 {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  line-height: 28px;
+}
+
+.info p {
+  margin-top: 0;
+  line-height: 1.67;
+}
+
+.info-border {
+  border-radius: var(--border-radius-medium);
+  margin-top: 64px;
+  padding: 17px;
+
+  @media not (prefers-contrast) {
+    box-shadow: 0 2px 6px 0 rgba(58, 57, 68, 0.2);
+    background: rgba(149, 43, 185, 0.5);
+  }
+}
+
+.info {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  background-color: var(--color-black-alpha-20);
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-small);
+  font-size: 0.93em;
+  letter-spacing: -0.2px;
+  margin: 0;
+  padding: 20px;
+  padding-block-end: 25px;
+
+  @media not (prefers-contrast) {
+    background-color: #321c64;
+    box-shadow: 0 2px 6px 0 rgba(58, 57, 68, 0.2);
+  }
+}
+
+#info-title:not([hidden]) + #info-body {
+  margin-block: 0;
+}
+
+#info-title {
+  font-size: 1em;
+  margin-block: 0;
+}
+
+.search-banner-close-button {
+  float: inline-end;
+  /* min-width and min-height override values set on button elements. */
+  min-width: 28px;
+  min-height: 28px;
+  /* Forcing height and line-height ensure the button hover is displayed correctly
+     as a square box (and focus box). No text gets displayed here so that's ok. */
+  height: 28px;
+  line-height: 0;
+  margin: 16px;
+  padding: 0;
+  background-color: inherit;
+  border: 0;
+}
+
+.search-banner-close-image {
+  -moz-context-properties: fill;
+  fill: currentColor;
+  width: 22px;
+}
+
+.promo {
+  text-align: center;
+  align-items: center;
+}
+
+.promo-visible {
+  display: flex;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-small);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  background-color: var(--color-black-alpha-20);
+}
+
+.promo-dismiss {
+  padding: 10px;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline flow-root;
+  background: url("chrome://global/skin/icons/close.svg") center no-repeat;
+  cursor: pointer;
+  -moz-context-properties: fill;
+  fill: currentColor;
+  position: relative;
+  align-self: start;
+  top: -11px;
+  inset-inline-end: -11px;
+
+  @media not (prefers-contrast) {
+    opacity: 0.6;
+
+    &:hover {
+      background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
+    }
+
+    &:hover:active {
+      background-color: color-mix(in srgb, currentColor 20%, transparent) !important;
+    }
+  }
+}
+
+.promo-content {
+  width: 100%;
+}
+
+.promo-image-large img {
+  width: 100%;
+}
+
+.promo-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* The colors for .promo-cta .primary must be kept in sync with the dark mode
+   primary button colors from common-shared.cs */
+.promo-cta .primary {
+  padding: 0.54em 1.15em;
+  margin: 8px 0;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  background-color: rgb(0, 221, 255);
+  color: rgb(43, 42, 51);
+}
+
+.promo-cta .primary:focus-visible {
+  outline-color: rgb(0, 221, 255);
+}
+
+.promo-cta .primary:hover {
+  background-color: rgb(128, 235, 255) !important;
+  color: rgb(43, 42, 51) !important;
+}
+
+.promo-cta .primary:hover:active {
+  background-color: rgb(170, 242, 255) !important;
+  color: rgb(43, 42, 51) !important;
+}
+
+@media (prefers-contrast) {
+  .promo-cta .primary {
+    background-color: ButtonText;
+    color: ButtonFace;
+    border-color: ButtonFace;
+  }
+
+  .promo-cta .primary:focus-visible {
+    outline-color: -moz-DialogText;
+  }
+
+  .promo-cta .primary:hover {
+    background-color: SelectedItem !important;
+    color: SelectedItemText !important;
+    border-color: SelectedItemText;
+  }
+
+  .promo-cta .primary:hover:active {
+    background-color: SelectedItemText !important;
+    color: SelectedItem !important;
+    border-color: SelectedItem;
+  }
+}
+
+.promo.bottom .promo-cta {
+  display: unset;
+}
+
+.promo.bottom h1 {
+  margin-bottom: 1em;
+}
+
+.promo a {
+  color: inherit;
+  text-decoration: underline;
+  flex: 1;
+}
+
+.promo.top a,
+.promo.below-search a {
+  flex: unset;
+}
+
+.promo.top,
+.promo.below-search {
+  text-align: start;
+}
+
+.promo.below-search {
+  padding: 22px;
+  margin-top: 25px;
+
+  #promo-header {
+    margin-block: 0 1em;
+  }
+
+  #private-browsing-promo-text {
+    margin-block: 0;
+  }
+
+  #private-browsing-promo-link:not(.text-link) {
+    margin-block: 1.5em 0;
+  }
+}
+
+.promo.bottom {
+  margin-top: 30px;
+}
+
+.promo.bottom .promo-image-small {
+  margin-top: 40px;
+}
+
+.promo.bottom .promo-image-small img {
+  height: 40px;
+}
+
+.promo.top > .promo-content {
+  padding: 10px 6px;
+}
+
+.promo-link {
+  margin: 0;
+}
+
+.promo.below-search.promo-visible {
+  margin-block: 0 25px;
+
+  @media not (prefers-contrast) {
+    background-color: #321c64;
+  }
+}
+
+@media not (prefers-contrast) {
+  html.private {
+    background: linear-gradient(45deg, #722291 0%, #45278d 50%, #393473 100%);
+  }
+}
+
+.nova-tagline {
+  display: none;
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("browser.nova.enabled") {
+  @media not (prefers-contrast) {
+    html.private {
+      /* Re-assert the token default to override the legacy
+         `--background-color-canvas: #25003e` set on `html.private` above. */
+      --background-color-canvas: light-dark(var(--color-gray-0), var(--color-gray-90));
+      background: var(--background-color-canvas);
+      color: var(--color-white);
+      /* Reset the legacy `--link-color: white` set on `html.private` above
+         back to the Nova design-system link tokens (accent primary). */
+      --link-color: var(--color-accent-primary);
+      --link-color-hover: var(--color-accent-primary-hover);
+      --link-color-active: var(--color-accent-primary-active);
+    }
+
+    html.private body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url("chrome://browser/skin/privatebrowsing/fox-tail.svg") no-repeat bottom right / cover;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* The fox-tail is a directional decoration; mirror it in RTL so the
+       sweep points toward the inline-start corner. */
+    html.private:dir(rtl) body::before {
+      transform: scaleX(-1);
+    }
+  }
+
+  html.private .container {
+    /* Fill body height so the info section can be pinned to the bottom of
+       the viewport via `margin-block-start: auto`. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+  }
+
+  .logo-and-wordmark {
+    margin-block: clamp(32px, 10vh, 120px) var(--space-medium);
+  }
+
+  .logo-and-wordmark .wordmark {
+    display: none;
+  }
+
+  .logo {
+    background: url("chrome://browser/skin/privatebrowsing/pbm-logo.svg") no-repeat center center;
+    background-size: var(--size-item-xlarge);
+    height: var(--size-item-xlarge);
+    width: var(--size-item-xlarge);
+  }
+
+  .nova-tagline {
+    display: block;
+    text-align: center;
+    margin-block: 0 var(--space-xxlarge);
+  }
+
+  content-search-handoff-ui {
+    /* Reset the legacy glass icon back to the component default, which shows
+       the current search engine's icon. */
+    --content-search-handoff-ui-engine-icon: var(--newtab-search-icon);
+
+    @media not (prefers-contrast) {
+      --content-search-handoff-ui-background-color: var(--color-violet-desaturated-70);
+      /* Reset the legacy 3px PBM border back to the standard field border */
+      --content-search-handoff-ui-border-width: var(--border-width);
+      --content-search-handoff-ui-unfocused-border-color: var(--color-violet-desaturated-50);
+      --content-search-handoff-ui-fakefocus-border-color: var(--color-accent-primary);
+      --content-search-handoff-ui-fakefocus-box-shadow-inner: var(--color-accent-primary);
+      --content-search-handoff-ui-fakefocus-box-shadow-outer: color-mix(in srgb, var(--color-accent-primary) 30%, transparent);
+    }
+  }
+
+  html.private .info-border {
+    margin-block-start: auto;
+    margin-block-end: 0;
+    padding-block: var(--space-xxlarge) 0;
+    padding-inline: 0;
+
+    @media not (prefers-contrast) {
+      background: transparent;
+      box-shadow: none;
+    }
+  }
+
+  html.private .info {
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: center;
+
+    @media not (prefers-contrast) {
+      background-color: transparent;
+      box-shadow: none;
+      color: var(--text-color-deemphasized);
+    }
+
+    /* Drop the body's default block margin so the 12px gap to the link is
+       owned solely by the link's `margin-block-start` below. The link is
+       `inline-block`, so its margin would not otherwise collapse with the
+       body's. */
+    #info-body {
+      margin-block-end: 0;
+    }
+
+    #private-browsing-myths {
+      display: inline-block;
+      margin-block-start: var(--space-medium);
+    }
+  }
+
+  /* `:link` to outweigh the base `a:link { color: inherit }` rule. */
+  #private-browsing-myths:link {
+    @media not (prefers-contrast) {
+      color: var(--link-color);
+
+      &:hover {
+        color: var(--link-color-hover);
+      }
+
+      &:active {
+        color: var(--link-color-active);
+      }
+    }
+  }
+}

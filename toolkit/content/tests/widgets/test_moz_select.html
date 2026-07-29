@@ -1,0 +1,291 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MozSelect Tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <script src="lit-test-helpers.js"></script>
+    <script>
+      let testHelpers = new InputTestHelpers();
+
+      add_setup(async function setup() {
+        if (navigator.platform.startsWith("Mac")) {
+          // This test specifically exercises input methods, which requires non-native menus.
+          await SpecialPowers.pushPrefEnv({
+            set: [["widget.macos.allow-native-select", false]],
+          });
+        }
+        await testHelpers.setupLit();
+        let templateFn = (attrs, children) => testHelpers.html`
+        <moz-select ${attrs}>
+          <moz-option value="1" label="One"></moz-option>
+          <moz-option value="value" label="Initial"></moz-option>
+          <moz-option value="new value" label="Changed"></moz-option>
+          <moz-option value="4" label="Four"></moz-option>
+          ${children}
+        </moz-select>
+      `;
+        testHelpers.setupTests({ templateFn });
+      });
+
+      add_task(async function testMozSelectProperties() {
+        await testHelpers.testCommonInputProperties("moz-select", {
+          type: "select-one",
+        });
+      });
+
+      add_task(async function testMozSelectChange() {
+        let { trackEvent, verifyEvents } = testHelpers.getInputEventHelpers();
+        let target = await testHelpers.renderTemplate();
+        let select = target.querySelector("moz-select");
+        await select.updateComplete;
+        is(select.value, "1", "First option is selected");
+
+        select.addEventListener("change", trackEvent);
+        select.addEventListener("input", trackEvent);
+        select.addEventListener("click", trackEvent);
+
+        let changed = BrowserTestUtils.waitForEvent(select, "change");
+        let topWindow = window.docShell.chromeEventHandler.documentGlobal;
+        let pickerOpened = BrowserTestUtils.waitForSelectPopupShown(topWindow);
+        select.focus();
+        synthesizeKey(" ");
+        await pickerOpened;
+        synthesizeKey("KEY_ArrowDown");
+        synthesizeKey("KEY_Enter");
+        let event = await changed;
+
+        is(select.value, "value", "Second option is selected");
+        is(event.target, select, "Change event is on moz-select");
+
+        verifyEvents([
+          { type: "input", localName: "moz-select", value: "value" },
+          { type: "change", localName: "moz-select", value: "value" },
+        ]);
+
+        changed = BrowserTestUtils.waitForEvent(select, "change");
+        pickerOpened = BrowserTestUtils.waitForSelectPopupShown(topWindow);
+        synthesizeMouseAtCenter(select, {});
+        let menupopup = await pickerOpened;
+        let thirdOption = menupopup.querySelectorAll("menuitem")[2];
+        synthesizeMouseAtCenter(thirdOption, {}, topWindow);
+        event = await changed;
+
+        is(select.value, "new value", "Second option is selected");
+        is(event.target, select, "Change event is on moz-select");
+
+        verifyEvents([
+          { type: "click", localName: "moz-select", value: "value" },
+          { type: "input", localName: "moz-select", value: "new value" },
+          { type: "change", localName: "moz-select", value: "new value" },
+          { type: "click", localName: "moz-select", value: "new value" },
+        ]);
+      });
+
+      add_task(async function testMozSelectModifyOptions() {
+        let target = await testHelpers.renderTemplate();
+        let select = target.querySelector("moz-select");
+        await select.updateComplete;
+
+        let options = select.inputEl.querySelectorAll("option");
+        let mozOptions = select.querySelectorAll("moz-option");
+
+        is(select.value, "1", "moz-select value correct");
+        is(options[0].textContent.trim(), "One", "First option text correct");
+        is(options[0].value, "1", "First option value correct");
+        is(
+          options[1].textContent.trim(),
+          "Initial",
+          "Second option text correct"
+        );
+        is(options[1].value, "value", "Second option value correct");
+
+        mozOptions[0].label = "First";
+        mozOptions[0].value = "i";
+        mozOptions[1].label = "Second";
+        mozOptions[1].value = "ii";
+        await TestUtils.waitForTick();
+        await select.updateComplete;
+
+        is(select.value, "i", "moz-select value updated");
+        is(options[0].textContent.trim(), "First", "First option text updated");
+        is(options[0].value, "i", "First option value updated");
+        is(
+          options[1].textContent.trim(),
+          "Second",
+          "Second option text updated"
+        );
+        is(options[1].value, "ii", "Second option value updated");
+      });
+
+      add_task(async function testMozSelectOptionWithIcon() {
+        let target = await testHelpers.renderTemplate();
+        let select = target.querySelector("moz-select");
+        await select.updateComplete;
+
+        is(select.value, "1", "First option is selected");
+
+        let selectWrapper = select.shadowRoot.querySelector(".select-wrapper");
+        ok(
+          !selectWrapper.classList.contains("with-icon"),
+          "Select doesn't have an icon"
+        );
+
+        let mozOptions = select.querySelectorAll("moz-option");
+        mozOptions[0].iconSrc = "chrome://global/skin/icons/info.svg";
+        mozOptions[1].iconSrc = "chrome://global/skin/icons/warning.svg";
+        await TestUtils.waitForTick();
+        await select.updateComplete;
+
+        info("New iconSrc value was added to the selected option.");
+        ok(selectWrapper.classList.contains("with-icon"), "Select has an icon");
+        is(
+          select.shadowRoot.querySelector(".select-option-icon").src,
+          mozOptions[0].iconSrc,
+          "Select displays the icon of the selected option"
+        );
+
+        select.value = "value";
+        await select.updateComplete;
+        is(select.value, "value", "Second option is selected");
+        is(
+          select.inputEl.value,
+          select.value,
+          "Select element value is updated"
+        );
+        is(
+          select.shadowRoot.querySelector(".select-option-icon").src,
+          mozOptions[1].iconSrc,
+          "Select displays the icon of the newly selected option"
+        );
+      });
+
+      function openSelectAndGetMenuPopup(select) {
+        let topWindow = window.docShell.chromeEventHandler.documentGlobal;
+        let pickerOpened = BrowserTestUtils.waitForSelectPopupShown(topWindow);
+        select.focus();
+        synthesizeKey(" ");
+        return pickerOpened;
+      }
+
+      /**
+       * Test that hidden and disabled moz-option are reflected in the popup menu.
+       */
+      add_task(async function testMozSelectHiddenAndDisabledOptions() {
+        let target = await testHelpers.renderTemplate();
+        let select = target.querySelector("moz-select");
+        await select.updateComplete;
+
+        let mozOptions = select.querySelectorAll("moz-option");
+
+        // Open select and verify all elements are visible and enabled.
+        let popup = await openSelectAndGetMenuPopup(select);
+        let popupItems = Array.from(popup.children);
+
+        // Items that are hidden are not included in the popup's children.
+        is(popupItems.length, mozOptions.length, "All options are shown");
+        for (let i = 0; i < popupItems.length; i++) {
+          ok(!popupItems[i].disabled, `Option ${i} is enabled`);
+        }
+
+        // Close popup.
+        let hiddenPromise = BrowserTestUtils.waitForPopupEvent(popup, "hidden");
+        popup.hidePopup();
+        await hiddenPromise;
+
+        await TestUtils.waitForTick();
+        await select.updateComplete;
+
+        // set first option to disabled and second option to hidden.
+        mozOptions[0].disabled = true;
+        mozOptions[1].hidden = true;
+
+        await TestUtils.waitForTick();
+        await select.updateComplete;
+
+        // open select and verify first option is disabled and second option is hidden.
+        popup = await openSelectAndGetMenuPopup(select);
+        popupItems = Array.from(popup.children);
+
+        is(
+          popupItems.length,
+          mozOptions.length - 1,
+          "All but one option shown"
+        );
+
+        ok(popupItems[0].disabled, "First option is disabled");
+        is(popupItems[0].label, mozOptions[0].label, "First option is visible");
+        ok(!popupItems[1].disabled, "Second option is enabled");
+        is(popupItems[1].label, mozOptions[2].label, "Third option is visible");
+        ok(!popupItems[2].disabled, "Third option is enabled");
+        is(
+          popupItems[2].label,
+          mozOptions[3].label,
+          "Fourth option is visible"
+        );
+
+        // Close popup.
+        hiddenPromise = BrowserTestUtils.waitForPopupEvent(popup, "hidden");
+        popup.hidePopup();
+        await hiddenPromise;
+
+        // Reset options
+        mozOptions[0].disabled = false;
+        mozOptions[1].hidden = false;
+      });
+
+      add_task(async function testEmptyMozSelect() {
+        // The only thing we test is that this doesn't throw.
+        await testHelpers.renderTemplate(
+          testHelpers.html`<moz-select></moz-select>`
+        );
+      });
+
+      add_task(async function testMozSelectOptionWithSeparator() {
+        let target = await testHelpers.renderTemplate(
+          testHelpers.html`<moz-select><moz-option value="1" label="One"></moz-option><hr>
+          <moz-option value="2" label="Two"></moz-option></moz-select>`
+        );
+        let mozSelect = target.querySelector("moz-select");
+        await mozSelect.updateComplete;
+
+        const embeddedHr = mozSelect.querySelector("hr");
+        ok(embeddedHr, "Renders the hr");
+        is(mozSelect.children[1], embeddedHr, "Renders hr as the second child");
+
+        target = await testHelpers.renderTemplate(
+          testHelpers.html`<moz-select></moz-select>`
+        );
+
+        mozSelect = target.querySelector("moz-select");
+        await mozSelect.updateComplete;
+        mozSelect.options = [
+          { value: "1", label: "One" },
+          { value: "2", label: "Two" },
+          { separator: true },
+          { value: "3", label: "Three" },
+        ];
+        await mozSelect.updateComplete;
+
+        const renderedHr = mozSelect.shadowRoot.querySelector("hr");
+        ok(renderedHr, "Renders the hr");
+
+        const select = mozSelect.shadowRoot.querySelector("select");
+        is(select.children.length, 4, "moz-select renders four child elements");
+        is(select.children[2], renderedHr, "Renders hr as the third child");
+        is(
+          renderedHr.parentElement,
+          select,
+          "Renders the hr as a direct descendant of select"
+        );
+      });
+    </script>
+  </head>
+  <body></body>
+</html>

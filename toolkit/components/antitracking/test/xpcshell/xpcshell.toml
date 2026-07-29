@@ -1,0 +1,55 @@
+[DEFAULT]
+head = "head.js ../../../../components/url-classifier/tests/unit/head_urlclassifier.js"
+prefs = ["dom.security.https_first=false"] #Disable https-first because of explicit http/https testing
+
+["test_ExceptionListService.js"]
+
+["test_cookie_behavior.js"]
+
+["test_getPartitionKeyFromURL.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035
+]
+
+["test_purge_trackers.js"]
+requesttimeoutfactor = 2
+
+["test_purge_trackers_telemetry.js"]
+
+["test_staticPartition_authhttp.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035
+]
+
+["test_staticPartition_clientAuthRemember.js"]
+
+["test_staticPartition_font.js"]
+support-files = ["data/font.woff"]
+
+["test_staticPartition_image.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035
+]
+
+["test_staticPartition_prefetch.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035
+]
+
+["test_staticPartition_preload.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035
+]
+
+["test_tracking_db_service.js"]
+
+["test_url_classifier_allow_list_category_pref_migration.js"]
+
+["test_user_interaction_pref.js"]
+
+["test_validate_strip_on_share_list.js"]
+
+["test_view_source.js"]
+skip-if = [
+  "socketprocess_networking", # Bug 1759035 (not as common on win, perma on linux/osx)
+]

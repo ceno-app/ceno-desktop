@@ -1,0 +1,162 @@
+"use strict";
+
+AddonTestUtils.init(this);
+
+add_task(async function test_manifest_csp() {
+  let normalized = await ExtensionTestUtils.normalizeManifest({
+    content_security_policy: "script-src 'self'; object-src 'none'",
+  });
+
+  equal(normalized.error, undefined, "Should not have an error");
+  equal(normalized.errors.length, 0, "Should not have warnings");
+  equal(
+    normalized.value.content_security_policy,
+    "script-src 'self'; object-src 'none'",
+    "Should have the expected policy string"
+  );
+
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  normalized = await ExtensionTestUtils.normalizeManifest({
+    content_security_policy: "object-src 'none'",
+  });
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+
+  equal(normalized.error, undefined, "Should not have an error");
+
+  Assert.deepEqual(
+    normalized.errors,
+    [
+      "Error processing content_security_policy: Policy is missing a required ‘script-src’ directive",
+    ],
+    "Should have the expected warning"
+  );
+
+  equal(
+    normalized.value.content_security_policy,
+    null,
+    "Invalid policy string should be omitted"
+  );
+
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  normalized = await ExtensionTestUtils.normalizeManifest({
+    manifest_version: 2,
+    content_security_policy: {
+      extension_pages: "script-src 'self'; object-src 'none'",
+    },
+  });
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+
+  Assert.deepEqual(
+    normalized.errors,
+    [
+      `Error processing content_security_policy: Expected string instead of {"extension_pages":"script-src 'self'; object-src 'none'"}`,
+    ],
+    "Should have the expected warning"
+  );
+});
+
+add_task(async function test_manifest_csp_v3() {
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  let normalized = await ExtensionTestUtils.normalizeManifest({
+    manifest_version: 3,
+    content_security_policy: "script-src 'self'; object-src 'none'",
+  });
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+
+  Assert.deepEqual(
+    normalized.errors,
+    [
+      `Error processing content_security_policy: Expected object instead of "script-src 'self'; object-src 'none'"`,
+    ],
+    "Should have the expected warning"
+  );
+
+  normalized = await ExtensionTestUtils.normalizeManifest({
+    manifest_version: 3,
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'unsafe-eval'; object-src 'none'",
+    },
+  });
+
+  Assert.deepEqual(
+    normalized.errors,
+    [
+      "Error processing content_security_policy.extension_pages: ‘script-src’ directive contains a forbidden 'unsafe-eval' keyword",
+    ],
+    "Should have the expected warning"
+  );
+  equal(
+    normalized.value.content_security_policy.extension_pages,
+    null,
+    "Should have the expected policy string"
+  );
+
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  normalized = await ExtensionTestUtils.normalizeManifest({
+    manifest_version: 3,
+    content_security_policy: {
+      extension_pages: "object-src 'none'",
+    },
+  });
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+
+  equal(normalized.error, undefined, "Should not have an error");
+  equal(normalized.errors.length, 1, "Should have warnings");
+  Assert.deepEqual(
+    normalized.errors,
+    [
+      "Error processing content_security_policy.extension_pages: Policy is missing a required ‘script-src’ directive",
+    ],
+    "Should have the expected warning for extension_pages CSP"
+  );
+
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      manifest_version: 3,
+      content_security_policy: {
+        extension_pages: "script-src 'self' http://localhost:8080;",
+      },
+    },
+    temporarilyInstalled: true,
+  });
+
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  await extension.startup();
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+
+  Assert.deepEqual(
+    extension.extension.warnings,
+    "Reading manifest: Warning processing content_security_policy.extension_pages: Warning processing content_security_policy.extension_pages: " +
+      "Using localhost in the Content Security Policy is invalid, and is only permitted during development with temporarily loaded add-ons",
+    "Expected manifest warnings"
+  );
+
+  await extension.unload();
+
+  extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      manifest_version: 3,
+      content_security_policy: {
+        extension_pages: "script-src 'self' http://localhost:8080;",
+      },
+    },
+    temporarilyInstalled: false,
+  });
+
+  let { messages } = await promiseConsoleOutput(async () => {
+    ExtensionTestUtils.failOnSchemaWarnings(false);
+    await extension.startup();
+    ExtensionTestUtils.failOnSchemaWarnings(true);
+  });
+
+  AddonTestUtils.checkMessages(messages, {
+    expected: [
+      {
+        message:
+          /Reading manifest: Error processing content_security_policy.extension_pages: Using localhost in the Content Security Policy is invalid, and is only permitted during development with temporarily loaded add-ons/,
+      },
+    ],
+  });
+
+  await extension.unload();
+});

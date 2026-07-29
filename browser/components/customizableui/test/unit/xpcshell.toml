@@ -1,0 +1,8 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+head =  ''
+firefox-appdir = "browser"
+
+["test_unified_extensions_migration.js"]

@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+<?xml-stylesheet href="../treeview.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible XUL tree states tests">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../treeview.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    ////////////////////////////////////////////////////////////////////////////
+    // Test
+
+    function checkTreeStates(aTreeID) {
+      const domNode = getNode(aTreeID);
+      const tree = getAccessible(domNode);
+
+      // tree states
+      testStates(tree, STATE_READONLY);
+
+      if (domNode.getAttribute("seltype") != "single")
+        testStates(tree, STATE_MULTISELECTABLE);
+      else
+        testStates(tree, 0, 0, STATE_MULTISELECTABLE);
+
+      // tree item states
+      const expandedItem = tree.getChildAt(2);
+      testStates(expandedItem,
+                 STATE_SELECTABLE | STATE_FOCUSABLE | STATE_EXPANDED);
+
+      const collapsedItem = tree.getChildAt(5);
+      testStates(collapsedItem,
+                 STATE_SELECTABLE | STATE_FOCUSABLE | STATE_COLLAPSED);
+
+      // cells states if any
+      const cells = collapsedItem.children;
+      if (cells && cells.length) {
+        for (let idx = 0; idx < cells.length; idx++) {
+          const cell = cells.queryElementAt(idx, nsIAccessible);
+          testStates(cell, STATE_SELECTABLE);
+        }
+
+        const checkboxCell = cells.queryElementAt(3, nsIAccessible);
+        testStates(checkboxCell, STATE_CHECKABLE | STATE_CHECKED);
+      }
+    }
+
+    async function doTest() {
+      for (let treeID of ["tree", "treesingle", "tabletree"]) {
+        let domNode = getNode(treeID);
+        let reordered = waitForEvent(EVENT_REORDER, domNode);
+        domNode.view = new nsTreeTreeView();
+        await reordered;
+        checkTreeStates(treeID);
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=503727"
+         title="Reorganize implementation of XUL tree accessibility">
+        Mozilla Bug 503727
+      </a><br/>
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <tree id="tree" flex="1">
+        <treecols>
+          <treecol id="col" flex="1" primary="true" label="column"/>
+        </treecols>
+        <treechildren/>
+      </tree>
+
+      <tree id="treesingle" flex="1" seltype="single">
+        <treecols>
+          <treecol id="col_single" flex="1" primary="true" label="column"/>
+        </treecols>
+        <treechildren/>
+      </tree>
+
+      <tree id="tabletree" flex="1" editable="true">
+        <treecols>
+          <treecol id="tabletree_col1" cycler="true" label="cycler"/>
+          <treecol id="tabletree_col2" flex="1" primary="true" label="column1"/>
+          <treecol id="tabletree_col3" flex="1" label="column2"/>
+          <treecol id="tabletree_col4" flex="1" label="checker"
+                   type="checkbox" editable="true"/>
+        </treecols>
+        <treechildren/>
+      </tree>
+
+      <vbox id="debug"/>
+    </vbox>
+  </hbox>
+
+</window>

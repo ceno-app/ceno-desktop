@@ -1,0 +1,43 @@
+Snapshots of cairo and glitz for mozilla usage.
+
+We only include the relevant parts of each release (generally, src/*.[ch]), as
+we have moz.build files used by the Mozilla build system. For documentation and
+similar, please see the official tarballs at http://www.cairographics.org/.
+
+VERSIONS:
+
+  cairo (1.18.4)
+  pixman (0.46.4)
+
+==== Updating and Patching Cairo ====
+
+To change Cairo in Mozilla Central:
+
+- Make your changes to `gfx/cairo/cairo`, and test as necessary.
+
+- Add an appropriate patch to `gfx/cairo/patches`, and edit the
+  `patches` list in `gfx/cairo/moz.yaml` to apply it at the
+  appropriate point in the list --- typically the end.
+
+- Test that UpdateBot can actually reconstruct the vendored Cairo
+  sources with the following command:
+
+      mach vendor gfx/cairo/moz.yaml -r $REVISION --patch-mode check --force
+
+  where `$REVISION` is the `revision` currently listed in `moz.yaml`.
+  UpdateBot should say that the "upstream hasn't modified files
+  locally", and `git status` should be clean.
+
+- Submit a patch for review that includes both the changes to
+  `gfx/cairo/cairo` as well as the changes to `moz.yaml` and the new
+  patch file in `gfx/cairo/patches`.
+
+==== pixman patches ====
+
+pixman-armasm.patch: add an ifdef guard around pixman-config.h include
+
+pixman-export.patch: make sure pixman symbols are not exported in libxul
+
+pixman-interp.patch: use lower quality interpolation by default on mobile
+
+pixman-rename.patch: include pixman-rename.h for renaming of external symbols

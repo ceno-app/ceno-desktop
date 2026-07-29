@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Test ARIA tab accessible selected state</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    async function focusActiveDescendantItem(aItemID, aWidgetID, aIsSelected) {
+      const domNode = getNode(aItemID);
+      const widgetDOMNode = getNode(aWidgetID);
+      const focused = waitForEvent(EVENT_FOCUS, aItemID);
+      widgetDOMNode.setAttribute("aria-activedescendant", aItemID);
+      widgetDOMNode.focus();
+      await focused;
+      testStates(domNode, aIsSelected ? STATE_SELECTED : 0, 0,
+                 aIsSelected ? 0 : STATE_SELECTED);
+    }
+
+    // Test the selected state when a widget item is DOM focused if
+    // aria-selected is explicitly set on at least one of the items.
+    async function focusItem(aID, aIsSelected) {
+      const domNode = getNode(aID);
+      const focused = waitForEvent(EVENT_FOCUS, domNode);
+      domNode.focus();
+      await focused;
+      testStates(domNode, aIsSelected ? STATE_SELECTED : 0, 0,
+                  aIsSelected ? 0 : STATE_SELECTED);
+    };
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Test
+
+    async function doTest() {
+      // aria-selected
+      testStates("aria_tab1", 0, 0, STATE_SELECTED);
+      testStates("aria_tab2", STATE_SELECTED);
+      testStates("aria_tab3", 0, 0, STATE_SELECTED);
+      testStates("aria_option1", 0, 0, STATE_SELECTED);
+      testStates("aria_option2", STATE_SELECTED);
+      testStates("aria_option3", 0, 0, STATE_SELECTED);
+      testStates("aria_treeitem1", 0, 0, STATE_SELECTED);
+      testStates("aria_treeitem2", STATE_SELECTED);
+      testStates("aria_treeitem3", 0, 0, STATE_SELECTED);
+
+      await focusItem("aria_tab1", false);
+      await focusItem("aria_tab2", true);
+      await focusItem("aria_tab3", false);
+      await focusItem("aria_option1", false);
+      await focusItem("aria_option2", true);
+      await focusItem("aria_option3", false);
+      await focusItem("aria_treeitem1", false);
+      await focusItem("aria_treeitem2", true);
+      await focusItem("aria_treeitem3", false);
+
+      // Test the selected state when a widget item is focused via
+      // aria-activedescendant if aria-selected is explicitly set on at least
+      // one of the items.
+      await focusActiveDescendantItem("aria_tab5", "aria_tablist2", false);
+      await focusActiveDescendantItem("aria_tab6", "aria_tablist2", false);
+      await focusActiveDescendantItem("aria_tab4", "aria_tablist2", false);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=653601"
+     title="aria-selected ignored for ARIA tabs">
+    Mozilla Bug 653601
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=526703"
+     title="Focused widget item should expose selected state by default">
+    Mozilla Bug 526703
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <!-- tab -->
+  <div id="aria_tablist" role="tablist">
+    <div id="aria_tab1" role="tab" tabindex="0">unselected tab</div>
+    <div id="aria_tab2" role="tab" tabindex="0" aria-selected="true">selected tab</div>
+    <div id="aria_tab3" role="tab" tabindex="0" aria-selected="false">focused explicitly unselected tab</div>
+  </div>
+
+  <!-- listbox -->
+  <div id="aria_listbox" role="listbox">
+    <div id="aria_option1" role="option" tabindex="0">unselected option</div>
+    <div id="aria_option2" role="option" tabindex="0" aria-selected="true">selected option</div>
+    <div id="aria_option3" role="option" tabindex="0" aria-selected="false">focused explicitly unselected option</div>
+  </div>
+
+  <!-- tree -->
+  <div id="aria_tree" role="tree">
+    <div id="aria_treeitem1" role="treeitem" tabindex="0">unselected treeitem</div>
+    <div id="aria_treeitem2" role="treeitem" tabindex="0" aria-selected="true">selected treeitem</div>
+    <div id="aria_treeitem3" role="treeitem" tabindex="0" aria-selected="false">focused explicitly unselected treeitem</div>
+  </div>
+
+  <!-- tab managed by active-descendant -->
+  <div id="aria_tablist2" role="tablist" tabindex="0">
+    <div id="aria_tab4" role="tab" aria-selected="false">focused explicitly unselected tab</div>
+    <div id="aria_tab5" role="tab">initially selected tab</div>
+    <div id="aria_tab6" role="tab">later selected tab</div>
+  </div>
+</body>
+</html>

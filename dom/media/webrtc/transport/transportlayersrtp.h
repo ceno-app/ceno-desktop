@@ -1,0 +1,39 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef transportlayersrtp_h_
+#define transportlayersrtp_h_
+
+#include "SrtpFlow.h"
+#include "mozilla/RefPtr.h"
+#include "transportlayer.h"
+
+namespace mozilla {
+
+class TransportLayerDtls;
+
+class TransportLayerSrtp final : public TransportLayer {
+ public:
+  explicit TransportLayerSrtp(TransportLayerDtls& dtls);
+  virtual ~TransportLayerSrtp() = default;
+
+  // Transport layer overrides.
+  void WasInserted() override;
+  TransportResult SendPacket(MediaPacket& packet) override;
+
+  // Signals
+  void StateChange(TransportLayer* layer, State state);
+  void PacketReceived(TransportLayer* layer, MediaPacket& packet);
+
+  TRANSPORT_LAYER_ID("srtp")
+
+ private:
+  bool Setup();
+  DISALLOW_COPY_ASSIGN(TransportLayerSrtp);
+  RefPtr<SrtpFlow> mSendSrtp;
+  RefPtr<SrtpFlow> mRecvSrtp;
+};
+
+}  // namespace mozilla
+#endif

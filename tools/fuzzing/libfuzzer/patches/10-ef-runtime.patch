@@ -1,0 +1,20 @@
+commit eb2fa4068fcdf6e4aaeb4e98e26d444e3e739bde
+Author: Christian Holler <choller@mozilla.com>
+Date:   Thu Jul 30 18:20:54 2020 +0200
+
+    [libFuzzer] Allow external functions to be defined at runtime
+
+diff --git a/FuzzerDriver.cpp b/FuzzerDriver.cpp
+index 5928d1d96acd..ff43cb031dff 100644
+--- a/FuzzerDriver.cpp
++++ b/FuzzerDriver.cpp
+@@ -653,7 +653,8 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
+   using namespace fuzzer;
+   assert(argc && argv && "Argument pointers cannot be nullptr");
+   std::string Argv0((*argv)[0]);
+-  EF = new ExternalFunctions();
++  if (!EF)
++    EF = new ExternalFunctions();
+   if (EF->LLVMFuzzerInitialize)
+     EF->LLVMFuzzerInitialize(argc, argv);
+   if (EF->__msan_scoped_disable_interceptor_checks)

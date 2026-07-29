@@ -1,0 +1,132 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_MathMLElement_h_
+#define mozilla_dom_MathMLElement_h_
+
+#include "Link.h"
+#include "mozilla/Attributes.h"
+#include "mozilla/EnumSet.h"
+#include "nsStyledElement.h"
+
+class nsCSSValue;
+
+namespace mozilla {
+class EventChainPostVisitor;
+class EventChainPreVisitor;
+namespace dom {
+
+using MathMLElementBase = nsStyledElement;
+
+/*
+ * The base class for MathML elements.
+ */
+class MathMLElement final : public MathMLElementBase, public Link {
+ public:
+  explicit MathMLElement(already_AddRefed<mozilla::dom::NodeInfo>& aNodeInfo);
+  explicit MathMLElement(already_AddRefed<mozilla::dom::NodeInfo> aNodeInfo);
+
+  // Implementation of nsISupports is inherited from MathMLElementBase
+  NS_DECL_ISUPPORTS_INHERITED
+
+  NS_IMPL_FROMNODE(MathMLElement, kNameSpaceID_MathML)
+
+  void SetNonce(const nsAString& aNonce) {
+    SetProperty(nsGkAtoms::nonce, new nsString(aNonce),
+                nsINode::DeleteProperty<nsString>, /* aTransfer = */ true);
+  }
+  void RemoveNonce() { RemoveProperty(nsGkAtoms::nonce); }
+  void GetNonce(nsAString& aNonce) const {
+    nsString* cspNonce = static_cast<nsString*>(GetProperty(nsGkAtoms::nonce));
+    if (cspNonce) {
+      aNonce = *cspNonce;
+    }
+  }
+
+  nsresult BindToTree(BindContext&, nsINode& aParent) override;
+  void UnbindFromTree(UnbindContext&) override;
+
+  bool ParseAttribute(int32_t aNamespaceID, nsAtom* aAttribute,
+                      const nsAString& aValue,
+                      nsIPrincipal* aMaybeScriptedPrincipal,
+                      nsAttrValue& aResult) override;
+
+  NS_IMETHOD_(bool) IsAttributeMapped(const nsAtom* aAttribute) const override;
+  nsMapRuleToAttributesFunc GetAttributeMappingFunction() const override;
+
+  enum class ParseFlag : uint8_t {
+    AllowNegative,
+    SuppressWarnings,
+  };
+  using ParseFlags = mozilla::EnumSet<ParseFlag>;
+  static bool ParseNamedSpaceValue(const nsString& aString,
+                                   nsCSSValue& aCSSValue,
+                                   const Document& aDocument,
+                                   ParseFlags aFlags = ParseFlags());
+
+  static bool ParseNumericValue(const nsString& aString, nsCSSValue& aCSSValue,
+                                Document* aDocument,
+                                ParseFlags aFlags = ParseFlags());
+
+  static void MapGlobalMathMLAttributesInto(
+      mozilla::MappedDeclarationsBuilder&);
+  static void MapMiAttributesInto(mozilla::MappedDeclarationsBuilder&);
+  static void MapMTableAttributesInto(mozilla::MappedDeclarationsBuilder&);
+
+  void GetEventTargetParent(mozilla::EventChainPreVisitor& aVisitor) override;
+  MOZ_CAN_RUN_SCRIPT
+  nsresult PostHandleEvent(mozilla::EventChainPostVisitor& aVisitor) override;
+  nsresult Clone(mozilla::dom::NodeInfo*, nsINode** aResult) const override;
+  nsresult CopyInnerTo(mozilla::dom::Element* aDest);
+
+  // Set during reflow as necessary. Does a style change notification,
+  // aNotify must be true.
+  void SetIncrementScriptLevel(bool aIncrementScriptLevel, bool aNotify);
+  bool GetIncrementScriptLevel() const {
+    return Element::State().HasState(ElementState::INCREMENT_SCRIPT_LEVEL);
+  }
+
+  int32_t TabIndexDefault() final;
+
+  Focusable IsFocusableWithoutStyle(IsFocusableFlags) override;
+  already_AddRefed<nsIURI> GetHrefURI() const override;
+
+  void NodeInfoChanged(Document* aOldDoc) override {
+    ClearHasPendingLinkUpdate();
+    MathMLElementBase::NodeInfoChanged(aOldDoc);
+  }
+
+  bool IsEventAttributeNameInternal(nsAtom* aName) final;
+
+  bool Autofocus() const { return GetBoolAttr(nsGkAtoms::autofocus); }
+  void SetAutofocus(bool aAutofocus, ErrorResult& aRv) {
+    if (aAutofocus) {
+      SetAttr(nsGkAtoms::autofocus, u""_ns, aRv);
+    } else {
+      UnsetAttr(nsGkAtoms::autofocus, aRv);
+    }
+  }
+
+ protected:
+  virtual ~MathMLElement() = default;
+
+  JSObject* WrapNode(JSContext*, JS::Handle<JSObject*> aGivenProto) override;
+
+  void BeforeSetAttr(int32_t aNamespaceID, nsAtom* aName,
+                     const nsAttrValue* aValue, bool aNotify) final;
+  void AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
+                    const nsAttrValue* aValue, const nsAttrValue* aOldValue,
+                    nsIPrincipal* aSubjectPrincipal, bool aNotify) override;
+
+ private:
+  bool SupportsHrefAttribute() const;
+  bool ElementHasHref() const final {
+    return SupportsHrefAttribute() && Link::ElementHasHref();
+  }
+};
+
+}  // namespace dom
+}  // namespace mozilla
+
+#endif  // mozilla_dom_MathMLElement_h_

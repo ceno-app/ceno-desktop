@@ -1,0 +1,34 @@
+/* Any copyright is dedicated to the Public Domain.
+ http://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+// Test that a CSS property is marked as inactive when a condition
+// changes in other CSS rule matching the element.
+
+const TEST_URI = `
+<style>
+  .display {
+    display: grid;
+  }
+  .gap {
+    gap: 1em;
+  }
+</style>
+<div class="display gap">`;
+
+add_task(async function () {
+  await addTab("data:text/html;charset=utf-8," + encodeURIComponent(TEST_URI));
+  const { inspector, view } = await openRuleView();
+
+  await selectNode("div", inspector);
+
+  await checkDeclarationIsActive(view, 1, { gap: "1em" });
+  await toggleDeclaration(view, 2, { display: "grid" });
+  await checkDeclarationIsInactive(
+    view,
+    1,
+    { gap: "1em" },
+    "inactive-css-not-grid-or-flex-container-or-multicol-container"
+  );
+});

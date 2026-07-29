@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+  <!--
+       https://bugzilla.mozilla.org/show_bug.cgi?id=769117
+     -->
+  <head>
+    <meta charset="utf-8">
+    <title>Test for Bug 769117</title>
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+    <script type="application/javascript">
+     SimpleTest.waitForExplicitFinish();
+     /** Test for Bug 769117 */
+     "use strict";
+     function onLoad () {
+       SpecialPowers.pushPrefEnv({"set": [["plugins.rewrite_youtube_embeds", true]]}, function() {
+
+         let test_urls = [{
+           original: "https://mochitest.youtube.com/v/Xm5i5kbIXzc",
+           changed: "https://mochitest.youtube.com/embed/Xm5i5kbIXzc",
+         }, {
+           original: "https://example.com&@mochitest.youtube.com/v/lG7U3fuNw3A",
+           changed: "https://example.com&@mochitest.youtube.com/embed/lG7U3fuNw3A",
+         }];
+         let static_iframe = document.getElementById("staticiframe");
+
+         function testEmbed(embed, i) {
+           ok (embed, "Embed node exists");
+           embed = SpecialPowers.wrap(embed);
+           is (embed.srcURI.spec, test_urls[i].changed, "Should have src uri of " + test_urls[i].changed);
+         }
+
+         function testStatic() {
+           info("Running static embed youtube rewrite test");
+           iframe_doc = static_iframe.contentWindow.document;
+           testEmbed(iframe_doc.getElementById("testembed"), 0);
+           testEmbed(iframe_doc.getElementById("testobject"), 0);
+           testEmbed(iframe_doc.getElementById("testembed2"), 1);
+           testEmbed(iframe_doc.getElementById("testobject2"), 1);
+           SimpleTest.executeSoon(() => {
+             testEmbed(embed_dynamic, 0);
+             SimpleTest.finish();
+           });
+         }
+
+         info("Running dynamic embed youtube rewrite test");
+         let embed_dynamic = document.createElement("embed");
+         embed_dynamic.src = "https://mochitest.youtube.com/v/Xm5i5kbIXzc";
+         embed_dynamic.type = "application/x-shockwave-flash";
+         document.body.appendChild(embed_dynamic);
+
+         static_iframe.onload = testStatic;
+         static_iframe.src = "file_bug769117.html"
+
+       });
+     }
+    </script>
+  </head>
+  <body onload="onLoad()">
+    <iframe id="staticiframe"></iframe>
+  </body>
+</html>

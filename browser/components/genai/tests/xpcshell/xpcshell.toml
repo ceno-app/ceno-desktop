@@ -1,0 +1,15 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+firefox-appdir = "browser"
+
+["test_contextual_prompts.js"]
+
+["test_link_preview_text.js"]
+
+["test_page_assist.js"]
+
+["test_provider_id.js"]
+
+["test_show_chat_entrypoint.js"]

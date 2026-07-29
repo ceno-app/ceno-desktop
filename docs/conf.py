@@ -1,0 +1,182 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+import os
+import sys
+from pathlib import Path
+
+import yaml
+
+# Set up Python environment to load build system packages.
+OUR_DIR = Path(__file__).parent
+topsrcdir = OUR_DIR.parent
+
+# Escapes $, [, ] and 3 dots in copy button
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+
+EXTRA_PATHS = (
+    "layout/tools/reftest",
+    "python/mach",
+    "python/mozbuild",
+    "python/mozversioncontrol",
+    "testing/mozbase/manifestparser",
+    "testing/mozbase/mozfile",
+    "testing/mozbase/mozprocess",
+    "testing/mozbase/moznetwork",
+    "third_party/python/jsmin",
+    "third_party/python/which",
+    "docs/_addons",
+    "taskcluster/gecko_taskgraph/test",
+)
+
+sys.path[:0] = [str(topsrcdir / p) for p in EXTRA_PATHS]
+sys.path.insert(0, str(OUR_DIR))
+
+extensions = [
+    "myst_parser",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.doctest",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
+    "mozbuild.sphinx",
+    "sphinx_js",
+    "sphinxcontrib.jquery",
+    "sphinxcontrib.mermaid",
+    "sphinx_copybutton",
+    "sphinx_design",
+    "bzlink",
+    "etp_matrix",
+]
+
+myst_enable_extensions = [
+    "colon_fence",
+    "smartquotes",
+    "deflist",
+    "html_admonition",
+    "fieldlist",
+]
+
+# The paths are loaded from config.yml so they can be shared with a CI
+# optimization strategy that ensures the doc task runs when these files change.
+with open(OUR_DIR / "config.yml") as fh:
+    config = yaml.safe_load(fh)
+    js_source_path = [f"../{path}" for path in config["js_source_paths"]]
+
+root_for_relative_js_paths = ".."
+jsdoc_config_path = "jsdoc.json"
+
+templates_path = ["_templates"]
+source_suffix = [".rst", ".md"]
+master_doc = "index"
+project = "Firefox Source Docs"
+
+# Override the search box to use Google instead of
+# sphinx search on firefox-source-docs.mozilla.org
+if (
+    os.environ.get("MOZ_SOURCE_DOCS_USE_GOOGLE") == "1"
+    and os.environ.get("MOZ_SCM_LEVEL") == "3"
+):
+    templates_path.append("_search_template")
+
+html_sidebars = {
+    "**": [
+        "searchbox.html",
+    ]
+}
+html_logo = str(topsrcdir / "browser/branding/nightly/content/firefox-wordmark.svg")
+html_favicon = str(topsrcdir / "browser/branding/nightly/firefox.ico")
+
+exclude_patterns = ["_build", "_staging", "_venv", "**security/nss/legacy/**"]
+pygments_style = "sphinx"
+# generate label “slugs” for header anchors so that
+# we can reference them from markdown links.
+myst_heading_anchors = 5
+
+# We need to perform some adjustment of the settings and environment
+# when running on Read The Docs.
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+
+if on_rtd:
+    # SHELL isn't set on RTD and mach.mixin.process's import raises if a
+    # shell-related environment variable can't be found. Set the variable here
+    # to hack us into working on RTD.
+    assert "SHELL" not in os.environ
+    os.environ["SHELL"] = "/bin/bash"
+else:
+    # We only need to set the RTD theme when not on RTD because the RTD
+    # environment handles this otherwise.
+
+    html_theme = "sphinx_rtd_theme"
+
+# As we parse the error messages and they can be translated, force
+# the english locale
+os.environ["LANG"] = "C"
+
+html_static_path = ["_static"]
+htmlhelp_basename = "FirefoxTreeDocs"
+
+moz_project_name = "main"
+
+html_show_copyright = False
+
+# GitHub integration for "View page source" links
+html_context = {
+    "display_github": True,
+    "github_user": "mozilla-firefox",
+    "github_repo": "firefox",
+    "github_version": "main",
+}
+
+# Only run autosection for the page title.
+# Otherwise, we have a huge number of duplicate links.
+# For example, the page https://firefox-source-docs.mozilla.org/code-quality/lint/
+# is called "Linting"
+# just like https://firefox-source-docs.mozilla.org/remote/CodeStyle.html
+autosectionlabel_maxdepth = 1
+
+
+def install_sphinx_design(app, pagename, templatename, context, doctree):
+    if "perfdocs" in pagename:
+        app.add_js_file("sphinx_design.js")
+        app.add_css_file("sphinx_design.css")
+
+
+def add_github_source_link(app, pagename, templatename, context, doctree):
+    """Add the original source file path to the context for GitHub links.
+
+    Docs are staged from various source locations (e.g. gfx/docs/, js/src/doc/)
+    into a flat structure (e.g. gfx/, js/) for building. We need to reverse this
+    mapping so GitHub links point to the actual source files in the repo.
+    """
+    from moztreedocs import manager
+
+    if not manager.trees:
+        return
+
+    source_suffix = context.get("page_source_suffix", "")
+    staging_relpath = pagename + source_suffix
+
+    # manager.trees maps staging prefixes to source prefixes,
+    # e.g. {"gfx": "gfx/docs", "js": "js/src/doc"}.
+    # Replace the staging prefix with the original source prefix to recover
+    # the real repo path, e.g. "gfx/Silk.rst" -> "gfx/docs/Silk.rst".
+    for staging_prefix, original_prefix in manager.trees.items():
+        if staging_relpath.startswith(staging_prefix + "/"):
+            # Strip the staging prefix and re-attach the original source prefix.
+            # e.g. "gfx/Silk.rst" -> strip "gfx" -> "Silk.rst" -> "gfx/docs/Silk.rst"
+            rel = staging_relpath[len(staging_prefix) + 1 :]
+            context["github_source_path"] = original_prefix + "/" + rel
+            return
+
+    # Files directly in docs/ don't go through SPHINX_TREES staging
+    context["github_source_path"] = "docs/" + staging_relpath
+
+
+def setup(app):
+    app.add_css_file("custom_theme.css")
+    app.connect("html-page-context", install_sphinx_design)
+    app.connect("html-page-context", add_github_source_link)

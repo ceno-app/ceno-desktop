@@ -1,0 +1,218 @@
+@mixin personalized-card-1-column {
+  flex-direction: column;
+
+  img {
+    width: 98px;
+    height: 98px;
+    margin-inline-start: var(--space-xxlarge);
+    margin-block-end: var(--space-large);
+  }
+
+  moz-button {
+    width: 100%;
+  }
+
+  .personalized-card-message-wrapper,
+  .personalized-card-cta-wrapper {
+    flex-direction: column;
+  }
+
+  .personalized-card-cta-wrapper {
+    padding-inline-start: var(--space-xxlarge);
+    padding-inline-end: var(--space-xxlarge);
+    padding-block-end: var(--space-xxlarge);
+  }
+}
+
+@mixin personalized-card-2-column {
+  flex-direction: row;
+
+  img {
+    width: 130px;
+    height: 130px;
+    margin-inline-start: var(--space-large);
+    margin-block-end: 0;
+    align-self: flex-end;
+  }
+
+  moz-button {
+    width: auto;
+  }
+
+  .personalized-card-message-wrapper,
+  .personalized-card-cta-wrapper {
+    flex-direction: row;
+    padding-inline-start: var(--space-large);
+    gap: var(--space-xxlarge);
+  }
+
+  .personalized-card-message-wrapper {
+    padding-block-end: var(--space-large);
+
+    h2 {
+      flex: 1;
+    }
+
+    p {
+      flex: 1.4;
+    }
+  }
+
+  .personalized-card-cta-wrapper {
+    .personalized-card-button {
+      flex: none;
+    }
+  }
+}
+
+@mixin personalized-card-3-column {
+  img {
+    width: 98px;
+    height: 98px;
+  }
+
+  moz-button {
+    width: 100%;
+  }
+
+  .personalized-card-inner {
+    flex-direction: row;
+  }
+
+  .personalized-card-message-wrapper {
+    flex: 1;
+    padding-inline-start: var(--space-xxlarge);
+    padding-inline-end: 0;
+    padding-block-end: var(--space-xxlarge);
+
+    p {
+      flex: 1.8;
+    }
+  }
+
+  .personalized-card-cta-wrapper {
+    padding-inline-start: var(--space-xxlarge);
+    flex-direction: column;
+    gap: var(--space-medium);
+  }
+}
+
+@mixin personalized-card-4-column {
+  img {
+    width: 141px;
+    height: 141px;
+    margin-inline-start: var(--space-large);
+    // We need the image to sit inside the container a bit.
+    margin-block-end: calc(-1 * var(--space-xlarge));
+    margin-block-start: calc(-1 * var(--space-large));
+  }
+
+  .personalized-card-message-wrapper {
+    flex: 0.9;
+    padding-inline-start: var(--space-xlarge);
+
+    p {
+      flex: 1.3;
+    }
+  }
+}
+
+.personalized-card-wrapper {
+  background-color: var(--newtab-background-card);
+  // @nova-cleanup(merge-styles): Nova removed the border
+  border: 2px solid var(--card-border-color);
+  color: var(--text-color);
+  border-radius: var(--border-radius-large);
+  padding-block-start: var(--space-xxlarge);
+  margin: var(--space-xlarge) 0;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+
+  .personalized-card-dismiss {
+    position: absolute;
+    inset-inline-end: var(--space-xxsmall);
+    inset-block-start: var(--space-xxsmall);
+  }
+
+  img {
+    object-fit: contain;
+  }
+
+  .personalized-card-inner {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .personalized-card-message-wrapper {
+    display: flex;
+    gap: var(--space-small);
+    padding-inline: var(--space-xxlarge);
+    padding-block-end: var(--space-xxlarge);
+
+    h2, p {
+      margin: 0;
+    }
+
+    h2 {
+      font-size: var(--font-size-heading-large);
+      font-weight: var(--font-weight-heading);
+    }
+  }
+
+  .personalized-card-cta-wrapper {
+    display: flex;
+    gap: var(--space-small);
+    align-items: center;
+
+    .personalized-card-link {
+      color: var(--link-color);
+      font-size: var(--font-size-small);
+    }
+  }
+
+  // @nova-cleanup(merge-styles): Removed the media based breakpoints
+  &:not(.nova-enabled *) {
+    // 1-column layout
+    @include personalized-card-1-column;
+
+    // 2-column layout
+    @media (min-width: $break-point-layout-variant) {
+      @include personalized-card-2-column;
+    }
+
+    // 3-column layout
+    @media (min-width: $break-point-widest) {
+      @include personalized-card-3-column;
+    }
+
+    // 4-column layout
+    @media (min-width: $break-point-sections-variant) {
+      @include personalized-card-4-column;
+    }
+  }
+
+  // @nova-cleanup(remove-conditional): Nova removed the media breakpoints
+  &:is(.nova-enabled *) {
+    // @nova-cleanup(remove-conditional): Nova removed the border
+    border: none;
+
+    // 1-column layout
+    @include personalized-card-1-column;
+
+    // 2-column layout
+    @include at-content-cols(8) {
+      @include personalized-card-2-column;
+    }
+
+    // 3-column layout
+    @include at-content-cols(12) {
+      @include personalized-card-3-column;
+    }
+
+    // 4-column layout
+    @include at-content-cols(16) {
+      @include personalized-card-4-column;
+    }
+  }
+}

@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?csp default-src chrome:; style-src chrome: 'unsafe-inline'; ?>
+
+<window
+  type="child"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  data-l10n-id="colors-dialog2"
+  data-l10n-attrs="title, style"
+  persist="lastSelected"
+>
+  <dialog id="ColorsDialog" buttons="accept,cancel">
+    <linkset>
+      <html:link rel="stylesheet" href="chrome://global/skin/global.css" />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/skin/preferences/preferences.css"
+      />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/content/preferences/dialogs/colors.css"
+      />
+
+      <html:link rel="localization" href="browser/preferences/colors.ftl" />
+    </linkset>
+
+    <script src="chrome://browser/content/utilityOverlay.js" />
+    <script src="chrome://global/content/preferencesBindings.js" />
+
+    <keyset>
+      <key id="key_close" data-l10n-id="colors-close-key" modifiers="accel" />
+    </keyset>
+
+    <hbox id="custom-colors">
+      <groupbox flex="1" class="color-container">
+        <label
+          ><html:h2
+            class="heading-medium"
+            data-l10n-id="colors-text-and-background"
+        /></label>
+        <hbox align="center" class="color-row">
+          <html:moz-input-color
+            value="CanvasText"
+            data-l10n-id="colors-text"
+            control="foregroundtextmenu"
+            id="foregroundtextmenu"
+            class="color-picker"
+            preference="browser.display.foreground_color"
+          ></html:moz-input-color>
+        </hbox>
+        <hbox align="center" class="color-row">
+          <html:moz-input-color
+            value="Canvas"
+            data-l10n-id="colors-text-background"
+            control="backgroundmenu"
+            id="backgroundmenu"
+            class="color-picker"
+            preference="browser.display.background_color"
+          ></html:moz-input-color>
+        </hbox>
+      </groupbox>
+
+      <groupbox flex="1" class="color-container">
+        <label
+          ><html:h2 class="heading-medium" data-l10n-id="colors-links-header"
+        /></label>
+        <hbox align="center" class="color-row">
+          <html:moz-input-color
+            value="LinkText"
+            data-l10n-id="colors-links-unvisited"
+            control="unvisitedlinkmenu"
+            id="unvisitedlinkmenu"
+            class="color-picker"
+            preference="browser.anchor_color"
+          ></html:moz-input-color>
+        </hbox>
+        <hbox align="center" class="color-row">
+          <html:moz-input-color
+            value="VisitedText"
+            data-l10n-id="colors-links-visited"
+            control="visitedlinkmenu"
+            id="visitedlinkmenu"
+            class="color-picker"
+            preference="browser.visited_color"
+          ></html:moz-input-color>
+        </hbox>
+      </groupbox>
+    </hbox>
+
+    <!-- Load the script after the elements for layout issues (bug 1501755). -->
+    <script src="chrome://browser/content/preferences/dialogs/colors.js" />
+  </dialog>
+</window>

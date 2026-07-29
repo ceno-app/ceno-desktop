@@ -1,0 +1,57 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/in-content/common.css");
+@import url("chrome://browser/content/backup/backup-common.css");
+
+:host {
+  --margin-inline-start-checkbox-content: calc(var(--checkbox-margin-inline) + var(--checkbox-size));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-large);
+}
+
+.backup-dialog {
+  overflow: visible;
+}
+
+#turn-on-scheduled-backups-dialog {
+  width: 27.8rem;
+}
+
+#turn-off-scheduled-backups-dialog,
+#enable-backup-encryption-dialog,
+#disable-backup-encryption-dialog {
+  width: 23.94rem;
+}
+
+#restore-from-backup-dialog {
+  width: 29.27rem;
+}
+
+.scheduled-backups-enabled {
+  --box-icon-start-fill: var(--icon-color-success);
+}
+
+.scheduled-backups-disabled {
+  --box-icon-start-fill: var(--icon-color-warning);
+}
+
+moz-input-folder {
+  --input-folder-wrap: wrap;
+}
+
+#last-backup-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xsmall);
+}
+
+#sensitive-data {
+  margin-block-start: var(--space-small);
+}
+
+moz-button {
+  white-space: nowrap;
+}

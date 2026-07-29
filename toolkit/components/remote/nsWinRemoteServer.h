@@ -1,0 +1,24 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef _nsWinRemoteServer_h_
+#define _nsWinRemoteServer_h_
+
+#include "nsRemoteServer.h"
+
+#include <windows.h>
+
+class nsWinRemoteServer final : public nsRemoteServer {
+ public:
+  nsWinRemoteServer() = default;
+  ~nsWinRemoteServer() override { Shutdown(); }
+
+  nsresult Startup(const char* aAppName, const char* aProfileName) override;
+  void Shutdown() override;
+
+ private:
+  HWND mHandle;
+};
+
+#endif  // __nsWinRemoteService_h__

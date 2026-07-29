@@ -1,0 +1,10 @@
+.modalOverlayOuter {
+  border: none;
+  box-shadow: var(--popup-box-shadow);
+  padding: 0;
+  border-radius: var(--border-radius-medium);
+
+  &::backdrop {
+    background: var(--newtab-overlay-color);
+  }
+}

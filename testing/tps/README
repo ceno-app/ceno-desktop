@@ -1,0 +1,90 @@
+TPS is a test automation framework for Firefox Sync. See
+https://developer.mozilla.org/en/TPS for documentation.
+
+FxA Stage WAF Bypass Token (Required)
+======================================
+
+TPS hits the FxA staging server, which has a WAF that blocks automated
+traffic. To run TPS you need a bypass token, exposed via the
+TPS_FXA_CI_TOKEN environment variable.
+
+Where to get the most current token:
+  https://mozilla-hub.atlassian.net/wiki/spaces/CLOUDSERVICES/pages/5276635/SACI+Triage+Rotation#Run-desktop-Sync-TPS-tests
+
+Set it in your shell profile (.bashrc / .zshrc / etc.) so it persists across worktrees and sessions:
+
+  export TPS_FXA_CI_TOKEN=<token>
+
+or just simply invoke it as part of the CLI:
+
+  TPS_FXA_CI_TOKEN=xx ./mach tps-test --auto-account...
+
+If it's not set, `./mach tps-test` against staging will fail.
+
+Quick Start (Recommended)
+==========================
+
+The easiest way to run TPS tests is using the `./mach tps-test` command with
+automatic account creation:
+
+  ./mach tps-test --testfile services/sync/tests/tps/test_sync.js \
+                  --auto-account
+
+This command:
+- Automatically creates and verifies a test account via restmail.net
+- Builds the TPS extension automatically
+- Works directly with your Firefox build
+- Automates OAuth authentication with real FxA credentials
+- Tests real Sync functionality between multiple profiles
+- Uses FxA staging server by default
+
+Options:
+  --testfile        Path to test file (e.g., services/sync/tests/tps/test_sync.js)
+  --auto-account    Automatically create test account (recommended)
+  --username        Firefox Account username (alternative to --auto-account)
+  --password        Firefox Account password (required with --username)
+  --fxa-staging     Use FxA staging server (default with --auto-account)
+  --fxa-production  Use FxA production server (not recommended)
+  --binary          Path to Firefox binary (default: uses your build)
+  --logfile         Path to log file (default: tps.log)
+  --debug           Enable debug logging
+
+Run in headless mode with:
+  MOZ_HEADLESS=1 ./mach tps-test --testfile ... --auto-account
+
+Setting Up (FxA) Test Accounts
+========================
+
+Automatic Account Creation (Recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The simplest way to run TPS tests is with automatic account creation:
+
+  ./mach tps-test --testfile services/sync/tests/tps/test_sync.js \
+                  --auto-account
+
+TPS will automatically:
+1. Generate test credentials (random restmail.net address and password)
+2. Create the account via FxA API inside Firefox
+3. Verify the account via restmail.net (FxA requires email verification before
+   sign-in; the staging server does not support skipping this step)
+4. Start an OAuth flow with the FxA server
+5. Open the login page in a browser window
+6. Fill in the credentials programmatically
+7. Complete the OAuth handshake
+8. Set up real Sync connections between test profiles
+
+No manual account creation or verification needed.
+
+Manual Account Setup (Alternative)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you prefer to use an existing account:
+
+  ./mach tps-test --testfile services/sync/tests/tps/test_sync.js \
+                  --username your-test@restmail.net \
+                  --password your-password
+
+Note: The account must already exist. You can create accounts manually at
+https://accounts.stage.mozaws.net (for staging).
+
+Note: The staging server approach is recommended for testing to avoid using
+production infrastructure. Accounts must be verified before TPS can use them.

@@ -1,0 +1,741 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Core :: Networking: DNS'
+
+dns:
+  lookup_method:
+    type: custom_distribution
+    description: >
+      DNS Lookup Type (hit, renewal, negative-hit, literal, overflow,
+      network-first, network-shared)
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram DNS_LOOKUP_METHOD2.
+    range_min: 0
+    range_max: 16
+    bucket_count: 17
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1954708
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+
+  cleanup_age:
+    type: timing_distribution
+    description: >
+      DNS Cache Entry Age at Removal Time (minutes)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_CLEANUP_AGE.
+    time_unit: minute
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+    telemetry_mirror: DNS_CLEANUP_AGE
+
+  by_type_cleanup_age:
+    type: timing_distribution
+    description: >
+      DNS Cache Entry Age for by-type queries at Removal Time (minutes)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_BY_TYPE_CLEANUP_AGE.
+    time_unit: minute
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+    telemetry_mirror: DNS_BY_TYPE_CLEANUP_AGE
+
+  premature_eviction:
+    type: timing_distribution
+    description: >
+      DNS Cache Entry Age at Removal Time of non-expired entries (minutes)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_PREMATURE_EVICTION.
+    time_unit: minute
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1460305
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1460305
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  by_type_premature_eviction:
+    type: timing_distribution
+    description: >
+      DNS Cache Entry Age for by-type queries at Removal Time of non-expired
+      entries (minutes)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_BY_TYPE_PREMATURE_EVICTION.
+    time_unit: minute
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_lookup_time:
+    type: labeled_timing_distribution
+    description: >
+      Time for a completed TRR resolution (msec); Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_TRR_LOOKUP_TIME3.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_processing_time:
+    type: timing_distribution
+    description: >
+      Time from the last received byte of the response until we have notified
+      the consumer with a DNS record (msec)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_TRR_PROCESSING_TIME.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1608114
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1608114
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_skip_reason_trr_first:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, it lists the reason we may have skipped TRR, keyed
+      by the provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_TRR_FIRST2.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_skip_reason_native_success:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR was skipped and native succeeded, it lists
+      the reason we may have skipped TRR, keyed by the provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_NATIVE_SUCCESS.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_skip_reason_native_failed:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR was skipped and native failed, it lists the
+      reason we may have skipped TRR, keyed by the provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_NATIVE_FAILED.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_relevant_skip_reason_trr_first:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, it lists the reason we may have skipped TRR, keyed
+      by the provider. Does not include requests that intentionally skip TRR.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_RELEVANT_SKIP_REASON_TRR_FIRST.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_relevant_skip_reason_native_success:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR was skipped and native succeeded, it lists
+      the reason we may have skipped TRR, keyed by the provider. Does not
+      include requests that intentionally skip TRR.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_RELEVANT_SKIP_REASON_NATIVE_SUCCESS.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1649143
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_relevant_skip_reason_native_failed:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR was skipped and native failed, it lists the
+      reason we may have skipped TRR, keyed by the provider. Does not include
+      requests that intentionally skip TRR.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_RELEVANT_SKIP_REASON_NATIVE_FAILED.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1699523
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1742408
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_skip_reason_strict_mode:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, it lists the reason we may have skipped TRR. The
+      key is like `<provider>|<skip reason of first attempt>` or just
+      `<provider>` used when there was no second attempt.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_STRICT_MODE.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_skip_reason_retry_success:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR failed once and was successfully retried,
+      it lists the reason for the first failure, keyed by the provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_RETRY_SUCCESS.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_skip_reason_retry_failed:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, if TRR failed once and retried unsuccessfully, it
+      lists the reason for the first failure, keyed by the provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_SKIP_REASON_RETRY_FAILED.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_relevant_skip_reason_trr_first_type_rec:
+    type: labeled_custom_distribution
+    description: >
+      When in TRR-first mode, it lists the reason we may have skipped TRR for
+      HTTPS RR, keyed by the provider. Does not include requests that
+      intentionally skip TRR.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_RELEVANT_SKIP_REASON_TRR_FIRST_TYPE_REC.
+    range_min: 0
+    range_max: 50
+    bucket_count: 51
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1850367
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1850367
+    notification_emails:
+      - necko@mozilla.com
+      - kershaw@mozilla.com
+    expires: never
+
+  trr_attempt_count:
+    type: labeled_custom_distribution
+    description: >
+      Number of times we attempted TRR for a successful lookup in TRR-first
+      mode. Keyed by provider.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram TRR_ATTEMPT_COUNT.
+    range_min: 0
+    range_max: 10
+    bucket_count: 11
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1737198
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  native_lookup_time:
+    type: timing_distribution
+    description: >
+      Time for a completed native name resolution (msec)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_NATIVE_LOOKUP_TIME.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  by_type_failed_lookup_time:
+    type: timing_distribution
+    description: >
+      Time for a completed by-type resolution that has a negative answer (msec).
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_BY_TYPE_FAILED_LOOKUP_TIME.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1481251
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  https_rr_lookup_time:
+    type: labeled_timing_distribution
+    description: >
+      Time for a completed HTTPS RR (type 65) resolution (msec), keyed by
+      whether it was resolved over DoH/TRR or natively.
+    time_unit: millisecond
+    labels:
+      - doh
+      - native
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2044935
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2044935
+    notification_emails:
+      - necko@mozilla.com
+      - kershaw@mozilla.com
+    expires: never
+
+  native_queuing:
+    type: timing_distribution
+    description: >
+      Time in resolve queue waiting to getaddrinfo (msec)
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram DNS_NATIVE_QUEUING.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1470215
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1470215
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  lookup_algorithm:
+    type: labeled_counter
+    description: >
+      DNS: lookup algorithm
+
+      This metric was generated to correspond to the Legacy Telemetry
+      categorical histogram DNS_LOOKUP_ALGORITHM.
+    labels:
+      - nativeOnly
+      - trrRace
+      - trrFirst
+      - trrOnly
+      - trrShadow
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_http_version:
+    type: dual_labeled_counter
+    description: >
+      HTTP version used by DoH endpoint
+
+      This metric was generated to correspond to the Legacy Telemetry
+      categorical histogram DNS_TRR_HTTP_VERSION2.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - h_1
+          - h_2
+          - h_3
+        description: Labels of the keyed categorical legacy telemetry histogram
+          DNS_TRR_HTTP_VERSION2.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1460314
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1700119
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1460314
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1700119
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
+  trr_first:
+    type: dual_labeled_counter
+    description: >
+      TRR-first mode distribution. 0=Worked, 1=fell back fine after TRR fail,
+      2=native worked, 3=both failed; Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry
+      categorical histogram DNS_TRR_FIRST4.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - TRR
+          - NativeAfterTRR
+          - Native
+          - BothFailed
+        description: Labels of the keyed categorical legacy telemetry histogram
+          DNS_TRR_FIRST4.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1497252
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1497252
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_disabled:
+    type: dual_labeled_counter
+    description: >
+      Resolve success rate when in TRR-first and called TRR-disabled (fall-back
+      mode); Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry boolean
+      histogram DNS_TRR_DISABLED3.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - "false"
+          - "true"
+        description: Boolean
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1472659
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1472659
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_blacklisted:
+    type: dual_labeled_counter
+    description: >
+      DNS check for TRR was blocked by blacklist; Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry boolean
+      histogram DNS_TRR_BLACKLISTED3.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - "false"
+          - "true"
+        description: Boolean
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_ns_verfified:
+    type: dual_labeled_counter
+    description: >
+      TRR managed to verify NS entry; Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry boolean
+      histogram DNS_TRR_NS_VERFIFIED3.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - "false"
+          - "true"
+        description: Boolean
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1453825
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1453825
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_success:
+    type: dual_labeled_counter
+    description: >
+      How often TRR (Trusted Recursive Resolver) requests are fine, time-out or
+      error. Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry
+      categorical histogram DNS_TRR_SUCCESS3.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - Fine
+          - Timeout
+          - Bad
+        description: Labels of the keyed categorical legacy telemetry histogram
+          DNS_TRR_SUCCESS3.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1497438
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1497438
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never
+
+  trr_http3_0rtt_state:
+    type: labeled_counter
+    description: >
+      Outcome of 0-RTT usage for TRR HTTP/3 connections:
+      - "not_used": 0RTT was not used
+      - "succeeded": 0RTT was used and succeeded
+      - "rejected": 0RTT was used but rejected by the server
+      - "conn_error": 0RTT was used but connection error occurred
+      - "conn_closed_by_necko": 0RTT was used but connection was closed by necko
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2011956
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2011956
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+    labels:
+      - not_used
+      - succeeded
+      - rejected
+      - conn_error
+      - conn_closed_by_necko
+
+  trr_http3_0rtt_state_duration:
+    type: labeled_timing_distribution
+    time_unit: millisecond
+    description: >
+      The time a TRR HTTP/3 connection was in the 0-RTT state before
+      transitioning to a final outcome.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2011956
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2011956
+    notification_emails:
+      - necko@mozilla.com
+    labels:
+      - succeeded
+      - rejected
+      - conn_error
+      - conn_closed_by_necko
+      - not_used
+    expires: never
+
+  lookup_disposition:
+    type: dual_labeled_counter
+    description: >
+      DNS: lookup algorithm; Keyed by TRR domain
+
+      This metric was generated to correspond to the Legacy Telemetry
+      categorical histogram DNS_LOOKUP_DISPOSITION3.
+    dual_labels:
+      key:
+        description: string identifying the current DoH server, "(other)" if not a built-in server.
+      category:
+        labels:
+          - trrOK
+          - trrFail
+          - trrAOK
+          - trrAFail
+          - trrAAAAOK
+          - trrAAAAFail
+          - osOK
+          - osFail
+        description: Labels of the keyed categorical legacy telemetry histogram
+          DNS_LOOKUP_DISPOSITION3.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1434852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1640867
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1646452
+    notification_emails:
+      - necko@mozilla.com
+      - vgosu@mozilla.com
+    expires: never

@@ -1,0 +1,240 @@
+<html>
+
+<head>
+  <title>Accessible value change events testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript"
+          src="../value.js"></script>
+
+  <script type="application/javascript">
+    // enableLogging("DOMEvents");
+    async function doTests() {
+
+      // Test initial values
+      testValue("slider_vn", "5", 5, 0, 1000, 0);
+      testValue("slider_vnvt", "plain", 0, 0, 5, 0);
+      testValue("slider_vt", "hi", 1.5, 0, 3, 0);
+      testValue("scrollbar", "5", 5, 0, 1000, 0);
+      testValue("splitter", "5", 5, 0, 1000, 0);
+      testValue("progress", "22%", 22, 0, 100, 0);
+      testValue("range", "6", 6, 0, 10, 1);
+      testValue("range2", "6", 6, 0, 10, 1);
+
+      // Test that elements which should not expose values do not
+      let separatorVal = getAccessible(
+        "separator",
+        [nsIAccessibleValue],
+        null,
+        DONOTFAIL_IF_NO_INTERFACE
+      );
+      ok(!separatorVal, "value interface is not exposed for separator");
+      let separatorAcc = getAccessible("separator");
+      ok(!separatorAcc.value, "Value text is not exposed for separator");
+
+      // Test value change events
+
+      let p = waitForEvent(EVENT_VALUE_CHANGE, getNode("slider_vn"));
+      getNode("slider_vn").setAttribute("aria-valuenow", "6");
+      await p;
+      is(getAccessible("slider_vn", [nsIAccessibleValue]).value, "6",
+         "Wrong value of slider_vn");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getNode("slider_vt"));
+      getNode("slider_vt").setAttribute("aria-valuetext", "hey!");
+      await p;
+      is(getAccessible("slider_vt", [nsIAccessibleValue]).value, "hey!",
+         "Wrong value of slider_vt");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getNode("slider_vnvt"));
+      getNode("slider_vnvt").setAttribute("aria-valuenow", "3");
+      getNode("slider_vnvt").setAttribute("aria-valuetext", "sweet");
+      await p;
+      is(getAccessible("slider_vnvt", [nsIAccessibleValue]).value, "sweet",
+         "Wrong value of slider_vnvt");
+
+      p = waitForEvent(EVENT_VALUE_CHANGE, getNode("scrollbar"));
+      getNode("scrollbar").setAttribute("aria-valuenow", "6");
+      await p;
+      is(getAccessible("scrollbar", [nsIAccessibleValue]).value, "6",
+         "Wrong value of scrollbar");
+
+      p = waitForEvent(EVENT_VALUE_CHANGE, getNode("splitter"));
+      getNode("splitter").setAttribute("aria-valuenow", "6");
+      await p;
+      is(getAccessible("splitter", [nsIAccessibleValue]).value, "6",
+         "Wrong value of splitter");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getNode("combobox"));
+      getNode("combobox").value = "hello";
+      await p;
+      is(getAccessible(getNode("combobox")).value, "hello",
+         "Wrong value for combobox");
+
+      p = waitForEvent(EVENT_VALUE_CHANGE, getNode("progress"));
+      getNode("progress").value = "50";
+      await p;
+      is(getAccessible(getNode("progress")).value, "50%",
+         "Wrong value for progress");
+
+      p = waitForEvent(EVENT_VALUE_CHANGE, getNode("range"));
+      synthesizeMouse(getNode("range"), 5, 5, {});
+      await p;
+      is(getAccessible(getNode("range")).value, "0",
+         "Wrong value for range");
+
+      p = waitForEvent(EVENT_VALUE_CHANGE, getNode("range2"));
+      getNode("range2").focus();
+      getAccessible(getNode("range2"), [nsIAccessibleValue]).currentValue = 0;
+      getNode("range2").blur();
+      await p;
+      is(getAccessible(getNode("range2")).value, "0",
+         "Wrong value for range2");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getAccessible("select"));
+      getAccessible("select").takeFocus();
+      synthesizeKey("VK_DOWN", {}, window);
+      await p;
+      is(getAccessible("select").value, "2nd", "Wrong value for select");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getAccessible("select"));
+      getAccessible("select").takeFocus();
+      synthesizeKey("3", {}, window);
+      await p;
+      is(getAccessible("select").value, "3rd", "Wrong value for select");
+
+      let iframeSelect = getAccessible("selectIframe").firstChild.firstChild;
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, iframeSelect);
+      iframeSelect.takeFocus();
+      synthesizeKey("VK_DOWN", {}, window);
+      await p;
+      is(iframeSelect.value, "2", "Wrong value for iframeSelect");
+
+      let shadowSelect = getAccessible("selectShadow").firstChild;
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, shadowSelect);
+      shadowSelect.takeFocus();
+      synthesizeKey("VK_DOWN", {}, window);
+      await p;
+      is(shadowSelect.value, "2", "Wrong value for shadowSelect");
+
+      p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, getNode("number"));
+      getNode("number").value = "2";
+      await p;
+      is(getAccessible(getNode("number")).value, "2",
+         "Wrong value for number");
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=478032"
+     title=" Fire delayed value changed event for aria-valuetext changes">
+    Mozilla Bug 478032
+  </a>
+  <a target="_blank"
+    href="https://bugzilla.mozilla.org/show_bug.cgi?id=529289"
+    title="We dont expose new aria role 'scrollbar' and property aria-orientation">
+   Mozilla Bug 529289
+  </a>
+  <a target="_blank"
+    href="https://bugzilla.mozilla.org/show_bug.cgi?id=559764"
+    title="Make HTML5 input@type=range element accessible">
+   Mozilla Bug 559764
+  </a>
+  <a target="_blank"
+    href="https://bugzilla.mozilla.org/show_bug.cgi?id=703202"
+    title="ARIA comboboxes don't fire value change events">
+   Mozilla Bug 703202
+  </a>
+  <a target="_blank"
+    href="https://bugzilla.mozilla.org/show_bug.cgi?id=761901"
+    title=" HTML5 progress accessible should fire value change event">
+   Mozilla Bug 761901
+  </a>
+
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <!-- ARIA sliders -->
+  <div id="slider_vn" role="slider" aria-valuenow="5"
+       aria-valuemin="0" aria-valuemax="1000">slider</div>
+
+  <div id="slider_vt" role="slider" aria-valuetext="hi"
+       aria-valuemin="0" aria-valuemax="3">greeting slider</div>
+
+  <div id="slider_vnvt" role="slider" aria-valuenow="0" aria-valuetext="plain"
+       aria-valuemin="0" aria-valuemax="5">sweetness slider</div>
+
+  <!-- ARIA scrollbar -->
+  <div id="scrollbar" role="scrollbar" aria-valuenow="5"
+       aria-valuemin="0" aria-valuemax="1000">slider</div>
+
+  <!-- ARIA separator which is focusable (i.e. a splitter) -->
+  <div id="splitter" role="separator" tabindex="0" aria-valuenow="5"
+       aria-valuemin="0" aria-valuemax="1000">splitter</div>
+
+  <!-- ARIA separator which is not focusable and should not expose values -->
+  <div id="separator" role="separator" aria-valuenow="5"
+       aria-valuemin="0" aria-valuemax="1000">splitter</div>
+
+  <!-- ARIA combobox -->
+  <input id="combobox" role="combobox" aria-autocomplete="inline">
+
+  <!-- progress bar -->
+  <progress id="progress" value="22" max="100"></progress>
+
+  <!-- input@type="range" -->
+  <input type="range" id="range" min="0" max="10" value="6">
+
+  <!-- input@type="range" -->
+  <input type="range" id="range2" min="0" max="10" value="6">
+
+  <select id="select">
+    <option>1st</option>
+    <option>2nd</option>
+    <option>3rd</option>
+  </select>
+
+  <iframe id="selectIframe"
+    src="data:text/html,<select id='iframeSelect'><option>1</option><option>2</option></select>">
+  </iframe>
+
+  <div id="selectShadow"></div>
+  <script>
+    let host = document.getElementById("selectShadow");
+    let shadow = host.attachShadow({mode: "open"});
+    let select = document.createElement("select");
+    select.id = "shadowSelect";
+    let option = document.createElement("option");
+    option.textContent = "1";
+    select.appendChild(option);
+    option = document.createElement("option");
+    option.textContent = "2";
+    select.appendChild(option);
+    shadow.appendChild(select);
+  </script>
+
+  <input type="number" id="number" value="1">
+</body>
+</html>

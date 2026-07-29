@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<title></title>
+<style>
+@keyframes anim {
+  from { transform: scale(1); }
+  to { transform: rotate(0deg); }
+}
+#target {
+  animation: anim 3s infinite;
+  background-color: blue;
+  width: 100px;
+  height: 100px;
+}
+</style>
+<div>
+<div id="target"></div>
+<details id="details" open>
+  <summary>Summary</summary>
+  <p>detail description</p>
+</details>
+</div>
+<script>
+window.addEventListener('load', () => {
+  requestAnimationFrame(() => {
+    details.open = false;
+    SpecialPowers.wrap(window)
+                 .synthesizeMouseEvent("mousemove", 100, 100, { clickCount: 1, modifiers: 1 });
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove("reftest-wait");
+    });
+  });
+});
+</script>

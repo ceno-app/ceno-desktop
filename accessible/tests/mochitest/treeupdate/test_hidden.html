@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>@hidden attribute testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTest() {
+      let tree = { SECTION: [ { ENTRY: [] } ] };
+      testAccessibleTree("container", tree);
+
+      let reordered = waitForEvent(EVENT_REORDER, getNode("container"));
+      getNode("child").setAttribute("hidden", "true");
+      await reordered;
+
+      tree = { SECTION: [] };
+      testAccessibleTree("container", tree);
+
+      reordered = waitForEvent(EVENT_REORDER, getNode("container"));
+      getNode("child").removeAttribute("hidden");
+      await reordered;
+
+      tree = { SECTION: [ { ENTRY: [] } ] };
+      testAccessibleTree("container", tree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+
+  </script>
+
+</head>
+
+<body>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="container"><input id="child"></div>
+
+  <div id="eventdump"></div>
+
+</body>
+
+</html>

@@ -1,0 +1,66 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsMathMLTokenFrame_h_
+#define nsMathMLTokenFrame_h_
+
+#include "nsMathMLContainerFrame.h"
+
+namespace mozilla {
+class PresShell;
+}  // namespace mozilla
+
+//
+// Base class to handle token elements
+//
+
+class nsMathMLTokenFrame : public nsMathMLContainerFrame {
+ public:
+  NS_DECL_FRAMEARENA_HELPERS(nsMathMLTokenFrame)
+
+  friend nsIFrame* NS_NewMathMLTokenFrame(mozilla::PresShell* aPresShell,
+                                          ComputedStyle* aStyle);
+
+  NS_IMETHOD
+  TransmitAutomaticData() override {
+    // The REC defines the following elements to be space-like:
+    // * an mtext, mspace, maligngroup, or malignmark element;
+    if (mContent->IsMathMLElement(nsGkAtoms::mtext)) {
+      mPresentationData.flags += MathMLPresentationFlag::SpaceLike;
+    }
+    return NS_OK;
+  }
+
+  NS_IMETHOD
+  InheritAutomaticData(nsIFrame* aParent) override;
+
+  MathMLFrameType GetMathMLFrameType() override;
+
+  void SetInitialChildList(ChildListID aListID,
+                           nsFrameList&& aChildList) override;
+
+  void AppendFrames(ChildListID aListID, nsFrameList&& aChildList) override;
+
+  void InsertFrames(ChildListID aListID, nsIFrame* aPrevFrame,
+                    const nsLineList::iterator* aPrevFrameLine,
+                    nsFrameList&& aChildList) override;
+
+  void Reflow(nsPresContext* aPresContext, ReflowOutput& aDesiredSize,
+              const ReflowInput& aReflowInput,
+              nsReflowStatus& aStatus) override;
+
+  void Place(DrawTarget* aDrawTarget, const PlaceFlags& aFlags,
+             ReflowOutput& aDesiredSize) override;
+
+ protected:
+  explicit nsMathMLTokenFrame(ComputedStyle* aStyle,
+                              nsPresContext* aPresContext,
+                              ClassID aID = kClassID)
+      : nsMathMLContainerFrame(aStyle, aPresContext, aID) {}
+  virtual ~nsMathMLTokenFrame();
+
+  void MarkTextFramesAsTokenMathML();
+};
+
+#endif /* nsMathMLTokentFrame_h___ */

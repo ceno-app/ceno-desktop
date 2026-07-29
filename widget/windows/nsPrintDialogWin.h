@@ -1,0 +1,35 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsPrintDialog_h_
+#define nsPrintDialog_h_
+
+#include "nsIPrintDialogService.h"
+
+#include "nsCOMPtr.h"
+#include "nsIWindowWatcher.h"
+
+#include <windef.h>
+
+class nsIPrintSettings;
+class nsIDialogParamBlock;
+
+class nsPrintDialogServiceWin final : public nsIPrintDialogService {
+ public:
+  nsPrintDialogServiceWin();
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIPRINTDIALOGSERVICE
+
+ private:
+  virtual ~nsPrintDialogServiceWin();
+
+  nsresult DoDialog(mozIDOMWindowProxy* aParent,
+                    nsIDialogParamBlock* aParamBlock, nsIPrintSettings* aPS,
+                    const char* aChromeURL);
+
+  nsCOMPtr<nsIWindowWatcher> mWatcher;
+};
+
+#endif

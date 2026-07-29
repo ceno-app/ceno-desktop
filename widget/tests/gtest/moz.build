@@ -1,0 +1,51 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, you can obtain one at http://mozilla.org/MPL/2.0/.
+
+UNIFIED_SOURCES = [
+    "TestGfxInfo.cpp",
+    "TestTimeConverter.cpp",
+    "TestTouchResampler.cpp",
+    "TestWidgetMouseEventCtors.cpp",
+    "TestWidgetTouchEventCtors.cpp",
+]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+    UNIFIED_SOURCES += [
+        "TestNativeKeyBindings.cpp",
+    ]
+
+if CONFIG["OS_ARCH"] == "WINNT":
+    UNIFIED_SOURCES += [
+        "MockWinWidget.cpp",
+        "TestWinHeaderOnlyUtils.cpp",
+        "TestWinMessageLoggingUtils.cpp",
+        "TestWinWindowOcclusionTracker.cpp",
+        "TestWinWindowOcclusionTrackerInteractive.cpp",
+    ]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    UNIFIED_SOURCES += [
+        "TestDMABufSurface.cpp",
+        "TestGtkDragDrop.cpp",
+    ]
+
+FINAL_LIBRARY = "xul-gtest"
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+LOCAL_INCLUDES += [
+    "/widget",
+]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+    LOCAL_INCLUDES += [
+        "/widget/cocoa",
+    ]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    LOCAL_INCLUDES += [
+        "/gfx/layers",
+    ]
+
+DisableStlWrapping()

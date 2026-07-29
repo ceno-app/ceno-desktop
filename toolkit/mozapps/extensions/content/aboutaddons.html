@@ -1,0 +1,233 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!doctype html>
+<html>
+  <head>
+    <title data-l10n-id="addons-page-title"></title>
+
+    <!-- Bug 1571346 Remove 'unsafe-inline' from style-src within about:addons -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; style-src chrome: 'unsafe-inline'; img-src chrome: blob: file: jar: https: http:; connect-src chrome: data: https: http:; object-src 'none'"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://mozapps/content/extensions/aboutaddons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://mozapps/content/extensions/shortcuts.css"
+    />
+
+    <link
+      rel="shortcut icon"
+      href="chrome://mozapps/skin/extensions/extension.svg"
+    />
+    <link
+      href="chrome://mozapps/content/extensions/components/addon-mlmodel-details.css"
+      rel="stylesheet"
+    />
+
+    <link rel="localization" href="branding/brand.ftl" />
+    <link rel="localization" href="toolkit/about/aboutAddons.ftl" />
+    <link rel="localization" href="toolkit/global/extensionPermissions.ftl" />
+    <!-- TODO: move these strings into aboutAddons.ftl once promoted out of locales-preview -->
+    <link
+      rel="localization"
+      href="locales-preview/smartWindow-aboutAddons.ftl"
+    />
+    <link rel="localization" href="toolkit/global/base-browser.ftl" />
+
+    <!-- Shared Reusable Components -->
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-five-star.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-message-bar.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-support-link.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-toggle.mjs"
+    ></script>
+    <!-- NOTE: Import named-deck explicitly to avoid logspam when it is
+               reimported again as a side-effect of document.import calls
+               originated from AboutAddonsElementBase fragment getter
+               when the template includes a named-deck custom element.
+    -->
+    <script async src="chrome://global/content/elements/named-deck.js"></script>
+    <!-- NOTE: Import panel-list explicitly so it's ready before DOMContentLoaded.-->
+    <script
+      type="module"
+      src="chrome://global/content/elements/panel-list.mjs"
+    ></script>
+
+    <!-- about:addons Domain-specific Components -->
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-card.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-details.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-list.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-mlmodel-details.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-options.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-page-header.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-page-options.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-permissions-list.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-shortcuts.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-sitepermissions-list.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/addon-updates-message.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/categories-box.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/colorway-removal-notice.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/discovery-pane.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/drag-drop-addon-installer.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/forced-colors-notice.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/global-warnings.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/inline-options-browser.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/mlmodel-card-header-additions.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/mlmodel-card-list-additions.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/mlmodel-list-intro.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/plugin-options.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/proxy-context-menu.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-addon-card.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-addon-list.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-extensions-section.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-footer.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-themes-footer.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/recommended-themes-section.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/search-addons.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/smartwindow-themes-notice.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/taar-notice.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/components/update-release-notes.mjs"
+    ></script>
+
+    <!-- about:addons page Entry Point module -->
+    <script
+      type="module"
+      src="chrome://mozapps/content/extensions/aboutaddons.mjs"
+    ></script>
+  </head>
+  <body>
+    <drag-drop-addon-installer></drag-drop-addon-installer>
+    <div id="full">
+      <div id="sidebar">
+        <categories-box></categories-box>
+      </div>
+      <div id="content">
+        <addon-page-header
+          id="page-header"
+          page-options-id="page-options"
+        ></addon-page-header>
+        <addon-page-options id="page-options"></addon-page-options>
+
+        <div id="main"></div>
+      </div>
+    </div>
+
+    <proxy-context-menu id="contentAreaContextMenu"></proxy-context-menu>
+  </body>
+</html>

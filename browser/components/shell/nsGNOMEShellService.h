@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsgnomeshellservice_h_
+#define nsgnomeshellservice_h_
+
+#include "nsIGNOMEShellService.h"
+#include "nsToolkitShellService.h"
+#include "nsString.h"
+#ifdef MOZ_ENABLE_DBUS
+#  include "nsGNOMEShellSearchProvider.h"
+#endif
+
+class nsIGIOService;
+
+class nsGNOMEShellService final : public nsIGNOMEShellService,
+                                  public nsToolkitShellService {
+ public:
+  nsGNOMEShellService() : mAppIsInPath(false) {}
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSISHELLSERVICE
+  NS_DECL_NSIGNOMESHELLSERVICE
+
+  nsresult Init();
+
+ private:
+  ~nsGNOMEShellService() = default;
+
+  bool KeyMatchesAppName(const char* aKeyValue) const;
+  bool CheckHandlerMatchesAppName(const nsACString& handler) const;
+  bool IsDefaultForSchemeHelper(const nsACString& aScheme,
+                                nsIGIOService* giovfs) const;
+
+#ifdef MOZ_ENABLE_DBUS
+  nsGNOMEShellSearchProvider mSearchProvider;
+#endif
+  bool GetAppPathFromLauncher();
+  bool mUseLocaleFilenames;
+  nsCString mAppPath;
+  bool mAppIsInPath;
+};
+
+#endif  // nsgnomeshellservice_h_

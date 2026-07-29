@@ -1,0 +1,52 @@
+[DEFAULT]
+firefox-appdir = "browser"
+head = "head_searchconfig.js"
+dupe-manifest = ""
+prefs = [
+  # Enable separatePrivateDefault testing. We test with this on, as we have
+  # separate tests for ensuring the normal = private when this is off.
+  "browser.search.separatePrivateDefault.ui.enabled=true",
+  "browser.search.separatePrivateDefault=true",
+]
+support-files = ["../../../../../../browser/locales/all-locales"]
+tags = "searchconfig remote-settings"
+# These are extensive tests, we don't need to run them on asan/tsan.
+# They are also skipped for mobile and Thunderbird as these are specifically
+# testing the Firefox config at the moment.
+skip-if = [
+  "appname == 'thunderbird'",
+  "asan",
+  "debug",
+  "os == 'android'",
+  "os == 'win' && ccov",
+  "tsan",
+]
+
+["test_distributions.js"]
+
+["test_searchconfig.js"]
+requesttimeoutfactor = 5  # Slow and high CPU use on Linux and Windows
+
+["test_searchconfig_google_additional.js"]
+
+["test_searchconfig_ui_schemas_valid.js"]
+support-files = [
+  "../../../schema/search-config-icons-schema.json",
+  "../../../schema/search-config-icons-ui-schema.json",
+  "../../../schema/search-config-overrides-v2-schema.json",
+  "../../../schema/search-config-overrides-v2-ui-schema.json",
+  "../../../schema/search-config-v2-schema.json",
+  "../../../schema/search-config-v2-ui-schema.json",
+  "../../../schema/search-default-override-allowlist-schema.json",
+  "../../../schema/search-default-override-allowlist-ui-schema.json",
+]
+
+["test_searchconfig_validates.js"]
+support-files = [
+  "../../../schema/search-config-icons-schema.json",
+  "../../../schema/search-config-overrides-v2-schema.json",
+  "../../../schema/search-config-v2-schema.json",
+  "../../../schema/search-default-override-allowlist-schema.json",
+]
+
+["test_selector_db_out_of_date.js"]

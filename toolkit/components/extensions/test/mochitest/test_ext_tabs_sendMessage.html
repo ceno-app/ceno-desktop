@@ -1,0 +1,473 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test tabs.sendMessage</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/ExtensionTestUtils.js"></script>
+  <script type="text/javascript" src="head.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+"use strict";
+
+const {
+  WebExtensionPolicy
+} = SpecialPowers.Cu.getGlobalForObject(SpecialPowers.Services);
+
+add_task(async function test_tabs_sendMessage_to_extension_page_frame() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [{
+        matches: ["http://mochi.test/*/file_sample.html?tabs.sendMessage"],
+        js: ["cs.js"],
+      }],
+      web_accessible_resources: ["page.html", "page.js"],
+    },
+
+    async background() {
+      let tab;
+
+      browser.runtime.onMessage.addListener(async (msg, sender) => {
+        browser.test.assertEq(msg, "page-script-ready");
+        browser.test.assertEq(sender.url, browser.runtime.getURL("page.html"));
+        browser.test.assertEq(
+          sender.origin,
+          new URL(browser.runtime.getURL("/")).origin
+        );
+
+        let tabId = sender.tab.id;
+        let response = await browser.tabs.sendMessage(tabId, "tab-sendMessage");
+
+        switch (response) {
+          case "extension-tab":
+            browser.test.assertEq(tab.id, tabId, "Extension tab responded");
+            browser.test.assertEq(sender.frameId, 0, "Response from top level");
+            await browser.tabs.remove(tab.id);
+            browser.test.sendMessage("extension-tab-responded");
+            break;
+
+          case "extension-frame":
+            browser.test.assertTrue(sender.frameId > 0, "Response from iframe");
+            browser.test.sendMessage("extension-frame-responded");
+            break;
+
+          default:
+            browser.test.fail("Unexpected response: " + response);
+        }
+      });
+
+      tab = await browser.tabs.create({ url: "page.html" });
+    },
+
+    files: {
+      "cs.js"() {
+        let iframe = document.createElement("iframe");
+        iframe.src = browser.runtime.getURL("page.html");
+        document.body.append(iframe);
+        browser.test.sendMessage("content-script-done");
+      },
+
+      "page.html": `<!DOCTYPE html>
+        <meta charset=utf-8>
+        <script src=page.js><\/script>
+        Extension page`,
+
+      "page.js"() {
+        browser.runtime.onMessage.addListener(async msg => {
+          browser.test.assertEq(msg, "tab-sendMessage");
+          return window.parent === window ? "extension-tab" : "extension-frame";
+        });
+        browser.runtime.sendMessage("page-script-ready");
+      },
+    }
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("extension-tab-responded");
+
+  let win = window.open("file_sample.html?tabs.sendMessage");
+  await extension.awaitMessage("content-script-done");
+  await extension.awaitMessage("extension-frame-responded");
+  win.close();
+
+  await extension.unload();
+});
+
+add_task(async function test_tabs_sendMessage_using_frameId() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          matches: ["http://mochi.test/*/file_contains_iframe.html"],
+          run_at: "document_start",
+          js: ["cs_top.js"],
+        },
+        {
+          matches: ["http://example.org/*/file_contains_img.html"],
+          js: ["cs_iframe.js"],
+          all_frames: true,
+        },
+      ],
+    },
+
+    background() {
+      browser.runtime.onMessage.addListener(async (msg, sender) => {
+        let { tab, frameId } = sender;
+        browser.test.assertEq(msg, "cs_iframe_ready", "Iframe cs ready.");
+        browser.test.assertTrue(frameId > 0, "Not from the top frame.");
+
+        let response = await browser.tabs.sendMessage(tab.id, "msg");
+        browser.test.assertEq(response, "cs_top", "Top cs responded first.");
+
+        response = await browser.tabs.sendMessage(tab.id, "msg", { frameId });
+        browser.test.assertEq(response, "cs_iframe", "Iframe cs reponded.");
+
+        browser.test.sendMessage("done");
+      });
+      browser.test.sendMessage("ready");
+    },
+
+    files: {
+      "cs_top.js"() {
+        browser.test.log("Top content script loaded.")
+        browser.runtime.onMessage.addListener(async () => "cs_top");
+      },
+      "cs_iframe.js"() {
+        browser.test.log("Iframe content script loaded.")
+        browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+          browser.test.log("Iframe content script received message.")
+          setTimeout(() => sendResponse("cs_iframe"), 100);
+          return true;
+        });
+        browser.runtime.sendMessage("cs_iframe_ready");
+      },
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("ready");
+
+  let win = window.open("file_contains_iframe.html");
+  await extension.awaitMessage("done");
+  win.close();
+
+  await extension.unload();
+});
+
+add_task(async function test_tabs_sendMessage_aboutBlank() {
+  const PATH = "tests/toolkit/components/extensions/test/mochitest/file_with_about_blank.html";
+
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          match_about_blank: true,
+          matches: ["*://mochi.test/*/file_with_about_blank.html"],
+          all_frames: true,
+          js: ["cs.js"],
+        },
+      ],
+    },
+
+    background() {
+      browser.runtime.onMessage.addListener((msg, { url, origin }) => {
+        browser.test.assertEq("cs", msg, "expected message from cs.js");
+
+        const kind = url.startsWith("about:") ? url : "top";
+        switch (kind) {
+          case "top":
+            browser.test.assertTrue(
+              url.endsWith("/file_with_about_blank.html"),
+              "expected correct url"
+            );
+            browser.test.assertEq(
+              "http://mochi.test:8888",
+              origin,
+              "expected correct origin"
+            );
+            break;
+
+          case "about:blank":
+            browser.test.assertEq("about:blank", url, "expected correct url");
+            browser.test.assertEq(
+              "http://mochi.test:8888",
+              origin,
+              "expected correct origin"
+            );
+            break;
+
+          case "about:srcdoc":
+            browser.test.assertEq("about:srcdoc", url, "expected correct url");
+            browser.test.assertEq(
+              "http://mochi.test:8888",
+              origin,
+              "expected correct origin"
+            );
+            break;
+
+          default:
+            browser.test.fail(`Unexpected kind: ${kind}`);
+        }
+
+        browser.test.sendMessage(`done:${kind}`);
+      });
+
+      browser.test.sendMessage("ready");
+    },
+
+    files: {
+      "cs.js"() {
+        browser.runtime.sendMessage("cs");
+      },
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("ready");
+
+  let win = window.open("http://mochi.test:8888/" + PATH);
+  await extension.awaitMessage("done:top");
+  await extension.awaitMessage("done:about:blank");
+  await extension.awaitMessage("done:about:srcdoc");
+  win.close();
+
+  await extension.unload();
+});
+
+add_task(async function test_tabs_sendMessage_opaqueOrigin() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          match_about_blank: true,
+          // The combination of `matches` and `exclude_matches` below allows us
+          // to only inject in the top-level about:blank.
+          matches: ["*://*/*"],
+          exclude_matches: ["<all_urls>"],
+          js: ["cs.js"],
+        },
+      ],
+    },
+
+    async background() {
+      let tab;
+
+      browser.runtime.onMessage.addListener(async (msg, { url, origin }) => {
+        browser.test.assertEq("cs", msg, "expected message from cs.js");
+        browser.test.assertEq("about:blank", url, "expected correct url");
+        browser.test.assertEq("null", origin, "expected correct origin");
+
+        await browser.tabs.remove(tab.id);
+        browser.test.sendMessage("done");
+      });
+
+      tab = await browser.tabs.create({ url: "about:blank" });
+    },
+
+    files: {
+      "cs.js"() {
+        browser.runtime.sendMessage("cs");
+      },
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("done");
+  await extension.unload();
+});
+
+// Verifies that tabs.sendMessage() with documentId triggers onMessage in frame
+// iff documentId matches. The tabs.connect() version of this test is in
+// test_ext_tabs_connect.html at test_tabs_connect_using_documentId.
+add_task(async function test_tabs_sendMessage_using_documentId() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          matches: [
+            // Note: for broader coverage this tests cross-origin frames, and
+            // test_tabs_connect_using_documentId tests same-origin frame.
+            "*://*/*/file_with_xorigin_frame.html?tabs.sendMessage",
+            "*://*/*/file_sample.html",
+          ],
+          all_frames: true,
+          js: ["cs.js"],
+        },
+      ],
+    },
+
+    background() {
+      browser.runtime.onMessage.addListener(async (msg, sender) => {
+        // runtime.onMessage is called for the top frame, and the sub frame.
+        browser.test.assertEq("cs_ready", msg, `Message from: ${sender.url}`);
+        const documentId = sender.documentId;
+        const tabId = sender.tab.id;
+        browser.test.assertTrue(!!documentId, "sender.documentId is set");
+
+        try {
+          // Parsed by onMessage in cs.js to verify that the target matches.
+          let msg = `to_document_id:${documentId}`;
+          let response = await browser.tabs.sendMessage(tabId, msg, {
+            documentId,
+          });
+          browser.test.assertEq(sender.url, response, "Got response");
+
+          await browser.test.assertRejects(
+            browser.tabs.sendMessage(tabId, "msg", {
+              documentId: "00000000-0000-0000-0000-000000000000",
+            }),
+            "Could not establish connection. Receiving end does not exist.",
+            "Error when trying to sendMessage() with invalid documentId"
+          );
+          browser.test.log("Testing tabs.connect() with invalid documentId");
+        } catch (e) {
+          browser.test.fail(`Error: ${e} :: ${e.stack}`);
+        }
+        browser.test.sendMessage(sender.frameId ? "done:frame" : "done:top");
+      });
+    },
+
+    files: {
+      "cs.js"() {
+        browser.runtime.onMessage.addListener(msg => {
+          browser.test.assertEq(
+            msg.replace(/^to_document_id:/, ""),
+            browser.runtime.getDocumentId(window),
+            `sendMessage() for documentId reached onMessage of ${document.URL}`
+          );
+          return Promise.resolve(document.URL);
+        });
+        browser.runtime.sendMessage("cs_ready");
+      },
+    },
+  });
+
+  await extension.startup();
+
+  // We want a document with an iframe to make sure that passing documentId
+  // causes the message to be sent to that frame only, instead of all frames.
+  let win = window.open("file_with_xorigin_frame.html?tabs.sendMessage");
+  await Promise.all([
+    extension.awaitMessage("done:frame"),
+    extension.awaitMessage("done:top"),
+  ]);
+  win.close();
+
+  await extension.unload();
+});
+
+add_task(async function test_tabs_sendMessage_documentId_bfcache() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      content_scripts: [
+        {
+          matches: [
+            "http://mochi.test/*/file_sample.html?bfcache-page1",
+            "http://mochi.test/*/file_sample.html?bfcache-page2",
+          ],
+          js: ["cs.js"],
+        },
+      ],
+    },
+
+    background() {
+      let page1DocumentId, tabId;
+
+      browser.runtime.onMessage.addListener((msg, sender) => {
+        if (msg === "page1_ready") {
+          page1DocumentId = sender.documentId;
+          tabId = sender.tab.id;
+          return Promise.resolve("navigate");
+        }
+
+        if (msg === "page2_ready") {
+          browser.test.assertRejects(
+            browser.tabs.sendMessage(tabId, "ping", {
+              documentId: page1DocumentId,
+            }),
+            "Could not establish connection. Receiving end does not exist.",
+            "sendMessage to bfcached document's documentId is rejected"
+          ).then(() => browser.test.sendMessage("done"));
+        }
+      });
+    },
+
+    files: {
+      "cs.js"() {
+        browser.runtime.onMessage.addListener(async () => "pong");
+        if (location.search === "?bfcache-page2") {
+          browser.runtime.sendMessage("page2_ready");
+        } else {
+          browser.runtime.sendMessage("page1_ready").then(signal => {
+            if (signal === "navigate") {
+              window.location.href = "?bfcache-page2";
+            }
+          });
+        }
+      },
+    },
+  });
+
+  await extension.startup();
+
+  let win = window.open("file_sample.html?bfcache-page1");
+  await extension.awaitMessage("done");
+  win.close();
+
+  await extension.unload();
+});
+
+add_task(async function test_tabs_sendMessage_blob() {
+  // See: https://bugzilla.mozilla.org/show_bug.cgi?id=1724099
+  if (!WebExtensionPolicy.useRemoteWebExtensions) {
+    await SpecialPowers.pushPrefEnv({
+      set: [["security.allow_unsafe_parent_loads", true]],
+    });
+  }
+
+  let extension = ExtensionTestUtils.loadExtension({
+    async background() {
+      browser.runtime.onMessage.addListener(async (msg, { url, origin }) => {
+        browser.test.assertEq("script", msg, "expected message from script.js");
+        browser.test.assertTrue(
+          url.startsWith("blob:moz-extension://"),
+          "expected correct url"
+        );
+        browser.test.assertEq(
+          new URL(browser.runtime.getURL("/")).origin,
+          origin,
+          "expected correct origin"
+        );
+
+        browser.test.sendMessage("done");
+      });
+
+      const blob = new Blob(
+        [`<script src="${browser.runtime.getURL("script.js")}"><\/script>`],
+        { type: "text/html" }
+      );
+      const iframe = document.createElement("iframe");
+      iframe.src = URL.createObjectURL(blob);
+      document.body.appendChild(iframe);
+    },
+
+    files: {
+      "script.js"() {
+        browser.runtime.sendMessage("script");
+      },
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("done");
+  await extension.unload();
+
+  if (!WebExtensionPolicy.useRemoteWebExtensions) {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+</script>
+</body>
+</html>

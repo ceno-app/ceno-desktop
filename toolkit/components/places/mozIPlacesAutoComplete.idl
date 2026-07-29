@@ -1,0 +1,98 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIURI;
+
+/**
+ * This interface provides some constants used by the Places AutoComplete
+ * search provider as well as methods to track opened pages for AutoComplete
+ * purposes.
+ */
+[scriptable, uuid(61b6348a-09e1-4810-8057-f8cb3cec6ef8)]
+interface mozIPlacesAutoComplete : nsISupports
+{
+  //////////////////////////////////////////////////////////////////////////////
+  //// Matching Constants
+
+  // A few of these are not used in Firefox, but are still referenced in
+  // comm-central.
+
+  cenum MatchBehaviors : 8 {
+    /**
+    * Match anywhere in each searchable term.
+    */
+    MATCH_ANYWHERE = 0,
+
+    /**
+    * Match on word boundaries in each searchable term.
+    */
+    MATCH_BOUNDARY = 2,
+
+    /**
+    * Match anywhere in each searchable term without doing any transformation
+    * or stripping on the underlying data.
+    */
+    MATCH_ANYWHERE_UNMODIFIED = 4,
+  };
+
+  //////////////////////////////////////////////////////////////////////////////
+  //// Search Behavior Constants
+
+  cenum SearchBehaviors : 16 {
+    /**
+    * Search through history.
+    */
+    BEHAVIOR_HISTORY = 1 << 0,
+
+    /**
+    * Search though bookmarks.
+    */
+    BEHAVIOR_BOOKMARK = 1 << 1,
+
+    /**
+    * Search through tags.
+    */
+    BEHAVIOR_TAG = 1 << 2,
+
+    /**
+    * Search the title of pages.
+    */
+    BEHAVIOR_TITLE = 1 << 3,
+
+    /**
+    * Search the URL of pages.
+    */
+    BEHAVIOR_URL = 1 << 4,
+
+    /**
+    * Search for typed pages.
+    * No more supported by Firefox, it is still being used by comm-central clients.
+    */
+    BEHAVIOR_TYPED = 1 << 5,
+
+    /**
+    * Search javascript: URLs.
+    */
+    BEHAVIOR_JAVASCRIPT = 1 << 6,
+
+    /**
+    * Search for pages that have been marked as being opened, such as a tab
+    * in a tabbrowser.
+    */
+    BEHAVIOR_OPENPAGE = 1 << 7,
+
+    /**
+    * Use intersection between history, typed, bookmark, tag and openpage
+    * instead of union, when the restrict bit is set.
+    */
+    BEHAVIOR_RESTRICT = 1 << 8,
+
+    /**
+    * Include search suggestions from the currently selected search provider.
+    */
+    BEHAVIOR_SEARCH = 1 << 9,
+  };
+};

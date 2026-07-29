@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<!--
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/
+ */
+-->
+
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css" type="text/css"?>
+
+<window title="Test CertUtils.sys.mjs checkCert - bug 340198 and bug 544442"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        onload="testStart();">
+<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"/>
+
+<script type="application/javascript">
+<![CDATA[
+
+SimpleTest.waitForExplicitFinish();
+
+const {CertUtils} = ChromeUtils.importESModule(
+  "resource://gre/modules/CertUtils.sys.mjs"
+);
+
+function testStart() {
+  ok(true, "Entering testStart");
+
+  var request = new XMLHttpRequest();
+  request.open("GET", "https://example.com/", true);
+  request.channel.notificationCallbacks = new CertUtils.BadCertHandler(true);
+  request.onerror = function(event) { testXHRError(event); };
+  request.onload = function(event) { testXHRLoad(event); };
+  request.send(null);
+}
+
+function testXHRError(aEvent) {
+  ok(true, "Entering testXHRError - something went wrong");
+
+  var request = aEvent.target;
+  var status = 0;
+  try {
+    status = request.status;
+  }
+  catch (e) {
+  }
+
+  if (status == 0)
+    status = request.channel.QueryInterface(Ci.nsIRequest).status;
+
+  ok(false, "XHR onerror called: " + status);
+
+  SimpleTest.finish();
+}
+
+function getCheckCertResult(aChannel, aAllowNonBuiltIn) {
+  try {
+    CertUtils.checkCert(aChannel, aAllowNonBuiltIn);
+  }
+  catch (e) {
+    return e.result;
+  }
+  return Cr.NS_OK;
+}
+
+function testXHRLoad(aEvent) {
+  ok(true, "Entering testXHRLoad");
+
+  var channel = aEvent.target.channel;
+
+  is(getCheckCertResult(channel, false), Cr.NS_ERROR_ABORT,
+     "checkCert with aAllowNonBuiltInCerts = false should throw " +
+     "NS_ERROR_ABORT when the certificate is not built-in");
+
+  is(getCheckCertResult(channel, true), Cr.NS_OK,
+     "checkCert with aAllowNonBuiltInCerts = true should not throw when the " +
+     "certificate is not built-in");
+
+  SimpleTest.finish();
+}
+
+]]>
+</script>
+
+<body xmlns="http://www.w3.org/1999/xhtml">
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test"></pre>
+</body>
+</window>

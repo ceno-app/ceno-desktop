@@ -1,0 +1,50 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Small helper class for asserting uses of a class are non-reentrant. */
+
+#ifndef mozilla_ReentrancyGuard_h
+#define mozilla_ReentrancyGuard_h
+
+#include "mozilla/Attributes.h"
+#ifdef DEBUG
+#  include "mozilla/Assertions.h"
+#endif
+
+namespace mozilla {
+
+/* Useful for implementing containers that assert non-reentrancy */
+class MOZ_RAII ReentrancyGuard {
+#ifdef DEBUG
+  bool& mEntered;
+#endif
+
+ public:
+  template <class T>
+#ifdef DEBUG
+  explicit ReentrancyGuard(T& aObj)
+      : mEntered(aObj.mEntered)
+#else
+  explicit ReentrancyGuard(T&)
+#endif
+  {
+#ifdef DEBUG
+    MOZ_ASSERT(!mEntered);
+    mEntered = true;
+#endif
+  }
+  ~ReentrancyGuard() {
+#ifdef DEBUG
+    mEntered = false;
+#endif
+  }
+
+ private:
+  ReentrancyGuard(const ReentrancyGuard&) = delete;
+  void operator=(const ReentrancyGuard&) = delete;
+};
+
+}  // namespace mozilla
+
+#endif /* mozilla_ReentrancyGuard_h */

@@ -1,0 +1,84 @@
+<html>
+
+<head>
+  <title>Aria-owns targets shouldn't be on invalidation list so shouldn't have
+         show/hide events</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests.
+    // enableLogging("tree,eventTree,verbose");
+
+    async function doTests() {
+      // Aria-owns target shouldn't have a show event.
+      let fc = document.createElement("div");
+      fc.setAttribute("id", "t1_fc");
+      let owns = document.createElement("span");
+      owns.setAttribute("id", "t1_owns");
+
+      let shown = waitForEvents({
+        expected: [[EVENT_SHOW, fc]],
+        unexpected: [[EVENT_SHOW, owns]]
+      });
+      getNode("t1").appendChild(fc);
+      getNode("t1").appendChild(owns);
+      getNode("t1_fc").setAttribute("aria-owns", "t1_owns");
+      await shown;
+
+      // Aria-owns and aria-labelledby target shouldn't have show event.
+      let fc2 = document.createElement("div");
+      fc2.setAttribute("id", "t2_fc");
+      let sc = document.createElement("div");
+      sc.setAttribute("id", "t2_sc");
+      let owns2 = document.createElement("span");
+      owns2.setAttribute("id", "t2_owns");
+
+      let shown2 = waitForEvents({
+        expected: [[EVENT_SHOW, fc2], [EVENT_SHOW, sc]],
+        unexpected: [[EVENT_SHOW, owns2]]
+      });
+      getNode("t2").appendChild(fc2);
+      getNode("t2").appendChild(sc);
+      getNode("t2").appendChild(owns2);
+      getNode("t2_fc").setAttribute("aria-owns", "t2_owns");
+      getNode("t2_sc").setAttribute("aria-labelledby", "t2_owns");
+      await shown2;
+
+      SimpleTest.finish();
+    }
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=1296420"
+     title="Aria-owns targets shouldn't be on invalidation list so shouldn't
+            have show/hide events">
+    Mozilla Bug 1296420
+  </a><br>
+
+  <div id="testContainer">
+    <div id="t1"></div>
+
+    <div id="t2"></div>
+  </div>
+
+</body>
+</html>

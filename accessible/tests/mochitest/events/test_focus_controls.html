@@ -1,0 +1,102 @@
+<html>
+
+<head>
+  <title>Accessible focus testing on HTML controls</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTests() {
+      let focused = waitForEvent(EVENT_FOCUS, "textbox");
+      selectAllTextAndFocus("textbox");
+      await focused;
+      testStates(getAccessible("textbox"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "textarea");
+      selectAllTextAndFocus("textarea");
+      await focused;
+      testStates(getAccessible("textarea"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "button1");
+      selectAllTextAndFocus("button1");
+      await focused;
+      testStates(getAccessible("button1"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "button2");
+      selectAllTextAndFocus("button2");
+      await focused;
+      testStates(getAccessible("button2"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "checkbox");
+      selectAllTextAndFocus("checkbox");
+      await focused;
+      testStates(getAccessible("checkbox"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "radio1");
+      selectAllTextAndFocus("radio1");
+      await focused;
+      testStates(getAccessible("radio1"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "radio2");
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+      testStates(getAccessible("radio2"), STATE_FOCUSED);
+
+      // no focus events for checkbox or radio inputs when they are checked
+      // programmatically
+      getNode("checkbox").checked = true;
+      getNode("radio1").checked = true;
+
+      let fileBrowseButton = getAccessible("file");
+      focused = waitForEvent(EVENT_FOCUS, fileBrowseButton);
+      selectAllTextAndFocus("file");
+      await focused;
+      testStates(fileBrowseButton, STATE_FOCUSED);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=673958"
+     title="Rework accessible focus handling">
+    Mozilla Bug 673958
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <input id="textbox">
+  <textarea id="textarea"></textarea>
+
+  <input id="button1" type="button" value="button">
+  <button id="button2">button</button>
+  <input id="checkbox" type="checkbox">
+  <input id="radio1" type="radio" name="radiogroup">
+  <input id="radio2" type="radio" name="radiogroup">
+  <input id="file" type="file">
+
+  <div id="eventdump"></div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * The origin of this IDL file is
+ * https://dom.spec.whatwg.org/#abstractrange
+ *
+ * Copyright  2012 W3C  (MIT, ERCIM, Keio), All Rights Reserved. W3C
+ * liability, trademark and document use rules apply.
+ */
+
+[Exposed=Window]
+interface AbstractRange {
+  [BinaryName="GetStartContainer"]
+  readonly attribute Node startContainer;
+  readonly attribute unsigned long startOffset;
+  [BinaryName="GetEndContainer"]
+  readonly attribute Node endContainer;
+  readonly attribute unsigned long endOffset;
+  readonly attribute boolean collapsed;
+
+  // Chrome only method to test
+  // SelectionMovementUtils::GetFirstVisiblePointAtLeaf()
+  // and SelectionMovementUtils::GetLastVisiblePointAtLeaf().
+  //
+  // @return {StaticRange} The shrunken range.  Its start boundary is set to the
+  //         result of GetFirstVisiblePointAtLeaf() and its end boundary is set
+  //         to the result of GetLastVisiblePointAtLeaf().
+  [ChromeOnly]
+  StaticRange? getShrunkenRangeToVisibleLeaves();
+};

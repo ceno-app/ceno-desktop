@@ -1,0 +1,213 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+<!-- General panel -->
+
+<script src="chrome://browser/content/preferences/main.js"/>
+<script src="chrome://browser/content/preferences/translations.js"/>
+
+#ifdef MOZ_UPDATER
+  <script src="chrome://browser/content/aboutDialog-appUpdater.js"/>
+#endif
+
+<script src="chrome://mozapps/content/preferences/fontbuilder.js"/>
+
+<html:template id="template-paneGeneral">
+<hbox id="generalCategory"
+      class="subcategory"
+      hidden="true"
+      data-category="paneGeneral">
+  <html:h1 data-l10n-id="pane-general-title"/>
+</hbox>
+
+<!-- Default browser -->
+<html:setting-group groupid="defaultBrowser" data-category="paneGeneral" hidden="true" />
+
+<!-- Startup -->
+<html:setting-group id="startupGroup" groupid="startup" data-category="paneGeneral" hidden="true"/>
+
+<!-- Data migration -->
+<html:setting-group groupid="importBrowserData" id="dataMigrationGroup" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Profiles -->
+<html:setting-group id="profilesGroup" groupid="profiles" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Tab preferences -->
+<html:setting-group data-category="paneGeneral" hidden="true" groupid="tabs" data-srd-migrated="" />
+
+<!-- Browser layout -->
+<html:setting-group groupid="browserLayout" data-category="paneGeneral" data-subcategory="layout" data-srd-migrated="" hidden="true"></html:setting-group>
+
+<!-- Letterboxing -->
+#include ./letterboxing.inc.xhtml
+
+<hbox id="languageAndAppearanceCategory"
+      class="subcategory"
+      hidden="true"
+      data-category="paneGeneral">
+  <html:h1 data-l10n-id="language-and-appearance-header"/>
+</hbox>
+
+<!-- Website appearance -->
+<html:setting-group groupid="appearance" data-category="paneGeneral" data-srd-migrated="" hidden="true"></html:setting-group>
+
+<!-- Zoom -->
+<html:setting-group id="zoomGroup" groupid="zoom" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Fonts -->
+<html:setting-group id="fontsGroup" groupid="fonts" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Colors -->
+<html:setting-group id="contrastControlGroup" groupid="contrast" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+
+<!-- Languages -->
+<html:setting-group groupid="browserLanguage" data-srd-migrated="" hidden="true" data-category="paneGeneral"></html:setting-group>
+<html:setting-group groupid="websiteLanguage" data-srd-migrated="" hidden="true" data-category="paneGeneral"></html:setting-group>
+<groupbox id="languagesGroup" data-category="paneGeneral" hidden="true" data-subcategory="language" data-srd-groupid="browserLanguage">
+  <label><html:h2 data-l10n-id="language-header"/></label>
+
+  <vbox id="browserLanguagesBox" align="start" hidden="true">
+    <description flex="1" controls="chooseBrowserLanguage" data-l10n-id="choose-browser-language-description"/>
+    <hbox>
+      <menulist id="primaryBrowserLocale">
+        <menupopup/>
+      </menulist>
+      <button id="manageBrowserLanguagesButton"
+              is="highlightable-button"
+              class="accessory-button"
+              data-l10n-id="manage-browser-languages-button"/>
+    </hbox>
+  </vbox>
+  <hbox id="confirmBrowserLanguage" class="message-bar" align="center" hidden="true" data-srd-groupid="browserLanguage">
+    <html:img class="message-bar-icon"/>
+    <vbox class="message-bar-content-container" align="stretch" flex="1"/>
+  </hbox>
+
+  <hbox id="languagesBox" align="center" data-srd-groupid="websiteLanguage">
+    <!--
+    <description flex="1" control="chooseLanguage" data-l10n-id="choose-language-description"/>
+    <button id="chooseLanguage"
+            is="highlightable-button"
+            class="accessory-button"
+            data-l10n-id="choose-button"
+            search-l10n-ids="
+              webpage-languages-window2.title,
+              languages-description,
+              languages-customize-moveup.label,
+              languages-customize-movedown.label,
+              languages-customize-remove.label,
+              languages-customize-select-language.placeholder,
+              languages-customize-add.label,
+            " />
+    -->
+  </hbox>
+  <!-- TODO: Integrate into the "Languages" setting-group after bugzilla bug
+     - 1972081. -->
+  <html:setting-group groupid="websiteSpoofEnglish"></html:setting-group>
+
+  <checkbox id="useSystemLocale" hidden="true"
+            data-l10n-id="use-system-locale"
+            data-l10n-args='{"localeName": "und"}'
+            preference="intl.regional_prefs.use_os_locales"/>
+
+  <!-- This Translations UI is the pre-settings-redesign UI and should be removed
+       when getting ready for the settings redesign to fully ship. -->
+  <vbox id="translationsGroup" data-srd-groupid="translations" hidden="true" data-subcategory="translations">
+    <label><html:h2 data-l10n-id="translations-manage-header"/></label>
+    <hbox id="translations-manage-description" align="center">
+      <description flex="1" data-l10n-id="translations-manage-intro-2"/>
+      <button id="translations-manage-settings-button"
+              is="highlightable-button"
+              class="accessory-button"
+              data-l10n-id="translations-manage-settings-button"/>
+    </hbox>
+    <vbox>
+      <html:div id="translations-manage-install-list" tabindex="-1">
+        <hbox class="translations-manage-language">
+          <label data-l10n-id="translations-manage-download-description"></label>
+          <button id="translations-manage-install-all"
+                  data-l10n-id="translations-manage-language-download-all-button"></button>
+          <button id="translations-manage-delete-all"
+                  data-l10n-id="translations-manage-language-remove-all-button"></button>
+        </hbox>
+        <!-- The downloadable languages will be listed here. -->
+      </html:div>
+      <description id="translations-manage-error" hidden="true"></description>
+    </vbox>
+  </vbox>
+</groupbox>
+
+<!-- This Translations UI is compatible with the settings redesign -->
+<html:setting-group data-category="paneGeneral" groupid="translations" data-srd-migrated="" hidden="true"/>
+
+<html:setting-group data-category="paneGeneral" groupid="spellCheck" data-srd-migrated="" hidden="true"/>
+
+<!-- Files and Applications -->
+<hbox id="filesAndApplicationsCategory"
+      class="subcategory"
+      hidden="true"
+      data-srd-groupid="applications"
+      data-category="paneGeneral">
+  <html:h1 data-l10n-id="files-and-applications-title"/>
+</hbox>
+
+<!-- Downloads -->
+<html:setting-group groupid="downloads" data-category="paneGeneral" data-srd-migrated="" hidden="true"/>
+
+<!-- Applications -->
+<groupbox id="applicationsGroup" data-category="paneGeneral" hidden="true" data-srd-migrated=""
+  data-srd-groupid="applications">
+  <label><html:h2 data-l10n-id="applications-header"/></label>
+  <description class="description-deemphasized" data-l10n-id="applications-description"/>
+  <html:moz-input-search
+      id="filter"
+      data-l10n-id="applications-filter"
+      data-l10n-attrs="placeholder"
+      aria-controls="handlersView"/>
+
+  <listheader id="handlersViewHeader">
+    <treecol id="typeColumn" data-l10n-id="applications-type-column" value="type"
+             persist="sortDirection"
+             style="flex: 1 50%" sortDirection="ascending"/>
+    <treecol id="actionColumn" data-l10n-id="applications-action-column" value="action"
+             persist="sortDirection"
+             style="flex: 1 50%"/>
+  </listheader>
+  <richlistbox id="handlersView"
+               preference="pref.downloads.disable_button.edit_actions"/>
+  <label id="handleNewFileTypesDesc"
+         data-l10n-id="applications-handle-new-file-types-description"/>
+  <radiogroup id="handleNewFileTypes"
+              preference="browser.download.always_ask_before_handling_new_types">
+    <radio id="saveForNewTypes"
+           value="false"
+           data-l10n-id="applications-save-for-new-types"/>
+    <radio id="askBeforeHandling"
+           value="true"
+           data-l10n-id="applications-ask-before-handling"/>
+  </radiogroup>
+</groupbox>
+
+<!-- DRM Content -->
+<html:setting-group groupid="drm" data-category="paneGeneral" data-subcategory="drm" hidden="true" data-srd-migrated="" />
+
+<!-- Update -->
+<html:setting-group groupid="updates" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Performance -->
+<html:setting-group groupid="performance" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Browsing -->
+<html:setting-group groupid="browsing" data-category="paneGeneral" hidden="true"/>
+
+<!-- Keyboard and Scrolling -->
+<html:setting-group groupid="keyboardAndScrolling" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Motion and Link -->
+<html:setting-group groupid="motionAndLink" data-category="paneGeneral" hidden="true" data-srd-migrated="" />
+
+<!-- Network Settings-->
+<html:setting-group groupid="networkProxy" data-category="paneGeneral" data-subcategory="netsettings" hidden="true" data-srd-migrated="" />
+</html:template>

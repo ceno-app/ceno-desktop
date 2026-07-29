@@ -1,0 +1,60 @@
+<html>
+
+<head>
+  <title>ARIA alert event testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+    // enableLogging("tree,events,verbose");
+
+    async function doTests() {
+      let alerted = waitForEvent(EVENT_ALERT, "alert");
+      let div = document.createElement("div");
+      div.setAttribute("role", "alert");
+      div.setAttribute("id", "alert");
+      div.appendChild(document.createTextNode("alert"));
+      document.body.appendChild(div);
+      await alerted;
+
+      alerted = waitForEvent(EVENT_ALERT, "alert");
+      getNode("alert").textContent = "new alert";
+      await alerted;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=591199"
+     title="mochitest for bug 334386: fire alert event when ARIA alert is shown or new its children are inserted">
+    Mozilla Bug 591199
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+</body>
+</html>

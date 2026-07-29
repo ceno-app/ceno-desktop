@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test for nsIDOMWindowUtils.sendQueryContentEvent() and .sendSelectionSetEvent()</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<p id="display"></p>
+<div id="content" style="display: none">
+
+</div>
+<div contenteditable>abc<br>def</div>
+<pre id="test">
+<script type="application/javascript">
+
+const { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
+
+SimpleTest.waitForExplicitFinish();
+
+SimpleTest.waitForFocus(async () => {
+  const gUtils = window.windowUtils;
+
+  function escape(aStr)
+  {
+    var result = aStr.replace("\n", "\\n");
+    return result.replace("\r", "\\r");
+  }
+
+  function waitForFlushingIMEContentObserver() {
+    return new Promise(resolve => requestAnimationFrame(
+      () => requestAnimationFrame(resolve)
+    ));
+  }
+
+  const editor = document.querySelector("div[contenteditable]");
+  editor.focus();
+
+  // QueryTextContent
+  {
+    const expectedStr = escape(("abc\ndef").substr(2, 4));
+    const result = gUtils.sendQueryContentEvent(gUtils.QUERY_TEXT_CONTENT, 2, 4, 0, 0);
+    ok(result.succeeded,
+      "sendQueryContentEvent(QUERY_TEXT_CONTENT) should succeed");
+    is(escape(result.text), expectedStr,
+      "sendQueryContentEvent(QUERY_TEXT_CONTENT) got unexpected string");
+  }
+
+  // QueryCaretRect
+  {
+    getSelection().collapse(editor.firstChild, 0);
+
+    const caret = gUtils.sendQueryContentEvent(gUtils.QUERY_CARET_RECT, 6, 0, 0, 0);
+    ok(caret.succeeded,
+      "sendQueryContentEvent(QUERY_CARET_RECT) should succeed");
+  }
+
+  // QueryTextRect
+  {
+    const textRect = gUtils.sendQueryContentEvent(gUtils.QUERY_TEXT_RECT, 6, 1, 0, 0);
+    ok(textRect.succeeded,
+      "sendQueryContentEvent(QUERY_TEXT_RECT) should succeed");
+  }
+
+  {
+    // QueryTextRectArray
+    const textRectArray = gUtils.sendQueryContentEvent(gUtils.QUERY_TEXT_RECT_ARRAY, 1, 2, 0, 0);
+    ok(textRectArray.succeeded,
+      "sendQueryContentEvent(QUERY_TEXT_RECT_ARRAY) should succeed");
+    const textRect = gUtils.sendQueryContentEvent(gUtils.QUERY_TEXT_RECT, 1, 2, 0, 0);
+    ok(textRect.succeeded,
+      "sendQueryContentEvent(QUERY_TEXT_RECT) should succeed");
+    let left = {};
+    let top = {};
+    let width = {};
+    let height = {};
+    textRectArray.getCharacterRect(0, left, top, width, height);
+    is(top.value, textRect.top,
+      "sendQueryContentEvent(QUERY_TEXT_RECT_ARRAY) should return same top that returns QUERY_TEXT_RECT");
+    is(left.value, textRect.left,
+      "sendQueryContentEvent(QUERY_TEXT_RECT_ARRAY) should return same left that returns QUERY_TEXT_RECT");
+
+    let left2 = {};
+    let top2 = {};
+    let width2 = {};
+    let height2 = {};
+    textRectArray.getCharacterRect(1, left2, top2, width2, height2);
+    isfuzzy(width.value + width2.value, textRect.width, 2,
+            "sendQueryContentEvent(QUERY_TEXT_RECT_ARRAY) should return same width that QUERY_TEXT_RECT is returned for offset 1 and 2");
+
+    is(height.value, textRect.height,
+      "sendQueryContentEvent(QUERY_TEXT_RECT_ARRAY) should return same height that returns QUERY_TEXT_RECT");
+  }
+
+  // QueryCharacterAtOffset
+  {
+    const textRect = gUtils.sendQueryContentEvent(gUtils.QUERY_TEXT_RECT, 6, 1, 0, 0);
+    ok(textRect.succeeded,
+      "sendQueryContentEvent(QUERY_TEXT_RECT) should succeed");
+    const result = gUtils.sendQueryContentEvent(gUtils.QUERY_CHARACTER_AT_POINT, 0, 0, textRect.left + 1, textRect.top + 1);
+    ok(result.succeeded,
+      "sendQueryContentEvent(QUERY_CHARACTER_AT_POINT) should succeed");
+    is(result.top, textRect.top,
+      "The character top is wrong");
+    is(result.left, textRect.left,
+      "The character left is wrong");
+    is(result.height, textRect.height,
+      "The character height is wrong");
+    is(result.width, textRect.width,
+      "The character width is wrong");
+    is(result.offset, 6,
+      "The character offset is wrong");
+  }
+
+  // SelectionSet and QuerySelectedText
+  {
+    await waitForFlushingIMEContentObserver();
+    const selectionSet = gUtils.sendSelectionSetEvent(0, 6);
+    ok(selectionSet,
+      "sendSelectionSetEvent(0, 6) should succeed");
+    const expectedStr = escape(("abc\ndef").substr(0, 6));
+
+    result = gUtils.sendQueryContentEvent(gUtils.QUERY_SELECTED_TEXT, 0, 0, 0, 0);
+    ok(result.succeeded,
+      "sendQueryContentEvent(QUERY_SELECTED_TEXT) should succeed");
+    ok(!result.reversed,
+      "sendSelectionSetEvent(0, 6) should set non-reversed selection");
+    is(escape(result.text), expectedStr,
+      "sendQueryContentEvent(QUERY_SELECTED_TEXT) got unexpected string");
+  }
+  {
+    getSelection().collapse(editor, 0);
+    await waitForFlushingIMEContentObserver();
+    const selectionSet = gUtils.sendSelectionSetEvent(0, 6, gUtils.SELECTION_SET_FLAG_REVERSE);
+    ok(selectionSet,
+      "sendSelectionSetEvent(0, 6) should succeed");
+
+    const result = gUtils.sendQueryContentEvent(gUtils.QUERY_SELECTED_TEXT, 0, 0, 0, 0);
+    ok(result.succeeded,
+      "sendQueryContentEvent(QUERY_SELECTED_TEXT) should succeed");
+    ok(result.reversed,
+      "sendSelectionSetEvent(0, 6, SELECTION_SET_FLAG_REVERSE) should set reversed selection");
+  }
+
+  SimpleTest.finish();
+});
+</script>
+</pre>
+</body>
+</html>

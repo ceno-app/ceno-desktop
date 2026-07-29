@@ -1,0 +1,60 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsColorPickerProxy.h"
+
+#include "mozilla/dom/BrowserChild.h"
+
+using namespace mozilla::dom;
+
+NS_IMPL_ISUPPORTS(nsColorPickerProxy, nsIColorPicker)
+
+NS_IMETHODIMP
+nsColorPickerProxy::Init(BrowsingContext* aBrowsingContext,
+                         const nsAString& aTitle,
+                         const nsAString& aInitialColor,
+                         const nsTArray<nsString>& aDefaultColors) {
+  BrowserChild* browserChild =
+      BrowserChild::GetFrom(aBrowsingContext->GetDocShell());
+  if (!browserChild) {
+    return NS_ERROR_FAILURE;
+  }
+
+  browserChild->SendPColorPickerConstructor(this, aBrowsingContext, aTitle,
+                                            aInitialColor, aDefaultColors);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsColorPickerProxy::Open(
+    nsIColorPickerShownCallback* aColorPickerShownCallback) {
+  NS_ENSURE_STATE(!mCallback);
+  mCallback = aColorPickerShownCallback;
+
+  SendOpen();
+  return NS_OK;
+}
+
+mozilla::ipc::IPCResult nsColorPickerProxy::RecvUpdate(
+    const nsAString& aColor) {
+  if (nsCOMPtr<nsIColorPickerShownCallback> callback = mCallback) {
+    callback->Update(aColor);
+  }
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult nsColorPickerProxy::Recv__delete__(
+    const nsAString& aColor) {
+  if (nsCOMPtr<nsIColorPickerShownCallback> callback = std::move(mCallback)) {
+    callback->Done(aColor);
+  }
+  return IPC_OK();
+}
+
+void nsColorPickerProxy::ActorDestroy(ActorDestroyReason aWhy) {
+  if (nsCOMPtr<nsIColorPickerShownCallback> callback = std::move(mCallback)) {
+    callback->Done(u""_ns);
+  }
+}

@@ -1,0 +1,501 @@
+.. Copyright (c) Serge Guelton and Johan Mabille
+   Copyright (c) QuantStack
+
+   Distributed under the terms of the BSD 3-Clause License.
+
+   The full license is in the file LICENSE, distributed with this software.
+
+
+Changelog
+=========
+
+14.2.0
+------
+
+    * **New architecture**: IBM Z (s390x) support
+
+    * [API] New cross-platform ``cpu_features`` API for querying CPU features available at runtime
+
+    * [API] Add ``xsimd::get<I>()`` for compile-time lane extraction
+
+    * [API] Add ``xsimd::stream_load``, ``xsimd::stream_store``, and ``xsimd::fence`` for non-temporal memory transfers
+
+    * [VSX] Fix dynamic dispatch support with runtime cpu feature inspection
+
+    * [VSX] Fix rounding
+
+    * [SVE/RVV] Fix dynamic dispatch by inspecting available vector length
+
+    * [AVX2] Add native ``uint64``/``int64`` multiplication kernel
+
+    * [NEON] Add support for Windows ARM
+
+    * [NEON] Simplify static dispatch of intrinsicts
+
+    * [NEON] Fix ``batch_bool`` store on ARM by replacing ``vst1_lane_u32`` with a full
+      lane store followed by a memcpy
+
+    * [SVE] Fix dynamic dispatch ODR violation
+
+    * [ci] Fix emulated architecture interaction with AVX512 leading to CI failures.
+      Provide a cmake-level configuration switch for emulated build
+
+    * Fix build with compilers that do not support C++20 (even though we only require C++14)
+
+    * Fix ``xsimd::signbit`` scalar overload leaking into non-scalar overload resolution
+
+    * Fix complex batch load
+
+    * Harden fast-math reassociation barriers
+
+    * Publish the C++14 requirement through the CMake interface
+
+14.1.0
+------
+
+    * Add popcnt and bmi
+
+    * [API] Add bitwise-shift batch constant api
+
+    * Refactor x86 CPU features
+
+    * [NEON] Unsigned bitwise shifts are never called
+
+    * Improve coverage of emulated architectures
+
+    * Introduce `count{l,r}_{zero,one}` for `batch_bool`
+
+    * Fix emulated mask()
+
+    * [neon] Implement bitwise_rshift for 64 bit integers on arm32
+
+    * Fix fast_cast int64/uint64→double under -ffast-math
+
+    * Small complexity reduction
+
+    * Add make_batch_constant from std::array in C++20
+
+    * [ci] Use home-baked clang-format action
+
+    * Fix apple detection
+
+    * [ci] add GCC 10 with AVX-512 to test matrix
+
+    * Slighly less pessimistic detection of neon64
+
+    * Fix runtime detection of SVE
+
+    * [ci] Setup Windows arm64 runner
+
+    * iota batch constant and a few overloads
+
+    * [test] Improve testing logging and accuracy
+
+    * Fix default values for AVX and AVX512 OS state enabled flags
+
+    * Implement batch_bool::mask() for riscv
+
+    * [ci] Revert emscripten to 4.0.21
+
+    * Restore RISCV support
+
+    * Implement optimized movemasks for NEON
+
+    * Fix limit behavior of atan2 under -ffast-math
+
+    * Move to C++14
+
+14.0.0
+------
+
+    * **New architecture**: VMX with VSX extension
+
+    * [API] Add ``xsimd::bitwise_[l|r]shift<N>(...)`` and ``xsimd::rot[l|r]<N>(...)``
+
+    * [API] Add ``xsimd::widen`` to widen a batch to a batch twice as big
+
+    * [API] Add ``xsimd::first()`` function to extract the first lane from a batch
+
+    * [API] Reorder ``xsimd::make_batch_constant`` and ``xsimd::make_batch_bool_constant`` template
+      arguments
+
+    * Bump CMake requirement to 3.10
+
+    * Provide generic and specialize implementation of ``xsimd::reduce_mul``
+
+    * Have ``xsimd::max`` / ``min`` behave as ``std::max`` / ``min`` when one argument is NaN
+
+    * Optimize batch_bool load/store from/to array of booleans
+
+    * Cleaner error when trying to instantiate a batch while no arch is
+      supported
+
+    * Fix ``XSIMD_INLINE`` for compilers that don't have always_inline
+
+    * Rename ``xsimd::generic`` in ``xsimd::common``
+
+    * Fix ``xsimd::log10`` implementation under ``-ffast-math``, and add ``-fast-math-support`` to
+      generic math algorithm and tests
+
+    * Bump xtl dependency requirement
+
+    * Provide a generic implementation of ``swizzle`` with constant mask
+
+    * Enable xsimd with only emulated arch
+
+    * Rename ``avx512vnni<vbmi>`` in ``avx512vnni<vbmi2>``
+
+    * [SSE2] Fix and improve ``xsimd::swizzle`` on ``[u]int16``
+
+    * [AVX512x] Specialize ``xsimd::insert``, ``xsimd::incr_if``, ``xsimd::decr_if``
+
+    * [AVX512F,AVX512VBMI] Sepcialize ``xsimd::slide_left`` and ``xsimd::slide_right``
+
+    * [AVX512F] Fix ``batch_bool`` xor
+
+    * [WASM] Fix neq for ``batch_bool``
+
+    * [AVX/AVX2/AVX512/ARM32] Improve implementation of ``xsimd::swizzle``
+
+    * [AVX512VBMI2] Speciliaze ``xsimd::compress`` and ``xsimd::expand``
+
+    * [SSE/AVX/AVX512] Improve ``xsimd::reduce_add``
+
+    * [SSSE3/AVX2] Fix ``xsimd::rotate_left`` implementation for ``[u]int16`` and optimize
+      the ``[u]int8`` implementation
+
+    * [AVX2] Fix implementation of ``xsimd::rotate_left``
+
+    * [AVX512] Disable faulty implementation of ``xsimd::rotate_left``
+
+    * [ARM64] Improve implementation of comparison operator for 64 bit integers
+
+    * [AVX512BW] Optimize ``xsimd::shift_left`` and ``xsimd::shift_right``
+
+    * [AVX512F] Fix ``batch_const`` with 16b and 8b integers
+
+13.2.0
+------
+
+    * Added broadcast overload for bool
+
+    * Fixed kernel::store for booleans
+
+    * Explicitly verify dependency between architectures (like sse2 implies sse2)
+
+    * Use default arch alignment as default alignment for xsimd::aligned_allocator
+
+    * sse2 version of xsimd::swizzle on [u]int16_t
+
+    * avx implementation of transpose for [u]int[8|16]
+
+    * Implement [u]int8 and [u]int16 matrix transpose for 128 bit registers
+
+    * Fix minor warning 
+
+    * Fix fma4 support
+
+13.1.0
+------
+
+    * Fix rotate_left and rotate_right behavior (it was swapped!)
+
+    * Fix compress implementation on RISC-V
+
+    * Improve RISC-V CI
+
+    * Fix clang-17 compilation on RISC-V
+
+    * Validate cmake integration
+
+    * Provide xsimd::transpose on 64 and 32 bits on most platforms
+
+    * Improve documentation
+
+    * Provide xsimd::batch_bool::count
+
+    * Fix interaction between xsimd::make_sized_batch_t and
+      xsimd::batch<std::complex, ...>
+
+    * Fix vbmi, sve and rvv detection through xsimd::available_architectures
+
+    * Fix compilation on MS targets where ``small`` can be defined.
+
+    * Change default install directory for installed headers.
+
+    * Support mixed-complex implementations of xsimd::pow()
+
+    * Improve xsimd::pow implementation for complex numbers
+
+    * Fix uninitialized read in lgamma implementation
+
+13.0.0
+------
+
+    * Most xsimd functions are flagged as always_inline
+
+    * Fix some xsimd scalar version (abs, bitofsign, signbit, bitwise_cast, exp10)
+
+    * Move from batch_constant<batch<T, A>, Csts...> to batch_constant<T, A, Csts...>
+
+    * Move from batch_bool_constant<batch<T, A>, Csts...> to batch_bool_constant<T, A, Csts...>
+
+    * Provide an as_batch() method (resp. as_batch_bool) method for batch_constant (resp. batch_bool_constant)
+
+    * New architecture emulated<N> for batches of N bits emulated using scalar operations.
+
+    * Remove the version method from all architectures
+
+    * Support xsimd::avg and xsimd::avgr vector operation
+
+    * Model i8mm arm extension
+
+    * Fix dispatching mechanism
+
+12.1.1
+------
+
+    * Update readme with a section on adoption, and a section on the history of the project 
+
+    * Fix/avx512vnni implementation
+
+    * Fix regression on XSIMD_NO_SUPPORTED_ARCHITECTURE
+
+12.1.0
+------
+
+    * Fix various problems with architecture version handling
+
+    * Specialize xsimd::compress for riscv
+
+    * Provide stubs for various avx512xx architectures
+
+12.0.0
+------
+
+    * Fix sincos implementation to cope with Emscripten
+    
+    * Upgraded minimal version of cmake to remove deprecation warning
+
+    * Fixed constants::signmask for GCC when using ffast-math
+
+    * Add RISC-V Vector support
+
+    * Generic, simple implementation fox xsimd::compress
+
+    * Disable batch of bools, and suggest using batch_bool instead
+
+    * Add an option to skip installation
+
+11.2.0
+------
+
+    * Provide shuffle operations of floating point batches
+
+    * Provide a generic implementation of xsimd::swizzle with dynamic indices
+
+    * Implement rotl, rotr, rotate_left and rotate_right
+
+    * Let CMake figure out pkgconfig directories 
+
+    * Add missing boolean operators in xsimd_api.hpp
+
+    * Initial Implementation for the new WASM based instruction set
+
+    * Provide a generic version for float to uint32_t conversion 
+
+11.1.0
+------
+
+    * Introduce XSIMD_DEFAULT_ARCH to force default architecture (if any)
+
+    * Remove C++ requirement on xsimd::exp10 scalar implementation
+
+    * Improve and test documentation
+
+11.0.0
+------
+
+    * Provide a generic reducer
+
+    * Fix ``find_package(xsimd)`` for xtl enabled xsimd, reloaded
+
+    * Cleanup benchmark code
+
+    * Provide avx512f implementation of FMA and variant
+
+    * Hexadecimal floating points are not a C++11 feature
+
+    * back to slow implementation of exp10 on Windows
+
+    * Changed bitwise_cast API
+
+    * Provide generic signed /unsigned type conversion
+
+    * Fixed sde location
+
+    * Feature/incr decr
+
+    * Cleanup documentation
+
+10.0.0
+------
+
+    * Fix potential ABI issue in SVE support
+
+    * Disable fast exp10 on OSX
+
+    * Assert on unaligned memory when calling aligned load/store
+
+    * Fix warning about uninitialized storage
+
+    * Always forward arch parameter
+
+    * Do not specialize the behavior of ``simd_return_type`` for char
+
+    * Support broadcasting of complex batches
+
+    * Make xsimd compatible with -fno-exceptions
+
+    * Provide and test comparison operators overloads that accept scalars
+
+9.0.1
+-----
+
+    * Fix potential ABI issue in SVE support, making ``xsimd::sve`` a type alias to
+      size-dependent type.
+
+9.0.0
+-----
+
+    * Support fixed size SVE
+
+    * Fix a bug in SSSE3 ``xsimd::swizzle`` implementation for ``int8`` and ``int16``
+
+    * Rename ``xsimd::hadd`` into ``xsimd::reduce_add``, provide ``xsimd::reduce_min`` and ``xsimd::reduce_max``
+
+    * Properly report unsupported double for neon on arm32
+
+    * Fill holes in xsimd scalar api
+
+    * Fix ``find_package(xsimd)`` for xtl enabled xsimd
+
+    * Replace ``xsimd::bool_cast`` by ``xsimd::batch_bool_cast``
+
+    * Native ``xsimd::hadd`` for float on arm64
+
+    * Properly static_assert when trying to instantiate an ``xsimd::batch`` of xtl complex
+
+    * Introduce ``xsimd::batch_bool::mask()`` and ``batch_bool::from_mask(...)``
+
+    * Flag some function with ``[[nodiscard]]``
+
+    * Accept both relative and absolute libdir and include dir in xsimd.pc
+
+    * Implement ``xsimd::nearbyint_as_int`` for NEON
+
+    * Add ``xsimd::polar``
+
+    * Speedup double -> F32/I32 gathers
+
+    * Add ``xsimd::slide_left`` and ``xsimd::slide_right``
+
+    * Support integral ``xsimd::swizzles`` on AVX
+
+8.1.0
+-----
+
+    * Add ``xsimd::gather`` and ``xsimd::scatter``
+
+    * Add ``xsimd::nearbyint_as_int``
+
+    * Add ``xsimd::none``
+
+    * Add ``xsimd::reciprocal``
+
+    * Remove batch constructor from memory adress, use ``xsimd::batch<...>::load_(un)aligned`` instead
+
+    * Leave to msvc users the opportunity to manually disable FMA3 on AVX
+
+    * Provide ``xsimd::insert`` to modify a single value from a vector
+
+    * Make ``xsimd::pow`` implementation resilient to ``FE_INVALID``
+
+    * Reciprocal square root support through ``xsimd::rsqrt``
+
+    * NEON: Improve ``xsimd::any`` and ``xsimd::all``
+
+    * Provide type utility to explicitly require a batch of given size and type
+
+    * Implement ``xsimd::swizzle`` on x86, neon and neon64
+
+    * Avx support for ``xsimd::zip_lo`` and ``xsimd::zip_hi``
+
+    * Only use ``_mm256_unpacklo_epi<N>`` on AVX2
+
+    * Provide neon/neon64 conversion function from ``uint(32|64)_t`` to ``(float|double)``
+
+    * Provide SSE/AVX/AVX2 conversion function from ``uint32_t`` to ``float``
+
+    * Provide AVX2 conversion function from ``(u)int64_t`` to ``double``
+
+    * Provide better SSE conversion function from ``uint64_t`` to ``double``
+
+    * Provide better SSE conversion function to ``double``
+
+    * Support logical xor for ``xsimd::batch_bool``
+
+    * Clarify fma support:
+
+        - FMA3 + SSE -> ``xsimd::fma3<sse4_2>``
+        - FMA3 + AVX -> ``xsimd::fma3<avx>``
+        - FMA3 + AVX2 -> ``xsimd::fma3<avx2>``
+        - FMA4 -> ``xsimd::fma4``
+
+    * Allow ``xsimd::transform`` to work with complex types
+
+    * Add missing scalar version of ``xsimd::norm`` and ``xsimd::conj``
+
+8.0.5
+-----
+
+    * Fix neon ``xsimd::hadd`` implementation
+
+    * Detect unsupported architectures and set ``XSIMD_NO_SUPPORTED_ARCHITECTURE``
+      if needs be
+
+8.0.4
+-----
+
+    * Provide some conversion operators for ``float`` -> ``uint32``
+
+    * Improve code generated for AVX2 signed integer comparisons
+
+    * Enable detection of avx512cd and avx512dq, and fix avx512bw detection
+
+    * Enable detection of AVX2+FMA
+
+    * Pick the best compatible architecture in ``xsimd::dispatch``
+
+    * Enables support for FMA when AVX2 is detected on Windows
+
+    * Add missing includes / forward declaration
+
+    * Mark all functions inline and noexcept
+
+    * Assert when using incomplete ``std::initializer_list``
+
+8.0.3
+-----
+
+    * Improve CI & testing, no functional change
+
+8.0.2
+-----
+
+    * Do not use ``_mm256_srai_epi32`` under AVX, it's an AVX2 instruction
+
+8.0.1
+-----
+
+    * Fix invalid constexpr ``std::make_tuple`` usage in neon64

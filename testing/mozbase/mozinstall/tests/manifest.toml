@@ -1,0 +1,10 @@
+[DEFAULT]
+subsuite = "mozbase"
+
+["test_binary.py"]
+
+["test_install.py"]
+
+["test_is_installer.py"]
+
+["test_uninstall.py"]

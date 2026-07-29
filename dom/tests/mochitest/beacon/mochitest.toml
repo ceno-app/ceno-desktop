@@ -1,0 +1,43 @@
+[DEFAULT]
+support-files = [
+  "beacon-frame.html",
+  "beacon-handler.sjs",
+  "beacon-preflight-handler.sjs",
+  "beacon-originheader-handler.sjs",
+  "beacon-redirect-handler.sjs",
+]
+run-sequentially = ["true"] # bug 1784963 - beacon-handler shares state
+
+["test_beacon.html"]
+
+["test_beaconContentPolicy.html"]
+
+["test_beaconFrame.html"]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1784963
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && xorigin", # Bug 1784963
+  "verify-standalone",
+]
+
+["test_beaconOriginHeader.html"]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && opt && verify-standalone",
+  "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && debug && xorigin && verify-standalone",
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && xorigin && verify-standalone",
+]
+
+["test_beaconPreflightWithCustomContentType.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_beaconRedirect.html"]
+skip-if = [
+  "http2",
+  "http3",
+]

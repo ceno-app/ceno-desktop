@@ -1,0 +1,69 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: "Spelling checker"
+
+origin:
+  name: Hunspell
+  description: Spell checker
+
+  url: http://hunspell.github.io
+
+  release: c5f98152a274e25b5107101104bef632b83a0cc9 (2026-05-05T07:19:07Z).
+  revision: c5f98152a274e25b5107101104bef632b83a0cc9
+  license: MPL-1.1
+  license-file: COPYING.MPL
+
+vendoring:
+  url: https://github.com/hunspell/hunspell
+  source-hosting: github
+  tracking: commit
+
+  exclude:
+    - "**"
+
+  keep:
+    - glue
+    - tests
+    - COPYING.MPL
+    - src/moz.build
+    - src/sources.mozbuild
+    - src/license.hunspell
+    - src/license.myspell
+    - src/README.md
+
+  include:
+    - src/hunspell
+
+  patches:
+    - patches/bug1410214.patch
+    - patches/bug1653659.patch
+    - patches/bug1739761.patch
+    - patches/bug2037089-build-fixes.patch
+    - patches/bug2037089-hentry-pack.patch
+
+  update-actions:
+    - action: move-dir
+      from: '{vendor_dir}/src/hunspell'
+      to: '{vendor_dir}/src'
+    - action: delete-path
+      path: "src/Makefile.am"
+    - action: delete-path
+      path: "tests/unit/data/Makefile.am"
+    - action: delete-path
+      path: "tests/unit/data/Makefile.in"
+    - action: delete-path
+      path: "tests/unit/data/suggestiontest/Makefile.am"
+    - action: delete-path
+      path: "tests/unit/data/suggestiontest/Makefile.in"
+    - action: delete-path
+      path: "src/filemgr.cxx"
+    - action: delete-path
+      path: "src/hunvisapi.h.in"
+    - action: delete-path
+      path: "src/hunzip.cxx"
+    - action: delete-path
+      path: "src/hunzip.hxx"
+    - action: delete-path
+      path: "src/utf_info.hxx"

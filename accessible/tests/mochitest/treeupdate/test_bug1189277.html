@@ -1,0 +1,71 @@
+<html>
+
+<head>
+  <title>Test hide/show events for HTMLListBulletAccessibles on list restyle</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../name.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // enableLogging("tree");
+
+    async function doTest() {
+      let containerNode = getNode("outerDiv");
+      let p = waitForEvents([
+        [EVENT_HIDE, getNode("child")],
+        [EVENT_HIDE, getNode("childDoc")],
+        [EVENT_SHOW, "newChildDoc"],
+        [EVENT_REORDER, containerNode],
+      ]);
+
+      containerNode.removeChild(getNode("child"));
+
+      const docContainer = getNode("docContainer");
+      const iframe = document.createElement("iframe");
+      // eslint-disable-next-line @microsoft/sdl/no-insecure-url
+      iframe.setAttribute("src", "http://example.com");
+      iframe.setAttribute("id", "newChildDoc");
+
+      docContainer.removeChild(getNode("childDoc"));
+      docContainer.appendChild(iframe);
+
+      await p;
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=1189277"
+     title="content process crash caused by missing show event">
+    Mozilla Bug 1189277
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="outerDiv">
+    <div id="child">foo</div>
+    <div id="docContainer">
+      <iframe id="childDoc" src="about:blank">
+      </iframe>
+    </div>
+  </div>
+
+</body>
+</html>

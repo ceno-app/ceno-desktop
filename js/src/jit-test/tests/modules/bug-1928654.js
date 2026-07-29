@@ -1,0 +1,13 @@
+var m = parseModule("{}", "", "json");
+assertEq(m.evaluationError, undefined);
+assertEq(m.requestedModules, undefined);
+assertEq(m.importEntries, undefined);
+assertEq(m.localExportEntries, undefined);
+assertEq(m.indirectExportEntries, undefined);
+assertEq(m.starExportEntries, undefined);
+assertEq(m.dfsAncestorIndex, undefined);
+assertEq(m.hasTopLevelAwait, undefined);
+assertEq(m.topLevelCapability, undefined);
+assertEq(m.asyncEvaluatingPostOrder, undefined);
+assertEq(m.asyncParentModules, undefined);
+assertEq(m.pendingAsyncDependencies, undefined);

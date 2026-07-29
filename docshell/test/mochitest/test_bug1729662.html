@@ -1,0 +1,63 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test back/forward after pushState</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+  <script>
+    SimpleTest.waitForExplicitFinish();
+    SimpleTest.requestFlakyTimeout("Need to wait to make sure an event does not fire");
+
+    function waitForEvent(target, event) {
+      return new Promise(resolve =>
+        target.addEventListener(event, resolve, { once: true }));
+    }
+
+    async function runTest() {
+      // Target page needs to be the initial load so that the synchronously
+      // available window is reused and we can attach popstate listeners.
+      const win = window.open('file_bug1729662.html');
+
+      let timeoutID;
+      let loadCount = 0;
+      let bc = new BroadcastChannel("bug1729662");
+      bc.onmessage = ({ data }) => {
+        if (data != 'load') return;
+        if (++loadCount > 1) {
+          // We should only get one load event in win
+          clearTimeout(timeoutID);
+        }
+      };
+
+      // We should only go back and forward once
+      // The popstate for back will have state == null, see file_bug1729662.html
+      const state1 = await waitForEvent(win, 'popstate');
+      is(state1.state, null, 'got expected state for history.back');
+
+      const state2 = await waitForEvent(win, 'popstate');
+      is(state2.state, 1, 'got expected state for history.forward');
+
+      // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
+      const timeout = new Promise(resolve => timeoutID = setTimeout(resolve, 1000, 'timeout'));
+      const result = await Promise.race([
+        waitForEvent(win, 'popstate'),
+        timeout
+      ]);
+      is(result, 'timeout', 'Got no more popstate');
+
+      is(loadCount, isXOrigin ? 0 : 1, 'Got exactly one (zero for xorigin) load events in win');
+
+      clearTimeout(timeoutID);
+      win.close();
+
+      SimpleTest.finish();
+    }
+  </script>
+</head>
+<body onload="runTest();">
+<p id="display"></p>
+<div id="content" style="display: none"></div>
+<pre id="test"></pre>
+</body>
+</html>

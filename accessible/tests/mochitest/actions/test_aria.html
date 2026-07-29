@@ -1,0 +1,115 @@
+<html>
+
+<head>
+  <title>nsIAccessible actions testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+  <script type="application/javascript"
+          src="../actions.js"></script>
+
+  <script type="application/javascript">
+    /* global testAction */
+    async function doTest() {
+      await testAction({ id: "clickable", actionName: "click", events: CLICK_EVENTS });
+      await testAction({ id: "button", actionName: "press", events: CLICK_EVENTS });
+      await testAction({ id: "checkbox_unchecked", actionName: "check", events: CLICK_EVENTS });
+      await testAction({ id: "checkbox_checked", actionName: "uncheck", events: CLICK_EVENTS });
+      await testAction({ id: "checkbox_mixed", actionName: "cycle", events: CLICK_EVENTS });
+      await testAction({ id: "combobox_collapsed", actionName: "open", events: CLICK_EVENTS });
+      await testAction({ id: "combobox_expanded", actionName: "close", events: CLICK_EVENTS });
+      await testAction({ id: "link", actionName: "jump", events: CLICK_EVENTS });
+      await testAction({ id: "menuitem", actionName: "click", events: CLICK_EVENTS });
+      await testAction({ id: "menuitemcheckbox", actionName: "click", events: CLICK_EVENTS });
+      await testAction({ id: "menuitemradio", actionName: "click", events: CLICK_EVENTS });
+      await testAction({ id: "option", actionName: "select", events: CLICK_EVENTS });
+      await testAction({ id: "radio", actionName: "select", events: CLICK_EVENTS });
+      await testAction({ id: "switch_unchecked", actionName: "check", events: CLICK_EVENTS });
+      await testAction({ id: "switch_checked", actionName: "uncheck", events: CLICK_EVENTS });
+      await testAction({ id: "tab", actionName: "switch", events: CLICK_EVENTS });
+      await testAction({ id: "textbox", actionName: "activate", events: CLICK_EVENTS });
+      await testAction({ id: "treeitem", actionName: "activate", events: CLICK_EVENTS });
+      await testAction({ id: "sortable", actionName: "sort", events: CLICK_EVENTS });
+      await testAction({ id: "expandable", actionName: "expand", events: CLICK_EVENTS });
+      await testAction({ id: "collapseable", actionName: "collapse", events: CLICK_EVENTS });
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank" rel="opener"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=410765"
+     title="nsIAccessible actions testing">
+    Mozilla Bug 410765
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="clickable" onclick="">Clickable text</div>
+
+  <div id="button" role="button">Button</div>
+
+  <div id="checkbox_unchecked" role="checkbox">Checkbox</div>
+
+  <div id="checkbox_checked" role="checkbox" aria-checked="true">Checkbox</div>
+
+  <div id="checkbox_mixed" role="checkbox" aria-checked="mixed">Checkbox</div>
+
+  <div id="combobox_collapsed" role="combobox">
+    <div id="option" role="option">Option of collapsed combobox</div>
+  </div>
+
+  <div id="combobox_expanded" role="combobox" aria-expanded="true">
+    <div role="option">Option of expanded combobox</div>
+  </div>
+
+  <div id="link" role="link">Link</div>
+
+  <div role="menu">
+    <div id="menuitem" role="menuitem">Menuitem</div>
+    <div id="menuitemcheckbox" role="menuitemcheckbox">Menuitem checkbox</div>
+    <div id="menuitemradio" role="menuitemradio">Menuitem radio</div>
+  </div>
+
+  <div role="radiogroup">
+    <div id="radio" role="radio">Radio</div>
+  </div>
+
+  <div id="switch_unchecked" role="switch">Switch</div>
+
+  <div id="switch_checked" role="switch" aria-checked="true">Switch</div>
+
+  <div role="tablist">
+    <div id="tab" role="tab">Tab</div>
+  </div>
+
+  <div id="textbox" role="textbox">Textbox</div>
+
+  <div role="tree">
+    <div id="treeitem" role="treeitem">Treeitem</div>
+  </div>
+
+  <div role="grid">
+    <div id="sortable" role="columnheader" aria-sort="ascending">
+      Columnheader
+    </div>
+  </div>
+  
+  <div id="expandable" aria-expanded="false" role="row">collapsed</div>
+  <div id="collapseable" aria-expanded="true" role="row">expanded</div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<html>
+
+<head>
+  <title>Accessible focus testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+
+  <script type="application/javascript">
+    /**
+     * Do tests.
+     */
+
+    async function doTests() {
+      const frameDoc = document.getElementById("iframe").contentDocument;
+
+      const editableDoc =
+        document.getElementById("editabledoc").contentDocument;
+      editableDoc.designMode = "on";
+
+      let focused = waitForEvent(EVENT_FOCUS, "editablearea");
+      selectAllTextAndFocus("editablearea");
+      await focused;
+      testStates(getAccessible("editablearea"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, "navarea");
+      selectAllTextAndFocus("navarea");
+      await focused;
+      testStates(getAccessible("navarea"), STATE_FOCUSED);
+
+      focused = waitForEvent(EVENT_FOCUS, frameDoc);
+      synthesizeKey("KEY_Tab", { shiftKey: false });
+      await focused;
+      testStates(getAccessible(frameDoc), STATE_FOCUSED);
+
+      // Focus element while subdocument is focused; no focus on ownerDocument expected.
+      let linkNode = getNode("link");
+      let unexpectedFocus = new UnexpectedEvents([
+        [EVENT_FOCUS, linkNode.ownerDocument],
+      ]);
+      focused = waitForEvent(EVENT_FOCUS, linkNode);
+      linkNode.focus();
+      await focused;
+      testStates(getAccessible(linkNode), STATE_FOCUSED);
+      unexpectedFocus.stop();
+
+      focused = waitForEvent(EVENT_FOCUS, editableDoc);
+      synthesizeKey("KEY_Tab", { shiftKey: false });
+      await focused;
+      testStates(getAccessible(editableDoc), STATE_FOCUSED);
+
+      if (WIN || LINUX) {
+        // Alt key is used to active menubar and focus menu item on Windows,
+        // other platforms requires setting a ui.key.menuAccessKeyFocuses
+        // preference.
+        focused = waitForEvent(
+          EVENT_FOCUS,
+          evt => evt.accessible.role == ROLE_PARENT_MENUITEM
+        );
+        synthesizeKey("KEY_Alt", {});
+        await focused;
+
+        focused = waitForEvent(EVENT_FOCUS, editableDoc);
+        synthesizeKey("KEY_Alt", {});
+        await focused;
+        testStates(getAccessible(editableDoc), STATE_FOCUSED);
+      }
+      if (
+        !(MAC && Services.prefs.getBoolPref("widget.macos.native-context-menus", false))
+      ) {
+        // Context menu accessibility is handled natively and not testable when
+        // native context menus are used on macOS.
+        let editableDocBody =
+          editableDoc.body ? editableDoc.body : editableDoc.documentElement;
+        editableDocBody.scrollIntoView(true);
+
+        let menuPopup = waitForEvent(
+          EVENT_MENUPOPUP_START,
+          evt => evt.accessible.role == ROLE_MENUPOPUP
+        );
+        synthesizeMouse(editableDocBody, 1, 1, {
+          button: 0,
+          type: "contextmenu",
+        });
+        await menuPopup;
+
+        focused = waitForEvent(
+          EVENT_FOCUS,
+          evt => evt.accessible.role == ROLE_MENUITEM
+        );
+        synthesizeKey("KEY_ArrowDown", {});
+        await focused;
+
+        focused = waitForEvent(EVENT_FOCUS, editableDoc);
+        synthesizeKey("KEY_Escape", {});
+        await focused;
+        testStates(getAccessible(editableDoc), STATE_FOCUSED);
+      } else {
+        // If this test is run as part of multiple tests, it is displayed in the test harness iframe.
+        // In the non-native context menu case, right-clicking the editableDoc causes the editableDoc
+        // to scroll fully into view, and as a side-effect, the img below it ends up on the screen.
+        // When we're skipping the context menu check, scroll img onto the screen manually, because
+        // otherwise it may remain out-of-view and clipped by the test harness iframe.
+        const img = document.querySelector("img");
+        img.scrollIntoView(true);
+      }
+      if (SEAMONKEY) {
+        todo(false, "shift tab from editable document fails on (Windows) SeaMonkey! (Bug 718235)");
+      } else if (LINUX || MAC) {
+        todo(false, "shift tab from editable document fails on linux and Mac, bug 746519!");
+      } else {
+        focused = waitForEvent(EVENT_FOCUS, "link");
+        synthesizeKey("KEY_Tab", { shiftKey: true });
+        await focused;
+        testStates(getAccessible("link"), STATE_FOCUSED);
+      } // ! SEAMONKEY
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("a"));
+      selectAllTextAndFocus("a");
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("b"));
+      selectAllTextAndFocus("b");
+      await focused;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=352220"
+     title="Inconsistent focus events when returning to a document frame">
+    Mozilla Bug 352220
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=550338"
+     title="Broken focus when returning to editable documents from menus">
+    Mozilla Bug 550338
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=673958"
+     title="Rework accessible focus handling">
+    Mozilla Bug 673958
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=961696"
+     title="Accessible object:state-changed:focused events for imagemap links are broken">
+    Mozilla Bug 961696
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="editablearea" contentEditable="true">editable area</div>
+  <div id="navarea" tabindex="0">navigable area</div>
+  <iframe id="iframe" src="data:text/html,<html></html>"></iframe>
+  <a id="link" href="">link</a>
+  <iframe id="editabledoc" src="about:blank"></iframe>
+
+  <map name="atoz_map">
+    <area id="a" coords="0,0,13,14" shape="rect">
+    <area id="b" coords="17,0,30,14" shape="rect">
+  </map>
+  <img width="447" height="15" usemap="#atoz_map" src="../letters.gif">
+
+  <div id="eventdump"></div>
+</body>
+</html>

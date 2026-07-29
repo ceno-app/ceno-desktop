@@ -1,0 +1,34 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    "nsIWebTransport.idl",
+    "nsIWebTransportEventService.idl",
+    "nsIWebTransportStream.idl",
+]
+
+XPIDL_MODULE = "necko_webtransport"
+
+EXPORTS.mozilla.net += [
+    "WebTransportEventService.h",
+    "WebTransportHash.h",
+    "WebTransportSessionProxy.h",
+    "WebTransportStreamProxy.h",
+]
+
+UNIFIED_SOURCES += [
+    "WebTransportEventService.cpp",
+    "WebTransportHash.cpp",
+    "WebTransportSessionProxy.cpp",
+    "WebTransportStreamProxy.cpp",
+]
+
+FINAL_LIBRARY = "xul"
+
+LOCAL_INCLUDES += [
+    "/netwerk/base",
+    "/netwerk/protocol/http",
+]
+
+include("/ipc/chromium/chromium-config.mozbuild")

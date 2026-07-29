@@ -1,0 +1,29 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_UniFFIPointerType_h
+#define mozilla_UniFFIPointerType_h
+
+#include "nsISupports.h"
+#include "nsWrapperCache.h"
+#include "nsLiteralString.h"
+#include "mozilla/uniffi/Rust.h"
+
+namespace mozilla::uniffi {
+
+/**
+ * UniFFIPointerType represents of UniFFI allocated pointers.
+ * Each UniFFIPointer will have a UniFFIPointerType, which will be a statically
+ * allocated type per object exposed by the UniFFI interface
+ **/
+struct UniFFIPointerType {
+  nsLiteralCString typeName;
+  // Rust FFI function to clone for the pointer
+  uint64_t (*clone)(uint64_t, RustCallStatus*);
+  // Rust FFI function to destroy for the pointer
+  void (*destructor)(uint64_t, RustCallStatus*);
+};
+}  // namespace mozilla::uniffi
+
+#endif /* mozilla_UniFFIPointerType_h */

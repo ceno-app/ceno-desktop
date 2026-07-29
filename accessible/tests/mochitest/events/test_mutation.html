@@ -1,0 +1,431 @@
+<html>
+
+<head>
+  <title>Accessible mutation events testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <style>
+    div.displayNone a { display:none; }
+    div.visibilityHidden a { visibility:hidden; }
+</style>
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // enableLogging("events,verbose");
+
+    async function doTests() {
+      // Show/hide events by changing of display style of accessible DOM node
+      // from 'inline' to 'none', 'none' to 'inline'.
+      let id = "link1";
+      getAccessible(id); // ensure accessible is created
+      let evts = waitForEvents([
+        [EVENT_HIDE, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.display = "none";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.display = "inline";
+      await evts;
+
+      // Show/hide events by changing of visibility style of accessible DOM node
+      // from 'visible' to 'hidden', 'hidden' to 'visible'.
+      id = "link2";
+      getAccessible(id);
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.visibility = "hidden";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.visibility = "visible";
+      await evts;
+
+      // Show/hide events by changing of visibility style of accessible DOM node
+      // from 'collapse' to 'visible', 'visible' to 'collapse'.
+      id = "link4";
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.visibility = "visible";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).style.visibility = "collapse";
+      await evts;
+
+      // Show/hide events by adding new accessible DOM node and removing old one.
+      id = "link5";
+      {
+        let parentNode = getNode(id).parentNode;
+        let shown = waitForEvent(
+          EVENT_SHOW,
+          e => e.DOMNode.parentNode === parentNode && e.DOMNode !== getNode(id)
+        );
+        let reordered = waitForEvent(EVENT_REORDER, parentNode);
+        getNode(id).parentNode.appendChild(getNode(id).cloneNode(true));
+        await Promise.all([shown, reordered]);
+      }
+
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode(id)],
+        [EVENT_REORDER, getNode(id).parentNode],
+      ]);
+      getNode(id).remove();
+      await evts;
+
+      // No show/hide events by adding new not accessible DOM node and removing
+      // old one, no reorder event for their parent.
+      id = "child1";
+      {
+        let parentNode = getNode(id).parentNode;
+        let unexpected = new UnexpectedEvents([
+          [EVENT_SHOW, e => e.DOMNode.parentNode === parentNode],
+          [EVENT_REORDER, parentNode],
+        ]);
+        let newElm = getNode(id).cloneNode(true);
+        newElm.removeAttribute("id");
+        parentNode.appendChild(newElm);
+        await unexpected.flush();
+        unexpected.stop();
+      }
+
+      {
+        let node = document.querySelector("#container > span:not([id])");
+        let unexpected = new UnexpectedEvents([
+          [EVENT_HIDE, node],
+          [EVENT_REORDER, node.parentNode],
+        ]);
+        node.remove();
+        await unexpected.flush();
+        unexpected.stop();
+      }
+
+      // Show/hide events by adding new accessible DOM node and removing
+      // old one, there is reorder event for their parent.
+      id = "child2";
+      {
+        let parentNode = getNode(id).parentNode;
+        let shown = waitForEvent(
+          EVENT_SHOW,
+          e => e.DOMNode.parentNode === parentNode && e.DOMNode !== getNode(id)
+        );
+        let reordered = waitForEvent(EVENT_REORDER, parentNode);
+        getNode(id).parentNode.appendChild(getNode(id).cloneNode(true));
+        await Promise.all([shown, reordered]);
+      }
+
+      {
+        let node = getNode(id);
+        evts = waitForEvents([
+          [EVENT_HIDE, node],
+          [EVENT_REORDER, node.parentNode],
+        ]);
+        node.remove();
+        await evts;
+      }
+
+      // Show/hide events by adding new DOM node containing accessible DOM and
+      // removing old one, there is reorder event for their parent.
+      id = "child3";
+      {
+        let domNode = getNode(id);
+        let parentNode = domNode.parentNode;
+        let newElm = domNode.cloneNode(true);
+        newElm.removeAttribute("id");
+        let shown = waitForEvent(
+          EVENT_SHOW,
+          e => e.DOMNode === newElm.firstChild
+        );
+        let reordered = waitForEvent(EVENT_REORDER, parentNode);
+        parentNode.appendChild(newElm);
+        await Promise.all([shown, reordered]);
+      }
+
+      // Hide event for accessible child of unaccessible removed DOM node and
+      // reorder event for its parent.
+      {
+        let clonedChild3 = document.querySelector(
+          "#container > span:not([id]) > [role='listitem']"
+        );
+        let clonedParent = clonedChild3.parentNode;
+        let parentOfParent = clonedParent.parentNode;
+        getAccessible(clonedChild3);
+        evts = waitForEvents([
+          [EVENT_HIDE, clonedChild3],
+          [EVENT_REORDER, parentOfParent],
+        ]);
+        clonedParent.remove();
+        await evts;
+      }
+
+      // Hide events for accessible children of unaccessible removed DOM node
+      // and reorder event for its parent.
+      {
+        let child4 = getNode("child4");
+        let child4_1 = getNode("child4_1");
+        let child4_2 = getNode("child4_2");
+        getAccessible(child4_1);
+        getAccessible(child4_2);
+        let parentOfChild4 = child4.parentNode;
+        evts = waitForEvents([
+          [EVENT_HIDE, child4_1],
+          [EVENT_HIDE, child4_2],
+          [EVENT_REORDER, parentOfChild4],
+        ]);
+        child4.remove();
+        await evts;
+      }
+
+      // Show/hide events by creating new accessible DOM node and replacing old one.
+      getAccessible("link6"); // ensure accessible is created
+      {
+        let link6 = getNode("link6");
+        let newElm = link6.cloneNode(true);
+        newElm.removeAttribute("id");
+        let parentNode = link6.parentNode;
+        let oldAcc = getAccessible(link6);
+        evts = waitForEvents([
+          [EVENT_HIDE, oldAcc],
+          [EVENT_SHOW, newElm],
+          [EVENT_REORDER, parentNode],
+        ]);
+        parentNode.replaceChild(newElm, link6);
+        await evts;
+      }
+
+      // Show/hide events by changing class name on the parent node.
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode("link7")],
+        [EVENT_REORDER, getNode("link7").parentNode],
+      ]);
+      getNode("container2").className = "";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode("link7")],
+        [EVENT_REORDER, getNode("link7").parentNode],
+      ]);
+      getNode("container2").className = "displayNone";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode("link8")],
+        [EVENT_REORDER, getNode("link8").parentNode],
+      ]);
+      getNode("container3").className = "";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode("link8")],
+        [EVENT_REORDER, getNode("link8").parentNode],
+      ]);
+      getNode("container3").className = "visibilityHidden";
+      await evts;
+
+      // fuzzy test #1: content insertion (flush layout), removal and reinsertion
+      {
+        let divNode = document.createElement("div");
+        divNode.setAttribute("id", "div-test1");
+        let containerNode = getNode("testContainer");
+        evts = waitForEvents([
+          [EVENT_SHOW, divNode],
+          [EVENT_REORDER, containerNode],
+        ]);
+        containerNode.appendChild(divNode);
+        getComputedStyle(divNode, "").color;
+        containerNode.removeChild(divNode);
+        containerNode.appendChild(divNode);
+        await evts;
+      }
+
+      // fuzzy test #2: content insertion (flush layout), removal and reinsertion
+      // under another container (x2)
+      for (let tmpContainerID of ["testContainer2", "testNestedContainer"]) {
+        let divNode = document.createElement("div");
+        divNode.setAttribute("id", "div-test2");
+        let containerNode = getNode("testContainer");
+        let tmpContainerNode = getNode(tmpContainerID);
+        let unexpected = new UnexpectedEvents([
+          [EVENT_REORDER, tmpContainerNode],
+        ]);
+        evts = waitForEvents([
+          [EVENT_SHOW, divNode],
+          [EVENT_REORDER, containerNode],
+        ]);
+        tmpContainerNode.appendChild(divNode);
+        getComputedStyle(divNode, "").color;
+        tmpContainerNode.removeChild(divNode);
+        containerNode.appendChild(divNode);
+        await evts;
+        await unexpected.flush();
+        unexpected.stop();
+        // Clean up for next iteration
+        evts = waitForEvents([
+          [EVENT_HIDE, divNode],
+          [EVENT_REORDER, containerNode],
+        ]);
+        divNode.remove();
+        await evts;
+      }
+
+      // fuzzy test #3: content insertion (flush layout) and removal
+      {
+        let divNode = document.createElement("div");
+        divNode.setAttribute("id", "div-test3");
+        let containerNode = getNode("testContainer");
+        let unexpected = new UnexpectedEvents([
+          [EVENT_SHOW, divNode],
+          [EVENT_HIDE, divNode],
+          [EVENT_REORDER, containerNode],
+        ]);
+        containerNode.appendChild(divNode);
+        getComputedStyle(divNode, "").color;
+        containerNode.removeChild(divNode);
+        await unexpected.flush();
+        unexpected.stop();
+      }
+
+      // insert inaccessible element and then insert referring element to make it accessible
+      {
+        let containerNode = getNode("testContainer3");
+        let span = document.createElement("span");
+        span.setAttribute("id", "insertReferredElms_span");
+        let input = document.createElement("input");
+        input.setAttribute("aria-labelledby", "insertReferredElms_span");
+        let show1 = waitForEvent(
+          EVENT_SHOW,
+          e => e.DOMNode === containerNode.firstChild
+        );
+        let show2 = waitForEvent(
+          EVENT_SHOW,
+          e => e.DOMNode === containerNode.lastChild
+        );
+        let reordered = waitForEvent(EVENT_REORDER, containerNode);
+        containerNode.appendChild(span);
+        containerNode.appendChild(input);
+        await Promise.all([show1, show2, reordered]);
+      }
+
+      // show hidden parent of visible child
+      evts = waitForEvents([
+        [EVENT_HIDE, getNode("c4_child")],
+        [EVENT_SHOW, getNode("c4_middle")],
+        [EVENT_REORDER, getNode("c4")],
+      ]);
+      getNode("c4_middle").style.visibility = "visible";
+      await evts;
+
+      // remove text node and destroy a document on hide event
+      {
+        let txt = getAccessible("c5").firstChild.firstChild;
+        let hidden = waitForEvent(EVENT_HIDE, txt);
+        txt.DOMNode.remove();
+        await hidden;
+        getNode("c5").remove();
+      }
+
+      // remove text nodes (2 events in the queue) and destroy a document on first hide event
+      {
+        let doc = getAccessible("c6").firstChild;
+        let l1 = doc.firstChild;
+        let target = l1.firstChild;
+        let l2 = doc.lastChild;
+        let hidden = waitForEvent(EVENT_HIDE, target);
+        l1.DOMNode.firstChild.remove();
+        l2.DOMNode.firstChild.remove();
+        await hidden;
+        getNode("c6").remove();
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=469985"
+     title=" turn the test from bug 354745 into mochitest">
+    Mozilla Bug 469985</a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=472662"
+     title="no reorder event when html:link display property is changed from 'none' to 'inline'">
+    Mozilla Bug 472662</a>
+  <a target="_blank"
+     title="Rework accessible tree update code"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=570275">
+    Mozilla Bug 570275</a>
+  <a target="_blank"
+     title="Develop a way to handle visibility style"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=606125">
+    Mozilla Bug 606125</a>
+  <a target="_blank"
+     title="Update accessible tree on content insertion after layout"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=498015">
+    Mozilla Bug 498015</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <div id="testContainer">
+    <a id="link1" href="http://www.google.com">Link #1</a>
+    <a id="link2" href="http://www.google.com">Link #2</a>
+    <a id="link3" href="http://www.google.com">Link #3</a>
+    <a id="link4" href="http://www.google.com" style="visibility:collapse">Link #4</a>
+    <a id="link5" href="http://www.google.com">Link #5</a>
+
+    <div id="container" role="list">
+      <span id="child1"></span>
+      <span id="child2" role="listitem"></span>
+      <span id="child3"><span role="listitem"></span></span>
+      <span id="child4"><span id="child4_1" role="listitem"></span><span id="child4_2" role="listitem"></span></span>
+    </div>
+
+    <a id="link6" href="http://www.google.com">Link #6</a>
+
+    <div id="container2" class="displayNone"><a id="link7">Link #7</a></div>
+    <div id="container3" class="visibilityHidden"><a id="link8">Link #8</a></div>
+    <div id="testNestedContainer"></div>
+  </div>
+  <div id="testContainer2"></div>
+  <div id="testContainer3"></div>
+
+  <div id="c4">
+    <div style="visibility:hidden" id="c4_middle">
+    <div style="visibility:visible" id="c4_child"></div>
+  </div>
+
+  <iframe id="c5" src="data:text/html,hey"></iframe>
+  <iframe id="c6" src="data:text/html,<label>l</label><label>l</label>"></iframe>
+</body>
+</html>

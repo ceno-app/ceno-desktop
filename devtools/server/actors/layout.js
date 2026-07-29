@@ -1,0 +1,563 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+"use strict";
+
+const { Actor } = require("resource://devtools/shared/protocol.js");
+const {
+  flexboxSpec,
+  flexItemSpec,
+  gridSpec,
+  layoutSpec,
+} = require("resource://devtools/shared/specs/layout.js");
+
+const {
+  getStringifiableFragments,
+} = require("resource://devtools/server/actors/utils/css-grid-utils.js");
+
+loader.lazyRequireGetter(
+  this,
+  "CssLogic",
+  "resource://devtools/server/actors/inspector/css-logic.js",
+  true
+);
+loader.lazyRequireGetter(
+  this,
+  "findGridParentContainerForNode",
+  "resource://devtools/server/actors/inspector/utils.js",
+  true
+);
+loader.lazyRequireGetter(
+  this,
+  "getMatchingCSSRules",
+  "resource://devtools/shared/inspector/css-logic.js",
+  true
+);
+loader.lazyRequireGetter(
+  this,
+  "nodeConstants",
+  "resource://devtools/shared/dom-node-constants.js"
+);
+
+/**
+ * Set of actors the expose the CSS layout information to the devtools protocol clients.
+ *
+ * The |Layout| actor is the main entry point. It is used to get various CSS
+ * layout-related information from the document.
+ *
+ * The |Flexbox| actor provides the container node information to inspect the flexbox
+ * container. It is also used to return an array of |FlexItem| actors which provide the
+ * flex item information.
+ *
+ * The |Grid| actor provides the grid fragment information to inspect the grid container.
+ */
+
+class FlexboxActor extends Actor {
+  /**
+   * @param  {LayoutActor} layoutActor
+   *         The LayoutActor instance.
+   * @param  {DOMNode} containerEl
+   *         The flex container element.
+   */
+  constructor(layoutActor, containerEl) {
+    super(layoutActor.conn, flexboxSpec);
+
+    this.containerEl = containerEl;
+    this.walker = layoutActor.walker;
+  }
+
+  destroy() {
+    super.destroy();
+
+    this.containerEl = null;
+    this.walker = null;
+  }
+
+  form() {
+    const styles = CssLogic.getComputedStyle(this.containerEl);
+
+    const form = {
+      actor: this.actorID,
+      // The computed style properties of the flex container.
+      properties: {
+        "align-content": styles.alignContent,
+        "align-items": styles.alignItems,
+        "flex-direction": styles.flexDirection,
+        "flex-wrap": styles.flexWrap,
+        "justify-content": styles.justifyContent,
+      },
+    };
+
+    // If the WalkerActor already knows the container element, then also return its
+    // ActorID so we avoid the client from doing another round trip to get it in many
+    // cases.
+    if (this.walker.hasNode(this.containerEl)) {
+      form.containerNodeActorID = this.walker.getNode(this.containerEl).actorID;
+    }
+
+    return form;
+  }
+
+  /**
+   * Returns an array of FlexItemActor objects for all the flex item elements contained
+   * in the flex container element.
+   *
+   * @return {Array}
+   *         An array of FlexItemActor objects.
+   */
+  getFlexItems() {
+    if (isNodeDead(this.containerEl)) {
+      return [];
+    }
+
+    const flex = this.containerEl.getAsFlexContainer();
+    if (!flex) {
+      return [];
+    }
+
+    const flexItemActors = [];
+    const { crossAxisDirection, mainAxisDirection } = flex;
+
+    for (const line of flex.getLines()) {
+      for (const item of line.getItems()) {
+        flexItemActors.push(
+          new FlexItemActor(this, item.node, {
+            crossAxisDirection,
+            mainAxisDirection,
+            crossMaxSize: item.crossMaxSize,
+            crossMinSize: item.crossMinSize,
+            mainBaseSize: item.mainBaseSize,
+            mainDeltaSize: item.mainDeltaSize,
+            mainMaxSize: item.mainMaxSize,
+            mainMinSize: item.mainMinSize,
+            lineGrowthState: line.growthState,
+            clampState: item.clampState,
+          })
+        );
+      }
+    }
+
+    return flexItemActors;
+  }
+}
+
+/**
+ * The FlexItemActor provides information about a flex items' data.
+ */
+class FlexItemActor extends Actor {
+  /**
+   * @param  {FlexboxActor} flexboxActor
+   *         The FlexboxActor instance.
+   * @param  {DOMNode} element
+   *         The flex item element.
+   * @param  {object} flexItemSizing
+   *         The flex item sizing data.
+   */
+  constructor(flexboxActor, element, flexItemSizing) {
+    super(flexboxActor.conn, flexItemSpec);
+
+    this.containerEl = flexboxActor.containerEl;
+    this.element = element;
+    this.flexItemSizing = flexItemSizing;
+    this.walker = flexboxActor.walker;
+  }
+
+  destroy() {
+    super.destroy();
+
+    this.containerEl = null;
+    this.element = null;
+    this.flexItemSizing = null;
+    this.walker = null;
+  }
+
+  form() {
+    const { mainAxisDirection } = this.flexItemSizing;
+    const dimension = mainAxisDirection.startsWith("horizontal")
+      ? "width"
+      : "height";
+
+    // Find the authored sizing properties for this item.
+    const properties = {
+      "flex-basis": "",
+      "flex-grow": "",
+      "flex-shrink": "",
+      // collect the shorthand as well to compute the longhands in an error case
+      flex: "",
+      [`min-${dimension}`]: "",
+      [`max-${dimension}`]: "",
+      [dimension]: "",
+    };
+
+    const isElementNode = this.element.nodeType === this.element.ELEMENT_NODE;
+
+    if (isElementNode) {
+      const cssRules = getMatchingCSSRules(this.element);
+      for (const name in properties) {
+        const values = [];
+
+        for (const rule of cssRules) {
+          // For each rule, get the value and priority if available
+          const value = rule.style.getPropertyValue(name);
+          if (value !== "" && value !== "auto") {
+            values.push({
+              value,
+              priority: rule.style.getPropertyPriority(name),
+            });
+          }
+        }
+
+        // Then go through the element style because it's usually more important, but
+        // might not be if there is a prior !important property
+        if (
+          this.element.style &&
+          this.element.style[name] &&
+          this.element.style[name] !== "auto"
+        ) {
+          values.push({
+            value: this.element.style.getPropertyValue(name),
+            priority: this.element.style.getPropertyPriority(name),
+          });
+        }
+
+        // Now that we have a list of all the property's rule values, go through all the
+        // values and show the property value with the highest priority. Therefore, show
+        // the last !important value. Otherwise, show the last value stored.
+        let rulePropertyValue = "";
+
+        if (values.length) {
+          const lastValueIndex = values.length - 1;
+          rulePropertyValue = values[lastValueIndex].value;
+
+          for (const { priority, value } of values) {
+            if (priority === "important") {
+              rulePropertyValue = `${value} !important`;
+            }
+          }
+        }
+
+        properties[name] = rulePropertyValue;
+      }
+    }
+
+    // Also find some computed sizing properties that will be useful for this item.
+    const { flexGrow, flexShrink } = isElementNode
+      ? CssLogic.getComputedStyle(this.element)
+      : { flexGrow: null, flexShrink: null };
+    const computedStyle = { flexGrow, flexShrink };
+
+    // if a CSS variable was used in the flex shorthand the longhands will be empty. Try a simple recover and use the 3 values from the shorthand
+    if (
+      properties["flex-grow"] === "" &&
+      properties["flex-shrink"] === "" &&
+      properties["flex-basis"] === "" &&
+      properties.flex !== ""
+    ) {
+      const parts = this.#parseFlexShorthand(properties.flex);
+      if (parts.length === 3) {
+        properties["flex-grow"] = parts[0];
+        properties["flex-shrink"] = parts[1];
+        properties["flex-basis"] = parts[2];
+      }
+    }
+    delete properties.flex;
+
+    const form = {
+      actor: this.actorID,
+      // The flex item sizing data.
+      flexItemSizing: this.flexItemSizing,
+      // The authored style properties of the flex item.
+      properties,
+      // The computed style properties of the flex item.
+      computedStyle,
+    };
+
+    // If the WalkerActor already knows the flex item element, then also return its
+    // ActorID so we avoid the client from doing another round trip to get it in many
+    // cases.
+    if (this.walker.hasNode(this.element)) {
+      form.nodeActorID = this.walker.getNode(this.element).actorID;
+    }
+
+    return form;
+  }
+
+  /**
+   * Parse a `flex` shorthand value into its longhand (flex-grow, flex-shrink, flex-basis) values
+   *
+   * @param {string} flexShorthandValue
+   * @returns {string[]}
+   */
+  #parseFlexShorthand(flexShorthandValue) {
+    const lexer = new InspectorCSSParser(flexShorthandValue);
+    /**
+     * @param {InspectorCSSToken | null} current
+     * @returns {string}
+     */
+    function consume(current) {
+      if (!current) {
+        return "";
+      }
+      // If it's a function, collect everything until the closing parenthesis
+      if (current.tokenType === "Function") {
+        const contents = [];
+        let next;
+        while (
+          (next = lexer.nextToken()) &&
+          next.tokenType !== "CloseParenthesis"
+        ) {
+          contents.push(consume(next));
+        }
+        return `${current.value}(${contents.join("")})`;
+      }
+
+      return current.text;
+    }
+
+    const result = [];
+    let token;
+    while ((token = lexer.nextToken())) {
+      const value = consume(token).trim();
+      if (value) {
+        result.push(value);
+      }
+    }
+    return result;
+  }
+}
+
+/**
+ * The GridActor provides information about a given grid's fragment data.
+ */
+class GridActor extends Actor {
+  /**
+   * @param  {LayoutActor} layoutActor
+   *         The LayoutActor instance.
+   * @param  {DOMNode} containerEl
+   *         The grid container element.
+   */
+  constructor(layoutActor, containerEl) {
+    super(layoutActor.conn, gridSpec);
+
+    this.containerEl = containerEl;
+    this.walker = layoutActor.walker;
+  }
+
+  destroy() {
+    super.destroy();
+
+    this.containerEl = null;
+    this.gridFragments = null;
+    this.walker = null;
+  }
+
+  form() {
+    // Seralize the grid fragment data into JSON so protocol.js knows how to write
+    // and read the data.
+    const gridFragments = this.containerEl.getGridFragments();
+    this.gridFragments = getStringifiableFragments(gridFragments);
+
+    // Record writing mode and text direction for use by the grid outline.
+    const { direction, writingMode } = CssLogic.getComputedStyle(
+      this.containerEl
+    );
+
+    const form = {
+      actor: this.actorID,
+      direction,
+      gridFragments: this.gridFragments,
+      writingMode,
+    };
+
+    // If the WalkerActor already knows the container element, then also return its
+    // ActorID so we avoid the client from doing another round trip to get it in many
+    // cases.
+    if (this.walker.hasNode(this.containerEl)) {
+      form.containerNodeActorID = this.walker.getNode(this.containerEl).actorID;
+    }
+
+    const gridContainerType = InspectorUtils.getGridContainerType(
+      this.containerEl
+    );
+    form.isSubgrid =
+      gridContainerType &
+      (InspectorUtils.GRID_SUBGRID_COL | InspectorUtils.GRID_SUBGRID_ROW);
+
+    return form;
+  }
+}
+
+/**
+ * The CSS layout actor provides layout information for the given document.
+ */
+class LayoutActor extends Actor {
+  constructor(conn, targetActor, walker) {
+    super(conn, layoutSpec);
+
+    this.targetActor = targetActor;
+    this.walker = walker;
+  }
+
+  destroy() {
+    super.destroy();
+
+    this.targetActor = null;
+    this.walker = null;
+  }
+
+  /**
+   * Helper function for getAsFlexItem, getCurrentGrid and getCurrentFlexbox. Returns the
+   * grid or flex container (whichever is requested) found by iterating on the given
+   * selected node. The current node can be a grid/flex container or grid/flex item.
+   * If it is a grid/flex item, returns the parent grid/flex container. Otherwise, returns
+   * null if the current or parent node is not a grid/flex container.
+   *
+   * @param  {Node|NodeActor} node
+   *         The node to start iterating at.
+   * @param  {string} type
+   *         Can be "grid" or "flex", the display type we are searching for.
+   * @param  {boolean} onlyLookAtContainer
+   *         If true, only look at given node's container and iterate from there.
+   * @return {GridActor|FlexboxActor|null}
+   *         The GridActor or FlexboxActor of the grid/flex container of the given node.
+   *         Otherwise, returns null.
+   */
+  getCurrentDisplay(node, type, onlyLookAtContainer) {
+    if (isNodeDead(node)) {
+      return null;
+    }
+
+    // Given node can either be a Node or a NodeActor.
+    if (node.rawNode) {
+      node = node.rawNode;
+    }
+
+    const flexType = type === "flex";
+    const gridType = type === "grid";
+    const displayType = this.walker.getNode(node).displayType;
+
+    // If the node is an element, check first if it is itself a flex or a grid.
+    if (node.nodeType === node.ELEMENT_NODE) {
+      if (!displayType) {
+        return null;
+      }
+
+      if (flexType && displayType.includes("flex")) {
+        if (!onlyLookAtContainer) {
+          return new FlexboxActor(this, node);
+        }
+
+        const container = node.parentFlexElement;
+        if (container) {
+          return new FlexboxActor(this, container);
+        }
+
+        return null;
+      } else if (gridType && displayType.includes("grid")) {
+        return new GridActor(this, node);
+      }
+    }
+
+    // Otherwise, check if this is a flex/grid item or the parent node is a flex/grid
+    // container.
+    // Note that text nodes that are children of flex/grid containers are wrapped in
+    // anonymous containers, so even if their displayType getter returns null we still
+    // want to walk up the chain to find their container.
+    const parentFlexElement = node.parentFlexElement;
+    if (parentFlexElement && flexType) {
+      return new FlexboxActor(this, parentFlexElement);
+    }
+    const container = findGridParentContainerForNode(node);
+    if (container && gridType) {
+      return new GridActor(this, container);
+    }
+
+    return null;
+  }
+
+  /**
+   * Returns the grid container for a given selected node.
+   * The node itself can be a container, but if not, walk up the DOM to find its
+   * container.
+   * Returns null if no container can be found.
+   *
+   * @param  {Node|NodeActor} node
+   *         The node to start iterating at.
+   * @return {GridActor|null}
+   *         The GridActor of the grid container of the given node. Otherwise, returns
+   *         null.
+   */
+  getCurrentGrid(node) {
+    return this.getCurrentDisplay(node, "grid");
+  }
+
+  /**
+   * Returns the flex container for a given selected node.
+   * The node itself can be a container, but if not, walk up the DOM to find its
+   * container.
+   * Returns null if no container can be found.
+   *
+   * @param  {Node|NodeActor} node
+   *         The node to start iterating at.
+   * @param  {boolean | null} onlyLookAtParents
+   *         If true, skip the passed node and only start looking at its parent and up.
+   * @return {FlexboxActor|null}
+   *         The FlexboxActor of the flex container of the given node. Otherwise, returns
+   *         null.
+   */
+  getCurrentFlexbox(node, onlyLookAtParents) {
+    return this.getCurrentDisplay(node, "flex", onlyLookAtParents);
+  }
+
+  /**
+   * Returns an array of GridActor objects for all the grid elements contained in the
+   * given root node.
+   *
+   * @param  {Node|NodeActor} node
+   *         The root node for grid elements
+   * @return {Array} An array of GridActor objects.
+   */
+  getGrids(node) {
+    if (isNodeDead(node)) {
+      return [];
+    }
+
+    // Root node can either be a Node or a NodeActor.
+    if (node.rawNode) {
+      node = node.rawNode;
+    }
+
+    // Root node can be a #document object, which does not support getElementsWithGrid.
+    if (node.nodeType === nodeConstants.DOCUMENT_NODE) {
+      node = node.documentElement;
+    }
+
+    if (!node) {
+      return [];
+    }
+
+    const gridElements = node.getElementsWithGrid();
+    let gridActors = gridElements.map(n => new GridActor(this, n));
+
+    if (this.targetActor.ignoreSubFrames) {
+      return gridActors;
+    }
+
+    const frames = node.querySelectorAll("iframe, frame");
+    for (const frame of frames) {
+      gridActors = gridActors.concat(this.getGrids(frame.contentDocument));
+    }
+
+    return gridActors;
+  }
+}
+
+function isNodeDead(node) {
+  return !node || (node.rawNode && Cu.isDeadWrapper(node.rawNode));
+}
+
+exports.FlexboxActor = FlexboxActor;
+exports.FlexItemActor = FlexItemActor;
+exports.GridActor = GridActor;
+exports.LayoutActor = LayoutActor;

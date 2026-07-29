@@ -1,0 +1,18 @@
+[DEFAULT]
+tags = "devtools"
+subsuite = "devtools"
+support-files = [
+    "allocation-tracker.js",
+    "cc-analyzer.sys.mjs",
+    "trace-objects.sys.mjs",
+]
+
+["browser_allocation_tracker.js"]
+run-if = [
+  "os == 'linux' && opt", # Results should be platform agnostic - only run on linux64-opt
+]
+skip-if = [
+  "verify", # Bug 1730507 - objects without stacks get allocated during the GC of the first test when running multiple times.
+]
+
+["browser_dump_scope.js"]

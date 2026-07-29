@@ -1,0 +1,72 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_NavigationHistoryEntry_h_
+#define mozilla_dom_NavigationHistoryEntry_h_
+
+#include "mozilla/DOMEventTargetHelper.h"
+
+class nsIGlobalObject;
+class nsIStructuredCloneContainer;
+
+namespace mozilla::dom {
+
+class SessionHistoryInfo;
+
+// https://html.spec.whatwg.org/#navigationhistoryentry
+class NavigationHistoryEntry final : public DOMEventTargetHelper {
+ public:
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(NavigationHistoryEntry,
+                                           DOMEventTargetHelper)
+
+  NavigationHistoryEntry(nsIGlobalObject* aGlobal,
+                         const SessionHistoryInfo* aSHInfo, int64_t aIndex);
+
+  void GetUrl(nsAString& aResult) const;
+  void GetKey(nsAString& aResult) const;
+  void GetId(nsAString& aResult) const;
+  int64_t Index() const;
+  void SetIndex(int64_t aIndex) { mIndex = aIndex; }
+  bool SameDocument() const;
+
+  void GetState(JSContext* aCx, JS::MutableHandle<JS::Value> aResult,
+                ErrorResult& aRv) const;
+
+  IMPL_EVENT_HANDLER(dispose);
+
+  JSObject* WrapObject(JSContext* aCx,
+                       JS::Handle<JSObject*> aGivenProto) override;
+
+  bool IsSameEntry(const SessionHistoryInfo* aSHInfo) const;
+
+  bool SharesDocumentWith(const SessionHistoryInfo& aSHInfo) const;
+
+  const nsID& Key() const;
+
+  nsIStructuredCloneContainer* GetNavigationAPIState() const;
+  void SetNavigationAPIState(nsIStructuredCloneContainer* aState);
+
+  class SessionHistoryInfo* SessionHistoryInfo() { return mSHInfo.get(); }
+
+  void ResetIndexForDisposal();
+
+  MOZ_CAN_RUN_SCRIPT
+  void FireDisposeEvent();
+
+ private:
+  ~NavigationHistoryEntry();
+
+  Document* GetAssociatedDocument() const;
+
+  bool HasActiveDocument() const;
+
+  // https://html.spec.whatwg.org/#nhe-she
+  UniquePtr<class SessionHistoryInfo> mSHInfo;
+  int64_t mIndex;
+};
+
+}  // namespace mozilla::dom
+
+#endif  // mozilla_dom_NavigationHistoryEntry_h_

@@ -1,0 +1,78 @@
+<html>
+
+<head>
+  <title>Accessible drag and drop event testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript"
+          src="../attributes.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTests() {
+      // Test aria attribute mutation events
+      let id = "grabbable";
+
+      let p = waitForEvent(EVENT_OBJECT_ATTRIBUTE_CHANGED, id);
+      getNode(id).setAttribute("aria-grabbed", "true");
+      await p;
+      testAttrs(id, {"grabbed": "true"}, true);
+
+      p = waitForEvent(EVENT_OBJECT_ATTRIBUTE_CHANGED, id);
+      getNode(id).setAttribute("aria-grabbed", "false");
+      await p;
+      testAttrs(id, {"grabbed": "false"}, true);
+
+      todo(false, "uncomment this test when 472142 is fixed.");
+      // getNode(id).setAttribute("aria-grabbed", "undefined");
+
+      id = "dropregion";
+
+      p = waitForEvent(EVENT_OBJECT_ATTRIBUTE_CHANGED, id);
+      getNode(id).setAttribute("aria-dropeffect", "copy");
+      await p;
+      testAttrs(id, {"dropeffect": "copy"}, true);
+
+      p = waitForEvent(EVENT_OBJECT_ATTRIBUTE_CHANGED, id);
+      getNode(id).setAttribute("aria-dropeffect", "execute");
+      await p;
+      testAttrs(id, {"dropeffect": "execute"}, true);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=510441"
+     title="Add support for nsIAccessibleEvent::OBJECT_ATTRIBUTE_CHANGED">
+    Mozilla Bug 510441
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <!-- ARIA grabbed -->
+  <div id="grabbable" role="button" aria-grabbed="foo">button</div>
+
+  <!-- ARIA dropeffect -->
+  <div id="dropregion" role="region" aria-dropeffect="none">button</div>
+</body>
+</html>

@@ -1,0 +1,599 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "AntiTrackingLog.h"
+#include "ContentBlockingLog.h"
+
+#include <bit>
+
+#include "nsIEffectiveTLDService.h"
+#include "nsITrackingDBService.h"
+#include "nsIWebProgressListener.h"
+#include "nsNetCID.h"
+#include "nsNetUtil.h"
+#include "nsRFPService.h"
+#include "nsServiceManagerUtils.h"
+#include "nsTArray.h"
+#include "nsTHashSet.h"
+#include "mozilla/BasePrincipal.h"
+#include "mozilla/ClearOnShutdown.h"
+#include "mozilla/Preferences.h"
+#include "mozilla/ReverseIterator.h"
+#include "mozilla/StaticPrefs_browser.h"
+#include "mozilla/StaticPrefs_privacy.h"
+#include "mozilla/StaticPrefs_telemetry.h"
+#include "mozilla/StaticPtr.h"
+#include "mozilla/glean/AntitrackingMetrics.h"
+
+static mozilla::LazyLogModule gFingerprinterDetection("FingerprinterDetection");
+
+namespace mozilla {
+
+namespace {
+
+StaticAutoPtr<nsCString> gEmailWebAppDomainsPref;
+static constexpr char kEmailWebAppDomainPrefName[] =
+    "privacy.trackingprotection.emailtracking.webapp.domains";
+
+void EmailWebAppDomainPrefChangeCallback(const char* aPrefName, void*) {
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(!strcmp(aPrefName, kEmailWebAppDomainPrefName));
+  MOZ_ASSERT(gEmailWebAppDomainsPref);
+
+  Preferences::GetCString(kEmailWebAppDomainPrefName, *gEmailWebAppDomainsPref);
+}
+
+}  // namespace
+
+Maybe<uint32_t> ContentBlockingLog::RecordLogParent(
+    const nsACString& aOrigin, uint32_t aType, bool aBlocked,
+    const Maybe<ContentBlockingNotifier::StorageAccessPermissionGrantedReason>&
+        aReason,
+    const nsTArray<nsCString>& aTrackingFullHashes,
+    const Maybe<CanvasFingerprintingEvent>& aCanvasFingerprintingEvent) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+
+  uint32_t events = GetContentBlockingEventsInLog();
+
+  bool blockedValue = aBlocked;
+  bool unblocked = false;
+  OriginEntry* entry;
+
+  switch (aType) {
+    case nsIWebProgressListener::STATE_COOKIES_LOADED:
+      MOZ_ASSERT(!aBlocked,
+                 "We don't expected to see blocked STATE_COOKIES_LOADED");
+      [[fallthrough]];
+
+    case nsIWebProgressListener::STATE_COOKIES_LOADED_TRACKER:
+      MOZ_ASSERT(
+          !aBlocked,
+          "We don't expected to see blocked STATE_COOKIES_LOADED_TRACKER");
+      [[fallthrough]];
+
+    case nsIWebProgressListener::STATE_COOKIES_LOADED_SOCIALTRACKER:
+      MOZ_ASSERT(!aBlocked,
+                 "We don't expected to see blocked "
+                 "STATE_COOKIES_LOADED_SOCIALTRACKER");
+      // Note that the logic in these branches are the logical negation of the
+      // logic in other branches, since the Document API we have is phrased
+      // in "loaded" terms as opposed to "blocked" terms.
+      blockedValue = !aBlocked;
+      [[fallthrough]];
+
+    case nsIWebProgressListener::STATE_BLOCKED_TRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_LEVEL_1_TRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_LEVEL_2_TRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_BLOCKED_FINGERPRINTING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_FINGERPRINTING_CONTENT:
+    case nsIWebProgressListener::STATE_BLOCKED_CRYPTOMINING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_CRYPTOMINING_CONTENT:
+    case nsIWebProgressListener::STATE_BLOCKED_SOCIALTRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_SOCIALTRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_COOKIES_BLOCKED_BY_PERMISSION:
+    case nsIWebProgressListener::STATE_COOKIES_BLOCKED_ALL:
+    case nsIWebProgressListener::STATE_COOKIES_BLOCKED_FOREIGN:
+    case nsIWebProgressListener::STATE_BLOCKED_EMAILTRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_EMAILTRACKING_LEVEL_1_CONTENT:
+    case nsIWebProgressListener::STATE_LOADED_EMAILTRACKING_LEVEL_2_CONTENT:
+    case nsIWebProgressListener::STATE_PURGED_BOUNCETRACKER:
+    case nsIWebProgressListener::STATE_COOKIES_PARTITIONED_TRACKER:
+      (void)RecordLogInternal(aOrigin, aType, blockedValue);
+      break;
+
+    case nsIWebProgressListener::STATE_COOKIES_BLOCKED_TRACKER:
+    case nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER:
+      (void)RecordLogInternal(aOrigin, aType, blockedValue, aReason,
+                              aTrackingFullHashes);
+      break;
+
+    case nsIWebProgressListener::STATE_REPLACED_FINGERPRINTING_CONTENT:
+    case nsIWebProgressListener::STATE_ALLOWED_FINGERPRINTING_CONTENT:
+    case nsIWebProgressListener::STATE_REPLACED_TRACKING_CONTENT:
+    case nsIWebProgressListener::STATE_ALLOWED_TRACKING_CONTENT:
+      (void)RecordLogInternal(aOrigin, aType, blockedValue, aReason,
+                              aTrackingFullHashes);
+      break;
+    case nsIWebProgressListener::STATE_ALLOWED_FONT_FINGERPRINTING:
+      MOZ_ASSERT(!aBlocked,
+                 "We don't expected to see blocked "
+                 "STATE_ALLOWED_FONT_FINGERPRINTING");
+      entry = RecordLogInternal(aOrigin, aType, blockedValue);
+
+      // Replace the flag using the suspicious fingerprinting event so that we
+      // can report the event if we detect suspicious fingerprinting.
+      aType = nsIWebProgressListener::STATE_BLOCKED_SUSPICIOUS_FINGERPRINTING;
+
+      // Report blocking if we detect suspicious fingerprinting activity.
+      if (entry && entry->mData->mHasSuspiciousFingerprintingActivity) {
+        blockedValue = true;
+      }
+      break;
+
+    case nsIWebProgressListener::STATE_ALLOWED_CANVAS_FINGERPRINTING:
+      MOZ_ASSERT(!aBlocked,
+                 "We don't expected to see blocked "
+                 "STATE_ALLOWED_CANVAS_FINGERPRINTING");
+      entry = RecordLogInternal(aOrigin, aType, blockedValue, Nothing(), {},
+                                aCanvasFingerprintingEvent);
+
+      // Replace the flag using the suspicious fingerprinting event so that we
+      // can report the event if we detect suspicious fingerprinting.
+      aType = nsIWebProgressListener::STATE_BLOCKED_SUSPICIOUS_FINGERPRINTING;
+
+      // Report blocking if we detect suspicious fingerprinting activity.
+      if (entry && entry->mData->mHasSuspiciousFingerprintingActivity) {
+        blockedValue = true;
+      }
+      break;
+
+    default:
+      // Ignore nsIWebProgressListener::STATE_BLOCKED_UNSAFE_CONTENT;
+      break;
+  }
+
+  if (!aBlocked) {
+    unblocked = (events & aType) != 0;
+  }
+
+  const uint32_t oldEvents = events;
+  if (blockedValue) {
+    events |= aType;
+  } else if (unblocked) {
+    events &= ~aType;
+  }
+
+  if (events == oldEvents
+#ifdef ANDROID
+      // GeckoView always needs to notify about blocked trackers,
+      // since the GeckoView API always needs to report the URI and
+      // type of any blocked tracker. We use a platform-dependent code
+      // path here because reporting this notification on desktop
+      // platforms isn't necessary and doing so can have a big
+      // performance cost.
+      && aType != nsIWebProgressListener::STATE_BLOCKED_TRACKING_CONTENT
+#endif
+  ) {
+    // Avoid dispatching repeated notifications when nothing has
+    // changed
+    return Nothing();
+  }
+
+  return Some(events);
+}
+
+void ContentBlockingLog::ReportLog() {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (!StaticPrefs::browser_contentblocking_database_enabled()) {
+    return;
+  }
+
+  if (mLog.IsEmpty()) {
+    return;
+  }
+
+  // Emit only the delta since the last flush. This lets ReportLog() be called
+  // multiple times during a document's lifetime (e.g. from a flush-on-query
+  // barrier in TrackingDBService) without double-counting entries against the
+  // daily aggregated counters in protections.sqlite.
+  nsAutoCString payload = Stringify(/* aOnlyUnreported */ true);
+
+  // Stringify() emits "{}" when every origin's cursor is already at the end
+  // and all origin-level flags have been reported. Skip the IPC round-trip.
+  if (payload.EqualsLiteral("{}")) {
+    return;
+  }
+
+  nsCOMPtr<nsITrackingDBService> trackingDBService =
+      do_GetService("@mozilla.org/tracking-db-service;1");
+  if (NS_WARN_IF(!trackingDBService)) {
+    return;
+  }
+
+  trackingDBService->RecordContentBlockingLog(payload);
+  MarkAsReported();
+}
+
+void ContentBlockingLog::ReportCanvasFingerprintingLog(
+    nsIPrincipal* aFirstPartyPrincipal) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aFirstPartyPrincipal);
+
+  // We don't need to report if the first party is not a content.
+  if (!BasePrincipal::Cast(aFirstPartyPrincipal)->IsContentPrincipal()) {
+    return;
+  }
+
+  bool hasCanvasFingerprinter = false;
+
+  // Track unique (key, source) combinations to avoid counting duplicates per
+  // page
+  nsTHashSet<nsCString> seenTextSourceCombos;
+  nsTHashSet<nsCString> seenAliasSourceCombos;
+
+  for (const auto& originEntry : mLog) {
+    if (!originEntry.mData) {
+      continue;
+    }
+
+    for (const auto& logEntry : Reversed(originEntry.mData->mLogs)) {
+      if (logEntry.mType !=
+          nsIWebProgressListener::STATE_ALLOWED_CANVAS_FINGERPRINTING) {
+        continue;
+      } else if (logEntry.mCanvasFingerprintingEvent.isSome() == false) {
+        // Little confused about how we could get here, but I did see a crash
+        {
+          nsAutoCString firstPartyOrigin;
+          aFirstPartyPrincipal->GetOriginNoSuffix(firstPartyOrigin);
+          MOZ_LOG(gFingerprinterDetection, LogLevel::Error,
+                  ("ContentBlockingLog::ReportCanvasFingerprintingLog: "
+                   "logEntry has no CanvasFingerprintingEvent "
+                   "(firstPartyOrigin=%s)",
+                   firstPartyOrigin.get()));
+        }
+        continue;
+      }
+      hasCanvasFingerprinter = true;
+
+      auto canvasFingerprintingEvent =
+          logEntry.mCanvasFingerprintingEvent.value();
+
+      // ----------------------------------
+      // First cover canvas_fingerprinting_type_text_by_source_per_tab2
+      // Only count each unique (text, source) combination once per page
+      if (!canvasFingerprintingEvent.knownTextBitmask) {
+        nsAutoCString key, category;
+        key.AppendLiteral("none");
+        category.AppendInt(canvasFingerprintingEvent.sourcesBitmask);
+
+        nsAutoCString comboKey(key + ":"_ns + category);
+        if (!seenTextSourceCombos.Contains(comboKey)) {
+          seenTextSourceCombos.Insert(comboKey);
+          glean::contentblocking::
+              canvas_fingerprinting_type_text_by_source_per_tab2
+                  .Get(key, category)
+                  .Add();
+        }
+      } else {
+        // Iterate over each set bit in the bitmask
+        for (uint32_t b = canvasFingerprintingEvent.knownTextBitmask; b;
+             b &= (b - 1)) {
+          uint32_t singleSetBit_Text = b & (~b + 1);
+          uint32_t exponent = std::countr_zero(singleSetBit_Text);
+
+          nsAutoCString key, category;
+          key.AppendInt(exponent);
+          category.AppendInt(canvasFingerprintingEvent.sourcesBitmask);
+
+          nsAutoCString comboKey(key + ":"_ns + category);
+          if (!seenTextSourceCombos.Contains(comboKey)) {
+            seenTextSourceCombos.Insert(comboKey);
+            glean::contentblocking::
+                canvas_fingerprinting_type_text_by_source_per_tab2
+                    .Get(key, category)
+                    .Add();
+          }
+        }
+      }
+
+      // ----------------------------------
+      // Second, cover canvas_fingerprinting_type_alias_by_source_per_tab2
+      // Only count each unique (alias, source) combination once per page
+      {
+        nsAutoCString key, category;
+        key.AppendInt(static_cast<uint32_t>(canvasFingerprintingEvent.alias));
+        category.AppendInt(canvasFingerprintingEvent.sourcesBitmask);
+
+        nsAutoCString comboKey(key + ":"_ns + category);
+        if (!seenAliasSourceCombos.Contains(comboKey)) {
+          seenAliasSourceCombos.Insert(comboKey);
+          glean::contentblocking::
+              canvas_fingerprinting_type_alias_by_source_per_tab2
+                  .Get(key, category)
+                  .Add();
+        }
+      }
+    }
+  }
+
+  // ----------------------------------
+  // Finally, cover the overall 'was there any canvas fingerprinting' metric
+  // canvas_fingerprinting_per_tab2
+
+  if (!hasCanvasFingerprinter) {
+    // Increment the global 'did the page have any' metric
+    glean::contentblocking::canvas_fingerprinting_per_tab2
+        .EnumGet(
+            glean::contentblocking::CanvasFingerprintingPerTab2Label::eNotFound)
+        .Add();
+  } else {
+    // Increment the global 'did the page have any' metric
+    glean::contentblocking::canvas_fingerprinting_per_tab2
+        .EnumGet(
+            glean::contentblocking::CanvasFingerprintingPerTab2Label::eFound)
+        .Add();
+  }
+}
+
+void ContentBlockingLog::ReportFontFingerprintingLog(
+    nsIPrincipal* aFirstPartyPrincipal) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aFirstPartyPrincipal);
+
+  // We don't need to report if the first party is not a content.
+  if (!BasePrincipal::Cast(aFirstPartyPrincipal)->IsContentPrincipal()) {
+    return;
+  }
+
+  bool hasFontFingerprinter = false;
+  for (const auto& originEntry : mLog) {
+    if (!originEntry.mData) {
+      continue;
+    }
+
+    for (const auto& logEntry : originEntry.mData->mLogs) {
+      if (logEntry.mType !=
+          nsIWebProgressListener::STATE_ALLOWED_FONT_FINGERPRINTING) {
+        continue;
+      }
+
+      hasFontFingerprinter = true;
+    }
+
+    if (hasFontFingerprinter) {
+      break;
+    }
+  }
+
+  glean::contentblocking::font_fingerprinting_per_tab
+      .EnumGet(
+          static_cast<glean::contentblocking::FontFingerprintingPerTabLabel>(
+              hasFontFingerprinter))
+      .Add();
+}
+
+void ContentBlockingLog::ReportEmailTrackingLog(
+    nsIPrincipal* aFirstPartyPrincipal) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aFirstPartyPrincipal);
+
+  // We don't need to report if the first party is not a content.
+  if (!BasePrincipal::Cast(aFirstPartyPrincipal)->IsContentPrincipal()) {
+    return;
+  }
+
+  nsCOMPtr<nsIEffectiveTLDService> tldService =
+      do_GetService(NS_EFFECTIVETLDSERVICE_CONTRACTID);
+
+  if (!tldService) {
+    return;
+  }
+
+  nsTHashtable<nsCStringHashKey> level1SiteSet;
+  nsTHashtable<nsCStringHashKey> level2SiteSet;
+
+  for (const auto& originEntry : mLog) {
+    if (!originEntry.mData) {
+      continue;
+    }
+
+    bool isLevel1EmailTracker = false;
+    bool isLevel2EmailTracker = false;
+
+    for (const auto& logEntry : Reversed(originEntry.mData->mLogs)) {
+      // Check if the email tracking related event had been filed for the given
+      // origin entry. Note that we currently only block level 1 email trackers,
+      // so blocking event represents the page has embedded a level 1 tracker.
+      if (logEntry.mType ==
+          nsIWebProgressListener::STATE_LOADED_EMAILTRACKING_LEVEL_2_CONTENT) {
+        isLevel2EmailTracker = true;
+        break;
+      }
+
+      if (logEntry.mType ==
+              nsIWebProgressListener::STATE_BLOCKED_EMAILTRACKING_CONTENT ||
+          logEntry.mType == nsIWebProgressListener::
+                                STATE_LOADED_EMAILTRACKING_LEVEL_1_CONTENT) {
+        isLevel1EmailTracker = true;
+        break;
+      }
+    }
+
+    if (isLevel1EmailTracker || isLevel2EmailTracker) {
+      nsCOMPtr<nsIURI> uri;
+      nsresult rv = NS_NewURI(getter_AddRefs(uri), originEntry.mOrigin);
+
+      if (NS_FAILED(rv)) {
+        continue;
+      }
+
+      nsAutoCString baseDomain;
+      rv = tldService->GetBaseDomain(uri, 0, baseDomain);
+
+      if (NS_FAILED(rv)) {
+        continue;
+      }
+
+      if (isLevel1EmailTracker) {
+        (void)level1SiteSet.EnsureInserted(baseDomain);
+      } else {
+        (void)level2SiteSet.EnsureInserted(baseDomain);
+      }
+    }
+  }
+
+  // Cache the email webapp domains pref value and register the callback
+  // function to update the cached value when the pref changes.
+  if (!gEmailWebAppDomainsPref) {
+    gEmailWebAppDomainsPref = new nsCString();
+
+    Preferences::RegisterCallbackAndCall(EmailWebAppDomainPrefChangeCallback,
+                                         kEmailWebAppDomainPrefName);
+    RunOnShutdown([]() {
+      Preferences::UnregisterCallback(EmailWebAppDomainPrefChangeCallback,
+                                      kEmailWebAppDomainPrefName);
+      gEmailWebAppDomainsPref = nullptr;
+    });
+  }
+
+  bool isTopEmailWebApp =
+      aFirstPartyPrincipal->IsURIInList(*gEmailWebAppDomainsPref);
+  uint32_t level1Count = level1SiteSet.Count();
+  uint32_t level2Count = level2SiteSet.Count();
+
+  glean::contentblocking::email_tracker_embedded_per_tab
+      .EnumGet(isTopEmailWebApp
+                   ? glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eBaseEmailapp
+                   : glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eBaseNormal)
+      .AccumulateSingleSample(level1Count);
+  glean::contentblocking::email_tracker_embedded_per_tab
+      .EnumGet(isTopEmailWebApp
+                   ? glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eContentEmailapp
+                   : glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eContentNormal)
+      .AccumulateSingleSample(level2Count);
+  glean::contentblocking::email_tracker_embedded_per_tab
+      .EnumGet(isTopEmailWebApp
+                   ? glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eAllEmailapp
+                   : glean::contentblocking::EmailTrackerEmbeddedPerTabLabel::
+                         eAllNormal)
+      .AccumulateSingleSample(level1Count + level2Count);
+}
+
+ContentBlockingLog::OriginEntry* ContentBlockingLog::RecordLogInternal(
+    const nsACString& aOrigin, uint32_t aType, bool aBlocked,
+    const Maybe<ContentBlockingNotifier::StorageAccessPermissionGrantedReason>&
+        aReason,
+    const nsTArray<nsCString>& aTrackingFullHashes,
+    const Maybe<CanvasFingerprintingEvent>& aCanvasFingerprintingEvent) {
+  DebugOnly<bool> isCookiesBlockedTracker =
+      aType == nsIWebProgressListener::STATE_COOKIES_BLOCKED_TRACKER ||
+      aType == nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER;
+  MOZ_ASSERT_IF(aBlocked, aReason.isNothing());
+  MOZ_ASSERT_IF(!isCookiesBlockedTracker, aReason.isNothing());
+  MOZ_ASSERT_IF(isCookiesBlockedTracker && !aBlocked, aReason.isSome());
+
+  if (aOrigin.IsVoid()) {
+    return nullptr;
+  }
+  auto index = mLog.IndexOf(aOrigin, 0, Comparator());
+  if (index != OriginDataTable::NoIndex) {
+    OriginEntry& entry = mLog[index];
+    if (!entry.mData) {
+      return nullptr;
+    }
+
+    if (RecordLogEntryInCustomField(aType, entry, aBlocked)) {
+      return &entry;
+    }
+    if (!entry.mData->mLogs.IsEmpty()) {
+      auto& last = entry.mData->mLogs.LastElement();
+      if (last.mType == aType && last.mBlocked == aBlocked &&
+          last.mCanvasFingerprintingEvent == aCanvasFingerprintingEvent) {
+        ++last.mRepeatCount;
+        // Don't record recorded events.  This helps compress our log.
+        // We don't care about if the the reason is the same, just keep the
+        // first one.
+        // Note: {aReason, aTrackingFullHashes} are not compared here and we
+        // simply keep the first for the reason, and merge hashes to make sure
+        // they can be correctly recorded.
+        for (const auto& hash : aTrackingFullHashes) {
+          if (!last.mTrackingFullHashes.Contains(hash)) {
+            last.mTrackingFullHashes.AppendElement(hash);
+          }
+        }
+        return &entry;
+      }
+    }
+    if (entry.mData->mLogs.Length() ==
+        std::max(1u, StaticPrefs::browser_contentblocking_originlog_length())) {
+      // Cap the size at the maximum length adjustable by the pref
+      entry.mData->mLogs.RemoveElementAt(0);
+    }
+    entry.mData->mLogs.AppendElement(LogEntry{aType, 1u, aBlocked, aReason,
+                                              aTrackingFullHashes.Clone(),
+                                              aCanvasFingerprintingEvent});
+
+    // Check suspicious fingerprinting activities if the origin hasn't already
+    // been marked.
+    // TODO(Bug 1864909): Moving the suspicious fingerprinting detection call
+    // out of here.
+    if (aType == nsIWebProgressListener::STATE_ALLOWED_CANVAS_FINGERPRINTING ||
+        aType == nsIWebProgressListener::STATE_ALLOWED_FONT_FINGERPRINTING) {
+      entry.mData->mHasSuspiciousFingerprintingActivity = true;
+    }
+    return &entry;
+  }
+
+  // The entry has not been found.
+  OriginEntry* entry = mLog.AppendElement();
+  if (NS_WARN_IF(!entry || !entry->mData)) {
+    return nullptr;
+  }
+
+  entry->mOrigin = aOrigin;
+
+  if (aType == nsIWebProgressListener::STATE_LOADED_LEVEL_1_TRACKING_CONTENT) {
+    entry->mData->mHasLevel1TrackingContentLoaded = aBlocked;
+  } else if (aType ==
+             nsIWebProgressListener::STATE_LOADED_LEVEL_2_TRACKING_CONTENT) {
+    entry->mData->mHasLevel2TrackingContentLoaded = aBlocked;
+  } else if (aType == nsIWebProgressListener::STATE_COOKIES_LOADED) {
+    MOZ_ASSERT(entry->mData->mHasCookiesLoaded.isNothing());
+    entry->mData->mHasCookiesLoaded.emplace(aBlocked);
+  } else if (aType == nsIWebProgressListener::STATE_COOKIES_LOADED_TRACKER) {
+    MOZ_ASSERT(entry->mData->mHasTrackerCookiesLoaded.isNothing());
+    entry->mData->mHasTrackerCookiesLoaded.emplace(aBlocked);
+  } else if (aType ==
+             nsIWebProgressListener::STATE_COOKIES_LOADED_SOCIALTRACKER) {
+    MOZ_ASSERT(entry->mData->mHasSocialTrackerCookiesLoaded.isNothing());
+    entry->mData->mHasSocialTrackerCookiesLoaded.emplace(aBlocked);
+  } else {
+    entry->mData->mLogs.AppendElement(LogEntry{aType, 1u, aBlocked, aReason,
+                                               aTrackingFullHashes.Clone(),
+                                               aCanvasFingerprintingEvent});
+
+    // Check suspicious fingerprinting activities if the origin hasn't been
+    // marked.
+    // TODO(Bug 1864909): Moving the suspicious fingerprinting detection call
+    // out of here.
+    if (aType == nsIWebProgressListener::STATE_ALLOWED_CANVAS_FINGERPRINTING ||
+        aType == nsIWebProgressListener::STATE_ALLOWED_FONT_FINGERPRINTING) {
+      entry->mData->mHasSuspiciousFingerprintingActivity = true;
+    }
+  }
+
+  return entry;
+}
+
+}  // namespace mozilla

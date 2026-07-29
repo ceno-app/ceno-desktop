@@ -1,0 +1,161 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#if !defined(WavDumper_h_)
+#  define WavDumper_h_
+#  include <ByteWriter.h>
+#  include <mozilla/Atomics.h>
+#  include <mozilla/DebugOnly.h>
+#  include <mozilla/EndianUtils.h>
+#  include <mozilla/Sprintf.h>
+#  include <nsString.h>
+#  include <nsTArray.h>
+#  include <stdint.h>
+#  include <stdio.h>
+#  include <sys/stat.h>
+
+/**
+ * If MOZ_DUMP_AUDIO is set to a directory path, audio streams are dumped as
+ * WAV files (16-bit integers) into that directory. If set to any other
+ * non-empty value, files are written to the current working directory.
+ *
+ * The sandbox needs to be disabled for this to work.
+ */
+class WavDumper {
+ public:
+  WavDumper() = default;
+  ~WavDumper() {
+    if (mFile) {
+      fclose(mFile);
+    }
+  }
+
+  void Open(const char* aBaseName, uint32_t aChannels, uint32_t aRate) {
+    const char* dumpAudio = getenv("MOZ_DUMP_AUDIO");
+    if (!dumpAudio) {
+      return;
+    }
+
+    bool isDir = false;
+    if (dumpAudio[0] != '\0') {
+#  ifdef XP_WIN
+      nsAutoString widePath = NS_ConvertUTF8toUTF16(dumpAudio);
+      struct _stat64 st = {};
+      isDir = (_wstat64(widePath.get(), &st) == 0) && (st.st_mode & _S_IFDIR);
+#  else
+      struct stat st = {};
+      isDir = (stat(dumpAudio, &st) == 0) && S_ISDIR(st.st_mode);
+#  endif
+    }
+
+    static mozilla::Atomic<int> sDumpedAudioCount(0);
+
+    nsAutoCString path;
+    if (isDir) {
+      path.AppendPrintf("%s/%s-%d.wav", dumpAudio, aBaseName,
+                        ++sDumpedAudioCount);
+    } else {
+      path.AppendPrintf("%s-%d.wav", aBaseName, ++sDumpedAudioCount);
+    }
+    OpenExplicit(path.get(), aChannels, aRate);
+  }
+
+  void OpenExplicit(const char* aPath, uint32_t aChannels, uint32_t aRate) {
+#  ifdef XP_WIN
+    nsAutoString widePath = NS_ConvertUTF8toUTF16(aPath);
+    mFile = _wfopen(widePath.get(), L"wb");
+#  else
+    mFile = fopen(aPath, "wb");
+#  endif
+    if (!mFile) {
+      NS_WARNING("Could not open file to DUMP a wav. Is sandboxing disabled?");
+      return;
+    }
+    const uint8_t riffHeader[] = {
+        // RIFF header
+        0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45,
+        // fmt chunk. We always write 16-bit samples.
+        0x66, 0x6d, 0x74, 0x20, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x10, 0x00,
+        // data chunk
+        0x64, 0x61, 0x74, 0x61, 0xFE, 0xFF, 0xFF, 0x7F};
+    AutoTArray<uint8_t, sizeof(riffHeader)> header;
+    mozilla::ByteWriter<mozilla::LittleEndian> writer(header);
+    static const int CHANNEL_OFFSET = 22;
+    static const int SAMPLE_RATE_OFFSET = 24;
+    static const int BLOCK_ALIGN_OFFSET = 32;
+
+    mozilla::DebugOnly<bool> rv;
+    // Then number of bytes written in each iteration.
+    uint32_t written = 0;
+    for (size_t i = 0; i != sizeof(riffHeader);) {
+      switch (i) {
+        case CHANNEL_OFFSET:
+          rv = writer.WriteU16(aChannels);
+          written = 2;
+          MOZ_ASSERT(rv);
+          break;
+        case SAMPLE_RATE_OFFSET:
+          rv = writer.WriteU32(aRate);
+          written = 4;
+          MOZ_ASSERT(rv);
+          break;
+        case BLOCK_ALIGN_OFFSET:
+          rv = writer.WriteU16(aChannels * 2);
+          written = 2;
+          MOZ_ASSERT(rv);
+          break;
+        default:
+          // copy from the riffHeader struct above
+          rv = writer.WriteU8(riffHeader[i]);
+          written = 1;
+          MOZ_ASSERT(rv);
+          break;
+      }
+      i += written;
+    }
+    (void)fwrite(header.Elements(), header.Length(), 1, mFile);
+  }
+
+  template <typename T>
+  void Write(const T* aBuffer, uint32_t aSamples) {
+    if (!mFile) {
+      return;
+    }
+    if (aBuffer) {
+      WriteDumpFileHelper(aBuffer, aSamples);
+    } else {
+      constexpr size_t blockSize = 128;
+      T block[blockSize] = {};
+      for (size_t remaining = aSamples; remaining;) {
+        size_t toWrite = std::min(remaining, blockSize);
+        fwrite(block, sizeof(T), toWrite, mFile);
+        remaining -= toWrite;
+      }
+    }
+    fflush(mFile);
+  }
+
+ private:
+  void WriteDumpFileHelper(const int16_t* aInput, size_t aSamples) {
+    (void)fwrite(aInput, sizeof(int16_t), aSamples, mFile);
+  }
+
+  void WriteDumpFileHelper(const float* aInput, size_t aSamples) {
+    using namespace mozilla;
+
+    AutoTArray<uint8_t, 1024 * 2> buf;
+    mozilla::ByteWriter<mozilla::LittleEndian> writer(buf);
+    for (uint32_t i = 0; i < aSamples; ++i) {
+      mozilla::DebugOnly<bool> rv =
+          writer.WriteU16(int16_t(aInput[i] * 32767.0f));
+      MOZ_ASSERT(rv);
+    }
+    (void)fwrite(buf.Elements(), buf.Length(), 1, mFile);
+  }
+
+  FILE* mFile = nullptr;
+};
+
+#endif  // WavDumper_h_

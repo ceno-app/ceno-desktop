@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTML img map accessible tree update tests</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTest() {
+      // Wait for the image map to be built before running tests.
+      let imageMapNode = getNode("imgmap");
+      synthesizeMouse(imageMapNode, 10, 10, { type: "mousemove" },
+                      imageMapNode.ownerGlobal);
+      let imageMapAcc = getAccessible("imgmap");
+      if (!imageMapAcc.firstChild) {
+        await waitForEvent(EVENT_REORDER, imageMapAcc);
+      }
+
+      // insert area element
+      imageMapAcc = getAccessible("imgmap");
+      const mapNode = getNode("map");
+      let p = waitForEvents([[EVENT_SHOW, e => e.accessible.name == "a"],
+                             [EVENT_REORDER, imageMapAcc]]);
+      let areaElm = document.createElement("area");
+      areaElm.setAttribute("href",
+                           // eslint-disable-next-line @microsoft/sdl/no-insecure-url
+                           "http://www.bbc.co.uk/radio4/atoz/index.shtml#a");
+      areaElm.setAttribute("coords", "0,0,13,14");
+      areaElm.setAttribute("alt", "a");
+      areaElm.setAttribute("shape", "rect");
+      mapNode.insertBefore(areaElm, mapNode.firstChild);
+      await p;
+
+      let accTree =
+        { IMAGE_MAP: [
+          { role: ROLE_LINK, name: "a", children: [] },
+          { role: ROLE_LINK, name: "b", children: [] },
+        ] };
+      testAccessibleTree(imageMapAcc, accTree);
+
+      // append area element
+      imageMapAcc = getAccessible("imgmap");
+      p = waitForEvents([[EVENT_SHOW, e => e.accessible.name == "c"],
+                         [EVENT_REORDER, imageMapAcc]]);
+      areaElm = document.createElement("area");
+      areaElm.setAttribute("href",
+                           // eslint-disable-next-line @microsoft/sdl/no-insecure-url
+                           "http://www.bbc.co.uk/radio4/atoz/index.shtml#c");
+      areaElm.setAttribute("coords", "34,0,47,14");
+      areaElm.setAttribute("alt", "c");
+      areaElm.setAttribute("shape", "rect");
+      mapNode.appendChild(areaElm);
+      await p;
+
+      accTree =
+        { IMAGE_MAP: [
+          { role: ROLE_LINK, name: "a", children: [] },
+          { role: ROLE_LINK, name: "b", children: [] },
+          { role: ROLE_LINK, name: "c", children: [] },
+        ] };
+      testAccessibleTree(imageMapAcc, accTree);
+
+      // remove area element
+      imageMapAcc = getAccessible("imgmap");
+      const removedArea = imageMapAcc.firstChild;
+      p = waitForEvents([[EVENT_HIDE, removedArea],
+                         [EVENT_REORDER, imageMapAcc]]);
+      mapNode.removeChild(mapNode.firstElementChild);
+      await p;
+
+      accTree =
+        { IMAGE_MAP: [
+          { role: ROLE_LINK, name: "b", children: [] },
+          { role: ROLE_LINK, name: "c", children: [] },
+        ] };
+      testAccessibleTree(imageMapAcc, accTree);
+
+      // remove @name on map element
+      let container = getAccessible("container");
+      imageMapAcc = getAccessible("imgmap");
+      const imgNode = imageMapAcc.DOMNode;
+      p = waitForEvents([[EVENT_HIDE, imageMapAcc],
+                         [EVENT_SHOW, imgNode],
+                         [EVENT_REORDER, container]]);
+      mapNode.removeAttribute("name");
+      await p;
+
+      accTree = { SECTION: [ { GRAPHIC: [] } ] };
+      testAccessibleTree(container, accTree);
+
+      // restore @name on map element
+      container = getAccessible("container");
+      const oldImageMapAcc = getAccessible("imgmap");
+      p = waitForEvents([[EVENT_HIDE, oldImageMapAcc],
+                         [EVENT_SHOW, getNode("imgmap")],
+                         [EVENT_REORDER, container]]);
+      mapNode.setAttribute("name", "atoz_map");
+      // XXXhack: force repainting of the image (see bug 745788 for details).
+      synthesizeMouse(getNode("imgmap"), 10, 10, { type: "mousemove" },
+                      getNode("imgmap").ownerGlobal);
+      await p;
+
+      accTree =
+        { SECTION: [
+          { IMAGE_MAP: [
+            { LINK: [] },
+            { LINK: [] },
+          ] },
+        ] };
+      testAccessibleTree(container, accTree);
+
+      // remove map element
+      container = getAccessible("container");
+      imageMapAcc = getAccessible("imgmap");
+      p = waitForEvents([[EVENT_HIDE, imageMapAcc],
+                         [EVENT_SHOW, getNode("imgmap")],
+                         [EVENT_REORDER, container]]);
+      mapNode.remove();
+      await p;
+
+      accTree = { SECTION: [ { GRAPHIC: [] } ] };
+      testAccessibleTree(container, accTree);
+
+      // insert map element
+      container = getAccessible("container");
+      const image = getAccessible("imgmap");
+      p = waitForEvents([[EVENT_HIDE, image],
+                         [EVENT_SHOW, getNode("imgmap")],
+                         [EVENT_REORDER, container]]);
+      const map = document.createElement("map");
+      map.setAttribute("name", "atoz_map");
+      map.setAttribute("id", "map");
+      const area = document.createElement("area");
+      area.setAttribute("href",
+                        // eslint-disable-next-line @microsoft/sdl/no-insecure-url
+                        "http://www.bbc.co.uk/radio4/atoz/index.shtml#b");
+      area.setAttribute("coords", "17,0,30,14");
+      area.setAttribute("alt", "b");
+      area.setAttribute("shape", "rect");
+      map.appendChild(area);
+      container.DOMNode.appendChild(map);
+      await p;
+
+      accTree =
+        { SECTION: [
+          { IMAGE_MAP: [
+            { LINK: [] },
+          ] },
+        ] };
+      testAccessibleTree(container, accTree);
+
+      // display:none image
+      container = getAccessible("container");
+      const imageMapNode2 = getNode("imgmap");
+      const imageMap2 = getAccessible(imageMapNode2);
+      p = waitForEvents([[EVENT_HIDE, imageMap2],
+                         [EVENT_REORDER, "container"]]);
+      imageMapNode2.style.display = "none";
+      await p;
+
+      accTree = { SECTION: [] };
+      testAccessibleTree(container, accTree);
+
+      // enableLogging("tree"); // debug stuff
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+
+</head>
+<body>
+
+  <a target="_blank"
+     title="Image map accessible tree is not updated when image map is changed"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=732389">
+    Mozilla Bug 732389
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <map name="atoz_map" id="map">
+    <area href="http://www.bbc.co.uk/radio4/atoz/index.shtml#b"
+          coords="17,0,30,14" alt="b" shape="rect">
+  </map>
+
+  <div id="container">
+    <img id="imgmap" width="447" height="15"
+         usemap="#atoz_map"
+         src="../letters.gif"><!--
+    Important: no whitespace between the <img> and the </div>, so we
+    don't end up with textframes there, because those would be reflected
+    in our accessible tree in some cases.
+    --></div>
+
+</body>
+</html>

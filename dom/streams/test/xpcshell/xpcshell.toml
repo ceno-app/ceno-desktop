@@ -1,0 +1,33 @@
+[DEFAULT]
+head = "head.js"
+support-files = ""
+
+["bug-1387503-1.js"]
+prefs = ["security.allow_parent_unrestricted_js_loads=true"]
+
+["bug-1503406.js"]
+
+["bug-1773237.js"]
+
+["dom_stream_prototype_test.js"]
+
+["fetch.js"]
+
+["large-pipeto.js"]
+requesttimeoutfactor = 6  # Slow and high CPU on Linux and Windows
+run-sequentially = ["os == 'mac'"] # almost perma timeout on Mac
+
+["proper-realm-cancel.js"]
+
+["proper-realm-pull.js"]
+
+["response.js"]
+
+["subclassing.js"]
+
+["test-tee-trace.js"]
+
+["too-big-array-buffer.js"]
+skip-if = [
+  "arch == 'x86'", # autoAllocateChunkSize limit is different on 32-bit
+]

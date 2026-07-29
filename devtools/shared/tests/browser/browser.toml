@@ -1,0 +1,11 @@
+[DEFAULT]
+tags = "devtools"
+subsuite = "devtools"
+support-files = [
+  "!/devtools/client/shared/test/shared-head.js",
+  "../../../server/tests/browser/head.js",
+]
+
+["browser_async_storage.js"]
+
+["browser_l10n_localizeMarkup.js"]

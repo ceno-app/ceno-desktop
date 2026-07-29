@@ -1,0 +1,31 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsPrinterListCUPS_h_
+#define nsPrinterListCUPS_h_
+
+#include "nsPrinterListBase.h"
+#include "nsStringFwd.h"
+
+namespace mozilla {
+template <typename T>
+class Maybe;
+}  // namespace mozilla
+
+class nsPrinterListCUPS final : public nsPrinterListBase {
+  NS_IMETHOD InitPrintSettingsFromPrinter(const nsAString&,
+                                          nsIPrintSettings*) final;
+
+  nsTArray<PrinterInfo> Printers() const final;
+  RefPtr<nsIPrinter> CreatePrinter(PrinterInfo) const final;
+  mozilla::Maybe<PrinterInfo> PrinterByName(nsString aPrinterName) const final;
+  mozilla::Maybe<PrinterInfo> PrinterBySystemName(
+      nsString aPrinterName) const final;
+  nsresult SystemDefaultPrinterName(nsAString&) const final;
+
+ private:
+  ~nsPrinterListCUPS() override = default;
+};
+
+#endif

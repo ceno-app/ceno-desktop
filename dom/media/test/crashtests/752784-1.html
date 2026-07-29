@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function boom()
+{
+  const a = document.getElementById("a");
+  a.captureStream?.() || a.mozCaptureStream();
+}
+</script>
+</head>
+
+<body onload="boom();">
+<audio id="a" src="sound.ogg">
+</body>
+</html>

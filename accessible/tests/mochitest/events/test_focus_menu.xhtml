@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Menu focus testing">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    async function doTests() {
+      // Test focus events.
+      if (WIN) {
+        let focused = waitForEvent(EVENT_FOCUS, "fruit");
+        synthesizeKey("VK_ALT", {});
+        await focused;
+
+        focused = waitForEvent(EVENT_FOCUS, "vehicle");
+        synthesizeKey("VK_RIGHT", {});
+        await focused;
+
+        focused = waitForEvent(EVENT_FOCUS, document);
+        synthesizeKey("VK_ESCAPE", {});
+        await focused;
+      }
+
+      // mouse move activate items but no focus event until menubar is active
+      synthesizeMouse(getNode("fruit"), 5, 5, {type: "mousemove"});
+      synthesizeMouse(getNode("fruit"), 6, 6, {type: "mousemove"});
+
+      // mouseover and click on menuitem makes it active before menubar is
+      // active
+      let focused = waitForEvent(EVENT_FOCUS, "fruit");
+      synthesizeMouseAtCenter(getNode("fruit"), {});
+      await focused;
+
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      // mouseover on menuitem when menubar is active
+      focused = waitForEvent(EVENT_FOCUS, "apple");
+      for (let i = 0; i < 20; i++) {
+        synthesizeMouse(getNode("apple"), 5 + (i % 2), 5 + (i % 2), {type: "mousemove"});
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+      await focused;
+
+      // keydown on disabled menuitem (disabled items are skipped on linux)
+      if (WIN) {
+        focused = waitForEvent(EVENT_FOCUS, "orange");
+        synthesizeKey("VK_DOWN", {});
+        await focused;
+      }
+
+      // menu and menuitem are both active
+      // XXX: intermitent failure because two focus events may be coalesced,
+      // think to workaround or fix this issue, when done enable queue invoker
+      // below and remove next two.
+      focused = waitForEvent(EVENT_FOCUS, "vehicle");
+      for (let i = 0; i < 20; i++) {
+        synthesizeMouse(getNode("vehicle"), 5 + (i % 2), 5 + (i % 2), {type: "mousemove"});
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "cycle");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      // open submenu
+      focused = waitForEvent(EVENT_FOCUS, "tricycle");
+      synthesizeKey("VK_RIGHT", {});
+      await focused;
+
+      // move to first menu in cycle, DOMMenuItemActive is fired for fruit,
+      // cycle and apple menuitems (bug 685191)
+      todo(false, "focus is fired for 'cycle' menuitem");
+
+      // click menuitem to close menu, focus gets back to document
+      focused = waitForEvent(EVENT_FOCUS, document);
+      synthesizeMouseAtCenter(getNode("tricycle"), {});
+      await focused;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=673958"
+         title="Rework accessible focus handling">
+        Mozilla Bug 673958
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <menubar>
+        <menu id="fruit" label="Fruit">
+          <menupopup nonnative="">
+            <menuitem id="apple" label="Apple"/>
+            <menuitem id="orange" label="Orange" disabled="true"/>
+          </menupopup>
+        </menu>
+        <menu id="vehicle" label="Vehicle">
+          <menupopup id="vehiclePopup" nonnative="">
+            <menu id="cycle" label="cycle">
+              <menupopup nonnative="">
+                <menuitem id="tricycle" label="tricycle"/>
+              </menupopup>
+            </menu>
+            <menuitem id="car" label="Car" disabled="true"/>
+          </menupopup>
+        </menu>
+      </menubar>
+
+      <vbox id="eventdump"/>
+    </vbox>
+  </hbox>
+</window>

@@ -1,0 +1,473 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "MFMediaEngineChild.h"
+
+#include "MFMediaEngineUtils.h"
+#include "RemoteMediaManagerChild.h"
+#include "mozilla/SyncRunnable.h"
+
+#ifdef MOZ_WMF_CDM
+#  include "WMFCDMProxy.h"
+#endif
+
+namespace mozilla {
+
+#define CLOG(msg, ...)                                              \
+  MOZ_LOG_FMT(gMFMediaEngineLog, LogLevel::Debug,                   \
+              "MFMediaEngineChild={}, Id={}, " msg, fmt::ptr(this), \
+              this->Id(), ##__VA_ARGS__)
+
+#define WLOG(msg, ...)                                                \
+  MOZ_LOG_FMT(gMFMediaEngineLog, LogLevel::Debug,                     \
+              "MFMediaEngineWrapper={}, Id={}, " msg, fmt::ptr(this), \
+              this->Id(), ##__VA_ARGS__)
+
+#define WLOGV(msg, ...)                                               \
+  MOZ_LOG_FMT(gMFMediaEngineLog, LogLevel::Verbose,                   \
+              "MFMediaEngineWrapper={}, Id={}, " msg, fmt::ptr(this), \
+              this->Id(), ##__VA_ARGS__)
+
+using media::TimeUnit;
+
+MFMediaEngineChild::MFMediaEngineChild(MFMediaEngineWrapper* aOwner,
+                                       FrameStatistics* aFrameStats)
+    : mOwner(aOwner),
+      mManagerThread(RemoteMediaManagerChild::GetManagerThread()),
+      mMediaEngineId(0 /* invalid id, will be initialized later */),
+      mFrameStats(WrapNotNull(aFrameStats)) {
+  if (mFrameStats->GetPresentedFrames() > 0) {
+    mAccumulatedPresentedFramesFromPrevEngine =
+        Some(mFrameStats->GetPresentedFrames());
+  }
+  if (mFrameStats->GetDroppedSinkFrames() > 0) {
+    mAccumulatedDroppedFramesFromPrevEngine =
+        Some(mFrameStats->GetDroppedSinkFrames());
+  }
+}
+
+RefPtr<GenericNonExclusivePromise> MFMediaEngineChild::Init(
+    const MediaInfo& aInfo, const ExternalPlaybackEngine::InitFlagSet& aFlags) {
+  if (!mManagerThread) {
+    return GenericNonExclusivePromise::CreateAndReject(NS_ERROR_FAILURE,
+                                                       __func__);
+  }
+
+  CLOG("Init, hasAudio={}, hasVideo={}, encrypted={}", aInfo.HasAudio(),
+       aInfo.HasVideo(), aInfo.IsEncrypted());
+
+  MOZ_ASSERT(mMediaEngineId == 0);
+  RefPtr<MFMediaEngineChild> self = this;
+  RemoteMediaManagerChild::LaunchUtilityProcessIfNeeded(
+      RemoteMediaIn::UtilityProcess_MFMediaEngineCDM)
+      ->Then(
+          mManagerThread, __func__,
+          [self, this, flag = aFlags, info = aInfo](bool) {
+            RefPtr<RemoteMediaManagerChild> manager =
+                RemoteMediaManagerChild::GetSingleton(
+                    RemoteMediaIn::UtilityProcess_MFMediaEngineCDM);
+            if (!manager || !manager->CanSend() ||
+                !manager->SendPMFMediaEngineConstructor(this)) {
+              CLOG("Manager not exists or can't send");
+              mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
+              return;
+            }
+
+            MediaInfoIPDL mediaInfo(
+                info.HasAudio() ? Some(info.mAudio) : Nothing(),
+                info.HasVideo() ? Some(info.mVideo) : Nothing());
+
+            MediaEngineInfoIPDL initInfo(
+                mediaInfo,
+                flag.contains(ExternalPlaybackEngine::InitFlag::ShouldPreload),
+                flag.contains(
+                    ExternalPlaybackEngine::InitFlag::EncryptedCustomIdent));
+            SendInitMediaEngine(initInfo)
+                ->Then(
+                    mManagerThread, __func__,
+                    [self, this](uint64_t aId) {
+                      mInitEngineRequest.Complete();
+                      // Id 0 is used to indicate error.
+                      if (aId == 0) {
+                        CLOG("Failed to initialize MFMediaEngineChild");
+                        mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE,
+                                                          __func__);
+                        return;
+                      }
+                      mMediaEngineId = aId;
+                      CLOG("Initialized MFMediaEngineChild");
+                      mInitPromiseHolder.ResolveIfExists(true, __func__);
+                    },
+                    [self,
+                     this](const mozilla::ipc::ResponseRejectReason& aReason) {
+                      mInitEngineRequest.Complete();
+                      CLOG(
+                          "Failed to initialize MFMediaEngineChild due to "
+                          "IPC failure");
+                      mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE,
+                                                        __func__);
+                    })
+                ->Track(mInitEngineRequest);
+          },
+          [self, this](nsresult aResult) {
+            CLOG("SendInitMediaEngine Failed");
+            self->mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
+          });
+  return mInitPromiseHolder.Ensure(__func__);
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvRequestSample(TrackType aType,
+                                                              bool aIsEnough) {
+  AssertOnManagerThread();
+  if (!mOwner || mShutdown) {
+    return IPC_OK();
+  }
+  if (aType == TrackType::kVideoTrack) {
+    mOwner->NotifyEvent(aIsEnough ? ExternalEngineEvent::VideoEnough
+                                  : ExternalEngineEvent::RequestForVideo);
+  } else if (aType == TrackType::kAudioTrack) {
+    mOwner->NotifyEvent(aIsEnough ? ExternalEngineEvent::AudioEnough
+                                  : ExternalEngineEvent::RequestForAudio);
+  }
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvUpdateCurrentTime(
+    double aCurrentTimeInSecond) {
+  AssertOnManagerThread();
+  if (mShutdown) {
+    return IPC_OK();
+  }
+  if (mOwner) {
+    mOwner->UpdateCurrentTime(aCurrentTimeInSecond);
+  }
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyEvent(
+    MFMediaEngineEvent aEvent) {
+  AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
+  switch (aEvent) {
+    case MF_MEDIA_ENGINE_EVENT_FIRSTFRAMEREADY:
+      mOwner->NotifyEvent(ExternalEngineEvent::LoadedFirstFrame);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_LOADEDDATA:
+      mOwner->NotifyEvent(ExternalEngineEvent::LoadedData);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_WAITING:
+      mOwner->NotifyEvent(ExternalEngineEvent::Waiting);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_SEEKED:
+      mOwner->NotifyEvent(ExternalEngineEvent::Seeked);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_BUFFERINGSTARTED:
+      mOwner->NotifyEvent(ExternalEngineEvent::BufferingStarted);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_BUFFERINGENDED:
+      mOwner->NotifyEvent(ExternalEngineEvent::BufferingEnded);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_ENDED:
+      mOwner->NotifyEvent(ExternalEngineEvent::Ended);
+      break;
+    case MF_MEDIA_ENGINE_EVENT_PLAYING:
+      mOwner->NotifyEvent(ExternalEngineEvent::Playing);
+      break;
+    default:
+      NS_WARNING(
+          nsPrintfCString("Unhandled event=%s", MediaEngineEventToStr(aEvent))
+              .get());
+      break;
+  }
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyError(
+    const MediaResult& aError) {
+  AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
+  mOwner->NotifyError(aError);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyHardwareReset() {
+  AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
+  mOwner->NotifyHardwareReset();
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyWaitingForKey() {
+  AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
+  mOwner->NotifyWaitingForKey();
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvUpdateStatisticData(
+    const StatisticData& aData) {
+  AssertOnManagerThread();
+  const uint64_t currentRenderedFrames = mFrameStats->GetPresentedFrames();
+  const uint64_t newRenderedFrames = GetUpdatedRenderedFrames(aData);
+  // Media engine won't tell us that which stage those dropped frames happened,
+  // so we treat all of them as the frames dropped in the a/v sync stage (sink).
+  const uint64_t currentDroppedSinkFrames = mFrameStats->GetDroppedSinkFrames();
+  const uint64_t newDroppedSinkFrames = GetUpdatedDroppedFrames(aData);
+  mFrameStats->Accumulate({0, 0, newRenderedFrames - currentRenderedFrames, 0,
+                           newDroppedSinkFrames - currentDroppedSinkFrames, 0});
+  CLOG("Update statictis data (rendered {} -> {}, dropped {} -> {})",
+       currentRenderedFrames, mFrameStats->GetPresentedFrames(),
+       currentDroppedSinkFrames, mFrameStats->GetDroppedSinkFrames());
+  MOZ_ASSERT(mFrameStats->GetPresentedFrames() >= currentRenderedFrames);
+  MOZ_ASSERT(mFrameStats->GetDroppedSinkFrames() >= currentDroppedSinkFrames);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyResizing(
+    uint32_t aWidth, uint32_t aHeight) {
+  AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
+  mOwner->NotifyResizing(aWidth, aHeight);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyFrameServerMode() {
+  AssertOnManagerThread();
+  if (mShutdown) {
+    return IPC_OK();
+  }
+#ifdef MOZ_WMF_CDM
+  mOwner->NotifyFrameServerMode();
+#endif
+  return IPC_OK();
+}
+
+uint64_t MFMediaEngineChild::GetUpdatedRenderedFrames(
+    const StatisticData& aData) {
+  return mAccumulatedPresentedFramesFromPrevEngine
+             ? (aData.renderedFrames() +
+                *mAccumulatedPresentedFramesFromPrevEngine)
+             : aData.renderedFrames();
+}
+
+uint64_t MFMediaEngineChild::GetUpdatedDroppedFrames(
+    const StatisticData& aData) {
+  return mAccumulatedDroppedFramesFromPrevEngine
+             ? (aData.droppedFrames() +
+                *mAccumulatedDroppedFramesFromPrevEngine)
+             : aData.droppedFrames();
+}
+
+void MFMediaEngineChild::OwnerDestroyed() {
+  if (mManagerThread->IsOnCurrentThread()) {
+    mOwner = nullptr;
+    if (CanSend()) {
+      MFMediaEngineChild::Send__delete__(this);
+    }
+    return;
+  }
+  SyncRunnable::DispatchToThread(
+      mManagerThread,
+      NS_NewRunnableFunction("MFMediaEngineChild::OwnerDestroyed",
+                             [self = RefPtr{this}, this] {
+                               mOwner = nullptr;
+                               if (CanSend()) {
+                                 MFMediaEngineChild::Send__delete__(this);
+                               }
+                             }));
+}
+
+void MFMediaEngineChild::ActorDestroy(ActorDestroyReason aWhy) {
+  AssertOnManagerThread();
+  if (!mShutdown && mOwner) {
+    CLOG("Destroyed actor without shutdown, remote process has crashed!");
+    mOwner->NotifyError(NS_ERROR_DOM_MEDIA_REMOTE_CRASHED_MF_CDM_ERR);
+  }
+}
+
+void MFMediaEngineChild::Shutdown() {
+  AssertOnManagerThread();
+  if (mShutdown) {
+    return;
+  }
+  SendShutdown();
+  mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
+  mInitEngineRequest.DisconnectIfExists();
+  mShutdown = true;
+}
+
+MFMediaEngineWrapper::MFMediaEngineWrapper(ExternalEngineStateMachine* aOwner,
+                                           FrameStatistics* aFrameStats)
+    : ExternalPlaybackEngine(aOwner),
+      mEngine(new MFMediaEngineChild(this, aFrameStats)),
+      mCurrentTimeInSecond(0.0) {}
+
+RefPtr<GenericNonExclusivePromise> MFMediaEngineWrapper::Init(
+    const MediaInfo& aInfo, const InitFlagSet& aFlags) {
+  WLOG("Init");
+  return mEngine->Init(aInfo, aFlags);
+}
+
+MFMediaEngineWrapper::~MFMediaEngineWrapper() { mEngine->OwnerDestroyed(); }
+
+void MFMediaEngineWrapper::Play() {
+  WLOG("Play");
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(
+      NS_NewRunnableFunction("MFMediaEngineWrapper::Play",
+                             [engine = mEngine] { engine->SendPlay(); }));
+}
+
+void MFMediaEngineWrapper::Pause() {
+  WLOG("Pause");
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(
+      NS_NewRunnableFunction("MFMediaEngineWrapper::Pause",
+                             [engine = mEngine] { engine->SendPause(); }));
+}
+
+void MFMediaEngineWrapper::Seek(const TimeUnit& aTargetTime) {
+  auto currentTimeInSecond = aTargetTime.ToSeconds();
+  mCurrentTimeInSecond = currentTimeInSecond;
+  WLOG("Seek to {}", currentTimeInSecond);
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(NS_NewRunnableFunction(
+      "MFMediaEngineWrapper::Seek", [engine = mEngine, currentTimeInSecond] {
+        engine->SendSeek(currentTimeInSecond);
+      }));
+}
+
+void MFMediaEngineWrapper::Shutdown() {
+  WLOG("Shutdown");
+  (void)ManagerThread()->Dispatch(
+      NS_NewRunnableFunction("MFMediaEngineWrapper::Shutdown",
+                             [engine = mEngine] { engine->Shutdown(); }));
+}
+
+void MFMediaEngineWrapper::SetPlaybackRate(double aPlaybackRate) {
+  WLOG("Set playback rate {}", aPlaybackRate);
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(
+      NS_NewRunnableFunction("MFMediaEngineWrapper::SetPlaybackRate",
+                             [engine = mEngine, aPlaybackRate] {
+                               engine->SendSetPlaybackRate(aPlaybackRate);
+                             }));
+}
+
+void MFMediaEngineWrapper::SetVolume(double aVolume) {
+  WLOG("Set volume {}", aVolume);
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(NS_NewRunnableFunction(
+      "MFMediaEngineWrapper::SetVolume",
+      [engine = mEngine, aVolume] { engine->SendSetVolume(aVolume); }));
+}
+
+void MFMediaEngineWrapper::SetLooping(bool aLooping) {
+  WLOG("Set looping {}", aLooping);
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(NS_NewRunnableFunction(
+      "MFMediaEngineWrapper::SetLooping",
+      [engine = mEngine, aLooping] { engine->SendSetLooping(aLooping); }));
+}
+
+void MFMediaEngineWrapper::SetPreservesPitch(bool aPreservesPitch) {
+  // Media Engine doesn't support this.
+}
+
+void MFMediaEngineWrapper::NotifyEndOfStream(TrackInfo::TrackType aType) {
+  WLOG("NotifyEndOfStream, type={}", TrackTypeToStr(aType));
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(NS_NewRunnableFunction(
+      "MFMediaEngineWrapper::NotifyEndOfStream",
+      [engine = mEngine, aType] { engine->SendNotifyEndOfStream(aType); }));
+}
+
+bool MFMediaEngineWrapper::SetCDMProxy(CDMProxy* aProxy) {
+#ifdef MOZ_WMF_CDM
+  WMFCDMProxy* proxy = aProxy->AsWMFCDMProxy();
+  if (!proxy) {
+    WLOG("Only WFMCDM Proxy is supported for the media engine!");
+    return false;
+  }
+
+  const uint64_t proxyId = proxy->GetCDMProxyId();
+  WLOG("SetCDMProxy, CDM-Id={}", proxyId);
+  MOZ_ASSERT(IsInited());
+  (void)ManagerThread()->Dispatch(NS_NewRunnableFunction(
+      "MFMediaEngineWrapper::SetCDMProxy",
+      [engine = mEngine, proxy = RefPtr{aProxy}, proxyId] {
+        engine->SendSetCDMProxyId(proxyId);
+      }));
+  return true;
+#else
+  return false;
+#endif
+}
+
+TimeUnit MFMediaEngineWrapper::GetCurrentPosition() {
+  return TimeUnit::FromSeconds(mCurrentTimeInSecond);
+}
+
+void MFMediaEngineWrapper::UpdateCurrentTime(double aCurrentTimeInSecond) {
+  AssertOnManagerThread();
+  WLOGV("Update current time {}", aCurrentTimeInSecond);
+  mCurrentTimeInSecond = aCurrentTimeInSecond;
+  NotifyEvent(ExternalEngineEvent::Timeupdate);
+}
+
+void MFMediaEngineWrapper::NotifyEvent(ExternalEngineEvent aEvent) {
+  AssertOnManagerThread();
+  WLOGV("Received event {}", ExternalEngineEventToStr(aEvent));
+  mOwner->NotifyEvent(aEvent);
+}
+
+void MFMediaEngineWrapper::NotifyError(const MediaResult& aError) {
+  AssertOnManagerThread();
+  WLOG("Received error: {}", aError.Description().get());
+  mOwner->NotifyError(aError);
+}
+
+void MFMediaEngineWrapper::NotifyHardwareReset() {
+  AssertOnManagerThread();
+  WLOG("Received hardware reset");
+  mOwner->NotifyHardwareReset();
+}
+
+void MFMediaEngineWrapper::NotifyWaitingForKey() {
+  AssertOnManagerThread();
+  WLOG("Received waiting for key");
+#ifdef MOZ_WMF_CDM
+  mOwner->NotifyWaitingForKey();
+#endif
+}
+
+void MFMediaEngineWrapper::NotifyResizing(uint32_t aWidth, uint32_t aHeight) {
+  AssertOnManagerThread();
+  WLOG("Video resizing, new size [{},{}]", aWidth, aHeight);
+  mOwner->NotifyResizing(aWidth, aHeight);
+}
+
+#ifdef MOZ_WMF_CDM
+void MFMediaEngineWrapper::NotifyFrameServerMode() {
+  AssertOnManagerThread();
+  WLOG("Engine switched to frame server mode");
+  mOwner->NotifyFrameServerMode();
+}
+#endif
+
+#undef CLOG
+#undef WLOG
+#undef WLOGV
+
+}  // namespace mozilla

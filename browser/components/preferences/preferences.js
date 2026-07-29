@@ -1,0 +1,1115 @@
+/* - This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// Import globals from the files imported by the .xul files.
+/* import-globals-from main.js */
+/* import-globals-from home.js */
+/* import-globals-from search.js */
+/* import-globals-from privacy.js */
+/* import-globals-from sync.js */
+/* import-globals-from moreFromMozilla.js */
+/* import-globals-from findInPage.js */
+/* import-globals-from /browser/base/content/utilityOverlay.js */
+/* import-globals-from /toolkit/content/preferencesBindings.js */
+
+/** @import MozButton from "chrome://global/content/elements/moz-button.mjs" */
+/** @import {SettingConfig, SettingEmitChange} from "chrome://global/content/preferences/Setting.mjs" */
+/** @import {SettingControlConfig, SettingOptionConfig} from "chrome://browser/content/preferences/widgets/setting-control.mjs" */
+/** @import {SettingGroup} from "chrome://browser/content/preferences/widgets/setting-group.mjs" */
+/** @import {SettingPane, SettingPaneConfig} from "chrome://browser/content/preferences/widgets/setting-pane.mjs" */
+
+/**
+ * @typedef {object} PaneShownEventDetail
+ * @property {string} category
+ * @property {string} subcategory
+ */
+
+/**
+ * @typedef {Omit<CustomEvent, 'detail'> & {
+ *   detail: PaneShownEventDetail
+ * }} PaneShownEvent
+ */
+
+"use strict";
+
+var { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
+
+var { Downloads } = ChromeUtils.importESModule(
+  "resource://gre/modules/Downloads.sys.mjs"
+);
+var { Integration } = ChromeUtils.importESModule(
+  "resource://gre/modules/Integration.sys.mjs"
+);
+/* global DownloadIntegration */
+Integration.downloads.defineESModuleGetter(
+  this,
+  "DownloadIntegration",
+  "resource://gre/modules/DownloadIntegration.sys.mjs"
+);
+
+var { PrivateBrowsingUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/PrivateBrowsingUtils.sys.mjs"
+);
+
+var { Weave } = ChromeUtils.importESModule(
+  "resource://services-sync/main.sys.mjs"
+);
+
+var { FxAccounts, getFxAccountsSingleton } = ChromeUtils.importESModule(
+  "resource://gre/modules/FxAccounts.sys.mjs"
+);
+var fxAccounts = getFxAccountsSingleton();
+
+var TAB_SESSION_ID = crypto.randomUUID();
+
+XPCOMUtils.defineLazyServiceGetters(this, {
+  gApplicationUpdateService: [
+    "@mozilla.org/updates/update-service;1",
+    Ci.nsIApplicationUpdateService,
+  ],
+
+  listManager: [
+    "@mozilla.org/url-classifier/listmanager;1",
+    Ci.nsIUrlListManager,
+  ],
+  gHandlerService: [
+    "@mozilla.org/uriloader/handler-service;1",
+    Ci.nsIHandlerService,
+  ],
+  gMIMEService: ["@mozilla.org/mime;1", Ci.nsIMIMEService],
+});
+
+if (Cc["@mozilla.org/gio-service;1"]) {
+  XPCOMUtils.defineLazyServiceGetter(
+    this,
+    "gGIOService",
+    "@mozilla.org/gio-service;1",
+    Ci.nsIGIOService
+  );
+} else {
+  this.gGIOService = null;
+}
+
+ChromeUtils.defineESModuleGetters(this, {
+  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
+  ContextualIdentityService:
+    "resource://gre/modules/ContextualIdentityService.sys.mjs",
+  DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
+  ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
+  ExtensionPreferencesManager:
+    "resource://gre/modules/ExtensionPreferencesManager.sys.mjs",
+  ExtensionSettingsStore:
+    "resource://gre/modules/ExtensionSettingsStore.sys.mjs",
+  FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
+  FirefoxRelay: "resource://gre/modules/FirefoxRelay.sys.mjs",
+  HomePage: "resource:///modules/HomePage.sys.mjs",
+  LangPackMatcher: "resource://gre/modules/LangPackMatcher.sys.mjs",
+  LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
+  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
+  OSKeyStore: "resource://gre/modules/OSKeyStore.sys.mjs",
+  Region: "resource://gre/modules/Region.sys.mjs",
+  SelectionChangedMenulist:
+    "resource:///modules/SelectionChangedMenulist.sys.mjs",
+  ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
+  SiteDataManager: "resource:///modules/SiteDataManager.sys.mjs",
+  TransientPrefs: "resource:///modules/TransientPrefs.sys.mjs",
+  UIState: "resource://services-sync/UIState.sys.mjs",
+  UpdateUtils: "resource://gre/modules/UpdateUtils.sys.mjs",
+});
+
+ChromeUtils.defineLazyGetter(this, "gSubDialog", function () {
+  const { SubDialogManager } = ChromeUtils.importESModule(
+    "resource://gre/modules/SubDialog.sys.mjs"
+  );
+  return new SubDialogManager({
+    dialogStack: document.getElementById("dialogStack"),
+    dialogTemplate: document.getElementById("dialogTemplate"),
+    dialogOptions: {
+      styleSheets: [
+        "chrome://browser/skin/preferences/dialog.css",
+        "chrome://browser/skin/preferences/preferences.css",
+      ],
+      resizeCallback: async ({ title, frame }) => {
+        // Search within main document and highlight matched keyword.
+        await gSearchResultsPane.searchWithinNode(
+          title,
+          gSearchResultsPane.query
+        );
+
+        // Search within sub-dialog document and highlight matched keyword.
+        await gSearchResultsPane.searchWithinNode(
+          frame.contentDocument.firstElementChild,
+          gSearchResultsPane.query
+        );
+
+        // Creating tooltips for all the instances found
+        for (let node of gSearchResultsPane.listSearchTooltips) {
+          if (!node.tooltipNode) {
+            gSearchResultsPane.createSearchTooltip(
+              node,
+              gSearchResultsPane.query
+            );
+          }
+        }
+      },
+    },
+  });
+});
+
+/** @type {Record<string, boolean>} */
+const srdSectionPrefs = {};
+XPCOMUtils.defineLazyPreferenceGetter(
+  srdSectionPrefs,
+  "all",
+  "browser.settings-redesign.enabled",
+  false
+);
+
+/**
+ * @param {string} section
+ */
+function srdSectionEnabled(section) {
+  if (!(section in srdSectionPrefs)) {
+    XPCOMUtils.defineLazyPreferenceGetter(
+      srdSectionPrefs,
+      section,
+      `browser.settings-redesign.${section}.enabled`,
+      false
+    );
+  }
+  return srdSectionPrefs.all || srdSectionPrefs[section];
+}
+
+var { SettingPaneManager, friendlyPrefCategoryNameToInternalName } =
+  ChromeUtils.importESModule(
+    "chrome://browser/content/preferences/config/SettingPaneManager.mjs",
+    {
+      global: "current",
+    }
+  );
+
+var SettingGroupManager = ChromeUtils.importESModule(
+  "chrome://browser/content/preferences/config/SettingGroupManager.mjs",
+  {
+    global: "current",
+  }
+).SettingGroupManager;
+
+let resolveLegacyCategory = ChromeUtils.importESModule(
+  "chrome://browser/content/preferences/config/LegacyPaneMappings.mjs",
+  {
+    global: "current",
+  }
+).resolveLegacyCategory;
+
+var { ScrollOffsets } = ChromeUtils.importESModule(
+  "chrome://global/content/ScrollOffsets.mjs",
+  {
+    global: "current",
+  }
+);
+
+/** @type {ScrollOffsets} */
+var scrollOffsets;
+
+/**
+ * Register initial config-based setting panes here. If you need to register a
+ * pane elsewhere, use {@link SettingPaneManager['registerPane']}.
+ *
+ * @type {Record<string, SettingPaneConfig>}
+ */
+const CONFIG_PANES = Object.freeze({
+  about: {
+    l10nId: "about-firefox-header",
+    iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
+    groupIds: ["updates", "support"],
+    module: "chrome://browser/content/preferences/config/about-firefox.mjs",
+    visible: () => srdSectionPrefs.all,
+  },
+  accessibility: {
+    l10nId: "preferences-accessibility-header",
+    groupIds: [
+      "zoom",
+      "fonts",
+      "contrast",
+      "keyboardAndScrolling",
+      "motionAndLink",
+    ],
+    module: "chrome://browser/content/preferences/config/accessibility.mjs",
+    iconSrc: "chrome://browser/skin/preferences/category-accessibility.svg",
+    visible: () => srdSectionPrefs.all,
+  },
+  appearance: {
+    l10nId: "preferences-appearance-header",
+    groupIds: ["appearance", "browserTheme", "relatedSettings"],
+    module: "chrome://browser/content/preferences/config/appearance.mjs",
+    iconSrc: "chrome://global/skin/icons/eye.svg",
+    visible: () => srdSectionPrefs.all,
+  },
+  ai: {
+    skip: true, // Skip AI pane. tor-browser#44709.
+    l10nId: "preferences-ai-controls-header3",
+    iconSrc: "chrome://global/skin/icons/highlights.svg",
+    groupIds: ["aiControlsDescription", "aiFeatures", "aiStatesDescription"],
+    module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
+    visible: () =>
+      Services.prefs.getBoolPref("browser.preferences.aiControls", false),
+  },
+  downloads: {
+    l10nId: "pane-downloads3",
+    iconSrc: "chrome://browser/skin/downloads/downloads.svg",
+    groupIds: ["downloads", "applications"],
+    module: "chrome://browser/content/preferences/config/downloads.mjs",
+    visible: () =>
+      Services.prefs.getBoolPref("browser.settings-redesign.enabled", false),
+  },
+  connectionSecurity: {
+    parent: "privacy",
+    l10nId: "preferences-connection-header",
+    groupIds: [
+      "httpsOnly",
+      "networkProxy",
+      "privacyPanel",
+      "browsingProtection",
+      "certificates",
+    ],
+    replaces: "privacy",
+  },
+  dnsOverHttps: {
+    parent: "privacy",
+    l10nId: "preferences-doh-header2",
+    groupIds: ["dnsOverHttpsAdvanced"],
+    replaces: "privacy",
+  },
+  etp: {
+    skip: true, // Skip enhanced tracking protection. tor-browser#33848.
+    parent: "privacy",
+    l10nId: "preferences-etp-header",
+    groupIds: ["etpBanner", "etpAdvanced"],
+    replaces: "privacy",
+  },
+  etpCustomize: {
+    parent: "etp",
+    l10nId: "preferences-etp-customize-header",
+    groupIds: ["etpCustomize", "etpReset"],
+    replaces: "privacy",
+  },
+  experimental: {
+    l10nId: "settings-pane-labs-header",
+    iconSrc: "chrome://browser/skin/labs-16.svg",
+    groupIds: ["firefoxLabsFeatures"],
+    module: "chrome://browser/content/preferences/config/firefoxLabs.mjs",
+  },
+  general: {
+    l10nId: "pane-general-title",
+    groupIds: [],
+    visible: () => !srdSectionPrefs.all,
+  },
+  history: {
+    parent: "privacy",
+    l10nId: "history-header2",
+    groupIds: ["historyAdvanced"],
+    replaces: "privacy",
+  },
+  home: {
+    l10nId: "home-section",
+    iconSrc: "chrome://browser/skin/home.svg",
+    groupIds: ["defaultBrowserHome", "startupHome", "homepage", "home"],
+    module: "chrome://browser/content/preferences/config/home-startup.mjs",
+    replaces: "home",
+  },
+  languages: {
+    l10nId: "preferences-languages-header3",
+    iconSrc: "chrome://browser/skin/translations.svg",
+    groupIds: [
+      "browserLanguage",
+      "websiteLanguage",
+      "translations",
+      "spellCheck",
+    ],
+    module: "chrome://browser/content/preferences/config/languages.mjs",
+    visible: () => srdSectionEnabled("languages"),
+  },
+  manageAddresses: {
+    skip: true,
+    parent: "passwordsAutofill",
+    l10nId: "autofill-addresses-manage-addresses-title",
+    groupIds: ["manageAddresses"],
+    iconSrc: "chrome://browser/skin/notification-icons/geo.svg",
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
+  },
+  manageMemories: {
+    parent: "personalizeSmartWindow",
+    l10nId: "ai-window-manage-memories-header",
+    groupIds: ["manageMemories"],
+    module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
+    supportPage: "smart-window-memories",
+  },
+  managePayments: {
+    skip: true,
+    parent: "passwordsAutofill",
+    l10nId: "autofill-payment-methods-manage-payments-title",
+    groupIds: ["managePayments"],
+    iconSrc: "chrome://browser/skin/payment-methods-16.svg",
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
+  },
+  profiles: {
+    parent: srdSectionEnabled("sync") ? "sync" : "general",
+    l10nId: "preferences-profiles-group-header",
+    groupIds: ["profilePane"],
+  },
+  permissionsData: {
+    l10nId: "permissions-data-section",
+    iconSrc: "chrome://browser/skin/permissions.svg",
+    groupIds: ["permissions", "dataCollection"],
+    module: "chrome://browser/content/preferences/config/permissions-data.mjs",
+    visible: () => srdSectionEnabled("permissionsData"),
+  },
+  personalizeSmartWindow: {
+    parent: "ai",
+    l10nId: "ai-window-personalize-header",
+    iconSrc: "chrome://browser/skin/smart-window-mono.svg",
+    badge: "beta",
+    groupIds: ["assistantDefaultGroup", "assistantModelGroup", "memoriesGroup"],
+    module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
+  },
+  passwordsAutofill: {
+    l10nId: "preferences-passwords-autofill-header",
+    iconSrc: "chrome://browser/skin/login.svg",
+    groupIds: ["passwords", "payments", "addresses"],
+    module:
+      "chrome://browser/content/preferences/config/passwords-autofill.mjs",
+    visible: () => srdSectionEnabled("passwordsAutofill"),
+  },
+  privacy: {
+    l10nId: "pane-privacy-section",
+    iconSrc: "chrome://browser/skin/preferences/category-privacy-security.svg",
+    groupIds: [
+      "securityPrivacyStatus",
+      "securityPrivacyWarnings",
+      "etpStatus",
+      "ipprotection",
+      "cookiesAndSiteData2",
+      "history2",
+      "nonTechnicalPrivacy2",
+      "dnsOverHttps",
+      "connectionLink",
+    ],
+    module: "chrome://browser/content/preferences/config/privacy.mjs",
+    replaces: "privacy",
+  },
+  search: {
+    l10nId: "search-section",
+    groupIds: [
+      "defaultEngine",
+      "searchShortcuts",
+      "searchSuggestions",
+      "firefoxSuggest",
+    ],
+    iconSrc: "chrome://browser/skin/preferences/category-search.svg",
+    module: "chrome://browser/content/preferences/config/search.mjs",
+    replaces: "search",
+  },
+  sync: {
+    l10nId: "account-sync-section",
+    iconSrc: "chrome://browser/skin/fxa/avatar-empty.svg",
+    groupIds: [
+      "defaultBrowserSync",
+      "accountDisabled",
+      "account",
+      "sync",
+      "importBrowserData",
+      "profiles",
+      "backup",
+    ],
+    module: "chrome://browser/content/preferences/config/account-sync.mjs",
+    replaces: "sync",
+  },
+  moreFromMozilla: {
+    l10nId: "more-from-moz-page-header",
+    iconSrc: "chrome://browser/skin/preferences/mozilla-16.svg",
+    groupIds: ["moreFromMozillaPromo", "moreFromMozillaProducts"],
+    module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
+    visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
+    replaces: "moreFromMozilla",
+  },
+  tabsBrowsing: {
+    l10nId: "tabs-browsing-section",
+    groupIds: [
+      "browserLayout",
+      "tabs",
+      "pageNavigation",
+      "media",
+      "performance",
+      "recommendations",
+    ],
+    iconSrc: "chrome://global/skin/icons/cursor-arrow.svg",
+    module: "chrome://browser/content/preferences/config/tabs-browsing.mjs",
+    visible: () => srdSectionEnabled("tabsBrowsing"),
+  },
+  translations: {
+    skip: true, // Skip translations. tor-browser#44710.
+    parent: srdSectionEnabled("languages") ? "languages" : "general",
+    l10nId: "settings-translations-subpage-header",
+    groupIds: [
+      "translationsAutomaticTranslation",
+      "translationsDownloadLanguages",
+    ],
+    iconSrc: "chrome://browser/skin/translations.svg",
+    module: "chrome://browser/content/preferences/config/translations.mjs",
+    visible: () => srdSectionEnabled("translations"),
+  },
+  containers: {
+    parent: srdSectionEnabled("tabsBrowsing") ? "tabsBrowsing" : "general",
+    l10nId: "containers-section-header2",
+    groupIds: ["containers"],
+    module: "chrome://browser/content/preferences/config/containers.mjs",
+  },
+});
+
+var gLastCategory = { category: undefined, subcategory: undefined };
+const gXULDOMParser = new DOMParser();
+var gCategoryModules = new Map();
+var gCategoryInits = new Map();
+
+function register_module(categoryName, categoryObject) {
+  gCategoryModules.set(categoryName, categoryObject);
+  gCategoryInits.set(categoryName, {
+    _initted: false,
+    init() {
+      let startTime = ChromeUtils.now();
+      if (this._initted) {
+        return;
+      }
+      this._initted = true;
+      let template = document.getElementById("template-" + categoryName);
+      if (template && !srdSectionPrefs.all) {
+        // Replace the template element with the nodes inside of it.
+        template.replaceWith(template.content);
+
+        // We've inserted elements that rely on 'preference' attributes.
+        // So we need to update those by reading from the prefs.
+        // The bindings will do this using idle dispatch and avoid
+        // repeated runs if called multiple times before the task runs.
+        Preferences.queueUpdateOfAllElements();
+      }
+
+      categoryObject.init();
+      ChromeUtils.addProfilerMarker(
+        "Preferences",
+        { startTime },
+        categoryName + " init"
+      );
+    },
+  });
+}
+
+document.addEventListener("DOMContentLoaded", init_all, { once: true });
+
+function init_all() {
+  Preferences.forceEnableInstantApply();
+
+  // Asks Preferences to queue an update of the attribute values of
+  // the entire document.
+  Preferences.queueUpdateOfAllElements();
+
+  scrollOffsets = new ScrollOffsets(
+    /** @type {HTMLElement} */ (document.querySelector(".main-content"))
+  );
+
+  let redesignEnabled = srdSectionPrefs.all;
+
+  if (!redesignEnabled) {
+    register_module("paneGeneral", gMainPane);
+    document.getElementById("category-general").hidden = false;
+    document.getElementById("nav-separator").hidden = true;
+  }
+  register_module("paneHome", gHomePane);
+  register_module("paneSearch", gSearchPane);
+  register_module("panePrivacy", gPrivacyPane);
+
+  // Restore the cached Firefox Labs nav button visibility so it shows
+  // immediately when recipes are expected to be available, before
+  // firefoxLabs.mjs loads on first navigation. The module itself updates
+  // this cache when features are (un)available.
+  if (ExperimentAPI.labsEnabled) {
+    document.getElementById("category-experimental").hidden =
+      Services.prefs.getBoolPref(
+        "browser.preferences.experimental.hidden",
+        false
+      );
+  }
+
+  // The Sync category needs to be the last of the "real" categories
+  // registered and initialized since many tests wait for the
+  // "sync-pane-loaded" observer notification before starting the test.
+  let accountsEnabled = Services.prefs.getBoolPref(
+    "identity.fxaccounts.enabled"
+  );
+  let categorySync = document.getElementById("category-sync");
+  if (redesignEnabled) {
+    categorySync.setAttribute("data-l10n-id", "pane-account-sync-title2");
+    categorySync.iconSrc = "chrome://browser/skin/fxa/avatar-empty.svg";
+    categorySync.hidden = false;
+  } else if (accountsEnabled) {
+    categorySync.hidden = false;
+    register_module("paneSync", gSyncPane);
+  }
+  register_module("paneSearchResults", gSearchResultsPane);
+  for (let [id, config] of Object.entries(CONFIG_PANES)) {
+    // Skip over configs we do not want, including all its children.
+    // See tor-browser#44711.
+    let skip = false;
+    let parentConfig = config;
+    while (parentConfig) {
+      skip = parentConfig.skip;
+      if (skip) {
+        break;
+      }
+      parentConfig = parentConfig.parent
+        ? CONFIG_PANES[parentConfig.parent]
+        : undefined;
+    }
+    if ((!redesignEnabled && config.replaces) || skip) {
+      continue;
+    }
+
+    SettingPaneManager.registerPane(id, config);
+  }
+
+  // customHomepage is registered separately because its groups are set up by
+  // AboutPreferences.observe(), which only fires in the redesign path.
+  if (redesignEnabled) {
+    SettingPaneManager.registerPane("customHomepage", {
+      parent: "home",
+      l10nId: "home-custom-homepage-subpage",
+      groupIds: ["customHomepage"],
+      module: "chrome://browser/content/preferences/config/home-startup.mjs",
+    });
+  } else {
+    NimbusFeatures.moreFromMozilla.recordExposureEvent({ once: true });
+    if (NimbusFeatures.moreFromMozilla.getVariable("enabled")) {
+      document.getElementById("category-more-from-mozilla").hidden = false;
+      gMoreFromMozillaPane.option =
+        NimbusFeatures.moreFromMozilla.getVariable("template");
+      register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
+    }
+  }
+
+  gSearchResultsPane.init();
+  gMainPane.preInit();
+
+  let categories = document.getElementById("categories");
+  categories.addEventListener("change-view", event => {
+    gotoPref(event.target.view);
+  });
+
+  maybeDisplayPoliciesNotice();
+
+  window.addEventListener("hashchange", onHashChange);
+  window.addEventListener("beforeunload", onBeforeunload);
+
+  document.getElementById("focusSearch1").addEventListener("command", () => {
+    gSearchResultsPane.searchInput.focus();
+  });
+
+  gotoPref().then(() => {
+    document.getElementById("addonsButton").addEventListener("click", e => {
+      e.preventDefault();
+      if (e.button >= 2) {
+        // Ignore right clicks.
+        return;
+      }
+      let mainWindow = window.browsingContext.topChromeWindow;
+      mainWindow.BrowserAddonUI.openAddonsMgr();
+    });
+
+    document.dispatchEvent(
+      new CustomEvent("Initialized", {
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+  });
+}
+
+function onHashChange() {
+  gotoPref(null, "Hash");
+}
+
+function onBeforeunload() {
+  Glean.aboutpreferences.close.record({ session: TAB_SESSION_ID });
+}
+
+/**
+ * This is called by BrowserUsageTelemetry when it would record a change as a
+ * labelled_counter. This could potentially integrate with Setting instead, but
+ * we would miss changes for settings that haven't been converted to Setting.
+ *
+ * @param {string} id The Setting id or telemetry id for the change.
+ */
+function recordSettingChangeTelemetry(id) {
+  Glean.aboutpreferences.change.record({
+    session: TAB_SESSION_ID,
+    setting: id,
+    pane: gLastCategory.category,
+  });
+}
+
+/**
+ * @param {string} [aCategory] The pane to show, defaults to the hash of URL or general
+ * @param {"Click"|"Initial"|"Hash"} [aShowReason]
+ *   What triggered the navigation. Defaults to "Click" if aCategory is provided,
+ *   otherwise "Initial".
+ */
+async function gotoPref(
+  aCategory,
+  aShowReason = aCategory ? "Click" : "Initial"
+) {
+  let redesignEnabled = srdSectionPrefs.all;
+  let categories = document.getElementById("categories");
+  const kDefaultCategoryInternalName = redesignEnabled
+    ? "paneSync"
+    : "paneGeneral";
+  const kDefaultCategory = redesignEnabled ? "sync" : "general";
+  let hash = document.location.hash;
+  let category = aCategory || hash.substring(1) || kDefaultCategoryInternalName;
+
+  let breakIndex = category.indexOf("-");
+  // Subcategories allow for selecting smaller sections of the preferences
+  // until proper search support is enabled (bug 1353954).
+  let subcategory =
+    breakIndex != -1 ? category.substring(breakIndex + 1) : null;
+  if (subcategory) {
+    category = category.substring(0, breakIndex);
+  }
+
+  // Subcategories could have new destinations when the settings-redesign pref
+  // is enabled. We need to resolve the legacy category and
+  // subcategory before getting the friendly name.
+  if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
+    let resolved = resolveLegacyCategory(category, subcategory);
+    category = resolved.category;
+    subcategory = resolved.subcategory;
+  }
+
+  category = friendlyPrefCategoryNameToInternalName(category);
+  if (category != "paneSearchResults") {
+    gSearchResultsPane.query = null;
+    gSearchResultsPane.searchInput.value = "";
+    gSearchResultsPane.removeAllSearchIndicators(window, true);
+  } else if (!gSearchResultsPane.searchInput.value) {
+    // Something tried to send us to the search results pane without
+    // a query string. Default to the General pane instead.
+    category = kDefaultCategoryInternalName;
+    document.location.hash = kDefaultCategory;
+    gSearchResultsPane.query = null;
+  }
+
+  // Updating the hash (below) or changing the selected category
+  // will re-enter gotoPref.
+  if (gLastCategory.category == category && !subcategory) {
+    return;
+  }
+
+  let item;
+  let unknownCategory = false;
+  if (category != "paneSearchResults") {
+    // Hide second level headers in normal view
+    for (let element of document.querySelectorAll(".search-header")) {
+      element.hidden = true;
+    }
+
+    item = /** @type {HTMLElement} */ (
+      categories.querySelector(
+        'moz-page-nav-button[view="' + CSS.escape(category) + '"]'
+      )
+    );
+    if (!item || item.hidden) {
+      unknownCategory = true;
+      category = kDefaultCategoryInternalName;
+      item = categories.querySelector(
+        'moz-page-nav-button[view="' + category + '"]'
+      );
+    }
+  }
+
+  if (
+    gLastCategory.category ||
+    unknownCategory ||
+    category != kDefaultCategoryInternalName ||
+    subcategory
+  ) {
+    let friendlyName = internalPrefCategoryNameToFriendlyName(category);
+    // Overwrite the hash, unless there is no hash and we're switching to the
+    // default category, e.g. by using the 'back' button after navigating to
+    // a different category.
+
+    // Note: Bug 1983388 - If there is an element in the DOM that has the same
+    // ID as the `friendlyName`, then focus will be lost when navigating the
+    // category navigation via keyboard when that `friendlyName` category is selected.
+    if (
+      !(!document.location.hash && category == kDefaultCategoryInternalName)
+    ) {
+      let targetHash = "#" + friendlyName;
+      if (document.location.hash != targetHash) {
+        if (aShowReason == "Click") {
+          // A user clicked on a category, so add a history entry so back navigates between panes.
+          history.pushState(category, document.title, targetHash);
+        } else {
+          // Adding a new entry here would trap the back button on about:preferences.
+          history.replaceState(category, document.title, targetHash);
+        }
+      }
+    }
+  }
+  // Treat back/forward navigations (aShowReason == "Hash") as visits to the
+  // existing history entry so we can restore the scroll position saved when
+  // leaving it. Everything else — initial load, sidebar click, openPreferences
+  // call — is a brand-new entry and gets a fresh id.
+  let historyEntryId =
+    (aShowReason == "Hash" && history.state?.historyEntryId) ||
+    scrollOffsets.newHistoryEntryId();
+
+  /**
+   * Capture the previous category before gLastCategory is reassigned below,
+   * so the sub-pane drill-down check can compare names.
+   */
+  let prevCategory = gLastCategory.category;
+
+  // Save the previous entry's scroll offset before switching, so that
+  // returning to it later restores the user's place.
+  scrollOffsets.save();
+  scrollOffsets.setView(historyEntryId);
+
+  // Need to set the gLastCategory before setting categories.currentView since
+  // the change-view event will re-enter the gotoPref codepath.
+  gLastCategory.category = category;
+  gLastCategory.subcategory = subcategory;
+
+  // For sub-panes, select the root parent navigation button so keyboard
+  // navigation works correctly.
+  let currentView = item ? item.getAttribute("view") : category;
+
+  try {
+    let paneLookupId = internalPrefCategoryNameToFriendlyName(currentView);
+    let parentPanes = SettingPaneManager.getWithParents(paneLookupId);
+    if (parentPanes.length > 1) {
+      // Get root parent (first in chain) for navigation selection
+      let rootParent = parentPanes[0];
+      currentView = friendlyPrefCategoryNameToInternalName(rootParent.id);
+    }
+  } catch (ex) {
+    // Pane not found in SettingPaneManager, use currentView
+  }
+
+  categories.currentView = currentView;
+
+  /**
+   * Record the current and previous category on the history entry. The
+   * previous category lets the sub-pane back arrow tell when the parent
+   * pane sits one entry back in history (and therefore its saved scroll
+   * position should be restored). Preserved across browser back/forward
+   * navigations.
+   */
+  let previousCategory = null;
+  if (aShowReason == "Hash") {
+    previousCategory = history.state?.previousCategory ?? null;
+  } else if (aShowReason == "Click" && prevCategory) {
+    previousCategory = internalPrefCategoryNameToFriendlyName(prevCategory);
+  }
+  window.history.replaceState(
+    {
+      historyEntryId,
+      category: internalPrefCategoryNameToFriendlyName(category),
+      previousCategory,
+    },
+    document.title
+  );
+
+  let categoryInfo = gCategoryInits.get(category);
+  if (!categoryInfo) {
+    let err = new Error(
+      "Unknown in-content prefs category! Can't init " + category
+    );
+    console.error(err);
+    throw err;
+  }
+  categoryInfo.init();
+
+  if (document.hasPendingL10nMutations) {
+    await new Promise(r =>
+      document.addEventListener("L10nMutationsFinished", r, { once: true })
+    );
+    // Bail out of this goToPref if the category
+    // or subcategory changed during async operation.
+    if (
+      gLastCategory.category !== category ||
+      gLastCategory.subcategory !== subcategory
+    ) {
+      return;
+    }
+  }
+
+  search(category, "data-category");
+
+  if (aShowReason != "Initial") {
+    scrollOffsets.restore();
+  }
+
+  // Check to see if the category module wants to do any special
+  // handling of the subcategory - for example, opening a SubDialog.
+  //
+  // If not, just do a normal spotlight on the subcategory.
+  let categoryModule = gCategoryModules.get(category);
+  if (!categoryModule.handleSubcategory?.(subcategory)) {
+    spotlight(subcategory, category);
+  }
+
+  // Record which category is shown
+  let gleanId = /** @type {"showClick" | "showHash" | "showInitial"} */ (
+    "show" + aShowReason
+  );
+  Glean.aboutpreferences[gleanId].record({
+    value: category,
+    session: TAB_SESSION_ID,
+  });
+
+  document.dispatchEvent(
+    /** @type {PaneShownEvent} */ (
+      new CustomEvent("paneshown", {
+        bubbles: true,
+        cancelable: true,
+        detail: {
+          category,
+          subcategory,
+        },
+      })
+    )
+  );
+}
+
+/**
+ * @param {string} aQuery
+ * @param {string} aAttribute
+ */
+function search(aQuery, aAttribute) {
+  let mainPrefPane = document.getElementById("mainPrefPane");
+  let elements = /** @type {HTMLElement[]} */ (
+    Array.from(mainPrefPane.children)
+  );
+  for (let element of elements) {
+    // If the "data-hidden-from-search" is "true", the
+    // element will not get considered during search.
+    if (
+      element.getAttribute("data-hidden-from-search") != "true" ||
+      element.getAttribute("data-subpanel") == "true"
+    ) {
+      let attributeValue = element.getAttribute(aAttribute);
+      if (attributeValue == aQuery) {
+        element.hidden = false;
+      } else {
+        element.hidden = true;
+      }
+    } else if (
+      element.getAttribute("data-hidden-from-search") == "true" &&
+      !element.hidden
+    ) {
+      element.hidden = true;
+    }
+    element.classList.remove("visually-hidden");
+
+    // Also clean up visually-hidden from setting-group children inside
+    // setting-panes, which may have been hidden individually during search,
+    // and reset onSearchPane on the pane so its heading goes back to <h2>
+    // when we leave the search-results pane.
+    if (element.localName === "setting-pane") {
+      /** @type {SettingPane} */ (element).onSearchPane = false;
+      for (let group of element.querySelectorAll("setting-group")) {
+        group.classList.remove("visually-hidden");
+      }
+    }
+  }
+}
+
+function spotlight(subcategory, category) {
+  let highlightedElements = document.querySelectorAll(".spotlight");
+  if (highlightedElements.length) {
+    for (let element of highlightedElements) {
+      element.classList.remove("spotlight");
+    }
+  }
+  if (subcategory) {
+    scrollAndHighlight(subcategory, category);
+  }
+}
+
+function scrollAndHighlight(subcategory) {
+  let elements = document.querySelectorAll(
+    `[data-subcategory~="${subcategory}"]`
+  );
+  if (!elements.length) {
+    return;
+  }
+
+  // We assign a tabindex=-1 to the element so that we can focus it. This allows
+  // us to move screen reader's focus to an arbitrary position on the page.
+  // See tor-browser#41454 and mozilla bug 1799153.
+  const doFocus = () => {
+    elements[0].setAttribute("tabindex", "-1");
+    Services.focus.setFocus(elements[0], Services.focus.FLAG_NOSCROLL);
+    // Immediately remove again now that it has focus.
+    elements[0].removeAttribute("tabindex");
+  };
+  // The element is not always immediately focusable, so we wait until document
+  // load.
+  if (document.readyState === "complete") {
+    doFocus();
+  } else {
+    // Wait until document load to move focus.
+    // NOTE: This should be called after DOMContentLoaded, where the searchInput
+    // is focused.
+    window.addEventListener("load", doFocus, { once: true });
+  }
+
+  elements[0].scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+  for (let element of elements) {
+    element.classList.add("spotlight");
+  }
+}
+
+// This function is duplicated inside of utilityOverlay.js's openPreferences.
+function internalPrefCategoryNameToFriendlyName(aName) {
+  return (aName || "").replace(/^pane./, function (toReplace) {
+    return toReplace[4].toLowerCase();
+  });
+}
+
+// Put up a confirm dialog with "ok to restart", "revert without restarting"
+// and "restart later" buttons and returns the index of the button chosen.
+// We can choose not to display the "restart later", or "revert" buttons,
+// altough the later still lets us revert by using the escape key.
+//
+// The constants are useful to interpret the return value of the function.
+const CONFIRM_RESTART_PROMPT_RESTART_NOW = 0;
+const CONFIRM_RESTART_PROMPT_CANCEL = 1;
+const CONFIRM_RESTART_PROMPT_RESTART_LATER = 2;
+async function confirmRestartPrompt(
+  aRestartToEnable,
+  aDefaultButtonIndex,
+  aWantRevertAsCancelButton,
+  aWantRestartLaterButton
+) {
+  let [
+    msg,
+    title,
+    restartButtonText,
+    noRestartButtonText,
+    restartLaterButtonText,
+  ] = await document.l10n.formatValues([
+    {
+      id: aRestartToEnable
+        ? "feature-enable-requires-restart"
+        : "feature-disable-requires-restart",
+    },
+    { id: "should-restart-title" },
+    { id: "should-restart-ok" },
+    { id: "cancel-no-restart-button" },
+    { id: "restart-later" },
+  ]);
+
+  // Set up the first (index 0) button:
+  let buttonFlags =
+    Services.prompt.BUTTON_POS_0 * Services.prompt.BUTTON_TITLE_IS_STRING;
+
+  // Set up the second (index 1) button:
+  if (aWantRevertAsCancelButton) {
+    buttonFlags +=
+      Services.prompt.BUTTON_POS_1 * Services.prompt.BUTTON_TITLE_IS_STRING;
+  } else {
+    noRestartButtonText = null;
+    buttonFlags +=
+      Services.prompt.BUTTON_POS_1 * Services.prompt.BUTTON_TITLE_CANCEL;
+  }
+
+  // Set up the third (index 2) button:
+  if (aWantRestartLaterButton) {
+    buttonFlags +=
+      Services.prompt.BUTTON_POS_2 * Services.prompt.BUTTON_TITLE_IS_STRING;
+  } else {
+    restartLaterButtonText = null;
+  }
+
+  switch (aDefaultButtonIndex) {
+    case 0:
+      buttonFlags += Services.prompt.BUTTON_POS_0_DEFAULT;
+      break;
+    case 1:
+      buttonFlags += Services.prompt.BUTTON_POS_1_DEFAULT;
+      break;
+    case 2:
+      buttonFlags += Services.prompt.BUTTON_POS_2_DEFAULT;
+      break;
+    default:
+      break;
+  }
+
+  let button = await Services.prompt.asyncConfirmEx(
+    window.browsingContext,
+    Ci.nsIPrompt.MODAL_TYPE_CONTENT,
+    title,
+    msg,
+    buttonFlags,
+    restartButtonText,
+    noRestartButtonText,
+    restartLaterButtonText,
+    null,
+    {}
+  );
+
+  let buttonIndex = button.get("buttonNumClicked");
+
+  // If we have the second confirmation dialog for restart, see if the user
+  // cancels out at that point.
+  if (buttonIndex == CONFIRM_RESTART_PROMPT_RESTART_NOW) {
+    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
+      Ci.nsISupportsPRBool
+    );
+    Services.obs.notifyObservers(
+      cancelQuit,
+      "quit-application-requested",
+      "restart"
+    );
+    if (cancelQuit.data) {
+      buttonIndex = CONFIRM_RESTART_PROMPT_CANCEL;
+    }
+  }
+  return buttonIndex;
+}
+
+// This function is used to append search keywords found
+// in the related subdialog to the button that will activate the subdialog.
+function appendSearchKeywords(aId, keywords) {
+  let element = document.getElementById(aId);
+  let searchKeywords = element.getAttribute("searchkeywords");
+  if (searchKeywords) {
+    keywords.push(searchKeywords);
+  }
+  element.setAttribute("searchkeywords", keywords.join(" "));
+}
+
+function maybeDisplayPoliciesNotice() {
+  if (Services.policies.status == Services.policies.ACTIVE) {
+    document
+      .getElementById("policies-container-content")
+      .removeAttribute("hidden");
+  }
+}

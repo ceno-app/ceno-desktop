@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef GFX_2D_HELPERSWINFONTS_H_
+#define GFX_2D_HELPERSWINFONTS_H_
+
+namespace mozilla {
+namespace gfx {
+
+extern BYTE sSystemTextQuality;
+
+static BYTE GetSystemTextQuality() { return sSystemTextQuality; }
+
+static AntialiasMode GetSystemDefaultAAMode() {
+  AntialiasMode defaultMode = AntialiasMode::SUBPIXEL;
+
+  switch (GetSystemTextQuality()) {
+    case CLEARTYPE_QUALITY:
+      defaultMode = AntialiasMode::SUBPIXEL;
+      break;
+    case ANTIALIASED_QUALITY:
+      defaultMode = AntialiasMode::GRAY;
+      break;
+    case DEFAULT_QUALITY:
+      defaultMode = AntialiasMode::NONE;
+      break;
+  }
+
+  return defaultMode;
+}
+
+}  // namespace gfx
+}  // namespace mozilla
+
+#endif  // GFX_2D_HELPERSWINFONTS_H_

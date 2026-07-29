@@ -1,0 +1,37 @@
+[DEFAULT]
+
+["test_Preallocated.html"]
+skip-if = [
+  "os == 'android'",
+  "tsan", # Bug 1525959. tsan: Bug 1683730
+]
+
+["test_bcg_processes.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_browsingcontext_currenturi.html"]
+support-files = ["file_broadcast_currenturi_onload.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_temporaryfile_stream.html"]
+run-if = [
+  "os != 'android'",
+]
+support-files = [
+  "blob_verify.sjs",
+  "!/dom/canvas/test/captureStream_common.js",
+]
+
+["test_windowGlobalParent_documentChannel.html"]
+support-files = ["file_pdf.pdf"]
+
+["test_window_open_discarded_bc.html"]
+skip-if = [
+  "os == 'android'",
+]

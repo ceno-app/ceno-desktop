@@ -1,0 +1,77 @@
+[DEFAULT]
+head = "../../../../../toolkit/profile/test/xpcshell/head.js ../../../../../browser/components/profiles/tests/unit/head.js head.js"
+tags = "nimbus"
+firefox-appdir = "browser"
+support-files = ["reference_aboutwelcome_experiment_content.json"]
+skip-if = [
+  "appname == 'thunderbird'",
+  "os == 'android'",
+]
+prefs = [
+  "app.normandy.run_interval_seconds=0", # This turns off the update interval for fetching recipes from Remote Settings
+  "messaging-system.log=all", # Enable all Nimbus logging.
+]
+
+["test_Enrollments.js"]
+
+["test_ExperimentAPI.js"]
+
+["test_ExperimentAPI_ExperimentFeature.js"]
+
+["test_ExperimentAPI_ExperimentFeature_getAllVariables.js"]
+
+["test_ExperimentAPI_ExperimentFeature_getVariable.js"]
+
+["test_ExperimentAPI_NimbusFeatures.js"]
+
+["test_ExperimentManager_context.js"]
+
+["test_ExperimentManager_enroll.js"]
+
+["test_ExperimentManager_generateTestIds.js"]
+
+["test_ExperimentManager_lifecycle.js"]
+
+["test_ExperimentManager_prefs.js"]
+requesttimeoutfactor = 6  # Slow and high CPU use on Linux and Windows
+skip-if = [
+  "os == 'win' && msix", # Bug 1991153
+]
+
+["test_ExperimentManager_unenroll.js"]
+
+["test_ExperimentStore.js"]
+
+["test_FirefoxLabs.js"]
+
+["test_Migrations.js"]
+
+["test_NimbusTestUtils.js"]
+
+["test_RemoteSettingsExperimentLoader.js"]
+
+["test_RemoteSettingsExperimentLoader_updateRecipes.js"]
+requesttimeoutfactor = 2  # Slow on Windows
+
+["test_TargetingContextRecorder.js"]
+requesttimeoutfactor = 2  # Slow on Windows
+skip-if = [
+  "artifact",
+  "os == 'win' && msix", # Bug 1991153
+]
+
+["test_localization.js"]
+
+["test_nimbusTelemetry.js"]
+requesttimeoutfactor = 3  # Slow on Windows msix
+
+["test_policy.js"]
+
+["test_prefFlips.js"]
+requesttimeoutfactor = 2  # Slow on Linux and Windows
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1960885
+  "os == 'win' && msix", # Bug 1991153
+]
+
+["test_schema_uris.js"]

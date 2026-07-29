@@ -1,0 +1,63 @@
+<html>
+
+<head>
+  <title>Accessible events testing for document</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../../common.js"></script>
+  <script type="application/javascript"
+          src="../../role.js"></script>
+  <script type="application/javascript"
+          src="../../states.js"></script>
+  <script type="application/javascript"
+          src="../../events.js"></script>
+
+  <script type="application/javascript">
+    async function doTests() {
+      const iframeNode = getNode("iframe");
+      let events = waitForEvents([
+        [EVENT_REORDER, iframeNode.parentNode],
+        [EVENT_STATE_CHANGE, e => {
+          if (e.accessible.parent.id != "iframe") return false;
+          // The document shouldn't have busy state (the DOM document was
+          // loaded before its accessible was created). Do this test lately to
+          // make sure the content of document accessible was created
+          // initially, prior to this the document accessible keeps busy
+          // state. The initial creation happens asynchronously after document
+          // creation, there are no events we could use to catch it.
+          let { state, isEnabled, isExtraState } = e.QueryInterface(nsIAccessibleStateChangeEvent);
+          return state & STATE_BUSY && !isEnabled && !isExtraState;
+        }],
+      ]);
+      iframeNode.style.visibility = "visible";
+      await events;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=658185"
+     title="The DOM document loaded before it's shown shouldn't have busy state">
+    Mozilla Bug 658185
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="testContainer"><iframe id="iframe" src="about:mozilla" style="visibility: hidden;"></iframe></div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+[DEFAULT]
+subsuite = "mozlint"
+
+["test_agent_skills_sync.py"]
+
+["test_android_expired_strings.py"]
+
+["test_android_format.py"]
+
+["test_cargo-audit.py"]
+# testing it on linux is enough
+skip-if = [
+  "os == 'win'",
+  "os == 'mac'",
+]
+
+["test_clang_format.py"]
+
+["test_clippy.py"]
+
+["test_codespell.py"]
+
+["test_condprof_addons.py"]
+
+["test_eslint.py"]
+skip-if = ["os == 'win'"]  # busts the tree for subsequent tasks on the same worker (bug 1708591)
+# Setup conflicts with stylelint setup so this should run sequentially.
+sequential = true
+
+["test_file_license.py"]
+
+["test_file_perm.py"]
+skip-if = ["os == 'win'"]
+
+["test_file_whitespace.py"]
+
+["test_fluent_lint.py"]
+
+["test_gecko_trace.py"]
+
+["test_glean_parser.py"]
+
+["test_header_guards.py"]
+
+["test_ignorefile.py"]
+
+["test_includes.py"]
+
+["test_lintpref.py"]
+
+["test_manifest_toml.py"]
+
+["test_node_licenses.py"]
+
+["test_node_package_names.py"]
+
+["test_python_sites.py"]
+
+["test_rst.py"]
+
+["test_ruff.py"]
+
+["test_ruff_format.py"]
+
+["test_rumdl.py"]
+
+["test_rustfmt.py"]
+
+["test_shellcheck.py"]
+
+["test_stylelint.py"]
+skip-if = ["os == 'win'"]  # busts the tree for subsequent tasks on the same worker (bug 1708591)
+# Setup conflicts with eslint setup so this should run sequentially.
+sequential = true
+
+["test_trojan_source.py"]
+
+["test_updatebot.py"]
+
+["test_yaml.py"]

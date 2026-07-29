@@ -1,0 +1,23 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+DIRS += ["src"]
+
+DevToolsModules("initializer.js", "panel.js")
+
+XPCSHELL_TESTS_MANIFESTS += ["test/xpcshell/xpcshell.toml"]
+
+BROWSER_CHROME_MANIFESTS += [
+    "test/browser_al.toml",
+    "test/browser_http3.toml",
+    "test/browser_mz.toml",
+    "test/filters/browser.toml",
+    "test/new-resend-request/browser.toml",
+    "test/websockets/browser.toml",
+]
+
+with Files("**"):
+    BUG_COMPONENT = ("DevTools", "Netmonitor")
+
+SPHINX_TREES["/devtools/netmonitor"] = "docs"

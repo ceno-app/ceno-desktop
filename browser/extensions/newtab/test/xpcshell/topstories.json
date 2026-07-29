@@ -1,0 +1,60 @@
+{
+  "status": 1,
+  "settings": {
+    "spocsPerNewTabs": 0.5,
+    "domainAffinityParameterSets": {
+      "default": {
+        "recencyFactor": 0.5,
+        "frequencyFactor": 0.5,
+        "combinedDomainFactor": 0.5,
+        "perfectFrequencyVisits": 10,
+        "perfectCombinedDomainScore": 2,
+        "multiDomainBoost": 0,
+        "itemScoreFactor": 1
+      },
+      "fully-personalized": {
+        "recencyFactor": 0.5,
+        "frequencyFactor": 0.5,
+        "combinedDomainFactor": 0.5,
+        "perfectFrequencyVisits": 10,
+        "perfectCombinedDomainScore": 2,
+        "itemScoreFactor": 0.01,
+        "multiDomainBoost": 0
+      }
+    },
+    "timeSegments": [
+      { "id": "week", "startTime": 604800, "endTime": 0, "weightPosition": 1 },
+      {
+        "id": "month",
+        "startTime": 2592000,
+        "endTime": 604800,
+        "weightPosition": 0.5
+      }
+    ],
+    "recsExpireTime": 5400,
+    "version": "2c2aa06dac65ddb647d8902aaa60263c8e119ff2"
+  },
+  "spocs": [],
+  "recommendedAt": 1755834072383,
+  "surfaceId": "NEW_TAB_EN_US",
+  "data": [
+    {
+      "corpusItemId": "vroom-ca3a5c",
+      "scheduledCorpusItemId": "screech-g04r3b",
+      "url": "https://tesssssst.com/why-vegan",
+      "title": "Why vegan junk food may be even worse for your health",
+      "excerpt": "While we might switch to a plant-based diet with the best intentions, the unseen risks of vegan fast foods might not show up for years.",
+      "topic": "business",
+      "publisher": "bbc.com",
+      "isTimeSensitive": true,
+      "imageUrl": "https://tesssssst.com/random.jpeg",
+      "iconUrl": "https://merino-images.services.mozilla.com/favicons/favicon-3a4b5c.png",
+      "tileId": 53093,
+      "receivedRank": 0,
+      "features": { "t_business": 1.0 }
+    }
+  ],
+  "feeds": null,
+  "interestPicker": null,
+  "inferredLocalModel": null
+}

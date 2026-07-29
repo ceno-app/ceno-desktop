@@ -1,0 +1,26 @@
+<script src="chrome://browser/content/preferences/letterboxing.js" />
+<vbox
+  id="letterboxingCategory"
+  class="subcategory"
+  hidden="true"
+  data-category="paneGeneral"
+>
+  <html:h1 data-l10n-id="letterboxing-header" />
+  <description class="letterboxing-overview description-deemphasized">
+    <html:span data-l10n-id="letterboxing-overview"></html:span>
+    <html:a
+      is="moz-support-link"
+      support-page="tor-manual:anti-fingerprinting_letterboxing"
+      data-l10n-id="letterboxing-learn-more"
+    ></html:a>
+  </description>
+</vbox>
+<groupbox data-category="paneGeneral" hidden="true">
+  <html:setting-group groupid="letterboxingDisabled"></html:setting-group>
+</groupbox>
+<groupbox data-category="paneGeneral" hidden="true">
+  <html:setting-group groupid="letterboxingSize"></html:setting-group>
+</groupbox>
+<groupbox data-category="paneGeneral" hidden="true">
+  <html:setting-group groupid="letterboxingAlignment"></html:setting-group>
+</groupbox>

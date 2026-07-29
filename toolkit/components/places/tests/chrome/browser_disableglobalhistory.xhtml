@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<window title="Test disableglobalhistory attribute on remote browsers"
+        onload="run_test()"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <browser id="inprocess_disabled" src="about:blank" type="content" disableglobalhistory="true" />
+  <browser id="inprocess_enabled" src="about:blank" type="content" />
+
+  <browser id="remote_disabled" src="about:blank" type="content" remote="true" disableglobalhistory="true" />
+  <browser id="remote_enabled" src="about:blank" type="content" remote="true" />
+
+  <script type="text/javascript">
+
+  async function run_test() {
+    let results = [];
+    for (let [id, expected] of [
+      ["inprocess_disabled", false],
+      ["inprocess_enabled", true],
+      ["remote_disabled", false],
+      ["remote_enabled", true],
+    ]) {
+      let browser = document.getElementById(id);
+      let actual = await SpecialPowers.spawn(browser, [], () => {
+        return content.docShell.browsingContext.useGlobalHistory;
+      });
+      results.push([id, actual, expected]);
+    }
+    window.arguments[0].done(results);
+  }
+
+  </script>
+</window>

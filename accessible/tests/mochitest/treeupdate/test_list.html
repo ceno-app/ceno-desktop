@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Test HTML li and listitem bullet accessible cache</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // //////////////////////////////////////////////////////////////////////////
+    // Test
+
+    async function doTest() {
+      var expectedTree = {
+        role: ROLE_LISTITEM,
+        children: [
+          {
+            role: ROLE_LISTITEM_MARKER,
+            children: [],
+          },
+          {
+            role: ROLE_TEXT_LEAF,
+            children: [],
+          },
+        ],
+      };
+      testAccessibleTree("li", expectedTree);
+
+      const li = getAccessible("li");
+      const bullet = li.firstChild;
+
+      let evt = waitForEvent(EVENT_HIDE, "li");
+      getNode("li").style.display = "none";
+      await evt;
+
+      testDefunctAccessible(li, "li");
+      testDefunctAccessible(bullet);
+
+      evt = waitForEvent(EVENT_SHOW, "li");
+      getNode("li").style.display = "list-item";
+      await evt;
+
+      testAccessibleTree("li", expectedTree);
+
+      evt = waitForEvent(EVENT_REORDER, "li");
+      getNode("li").textContent = "hey";
+      await evt;
+
+      expectedTree = {
+        LISTITEM: [
+          { LISTITEM_MARKER: [] },
+          { TEXT_LEAF: [] },
+        ],
+      };
+      testAccessibleTree("li", expectedTree);
+
+      SimpleTest.finish()
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body>
+
+  <a target="_blank"
+     title="setParent shouldn't be virtual"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=496783">Mozilla Bug 496783</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <ul>
+    <li id="li">item1</li>
+  </ul>
+</body>
+</html>

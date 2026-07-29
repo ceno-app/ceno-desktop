@@ -1,0 +1,83 @@
+<html>
+
+<head>
+  <title>Accessible events testing for document</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../../common.js"></script>
+  <script type="application/javascript"
+          src="../../role.js"></script>
+  <script type="application/javascript"
+          src="../../states.js"></script>
+  <script type="application/javascript"
+          src="../../events.js"></script>
+
+  <script type="application/javascript">
+    const kHide = 1;
+    const kShow = 2;
+    const kRemove = 3;
+
+    async function morphIFrame(aIdentifier, aAction) {
+      const domNode = getNode(aIdentifier);
+      const containerDOMNode = domNode.parentNode;
+
+      let events = waitForEvents([
+        [aAction === kShow ? EVENT_SHOW : EVENT_HIDE, domNode],
+        [EVENT_REORDER, containerDOMNode],
+      ]);
+
+      if (aAction === kRemove) {
+        containerDOMNode.removeChild(domNode);
+      } else {
+        domNode.style.display = aAction === kHide ? "none" : "block";
+      }
+
+      await events;
+
+      testAccessibleTree(containerDOMNode, {
+        role: ROLE_SECTION,
+        children: (aAction == kHide || aAction == kRemove) ? [] :
+          [
+            {
+              role: ROLE_INTERNAL_FRAME,
+              children: [
+                { role: ROLE_DOCUMENT },
+              ],
+            },
+          ],
+      });
+    }
+
+    async function doTests() {
+      await morphIFrame("iframe", kHide);
+      await morphIFrame("iframe", kShow);
+      await morphIFrame("iframe", kRemove);
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=566103"
+     title="Reorganize accessible document handling">
+    Mozilla Bug 566103
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="testContainer"><iframe id="iframe"></iframe></div>
+</body>
+</html>

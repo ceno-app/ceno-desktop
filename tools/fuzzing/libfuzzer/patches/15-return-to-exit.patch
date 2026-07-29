@@ -1,0 +1,942 @@
+commit ca00020372841cf2b3ae8774b1d0f8facfef3d1a
+Author: Jesse Schwartzentruber <truber@mozilla.com>
+Date:   Mon Mar 1 15:47:38 2021 -0500
+
+    [libfuzzer] In most cases, return instead of exit().
+
+diff --git a/FuzzerDataFlowTrace.cpp b/FuzzerDataFlowTrace.cpp
+index c9210c78a063..61fdde855539 100644
+--- a/FuzzerDataFlowTrace.cpp
++++ b/FuzzerDataFlowTrace.cpp
+@@ -103,9 +103,11 @@ std::vector<double> BlockCoverage::FunctionWeights(size_t NumFunctions) const {
+   return Res;
+ }
+ 
+-void DataFlowTrace::ReadCoverage(const std::string &DirPath) {
++int DataFlowTrace::ReadCoverage(const std::string &DirPath) {
+   std::vector<SizedFile> Files;
+-  GetSizedFilesFromDir(DirPath, &Files);
++  int Res = GetSizedFilesFromDir(DirPath, &Files);
++  if (Res != 0)
++    return Res;
+   for (auto &SF : Files) {
+     auto Name = Basename(SF.File);
+     if (Name == kFunctionsTxt) continue;
+@@ -113,6 +115,7 @@ void DataFlowTrace::ReadCoverage(const std::string &DirPath) {
+     std::ifstream IF(SF.File);
+     Coverage.AppendCoverage(IF);
+   }
++  return 0;
+ }
+ 
+ static void DFTStringAppendToVector(std::vector<uint8_t> *DFT,
+@@ -158,12 +161,14 @@ static bool ParseDFTLine(const std::string &Line, size_t *FunctionNum,
+   return true;
+ }
+ 
+-bool DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
++int DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
+                          std::vector<SizedFile> &CorporaFiles, Random &Rand) {
+-  if (DirPath.empty()) return false;
++  if (DirPath.empty()) return 0;
+   Printf("INFO: DataFlowTrace: reading from '%s'\n", DirPath.c_str());
+   std::vector<SizedFile> Files;
+-  GetSizedFilesFromDir(DirPath, &Files);
++  int Res = GetSizedFilesFromDir(DirPath, &Files);
++  if (Res != 0)
++    return Res;
+   std::string L;
+   size_t FocusFuncIdx = SIZE_MAX;
+   std::vector<std::string> FunctionNames;
+@@ -182,14 +187,16 @@ bool DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
+       FocusFuncIdx = NumFunctions - 1;
+   }
+   if (!NumFunctions)
+-    return false;
++    return 0;
+ 
+   if (*FocusFunction == "auto") {
+     // AUTOFOCUS works like this:
+     // * reads the coverage data from the DFT files.
+     // * assigns weights to functions based on coverage.
+     // * chooses a random function according to the weights.
+-    ReadCoverage(DirPath);
++    Res = ReadCoverage(DirPath);
++    if (Res != 0)
++      return Res;
+     auto Weights = Coverage.FunctionWeights(NumFunctions);
+     std::vector<double> Intervals(NumFunctions + 1);
+     std::iota(Intervals.begin(), Intervals.end(), 0);
+@@ -211,7 +218,7 @@ bool DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
+   }
+ 
+   if (!NumFunctions || FocusFuncIdx == SIZE_MAX || Files.size() <= 1)
+-    return false;
++    return 0;
+ 
+   // Read traces.
+   size_t NumTraceFiles = 0;
+@@ -230,8 +237,10 @@ bool DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
+           FunctionNum == FocusFuncIdx) {
+         NumTracesWithFocusFunction++;
+ 
+-        if (FunctionNum >= NumFunctions)
+-          return ParseError("N is greater than the number of functions", L);
++        if (FunctionNum >= NumFunctions) {
++          ParseError("N is greater than the number of functions", L);
++          return 0;
++        }
+         Traces[Name] = DFTStringToVector(DFTString);
+         // Print just a few small traces.
+         if (NumTracesWithFocusFunction <= 3 && DFTString.size() <= 16)
+@@ -243,7 +252,7 @@ bool DataFlowTrace::Init(const std::string &DirPath, std::string *FocusFunction,
+   Printf("INFO: DataFlowTrace: %zd trace files, %zd functions, "
+          "%zd traces with focus function\n",
+          NumTraceFiles, NumFunctions, NumTracesWithFocusFunction);
+-  return NumTraceFiles > 0;
++  return 0;
+ }
+ 
+ int CollectDataFlow(const std::string &DFTBinary, const std::string &DirPath,
+diff --git a/FuzzerDataFlowTrace.h b/FuzzerDataFlowTrace.h
+index 054dce1bdcb6..4f0e23cfd340 100644
+--- a/FuzzerDataFlowTrace.h
++++ b/FuzzerDataFlowTrace.h
+@@ -115,8 +115,8 @@ private:
+ 
+ class DataFlowTrace {
+  public:
+-  void ReadCoverage(const std::string &DirPath);
+-  bool Init(const std::string &DirPath, std::string *FocusFunction,
++  int ReadCoverage(const std::string &DirPath);
++  int Init(const std::string &DirPath, std::string *FocusFunction,
+             std::vector<SizedFile> &CorporaFiles, Random &Rand);
+   void Clear() { Traces.clear(); }
+   const std::vector<uint8_t> *Get(const std::string &InputSha1) const {
+diff --git a/FuzzerDriver.cpp b/FuzzerDriver.cpp
+index ff43cb031dff..93d576757eab 100644
+--- a/FuzzerDriver.cpp
++++ b/FuzzerDriver.cpp
+@@ -365,7 +365,7 @@ int CleanseCrashInput(const std::vector<std::string> &Args,
+   if (Inputs->size() != 1 || !Flags.exact_artifact_path) {
+     Printf("ERROR: -cleanse_crash should be given one input file and"
+           " -exact_artifact_path\n");
+-    exit(1);
++    return 1;
+   }
+   std::string InputFilePath = Inputs->at(0);
+   std::string OutputFilePath = Flags.exact_artifact_path;
+@@ -419,7 +419,7 @@ int MinimizeCrashInput(const std::vector<std::string> &Args,
+                        const FuzzingOptions &Options) {
+   if (Inputs->size() != 1) {
+     Printf("ERROR: -minimize_crash should be given one input file\n");
+-    exit(1);
++    return 1;
+   }
+   std::string InputFilePath = Inputs->at(0);
+   Command BaseCmd(Args);
+@@ -450,7 +450,7 @@ int MinimizeCrashInput(const std::vector<std::string> &Args,
+     bool Success = ExecuteCommand(Cmd, &CmdOutput);
+     if (Success) {
+       Printf("ERROR: the input %s did not crash\n", CurrentFilePath.c_str());
+-      exit(1);
++      return 1;
+     }
+     Printf("CRASH_MIN: '%s' (%zd bytes) caused a crash. Will try to minimize "
+            "it further\n",
+@@ -505,42 +505,53 @@ int MinimizeCrashInputInternalStep(Fuzzer *F, InputCorpus *Corpus) {
+   Printf("INFO: Starting MinimizeCrashInputInternalStep: %zd\n", U.size());
+   if (U.size() < 2) {
+     Printf("INFO: The input is small enough, exiting\n");
+-    exit(0);
++    return 0;
+   }
+   F->SetMaxInputLen(U.size());
+   F->SetMaxMutationLen(U.size() - 1);
+   F->MinimizeCrashLoop(U);
+   Printf("INFO: Done MinimizeCrashInputInternalStep, no crashes found\n");
+-  exit(0);
++  return 0;
+ }
+ 
+-void Merge(Fuzzer *F, FuzzingOptions &Options,
++int Merge(Fuzzer *F, FuzzingOptions &Options,
+            const std::vector<std::string> &Args,
+            const std::vector<std::string> &Corpora, const char *CFPathOrNull) {
+   if (Corpora.size() < 2) {
+     Printf("INFO: Merge requires two or more corpus dirs\n");
+-    exit(0);
++    return 0;
+   }
+ 
+   std::vector<SizedFile> OldCorpus, NewCorpus;
+-  GetSizedFilesFromDir(Corpora[0], &OldCorpus);
+-  for (size_t i = 1; i < Corpora.size(); i++)
+-    GetSizedFilesFromDir(Corpora[i], &NewCorpus);
++  int Res = GetSizedFilesFromDir(Corpora[0], &OldCorpus);
++  if (Res != 0)
++    return Res;
++  for (size_t i = 1; i < Corpora.size(); i++) {
++    Res = GetSizedFilesFromDir(Corpora[i], &NewCorpus);
++    if (Res != 0)
++      return Res;
++  }
+   std::sort(OldCorpus.begin(), OldCorpus.end());
+   std::sort(NewCorpus.begin(), NewCorpus.end());
+ 
+   std::string CFPath = CFPathOrNull ? CFPathOrNull : TempPath("Merge", ".txt");
+   std::vector<std::string> NewFiles;
+   std::set<uint32_t> NewFeatures, NewCov;
+-  CrashResistantMerge(Args, OldCorpus, NewCorpus, &NewFiles, {}, &NewFeatures,
++  Res = CrashResistantMerge(Args, OldCorpus, NewCorpus, &NewFiles, {}, &NewFeatures,
+                       {}, &NewCov, CFPath, true, Flags.set_cover_merge);
++  if (Res != 0)
++    return Res;
++
++  if (F->isGracefulExitRequested())
++    return 0;
++
+   for (auto &Path : NewFiles)
+     F->WriteToOutputCorpus(FileToVector(Path, Options.MaxLen));
+   // We are done, delete the control file if it was a temporary one.
+   if (!Flags.merge_control_file)
+     RemoveFile(CFPath);
+ 
+-  exit(0);
++  return 0;
+ }
+ 
+ int AnalyzeDictionary(Fuzzer *F, const std::vector<Unit> &Dict,
+@@ -620,7 +631,7 @@ std::vector<std::string> ParseSeedInputs(const char *seed_inputs) {
+     SeedInputs = Flags.seed_inputs; // seed_inputs contains the list.
+   if (SeedInputs.empty()) {
+     Printf("seed_inputs is empty or @file does not exist.\n");
+-    exit(1);
++    return Files;
+   }
+   // Parse SeedInputs.
+   size_t comma_pos = 0;
+@@ -664,7 +675,7 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
+   ProgName = new std::string(Args[0]);
+   if (Argv0 != *ProgName) {
+     Printf("ERROR: argv[0] has been modified in LLVMFuzzerInitialize\n");
+-    exit(1);
++    return 1;
+   }
+   ParseFlags(Args, EF);
+   if (Flags.help) {
+@@ -879,24 +890,23 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
+            "***       executed the target code on a fixed set of inputs.\n"
+            "***\n");
+     F->PrintFinalStats();
+-    exit(0);
++    return 0;
+   }
+ 
+   Options.ForkCorpusGroups = Flags.fork_corpus_groups;
+   if (Flags.fork)
+-    FuzzWithFork(F->GetMD().GetRand(), Options, Args, *Inputs, Flags.fork);
++    return FuzzWithFork(F->GetMD().GetRand(), Options, Args, *Inputs, Flags.fork);
+ 
+   if (Flags.merge || Flags.set_cover_merge)
+-    Merge(F, Options, Args, *Inputs, Flags.merge_control_file);
++    return Merge(F, Options, Args, *Inputs, Flags.merge_control_file);
+ 
+   if (Flags.merge_inner) {
+     const size_t kDefaultMaxMergeLen = 1 << 20;
+     if (Options.MaxLen == 0)
+       F->SetMaxInputLen(kDefaultMaxMergeLen);
+     assert(Flags.merge_control_file);
+-    F->CrashResistantMergeInternalStep(Flags.merge_control_file,
++    return F->CrashResistantMergeInternalStep(Flags.merge_control_file,
+                                        !strncmp(Flags.merge_inner, "2", 1));
+-    exit(0);
+   }
+ 
+   if (Flags.analyze_dict) {
+@@ -914,21 +924,24 @@ int FuzzerDriver(int *argc, char ***argv, UserCallback Callback) {
+     }
+     if (AnalyzeDictionary(F, Dictionary, InitialCorpus)) {
+       Printf("Dictionary analysis failed\n");
+-      exit(1);
++      return 1;
+     }
+     Printf("Dictionary analysis succeeded\n");
+-    exit(0);
++    return 0;
+   }
+ 
+   auto CorporaFiles = ReadCorpora(*Inputs, ParseSeedInputs(Flags.seed_inputs));
+-  F->Loop(CorporaFiles);
++  int Res = F->Loop(CorporaFiles);
++  if (Res != 0) return Res;
++  if (F->isGracefulExitRequested())
++    return 0;
+ 
+   if (Flags.verbosity)
+     Printf("Done %zd runs in %zd second(s)\n", F->getTotalNumberOfRuns(),
+            F->secondsSinceProcessStartUp());
+   F->PrintFinalStats();
+ 
+-  exit(0);  // Don't let F destroy itself.
++  return 0;  // Don't let F destroy itself.
+ }
+ 
+ extern "C" ATTRIBUTE_INTERFACE int
+diff --git a/FuzzerFork.cpp b/FuzzerFork.cpp
+index e544cd846e4d..33900a9b84c4 100644
+--- a/FuzzerFork.cpp
++++ b/FuzzerFork.cpp
+@@ -196,14 +196,16 @@ struct GlobalEnv {
+     return Job;
+   }
+ 
+-  void RunOneMergeJob(FuzzJob *Job) {
++  int RunOneMergeJob(FuzzJob *Job) {
+     auto Stats = ParseFinalStatsFromLog(Job->LogPath);
+     NumRuns += Stats.number_of_executed_units;
+ 
+     std::vector<SizedFile> TempFiles, MergeCandidates;
+     // Read all newly created inputs and their feature sets.
+     // Choose only those inputs that have new features.
+-    GetSizedFilesFromDir(Job->CorpusDir, &TempFiles);
++    int Res = GetSizedFilesFromDir(Job->CorpusDir, &TempFiles);
++    if (Res != 0)
++      return Res;
+     std::sort(TempFiles.begin(), TempFiles.end());
+     for (auto &F : TempFiles) {
+       auto FeatureFile = F.File;
+@@ -226,7 +228,7 @@ struct GlobalEnv {
+            Stats.average_exec_per_sec, NumOOMs, NumTimeouts, NumCrashes,
+            secondsSinceProcessStartUp(), Job->JobId, Job->DftTimeInSeconds);
+ 
+-    if (MergeCandidates.empty()) return;
++    if (MergeCandidates.empty()) return 0;
+ 
+     std::vector<std::string> FilesToAdd;
+     std::set<uint32_t> NewFeatures, NewCov;
+@@ -235,6 +237,8 @@ struct GlobalEnv {
+     CrashResistantMerge(Args, {}, MergeCandidates, &FilesToAdd, Features,
+                         &NewFeatures, Cov, &NewCov, Job->CFPath, false,
+                         IsSetCoverMerge);
++    if (Fuzzer::isGracefulExitRequested())
++      return 0;
+     for (auto &Path : FilesToAdd) {
+       auto U = FileToVector(Path);
+       auto NewPath = DirPlusFile(MainCorpusDir, Hash(U));
+@@ -257,6 +261,7 @@ struct GlobalEnv {
+         if (TPC.PcIsFuncEntry(TE))
+           PrintPC("  NEW_FUNC: %p %F %L\n", "",
+                   TPC.GetNextInstructionPc(TE->PC));
++    return 0;
+   }
+ 
+   void CollectDFT(const std::string &InputPath) {
+@@ -309,7 +314,7 @@ void WorkerThread(JobQueue *FuzzQ, JobQueue *MergeQ) {
+ }
+ 
+ // This is just a skeleton of an experimental -fork=1 feature.
+-void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
++int FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+                   const std::vector<std::string> &Args,
+                   const std::vector<std::string> &CorpusDirs, int NumJobs) {
+   Printf("INFO: -fork=%d: fuzzing in separate process(s)\n", NumJobs);
+@@ -324,8 +329,12 @@ void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+   Env.Group = Options.ForkCorpusGroups;
+ 
+   std::vector<SizedFile> SeedFiles;
+-  for (auto &Dir : CorpusDirs)
+-    GetSizedFilesFromDir(Dir, &SeedFiles);
++  int Res;
++  for (auto &Dir : CorpusDirs) {
++    Res = GetSizedFilesFromDir(Dir, &SeedFiles);
++    if (Res != 0)
++      return Res;
++  }
+   std::sort(SeedFiles.begin(), SeedFiles.end());
+   Env.TempDir = TempPath("FuzzWithFork", ".dir");
+   Env.DFTDir = DirPlusFile(Env.TempDir, "DFT");
+@@ -345,14 +354,19 @@ void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+   } else {
+     auto CFPath = DirPlusFile(Env.TempDir, "merge.txt");
+     std::set<uint32_t> NewFeatures, NewCov;
+-    CrashResistantMerge(Env.Args, {}, SeedFiles, &Env.Files, Env.Features,
++    Res = CrashResistantMerge(Env.Args, {}, SeedFiles, &Env.Files, Env.Features,
+                         &NewFeatures, Env.Cov, &NewCov, CFPath,
+                         /*Verbose=*/false, /*IsSetCoverMerge=*/false);
++    if (Res != 0)
++      return Res;
+     Env.Features.insert(NewFeatures.begin(), NewFeatures.end());
+     Env.Cov.insert(NewCov.begin(), NewCov.end());
+     RemoveFile(CFPath);
+   }
+ 
++  if (Fuzzer::isGracefulExitRequested())
++    return 0;
++
+   if (Env.Group) {
+     for (auto &path : Env.Files)
+       Env.FilesSizes.push_back(FileSize(path));
+@@ -391,9 +405,14 @@ void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+       StopJobs();
+       break;
+     }
+-    Fuzzer::MaybeExitGracefully();
++    if (Fuzzer::MaybeExitGracefully())
++      return 0;
+ 
+-    Env.RunOneMergeJob(Job.get());
++    Res = Env.RunOneMergeJob(Job.get());
++    if (Res != 0)
++      return Res;
++    if (Fuzzer::isGracefulExitRequested())
++      return 0;
+ 
+     // merge the corpus .
+     JobExecuted++;
+@@ -488,7 +507,7 @@ void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+   // Use the exit code from the last child process.
+   Printf("INFO: exiting: %d time: %zds\n", ExitCode,
+          Env.secondsSinceProcessStartUp());
+-  exit(ExitCode);
++  return ExitCode;
+ }
+ 
+ } // namespace fuzzer
+diff --git a/FuzzerFork.h b/FuzzerFork.h
+index fc3e9d636cbc..520e40af6f20 100644
+--- a/FuzzerFork.h
++++ b/FuzzerFork.h
+@@ -16,7 +16,7 @@
+ #include <string>
+ 
+ namespace fuzzer {
+-void FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
++int FuzzWithFork(Random &Rand, const FuzzingOptions &Options,
+                   const std::vector<std::string> &Args,
+                   const std::vector<std::string> &CorpusDirs, int NumJobs);
+ } // namespace fuzzer
+diff --git a/FuzzerIO.cpp b/FuzzerIO.cpp
+index 8d5b3ae3e1ae..0c77dba7e992 100644
+--- a/FuzzerIO.cpp
++++ b/FuzzerIO.cpp
+@@ -103,7 +103,9 @@ void ReadDirToVectorOfUnits(const char *Path, std::vector<Unit> *V, long *Epoch,
+                             std::vector<std::string> *VPaths) {
+   long E = Epoch ? *Epoch : 0;
+   std::vector<std::string> Files;
+-  ListFilesInDirRecursive(Path, Epoch, &Files, /*TopDir*/true);
++  int Res = ListFilesInDirRecursive(Path, Epoch, &Files, /*TopDir*/true);
++  if (ExitOnError && Res != 0)
++    exit(Res);
+   size_t NumLoaded = 0;
+   for (size_t i = 0; i < Files.size(); i++) {
+     auto &X = Files[i];
+@@ -120,12 +122,15 @@ void ReadDirToVectorOfUnits(const char *Path, std::vector<Unit> *V, long *Epoch,
+   }
+ }
+ 
+-void GetSizedFilesFromDir(const std::string &Dir, std::vector<SizedFile> *V) {
++int GetSizedFilesFromDir(const std::string &Dir, std::vector<SizedFile> *V) {
+   std::vector<std::string> Files;
+-  ListFilesInDirRecursive(Dir, 0, &Files, /*TopDir*/true);
++  int Res = ListFilesInDirRecursive(Dir, 0, &Files, /*TopDir*/true);
++  if (Res != 0)
++    return Res;
+   for (auto &File : Files)
+     if (size_t Size = FileSize(File))
+       V->push_back({File, Size});
++  return 0;
+ }
+ 
+ std::string DirPlusFile(const std::string &DirPath,
+diff --git a/FuzzerIO.h b/FuzzerIO.h
+index 874caad1baed..659996e6eb36 100644
+--- a/FuzzerIO.h
++++ b/FuzzerIO.h
+@@ -70,7 +70,7 @@ bool IsFile(const std::string &Path);
+ bool IsDirectory(const std::string &Path);
+ size_t FileSize(const std::string &Path);
+ 
+-void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
++int ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+                              std::vector<std::string> *V, bool TopDir);
+ 
+ bool MkDirRecursive(const std::string &Dir);
+@@ -90,7 +90,7 @@ struct SizedFile {
+   bool operator<(const SizedFile &B) const { return Size < B.Size; }
+ };
+ 
+-void GetSizedFilesFromDir(const std::string &Dir, std::vector<SizedFile> *V);
++int GetSizedFilesFromDir(const std::string &Dir, std::vector<SizedFile> *V);
+ 
+ char GetSeparator();
+ bool IsSeparator(char C);
+diff --git a/FuzzerIOPosix.cpp b/FuzzerIOPosix.cpp
+index f145dddcbb29..353743ebdb16 100644
+--- a/FuzzerIOPosix.cpp
++++ b/FuzzerIOPosix.cpp
+@@ -53,16 +53,16 @@ std::string Basename(const std::string &Path) {
+   return Path.substr(Pos + 1);
+ }
+ 
+-void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
++int ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+                              std::vector<std::string> *V, bool TopDir) {
+   auto E = GetEpoch(Dir);
+   if (Epoch)
+-    if (E && *Epoch >= E) return;
++    if (E && *Epoch >= E) return 0;
+ 
+   DIR *D = opendir(Dir.c_str());
+   if (!D) {
+     Printf("%s: %s; exiting\n", strerror(errno), Dir.c_str());
+-    exit(1);
++    return 1;
+   }
+   while (auto E = readdir(D)) {
+     std::string Path = DirPlusFile(Dir, E->d_name);
+@@ -71,12 +71,16 @@ void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+       V->push_back(Path);
+     else if ((E->d_type == DT_DIR ||
+              (E->d_type == DT_UNKNOWN && IsDirectory(Path))) &&
+-             *E->d_name != '.')
+-      ListFilesInDirRecursive(Path, Epoch, V, false);
++             *E->d_name != '.') {
++      int Res = ListFilesInDirRecursive(Path, Epoch, V, false);
++      if (Res != 0)
++        return Res;
++    }
+   }
+   closedir(D);
+   if (Epoch && TopDir)
+     *Epoch = E;
++  return 0;
+ }
+ 
+ void IterateDirRecursive(const std::string &Dir,
+diff --git a/FuzzerIOWindows.cpp b/FuzzerIOWindows.cpp
+index 6771fc173c91..9cf6062def03 100644
+--- a/FuzzerIOWindows.cpp
++++ b/FuzzerIOWindows.cpp
+@@ -110,11 +110,11 @@ size_t FileSize(const std::string &Path) {
+   return size.QuadPart;
+ }
+ 
+-void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
++int ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+                              std::vector<std::string> *V, bool TopDir) {
+   auto E = GetEpoch(Dir);
+   if (Epoch)
+-    if (E && *Epoch >= E) return;
++    if (E && *Epoch >= E) return 0;
+ 
+   std::string Path(Dir);
+   assert(!Path.empty());
+@@ -128,9 +128,9 @@ void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+   if (FindHandle == INVALID_HANDLE_VALUE)
+   {
+     if (GetLastError() == ERROR_FILE_NOT_FOUND)
+-      return;
++      return 0;
+     Printf("No such file or directory: %s; exiting\n", Dir.c_str());
+-    exit(1);
++    return 1;
+   }
+ 
+   do {
+@@ -143,7 +143,9 @@ void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+                                FindInfo.cFileName[1] == '.'))
+         continue;
+ 
+-      ListFilesInDirRecursive(FileName, Epoch, V, false);
++      int Res = ListFilesInDirRecursive(FileName, Epoch, V, false);
++      if (Res != 0)
++        return Res;
+     }
+     else if (IsFile(FileName, FindInfo.dwFileAttributes))
+       V->push_back(FileName);
+@@ -157,6 +159,7 @@ void ListFilesInDirRecursive(const std::string &Dir, long *Epoch,
+ 
+   if (Epoch && TopDir)
+     *Epoch = E;
++  return 0;
+ }
+ 
+ void IterateDirRecursive(const std::string &Dir,
+diff --git a/FuzzerInternal.h b/FuzzerInternal.h
+index 88504705137a..a9d97ef590ee 100644
+--- a/FuzzerInternal.h
++++ b/FuzzerInternal.h
+@@ -34,8 +34,8 @@ public:
+   Fuzzer(UserCallback CB, InputCorpus &Corpus, MutationDispatcher &MD,
+          const FuzzingOptions &Options);
+   ~Fuzzer() = delete;
+-  void Loop(std::vector<SizedFile> &CorporaFiles);
+-  void ReadAndExecuteSeedCorpora(std::vector<SizedFile> &CorporaFiles);
++  int Loop(std::vector<SizedFile> &CorporaFiles);
++  int ReadAndExecuteSeedCorpora(std::vector<SizedFile> &CorporaFiles);
+   void MinimizeCrashLoop(const Unit &U);
+   void RereadOutputCorpus(size_t MaxSize);
+ 
+@@ -64,6 +64,9 @@ public:
+   static void StaticFileSizeExceedCallback();
+   static void StaticGracefulExitCallback();
+ 
++  static void GracefullyExit();
++  static bool isGracefulExitRequested();
++
+   // Executes the target callback on {Data, Size} once.
+   // Returns false if the input was rejected by the target (target returned -1),
+   // and true otherwise.
+@@ -75,7 +78,7 @@ public:
+ 
+   // Merge Corpora[1:] into Corpora[0].
+   void Merge(const std::vector<std::string> &Corpora);
+-  void CrashResistantMergeInternalStep(const std::string &ControlFilePath,
++  int CrashResistantMergeInternalStep(const std::string &ControlFilePath,
+                                        bool IsSetCoverMerge);
+   MutationDispatcher &GetMD() { return MD; }
+   void PrintFinalStats();
+@@ -89,7 +92,7 @@ public:
+                                bool DuringInitialCorpusExecution);
+ 
+   void HandleMalloc(size_t Size);
+-  static void MaybeExitGracefully();
++  static bool MaybeExitGracefully();
+   static int InterruptExitCode();
+   std::string WriteToOutputCorpus(const Unit &U);
+ 
+@@ -99,7 +102,7 @@ private:
+   void ExitCallback();
+   void CrashOnOverwrittenData();
+   void InterruptCallback();
+-  void MutateAndTestOne();
++  bool MutateAndTestOne();
+   void PurgeAllocator();
+   void ReportNewCoverage(InputInfo *II, const Unit &U);
+   void PrintPulseAndReportSlowInput(const uint8_t *Data, size_t Size);
+diff --git a/FuzzerLoop.cpp b/FuzzerLoop.cpp
+index 263140c99f57..eff687380f15 100644
+--- a/FuzzerLoop.cpp
++++ b/FuzzerLoop.cpp
+@@ -252,12 +252,20 @@ void Fuzzer::ExitCallback() {
+   _Exit(Options.ErrorExitCode);
+ }
+ 
+-void Fuzzer::MaybeExitGracefully() {
+-  if (!F->GracefulExitRequested) return;
++bool Fuzzer::MaybeExitGracefully() {
++  if (!F->GracefulExitRequested) return false;
+   Printf("==%lu== INFO: libFuzzer: exiting as requested\n", GetPid());
+   RmDirRecursive(TempPath("FuzzWithFork", ".dir"));
+   F->PrintFinalStats();
+-  _Exit(0);
++  return true;
++}
++
++void Fuzzer::GracefullyExit() {
++  F->GracefulExitRequested = true;
++}
++
++bool Fuzzer::isGracefulExitRequested() {
++  return F->GracefulExitRequested;
+ }
+ 
+ int Fuzzer::InterruptExitCode() {
+@@ -719,7 +727,7 @@ void Fuzzer::TryDetectingAMemoryLeak(const uint8_t *Data, size_t Size,
+   }
+ }
+ 
+-void Fuzzer::MutateAndTestOne() {
++bool Fuzzer::MutateAndTestOne() {
+   MD.StartMutationSequence();
+ 
+   auto &II = Corpus.ChooseUnitToMutate(MD.GetRand());
+@@ -744,7 +752,7 @@ void Fuzzer::MutateAndTestOne() {
+   for (int i = 0; i < Options.MutateDepth; i++) {
+     if (TotalNumberOfRuns >= Options.MaxNumberOfRuns)
+       break;
+-    MaybeExitGracefully();
++    if (MaybeExitGracefully()) return true;
+     size_t NewSize = 0;
+     if (II.HasFocusFunction && !II.DataFlowTraceForFocusFunction.empty() &&
+         Size <= CurrentMaxMutationLen)
+@@ -778,6 +786,7 @@ void Fuzzer::MutateAndTestOne() {
+   }
+ 
+   II.NeedsEnergyUpdate = true;
++  return false;
+ }
+ 
+ void Fuzzer::PurgeAllocator() {
+@@ -795,7 +804,7 @@ void Fuzzer::PurgeAllocator() {
+   LastAllocatorPurgeAttemptTime = system_clock::now();
+ }
+ 
+-void Fuzzer::ReadAndExecuteSeedCorpora(std::vector<SizedFile> &CorporaFiles) {
++int Fuzzer::ReadAndExecuteSeedCorpora(std::vector<SizedFile> &CorporaFiles) {
+   const size_t kMaxSaneLen = 1 << 20;
+   const size_t kMinDefaultLen = 4096;
+   size_t MaxSize = 0;
+@@ -865,14 +874,21 @@ void Fuzzer::ReadAndExecuteSeedCorpora(std::vector<SizedFile> &CorporaFiles) {
+                        /*TimeOfUnit=*/duration_cast<microseconds>(0s), {0}, DFT,
+                        /*BaseII*/ nullptr);
+   }
++  return 0;
+ }
+ 
+-void Fuzzer::Loop(std::vector<SizedFile> &CorporaFiles) {
++int Fuzzer::Loop(std::vector<SizedFile> &CorporaFiles) {
+   auto FocusFunctionOrAuto = Options.FocusFunction;
+-  DFT.Init(Options.DataFlowTrace, &FocusFunctionOrAuto, CorporaFiles,
++  int Res = DFT.Init(Options.DataFlowTrace, &FocusFunctionOrAuto, CorporaFiles,
+            MD.GetRand());
+-  TPC.SetFocusFunction(FocusFunctionOrAuto);
+-  ReadAndExecuteSeedCorpora(CorporaFiles);
++  if (Res != 0)
++    return Res;
++  Res = TPC.SetFocusFunction(FocusFunctionOrAuto);
++  if (Res != 0)
++    return Res;
++  Res = ReadAndExecuteSeedCorpora(CorporaFiles);
++  if (Res != 0)
++    return Res;
+   DFT.Clear();  // No need for DFT any more.
+   TPC.SetPrintNewPCs(Options.PrintNewCovPcs);
+   TPC.SetPrintNewFuncs(Options.PrintNewCovFuncs);
+@@ -910,13 +926,15 @@ void Fuzzer::Loop(std::vector<SizedFile> &CorporaFiles) {
+     }
+ 
+     // Perform several mutations and runs.
+-    MutateAndTestOne();
++    if (MutateAndTestOne())
++      return 0;
+ 
+     PurgeAllocator();
+   }
+ 
+   PrintStats("DONE  ", "\n");
+   MD.PrintRecommendedDictionary();
++  return 0;
+ }
+ 
+ void Fuzzer::MinimizeCrashLoop(const Unit &U) {
+diff --git a/FuzzerMerge.cpp b/FuzzerMerge.cpp
+index 69e71135a3e4..30ecc796b41d 100644
+--- a/FuzzerMerge.cpp
++++ b/FuzzerMerge.cpp
+@@ -28,11 +28,12 @@ bool Merger::Parse(const std::string &Str, bool ParseCoverage) {
+   return Parse(SS, ParseCoverage);
+ }
+ 
+-void Merger::ParseOrExit(std::istream &IS, bool ParseCoverage) {
++int Merger::ParseOrExit(std::istream &IS, bool ParseCoverage) {
+   if (!Parse(IS, ParseCoverage)) {
+     Printf("MERGE: failed to parse the control file (unexpected error)\n");
+-    exit(1);
++    return 1;
+   }
++  return 0;
+ }
+ 
+ // The control file example:
+@@ -201,12 +202,14 @@ std::set<uint32_t> Merger::AllFeatures() const {
+ }
+ 
+ // Inner process. May crash if the target crashes.
+-void Fuzzer::CrashResistantMergeInternalStep(const std::string &CFPath,
++int Fuzzer::CrashResistantMergeInternalStep(const std::string &CFPath,
+                                              bool IsSetCoverMerge) {
+   Printf("MERGE-INNER: using the control file '%s'\n", CFPath.c_str());
+   Merger M;
+   std::ifstream IF(CFPath);
+-  M.ParseOrExit(IF, false);
++  int Res = M.ParseOrExit(IF, false);
++  if (Res != 0)
++    return Res;
+   IF.close();
+   if (!M.LastFailure.empty())
+     Printf("MERGE-INNER: '%s' caused a failure at the previous merge step\n",
+@@ -224,7 +227,8 @@ void Fuzzer::CrashResistantMergeInternalStep(const std::string &CFPath,
+   };
+   std::set<const TracePC::PCTableEntry *> AllPCs;
+   for (size_t i = M.FirstNotProcessedFile; i < M.Files.size(); i++) {
+-    Fuzzer::MaybeExitGracefully();
++    if (Fuzzer::MaybeExitGracefully())
++      return 0;
+     auto U = FileToVector(M.Files[i].Name);
+     if (U.size() > MaxInputLen) {
+       U.resize(MaxInputLen);
+@@ -270,6 +274,7 @@ void Fuzzer::CrashResistantMergeInternalStep(const std::string &CFPath,
+     OF.flush();
+   }
+   PrintStatsWrapper("DONE  ");
++  return 0;
+ }
+ 
+ // Merges all corpora into the first corpus. A file is added into
+@@ -393,11 +398,12 @@ size_t Merger::SetCoverMerge(const std::set<uint32_t> &InitialFeatures,
+   return NewFeatures->size();
+ }
+ 
+-static size_t
++static int
+ WriteNewControlFile(const std::string &CFPath,
+                     const std::vector<SizedFile> &OldCorpus,
+                     const std::vector<SizedFile> &NewCorpus,
+                     const std::vector<MergeFileInfo> &KnownFiles) {
++                    size_t &NumFiles) {
+   std::unordered_set<std::string> FilesToSkip;
+   for (auto &SF: KnownFiles)
+     FilesToSkip.insert(SF.Name);
+@@ -423,14 +429,15 @@ WriteNewControlFile(const std::string &CFPath,
+   if (!ControlFile) {
+     Printf("MERGE-OUTER: failed to write to the control file: %s\n",
+            CFPath.c_str());
+-    exit(1);
++    return 1;
+   }
+ 
+-  return FilesToUse.size();
++  NumFiles = FilesToUse.size();
++  return 0;
+ }
+ 
+ // Outer process. Does not call the target code and thus should not fail.
+-void CrashResistantMerge(const std::vector<std::string> &Args,
++int CrashResistantMerge(const std::vector<std::string> &Args,
+                          const std::vector<SizedFile> &OldCorpus,
+                          const std::vector<SizedFile> &NewCorpus,
+                          std::vector<std::string> *NewFiles,
+@@ -440,8 +447,9 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+                          std::set<uint32_t> *NewCov, const std::string &CFPath,
+                          bool V, /*Verbose*/
+                          bool IsSetCoverMerge) {
+-  if (NewCorpus.empty() && OldCorpus.empty()) return;  // Nothing to merge.
++  if (NewCorpus.empty() && OldCorpus.empty()) return 0;  // Nothing to merge.
+   size_t NumAttempts = 0;
++  int Res;
+   std::vector<MergeFileInfo> KnownFiles;
+   if (FileSize(CFPath)) {
+     VPrintf(V, "MERGE-OUTER: non-empty control file provided: '%s'\n",
+@@ -462,7 +470,8 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+           VPrintf(
+               V,
+               "MERGE-OUTER: nothing to do, merge has been completed before\n");
+-          exit(0);
++          Fuzzer::GracefullyExit();
++          return 0;
+         }
+ 
+         // Number of input files likely changed, start merge from scratch, but
+@@ -487,7 +496,9 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+             "%zd files, %zd in the initial corpus, %zd processed earlier\n",
+             OldCorpus.size() + NewCorpus.size(), OldCorpus.size(),
+             KnownFiles.size());
+-    NumAttempts = WriteNewControlFile(CFPath, OldCorpus, NewCorpus, KnownFiles);
++    Res = WriteNewControlFile(CFPath, OldCorpus, NewCorpus, KnownFiles, NumAttempts);
++    if (Res != 0)
++      return Res;
+   }
+ 
+   // Execute the inner process until it passes.
+@@ -498,7 +509,8 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+   BaseCmd.removeFlag("fork");
+   BaseCmd.removeFlag("collect_data_flow");
+   for (size_t Attempt = 1; Attempt <= NumAttempts; Attempt++) {
+-    Fuzzer::MaybeExitGracefully();
++    if (Fuzzer::MaybeExitGracefully())
++      return 0;
+     VPrintf(V, "MERGE-OUTER: attempt %zd\n", Attempt);
+     Command Cmd(BaseCmd);
+     Cmd.addFlag("merge_control_file", CFPath);
+@@ -522,7 +534,9 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+   VPrintf(V, "MERGE-OUTER: the control file has %zd bytes\n",
+           (size_t)IF.tellg());
+   IF.seekg(0, IF.beg);
+-  M.ParseOrExit(IF, true);
++  Res = M.ParseOrExit(IF, true);
++  if (Res != 0)
++    return Res;
+   IF.close();
+   VPrintf(V,
+           "MERGE-OUTER: consumed %zdMb (%zdMb rss) to parse the control file\n",
+@@ -536,6 +550,7 @@ void CrashResistantMerge(const std::vector<std::string> &Args,
+   VPrintf(V, "MERGE-OUTER: %zd new files with %zd new features added; "
+           "%zd new coverage edges\n",
+          NewFiles->size(), NewFeatures->size(), NewCov->size());
++  return 0;
+ }
+ 
+ } // namespace fuzzer
+diff --git a/FuzzerMerge.h b/FuzzerMerge.h
+index 42f798e1da18..1b5f6f69b0dd 100644
+--- a/FuzzerMerge.h
++++ b/FuzzerMerge.h
+@@ -64,7 +64,7 @@ struct Merger {
+ 
+   bool Parse(std::istream &IS, bool ParseCoverage);
+   bool Parse(const std::string &Str, bool ParseCoverage);
+-  void ParseOrExit(std::istream &IS, bool ParseCoverage);
++  int ParseOrExit(std::istream &IS, bool ParseCoverage);
+   size_t Merge(const std::set<uint32_t> &InitialFeatures,
+                std::set<uint32_t> *NewFeatures,
+                const std::set<uint32_t> &InitialCov, std::set<uint32_t> *NewCov,
+@@ -78,7 +78,7 @@ struct Merger {
+   std::set<uint32_t> AllFeatures() const;
+ };
+ 
+-void CrashResistantMerge(const std::vector<std::string> &Args,
++int CrashResistantMerge(const std::vector<std::string> &Args,
+                          const std::vector<SizedFile> &OldCorpus,
+                          const std::vector<SizedFile> &NewCorpus,
+                          std::vector<std::string> *NewFiles,
+diff --git a/FuzzerTracePC.cpp b/FuzzerTracePC.cpp
+index 7bd1a0870c59..d083e725a26b 100644
+--- a/FuzzerTracePC.cpp
++++ b/FuzzerTracePC.cpp
+@@ -251,13 +251,13 @@ void TracePC::IterateCoveredFunctions(CallBack CB) {
+   }
+ }
+ 
+-void TracePC::SetFocusFunction(const std::string &FuncName) {
++int TracePC::SetFocusFunction(const std::string &FuncName) {
+   // This function should be called once.
+   assert(!FocusFunctionCounterPtr);
+   // "auto" is not a valid function name. If this function is called with "auto"
+   // that means the auto focus functionality failed.
+   if (FuncName.empty() || FuncName == "auto")
+-    return;
++    return 0;
+   for (size_t M = 0; M < NumModules; M++) {
+     auto &PCTE = ModulePCTable[M];
+     size_t N = PCTE.Stop - PCTE.Start;
+@@ -269,13 +269,13 @@ void TracePC::SetFocusFunction(const std::string &FuncName) {
+       if (FuncName != Name) continue;
+       Printf("INFO: Focus function is set to '%s'\n", Name.c_str());
+       FocusFunctionCounterPtr = Modules[M].Start() + I;
+-      return;
++      return 0;
+     }
+   }
+ 
+   Printf("ERROR: Failed to set focus function. Make sure the function name is "
+          "valid (%s) and symbolization is enabled.\n", FuncName.c_str());
+-  exit(1);
++  return 1;
+ }
+ 
+ bool TracePC::ObservedFocusFunction() {
+diff --git a/FuzzerTracePC.h b/FuzzerTracePC.h
+index af1f9d81e950..507ea6a4abfc 100644
+--- a/FuzzerTracePC.h
++++ b/FuzzerTracePC.h
+@@ -116,7 +116,7 @@ class TracePC {
+       CB(PC);
+   }
+ 
+-  void SetFocusFunction(const std::string &FuncName);
++  int SetFocusFunction(const std::string &FuncName);
+   bool ObservedFocusFunction();
+ 
+   struct PCTableEntry {

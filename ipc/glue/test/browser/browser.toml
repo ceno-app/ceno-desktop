@@ -1,0 +1,69 @@
+[DEFAULT]
+support-files = ["head.js"]
+tags = "os_integration"
+
+["browser_utility_audioDecodeCrash.js"]
+support-files = [
+  "../../../../dom/media/test/small-shot.ogg",
+  "../../../../dom/media/test/small-shot.mp3",
+  "../../../../dom/media/test/small-shot.m4a",
+  "../../../../dom/media/test/small-shot.flac"
+]
+run-if = [
+  "crashreporter",
+]
+skip-if = [
+  "ccov",
+]
+
+["browser_utility_crashReporter.js"]
+run-if = [
+  "crashreporter",
+]
+skip-if = [
+  "ccov",
+]
+
+["browser_utility_filepicker_crashed.js"]
+run-if = [
+  "os == 'win' && crashreporter",
+]
+skip-if = [
+  "ccov",
+]
+
+["browser_utility_geolocation_crashed.js"]
+run-if = [
+  "os == 'win' && crashreporter",
+]
+skip-if = [
+  "os == 'win' && os_version == '11.26200'", # Bug 2019745
+  "ccov",
+]
+
+["browser_utility_hard_kill.js"]
+
+["browser_utility_hard_kill_delayed.js"] # bug 1754572: we really want hard_kill to be rust before hard_kill_delayed
+
+["browser_utility_memoryReport.js"]
+
+["browser_utility_multipleAudio.js"]
+support-files = [
+  "../../../../dom/media/test/small-shot.ogg",
+  "../../../../dom/media/test/small-shot.mp3",
+  "../../../../dom/media/test/small-shot.m4a",
+  "../../../../dom/media/test/small-shot.flac",
+  "head-multiple.js"
+]
+
+["browser_utility_profiler.js"]
+skip-if = [
+  "tsan",
+] # from tools/profiler/tests/browser/browser.toml, timing out on profiler tests?
+
+["browser_utility_start_clean_shutdown.js"]
+
+["browser_zombies.js"]
+run-if = [
+  "os == 'linux'",
+]

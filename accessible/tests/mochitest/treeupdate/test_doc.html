@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Test document root content mutations</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Helpers
+
+    function getDocNode(aID) {
+      return getNode(aID).contentDocument;
+    }
+
+    function getDocChildNode(aID) {
+      return getDocNode(aID).body.firstChild;
+    }
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Test
+    // enableLogging('tree,verbose');
+
+    async function doTest() {
+      let docNode;
+      let script;
+      let tree;
+      let text;
+      let newBodyNode;
+      let newTextNode;
+
+      // writeIFrameDoc
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        // We can't use open/write/close outside of iframe document because of
+        // security error.
+        script = docNode.createElement("script");
+        script.textContent = "document.open(); document.write('hello'); document.close();";
+        docNode.body.appendChild(script);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "hello",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // replaceIFrameHTMLElm
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        const newHTMLNode = docNode.createElement("html");
+        newHTMLNode.innerHTML = `<body><p>New Wave</p></body`;
+        docNode.replaceChild(newHTMLNode, docNode.documentElement);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_PARAGRAPH,
+              children: [
+                {
+                  role: ROLE_TEXT_LEAF,
+                  name: "New Wave",
+                },
+              ],
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // replaceIFrameBody
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        newBodyNode = docNode.createElement("body");
+        newTextNode = docNode.createTextNode("New Hello");
+        newBodyNode.appendChild(newTextNode);
+        docNode.documentElement.replaceChild(newBodyNode, docNode.body);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "New Hello",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // openIFrameDoc
+      {
+        text = getAccessible(getAccessible(getDocNode("iframe")).firstChild);
+        let p = waitForEvents([
+          [EVENT_HIDE, text],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        script = docNode.createElement("script");
+        script.textContent = "function closeMe() { document.write('Works?'); document.close(); } window.closeMe = closeMe; document.open();";
+        docNode.body.appendChild(script);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [ ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // closeIFrameDoc
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        getDocNode("iframe").write("Works?"); getDocNode("iframe").close();
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "Works?",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // removeHTMLFromIFrameDoc
+      {
+        text = getAccessible(getAccessible(getDocNode("iframe")).firstChild);
+        let p = waitForEvents([
+          [EVENT_HIDE, text],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        docNode.firstChild.remove();
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [ ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // insertHTMLToIFrameDoc
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        const html = docNode.createElement("html");
+        const body = docNode.createElement("body");
+        const textNode = docNode.createTextNode("Haha");
+        body.appendChild(textNode);
+        html.appendChild(body);
+        docNode.appendChild(html);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "Haha",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // removeBodyFromIFrameDoc
+      {
+        text = getAccessible(getAccessible(getDocNode("iframe")).firstChild);
+        let p = waitForEvents([
+          [EVENT_HIDE, text],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        docNode.documentElement.removeChild(docNode.body);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [ ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // insertElmUnderDocElmWhileBodyMissed
+      {
+        docNode = getDocNode("iframe");
+        const inputNode = docNode.createElement("input");
+        let p = waitForEvents([
+          [EVENT_SHOW, inputNode],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode.documentElement.appendChild(inputNode);
+        await p;
+        tree =
+          { DOCUMENT: [
+            { ENTRY: [ ] },
+          ] };
+        testAccessibleTree(docNode, tree);
+
+        // Remove aftermath of this test before next test starts.
+        docNode.documentElement.removeChild(inputNode);
+      }
+
+      // insertBodyToIFrameDoc
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        const bodyElm = docNode.createElement("body");
+        const bodyText = docNode.createTextNode("Yo ho ho i butylka roma!");
+        bodyElm.appendChild(bodyText);
+        docNode.documentElement.appendChild(bodyElm);
+        await p;
+        tree = {
+          role: ROLE_DOCUMENT,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "Yo ho ho i butylka roma!",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      // changeSrc
+      {
+        let containerNode = getNode("iframe");
+        let reordered = waitForEvent(EVENT_REORDER, containerNode);
+        containerNode.src = "data:text/html,<html><input></html>";
+        await reordered;
+        tree =
+          { INTERNAL_FRAME: [
+            { DOCUMENT: [
+              { ENTRY: [ ] },
+            ] },
+          ] };
+        testAccessibleTree(containerNode, tree);
+      }
+
+      // replaceIFrameBodyOnARIARoleBody
+      {
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible.DOMNode == getDocChildNode("iframe")],
+          [EVENT_REORDER, getDocNode("iframe")],
+        ]);
+        docNode = getDocNode("iframe");
+        newBodyNode = docNode.createElement("body");
+        newTextNode = docNode.createTextNode("New Hello");
+        newBodyNode.appendChild(newTextNode);
+        newBodyNode.setAttribute("role", "application");
+        docNode.documentElement.replaceChild(newBodyNode, docNode.body);
+        await p;
+        tree = {
+          role: ROLE_APPLICATION,
+          children: [
+            {
+              role: ROLE_TEXT_LEAF,
+              name: "New Hello",
+            },
+          ],
+        };
+        testAccessibleTree(getDocNode("iframe"), tree);
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body>
+
+  <a target="_blank"
+     title="Update accessible tree when root element is changed"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=606082">Mozilla Bug 606082</a>
+  <a target="_blank"
+     title="Elements inserted outside the body aren't accessible"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=608887">Mozilla Bug 608887</a>
+  <a target="_blank"
+     title="Reorder event for document must be fired after document initial tree creation"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=669263">Mozilla Bug 669263</a>
+  <a target="_blank"
+     title="Changing the HTML body doesn't pick up ARIA role"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=818407">Mozilla Bug 818407</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <iframe id="iframe"></iframe>
+
+  <div id="eventdump"></div>
+</body>
+</html>

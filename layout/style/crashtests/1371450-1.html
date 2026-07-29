@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<title></title>
+<style>
+@keyframes anim {
+  to { transform: rotate(360deg); }
+}
+#animation {
+  animation: anim 3s infinite;
+}
+.red {
+  color: red;
+}
+</style>
+<div><span id="target">text</span></div>
+<div id="animation">animation</div>
+<script>
+window.addEventListener('load', () => {
+  var target = document.getElementById('target');
+  target.classList.add('red');
+  setTimeout(() => {
+    target.classList.remove('red');
+    SpecialPowers.wrap(window)
+                 .synthesizeMouseEvent("mousemove", 100, 100, { button: 1, modifiers: 1 });
+    setTimeout(() => {
+      document.documentElement.classList.remove("reftest-wait");
+    }, 0);
+  }, 0);
+  SpecialPowers.wrap(window)
+               .synthesizeMouseEvent("mousemove", 100, 100, { button: 1, modifiers: 1 });
+});
+</script>

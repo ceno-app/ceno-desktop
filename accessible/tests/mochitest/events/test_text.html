@@ -1,0 +1,264 @@
+<html>
+
+<head>
+  <title>Accessible mutation events testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+
+    async function doTests() {
+      // Text remove event on inaccessible child HTML span removal containing
+      // accessible text nodes.
+      let pNode = getNode("p");
+
+      {
+        let p = waitForEvent(EVENT_TEXT_REMOVED, pNode);
+        pNode.firstChild.remove();
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 0, "Wrong start offset for " + prettyName(pNode));
+        is(evt.length, 5, "Wrong length for " + prettyName(pNode));
+        is(evt.isInserted, false, "Wrong isInserted for " + prettyName(pNode));
+        is(evt.modifiedText, "33322", "Wrong text for " + prettyName(pNode));
+      }
+
+      // insertChildSpan all together
+      {
+        let p = waitForEvent(EVENT_TEXT_INSERTED, pNode);
+        let topSpan = document.createElement("span");
+        let fSpan = document.createElement("span");
+        fSpan.textContent = "333";
+        topSpan.appendChild(fSpan);
+        let sSpan = document.createElement("span");
+        sSpan.textContent = "22";
+        topSpan.appendChild(sSpan);
+        pNode.insertBefore(topSpan, pNode.childNodes[0]);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 0, "Wrong start offset for " + prettyName(pNode));
+        is(evt.length, 5, "Wrong length for " + prettyName(pNode));
+        is(evt.isInserted, true, "Wrong isInserted for " + prettyName(pNode));
+        is(evt.modifiedText, "33322", "Wrong text for " + prettyName(pNode));
+      }
+
+      // insertChildSpan not all together
+      {
+        let p = waitForEvent(EVENT_TEXT_REMOVED, pNode);
+        pNode.firstChild.remove();
+        await p;
+      }
+      {
+        let p = waitForEvent(EVENT_TEXT_INSERTED, pNode);
+        let topSpan = document.createElement("span");
+        pNode.insertBefore(topSpan, pNode.childNodes[0]);
+        let fSpan = document.createElement("span");
+        fSpan.textContent = "333";
+        topSpan.appendChild(fSpan);
+        let sSpan = document.createElement("span");
+        sSpan.textContent = "22";
+        topSpan.appendChild(sSpan);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 0, "Wrong start offset for " + prettyName(pNode));
+        is(evt.length, 5, "Wrong length for " + prettyName(pNode));
+        is(evt.isInserted, true, "Wrong isInserted for " + prettyName(pNode));
+        is(evt.modifiedText, "33322", "Wrong text for " + prettyName(pNode));
+      }
+
+      // Remove embedded character.
+      let divNode = getNode("div");
+      {
+        let p = waitForEvent(EVENT_TEXT_REMOVED, divNode);
+        let childDiv = divNode.childNodes[1];
+        getAccessible(childDiv);
+        divNode.removeChild(childDiv);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 5, "Wrong start offset for " + prettyName(divNode));
+        is(evt.length, 1, "Wrong length for " + prettyName(divNode));
+        is(
+          evt.isInserted,
+          false,
+          "Wrong isInserted for " + prettyName(divNode)
+        );
+        is(
+          evt.modifiedText,
+          kEmbedChar,
+          "Wrong text for " + prettyName(divNode)
+        );
+      }
+
+      {
+        let p = waitForEvent(EVENT_TEXT_INSERTED, divNode);
+        let childDiv = document.createElement("div");
+        childDiv.textContent = "hello";
+        divNode.insertBefore(childDiv, divNode.childNodes[1]);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 5, "Wrong start offset for " + prettyName(divNode));
+        is(evt.length, 1, "Wrong length for " + prettyName(divNode));
+        is(evt.isInserted, true, "Wrong isInserted for " + prettyName(divNode));
+        is(
+          evt.modifiedText,
+          kEmbedChar,
+          "Wrong text for " + prettyName(divNode)
+        );
+      }
+
+      // Remove all children (last to first).
+      let div2Node = getNode("div2");
+      let text = kEmbedChar + "txt" + kEmbedChar;
+      {
+        let p = waitForEvent(EVENT_TEXT_REMOVED, div2Node);
+        while (div2Node.firstChild) {
+          div2Node.removeChild(div2Node.lastChild);
+        }
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 0, "Wrong start offset for " + prettyName(div2Node));
+        is(evt.length, 5, "Wrong length for " + prettyName(div2Node));
+        is(
+          evt.isInserted,
+          false,
+          "Wrong isInserted for " + prettyName(div2Node)
+        );
+        is(evt.modifiedText, text, "Wrong text for " + prettyName(div2Node));
+      }
+
+      // Remove all children (first to last).
+      let div3Node = getNode("div3");
+      {
+        let p = waitForEvent(EVENT_TEXT_REMOVED, div3Node);
+        while (div3Node.firstChild) {
+          div3Node.firstChild.remove();
+        }
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(evt.start, 0, "Wrong start offset for " + prettyName(div3Node));
+        is(evt.length, 5, "Wrong length for " + prettyName(div3Node));
+        is(
+          evt.isInserted,
+          false,
+          "Wrong isInserted for " + prettyName(div3Node)
+        );
+        is(evt.modifiedText, text, "Wrong text for " + prettyName(div3Node));
+      }
+
+      // Text remove from text node within hypertext accessible.
+      let inputNode = getNode("input");
+      {
+        let p = waitForEvents([
+          [EVENT_TEXT_REMOVED, inputNode],
+          [EVENT_TEXT_VALUE_CHANGE, inputNode],
+        ]);
+        inputNode.focus();
+        inputNode.setSelectionRange(1, 3);
+        synthesizeKey("KEY_Delete");
+        let [textEvt] = await p;
+        textEvt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(textEvt.start, 1, "Wrong start offset for " + prettyName(inputNode));
+        is(textEvt.length, 2, "Wrong length for " + prettyName(inputNode));
+        is(
+          textEvt.isInserted,
+          false,
+          "Wrong isInserted for " + prettyName(inputNode)
+        );
+        is(
+          textEvt.modifiedText,
+          "al",
+          "Wrong text for " + prettyName(inputNode)
+        );
+      }
+
+      {
+        let p = waitForEvents([
+          [EVENT_TEXT_INSERTED, inputNode],
+          [EVENT_TEXT_VALUE_CHANGE, inputNode],
+        ]);
+        inputNode.focus();
+        sendString("a");
+        let [textEvt] = await p;
+        textEvt.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(textEvt.start, 1, "Wrong start offset for " + prettyName(inputNode));
+        is(textEvt.length, 1, "Wrong length for " + prettyName(inputNode));
+        is(
+          textEvt.isInserted,
+          true,
+          "Wrong isInserted for " + prettyName(inputNode)
+        );
+        is(
+          textEvt.modifiedText,
+          "a",
+          "Wrong text for " + prettyName(inputNode)
+        );
+      }
+
+      // bug 570691
+      todo(false, "Fix text change events from editable area, see bug 570691");
+      // var textNode = getNode("editable").firstChild;
+      // removeTextFromEditable("editable", 1, 3, "al", textNode);
+      // textNode = getNode("editable2").firstChild.firstChild;
+      // removeTextFromEditable("editable2", 1, 3, "al", textNode);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=566293"
+     title=" wrong length of text remove event when inaccessible node containing accessible nodes is removed">
+    Mozilla Bug 566293
+  </a><br>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=570710"
+     title="Avoid extra array traversal during text event creation">
+    Mozilla Bug 570710
+  </a><br>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=574003"
+     title="Coalesce text events on nodes removal">
+    Mozilla Bug 574003
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=575052"
+     title="Cache text offsets within hypertext accessible">
+    Mozilla Bug 575052
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=570275"
+     title="Rework accessible tree update code">
+    Mozilla Bug 570275
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <p id="p"><span><span>333</span><span>22</span></span>1111</p>
+  <div id="div">hello<div>hello</div>hello</div>
+  <div id="div2"><div>txt</div>txt<div>txt</div></div>
+  <div id="div3"><div>txt</div>txt<div>txt</div></div>
+  <input id="input" value="value">
+  <div contentEditable="true" id="editable">value</div>
+  <div contentEditable="true" id="editable2"><span>value</span></div>
+</body>
+</html>

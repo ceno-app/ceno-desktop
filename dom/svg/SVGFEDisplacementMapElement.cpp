@@ -1,0 +1,136 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "mozilla/dom/SVGFEDisplacementMapElement.h"
+
+#include "mozilla/SVGFilterInstance.h"
+#include "mozilla/dom/BindContext.h"
+#include "mozilla/dom/Document.h"
+#include "mozilla/dom/SVGFEDisplacementMapElementBinding.h"
+
+NS_IMPL_NS_NEW_SVG_ELEMENT(FEDisplacementMap)
+
+using namespace mozilla::gfx;
+
+namespace mozilla::dom {
+
+JSObject* SVGFEDisplacementMapElement::WrapNode(
+    JSContext* aCx, JS::Handle<JSObject*> aGivenProto) {
+  return SVGFEDisplacementMapElement_Binding::Wrap(aCx, this, aGivenProto);
+}
+
+SVGElement::NumberInfo SVGFEDisplacementMapElement::sNumberInfo[1] = {
+    {nsGkAtoms::scale, 0},
+};
+
+SVGEnumMapping SVGFEDisplacementMapElement::sChannelMap[] = {
+    {nsGkAtoms::R, uint8_t(SVGChannel::R)},
+    {nsGkAtoms::G, uint8_t(SVGChannel::G)},
+    {nsGkAtoms::B, uint8_t(SVGChannel::B)},
+    {nsGkAtoms::A, uint8_t(SVGChannel::A)},
+    {nullptr, 0}};
+
+SVGElement::EnumInfo SVGFEDisplacementMapElement::sEnumInfo[2] = {
+    {nsGkAtoms::xChannelSelector, sChannelMap, uint8_t(SVGChannel::A)},
+    {nsGkAtoms::yChannelSelector, sChannelMap, uint8_t(SVGChannel::A)}};
+
+SVGElement::StringInfo SVGFEDisplacementMapElement::sStringInfo[3] = {
+    {nsGkAtoms::result, kNameSpaceID_None, true},
+    {nsGkAtoms::in, kNameSpaceID_None, true},
+    {nsGkAtoms::in2, kNameSpaceID_None, true}};
+
+//----------------------------------------------------------------------
+// nsINode methods
+
+NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGFEDisplacementMapElement)
+
+//----------------------------------------------------------------------
+
+already_AddRefed<DOMSVGAnimatedString> SVGFEDisplacementMapElement::In1() {
+  return mStringAttributes[IN1].ToDOMAnimatedString(this);
+}
+
+already_AddRefed<DOMSVGAnimatedString> SVGFEDisplacementMapElement::In2() {
+  return mStringAttributes[IN2].ToDOMAnimatedString(this);
+}
+
+already_AddRefed<DOMSVGAnimatedNumber> SVGFEDisplacementMapElement::Scale() {
+  return mNumberAttributes[SCALE].ToDOMAnimatedNumber(this);
+}
+
+already_AddRefed<DOMSVGAnimatedEnumeration>
+SVGFEDisplacementMapElement::XChannelSelector() {
+  return mEnumAttributes[CHANNEL_X].ToDOMAnimatedEnum(this);
+}
+
+already_AddRefed<DOMSVGAnimatedEnumeration>
+SVGFEDisplacementMapElement::YChannelSelector() {
+  return mEnumAttributes[CHANNEL_Y].ToDOMAnimatedEnum(this);
+}
+
+FilterPrimitiveDescription SVGFEDisplacementMapElement::GetPrimitiveDescription(
+    SVGFilterInstance* aInstance, const IntRect& aFilterSubregion,
+    const nsTArray<bool>& aInputsAreTainted,
+    nsTArray<RefPtr<SourceSurface>>& aInputImages) {
+  if (aInputsAreTainted[1]) {
+    // If the map is tainted, refuse to apply the effect and act as a
+    // pass-through filter instead, as required by the spec.
+    OffsetAttributes atts;
+    atts.mValue = IntPoint(0, 0);
+    return FilterPrimitiveDescription(AsVariant(std::move(atts)));
+  }
+
+  float scale = aInstance->GetPrimitiveNumber(SVGLength::Axis::XY,
+                                              &mNumberAttributes[SCALE]);
+  DisplacementMapAttributes atts;
+  atts.mScale = scale;
+  atts.mXChannel = SVGChannel(mEnumAttributes[CHANNEL_X].GetAnimValue());
+  atts.mYChannel = SVGChannel(mEnumAttributes[CHANNEL_Y].GetAnimValue());
+  return FilterPrimitiveDescription(AsVariant(std::move(atts)));
+}
+
+bool SVGFEDisplacementMapElement::AttributeAffectsRendering(
+    int32_t aNameSpaceID, nsAtom* aAttribute) const {
+  return SVGFEDisplacementMapElementBase::AttributeAffectsRendering(
+             aNameSpaceID, aAttribute) ||
+         (aNameSpaceID == kNameSpaceID_None &&
+          (aAttribute == nsGkAtoms::in || aAttribute == nsGkAtoms::in2 ||
+           aAttribute == nsGkAtoms::scale ||
+           aAttribute == nsGkAtoms::xChannelSelector ||
+           aAttribute == nsGkAtoms::yChannelSelector));
+}
+
+void SVGFEDisplacementMapElement::GetSourceImageNames(
+    nsTArray<SVGStringInfo>& aSources) {
+  aSources.AppendElement(SVGStringInfo(&mStringAttributes[IN1], this));
+  aSources.AppendElement(SVGStringInfo(&mStringAttributes[IN2], this));
+}
+
+nsresult SVGFEDisplacementMapElement::BindToTree(BindContext& aCtx,
+                                                 nsINode& aParent) {
+  if (aCtx.InComposedDoc()) {
+    aCtx.OwnerDoc().SetUseCounter(eUseCounter_custom_feDisplacementMap);
+  }
+
+  return SVGFEDisplacementMapElementBase::BindToTree(aCtx, aParent);
+}
+
+//----------------------------------------------------------------------
+// SVGElement methods
+
+SVGElement::NumberAttributesInfo SVGFEDisplacementMapElement::GetNumberInfo() {
+  return NumberAttributesInfo(mNumberAttributes, sNumberInfo,
+                              std::size(sNumberInfo));
+}
+
+SVGElement::EnumAttributesInfo SVGFEDisplacementMapElement::GetEnumInfo() {
+  return EnumAttributesInfo(mEnumAttributes, sEnumInfo, std::size(sEnumInfo));
+}
+
+SVGElement::StringAttributesInfo SVGFEDisplacementMapElement::GetStringInfo() {
+  return StringAttributesInfo(mStringAttributes, sStringInfo,
+                              std::size(sStringInfo));
+}
+
+}  // namespace mozilla::dom

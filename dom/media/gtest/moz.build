@@ -1,0 +1,190 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+include("/dom/media/webrtc/third_party_build/webrtc.mozbuild")
+
+DEFINES["VISIBLE_TIMEUNIT_INTERNALS"] = True
+
+LOCAL_INCLUDES += [
+    "!/dist/include/libwebrtc_overrides",
+    "!/xpcom/components",
+    "/dom/media/driftcontrol",
+    "/dom/media/mediasink",
+    "/dom/media/systemservices",
+    "/dom/media/webrtc",
+    "/dom/media/webrtc/common",
+    "/third_party/abseil-cpp",
+    "/third_party/libwebrtc",
+    "/xpcom/build",
+    "/xpcom/components",
+]
+
+UNIFIED_SOURCES += [
+    "MockMediaResource.cpp",
+    "TestAOMDecoder.cpp",
+    "TestAsyncLogger.cpp",
+    "TestAudioBuffer.cpp",
+    "TestAudioBufferAddWithScale.cpp",
+    "TestAudioBuffers.cpp",
+    "TestAudioCallbackDriver.cpp",
+    "TestAudioCompactor.cpp",
+    "TestAudioData.cpp",
+    "TestAudioDecoderInputTrack.cpp",
+    "TestAudioInputSource.cpp",
+    "TestAudioMixer.cpp",
+    "TestAudioPacketizer.cpp",
+    "TestAudioRingBuffer.cpp",
+    "TestAudioSampleFormat.cpp",
+    "TestAudioSegment.cpp",
+    "TestAudioSinkWrapper.cpp",
+    "TestAudioTrackEncoder.cpp",
+    "TestAudioTrackGraph.cpp",
+    "TestBitWriter.cpp",
+    "TestBlankVideoDataCreator.cpp",
+    "TestBufferMediaResource.cpp",
+    "TestBufferReader.cpp",
+    "TestCubebInputStream.cpp",
+    "TestDataMutex.cpp",
+    "TestDecodedStream.cpp",
+    "TestDeviceInputTrack.cpp",
+    "TestDriftCompensation.cpp",
+    "TestGMPUtils.cpp",
+    "TestGMPVideoi420Frame.cpp",
+    "TestGroupId.cpp",
+    "TestHDRUtils.cpp",
+    "TestImageConversion.cpp",
+    "TestIntervalSet.cpp",
+    "TestMediaCapabilities.cpp",
+    "TestMediaCodecsSupport.cpp",
+    "TestMediaDataDecoder.cpp",
+    "TestMediaDataEncoder.cpp",
+    "TestMediaEventSource.cpp",
+    "TestMediaFormatReader.cpp",
+    "TestMediaInfo.cpp",
+    "TestMediaMIMETypes.cpp",
+    "TestMediaQueue.cpp",
+    "TestMediaSpan.cpp",
+    "TestMediaUtils.cpp",
+    "TestMP3Demuxer.cpp",
+    "TestMP4Demuxer.cpp",
+    "TestMuxer.cpp",
+    "TestOfflineClockDriver.cpp",
+    "TestOggWriter.cpp",
+    "TestOpusParser.cpp",
+    "TestPDMFactorySupport.cpp",
+    "TestRemoteImageHolder.cpp",
+    "TestRust.cpp",
+    "TestSimpleMap.cpp",
+    "TestTimeUnit.cpp",
+    "TestUnboundedMPSCQueue.cpp",
+    "TestVideoData.cpp",
+    "TestVideoFrameContainer.cpp",
+    "TestVideoSegment.cpp",
+    "TestVideoSink.cpp",
+    "TestVideoTrackEncoder.cpp",
+    "TestVideoUtils.cpp",
+    "TestVPXDecoding.cpp",
+    "TestWebMBuffered.cpp",
+    "TestWebMDemuxer.cpp",
+    "TestWebMWriter.cpp",
+    "YUVBufferGenerator.cpp",
+]
+
+if CONFIG["MOZ_WEBRTC"]:
+    LOCAL_INCLUDES += [
+        "/dom/media/webrtc/libwebrtcglue",
+    ]
+
+    UNIFIED_SOURCES += [
+        "TestAudioInputProcessing.cpp",
+        "TestCamerasParent.cpp",
+        "TestH264FmtpParser.cpp",
+        "TestRTCStatsTimestampMaker.cpp",
+        "TestWebrtcTaskQueueWrapper.cpp",
+    ]
+
+if CONFIG["OS_TARGET"] != "Android":
+    UNIFIED_SOURCES += [
+        "TestCDMStorage.cpp",
+        "TestGMPCrossOrigin.cpp",
+        "TestGMPRemoveAndDelete.cpp",
+    ]
+
+if CONFIG["OS_TARGET"] == "WINNT":
+    LOCAL_INCLUDES += [
+        "/dom/media/platforms/wmf",
+    ]
+    # Not in UNIFIED_SOURCES: WMF.h pulls in <windows.h> which defines a
+    # StrCat macro that conflicts with absl::StrCat in WebRTC unified units.
+    SOURCES += [
+        "TestWMFDeadlock.cpp",
+    ]
+
+if CONFIG["MOZ_WEBRTC"] and CONFIG["OS_TARGET"] != "Android":
+    UNIFIED_SOURCES += [
+        "TestAudioDeviceEnumerator.cpp",
+        "TestPacer.cpp",
+        "TestVideoFrameConverter.cpp",
+        "TestWebRTCCodecInfo.cpp",
+        "TestWebrtcGmpCodec.cpp",
+    ]
+
+TEST_HARNESS_FILES.gtest += [
+    "../test/av1.mp4",
+    "../test/gizmo-frag.mp4",
+    "../test/gizmo.mp4",
+    "../test/vp9cake.webm",
+    "dash_dashinit.mp4",
+    "id3v2header.mp3",
+    "negative_duration.mp4",
+    "noise.mp3",
+    "noise_vbr.mp3",
+    "short-zero-in-moov.mp4",
+    "short-zero-inband.mov",
+    "small-shot-false-positive.mp3",
+    "small-shot-partial-xing.mp3",
+    "small-shot.mp3",
+    "test.webm",
+    "test_case_1224361.vp8.ivf",
+    "test_case_1224363.vp8.ivf",
+    "test_case_1224369.vp8.ivf",
+    "test_InvalidElementId.webm",
+    "test_InvalidElementSize.webm",
+    "test_InvalidLargeEBMLMaxIdLength.webm",
+    "test_InvalidLargeElementId.webm",
+    "test_InvalidSmallEBMLMaxIdLength.webm",
+    "test_ValidLargeEBMLMaxIdLength.webm",
+    "test_ValidSmallEBMLMaxSizeLength.webm",
+    "test_vbri.mp3",
+    "tos-vp9-hdr-cll.webm",
+    "truncated-xing-placeholder.mp3",
+]
+
+TEST_DIRS += [
+    "mp4_demuxer",
+]
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+LOCAL_INCLUDES += [
+    "/dom/media",
+    "/dom/media/encoder",
+    "/dom/media/gmp",
+    "/dom/media/mediacapabilities",
+    "/dom/media/mp4",
+    "/dom/media/platforms",
+    "/dom/media/platforms/agnostic",
+    "/dom/media/webaudio",
+    "/dom/media/webm",
+    "/dom/media/webrtc",
+    "/gfx/2d/",
+    "/security/certverifier",
+]
+
+FINAL_LIBRARY = "xul-gtest"
+
+if CONFIG["CC_TYPE"] in ("clang", "clang-cl"):
+    CXXFLAGS += [
+        "-Wno-inconsistent-missing-override",
+    ]

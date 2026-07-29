@@ -1,0 +1,266 @@
+<html>
+
+<head>
+  <title>Accessible text update algorithm testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // //////////////////////////////////////////////////////////////////////////
+    // Helpers
+
+    const kRemoval = false;
+    const kInsertion = true;
+    const kUnexpected = true;
+
+    function expStr(x, doublings) {
+      for (let i = 0; i < doublings; ++i)
+        x = x + x;
+      return x;
+    }
+
+    async function changeText(aContainerID, aValue, aEventList) {
+      let containerNode = getNode(aContainerID);
+      let textNode = containerNode.firstChild;
+
+      let expected = [];
+      let unexpected = [];
+      let expectedChecks = [];
+
+      for (let event of aEventList) {
+        let isInserted = event[0];
+        let str = event[1];
+        let offset = event[2];
+        let isUnexpected = event[3] == kUnexpected;
+
+        let evtType = isInserted ? EVENT_TEXT_INSERTED : EVENT_TEXT_REMOVED;
+        let capturedStr = str;
+        let criteria = e => {
+          if (e.accessible !== getAccessible(containerNode)) return false;
+          e.QueryInterface(nsIAccessibleTextChangeEvent);
+          return e.modifiedText === capturedStr;
+        };
+
+        if (isUnexpected) {
+          unexpected.push([evtType, criteria]);
+        } else {
+          expected.push([evtType, criteria]);
+          expectedChecks.push({ isInserted, str, offset });
+        }
+      }
+
+      let eventsObj = { expected, unexpected };
+      let p = waitForEvents(eventsObj, null, false, window);
+      textNode.data = aValue;
+      let results = await p;
+
+      for (let i = 0; i < expectedChecks.length; i++) {
+        let { isInserted, str, offset } = expectedChecks[i];
+        let evtResult = results[i];
+        evtResult.QueryInterface(nsIAccessibleTextChangeEvent);
+        is(
+          evtResult.start,
+          offset,
+          "Wrong start offset for " + prettyName(containerNode)
+        );
+        is(
+          evtResult.length,
+          str.length,
+          "Wrong length for " + prettyName(containerNode)
+        );
+        is(
+          evtResult.isInserted,
+          isInserted,
+          "Wrong isInserted for " + prettyName(containerNode)
+        );
+        is(
+          evtResult.modifiedText,
+          str,
+          "Wrong text for " + prettyName(containerNode)
+        );
+      }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+
+    async function doTests() {
+      // ////////////////////////////////////////////////////////////////////////
+      // wqrema -> tqb: substitution coalesced with removal
+
+      let events = [
+        [ kRemoval, "w", 0 ], // wqrema -> qrema
+        [ kInsertion, "t", 0], // qrema -> tqrema
+        [ kRemoval, "rema", 2 ], // tqrema -> tq
+        [ kInsertion, "b", 2], // tq -> tqb
+      ];
+      await changeText("p1", "tqb", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // b -> insa: substitution coalesced with insertion (complex substitution)
+
+      events = [
+        [ kRemoval, "b", 0 ], // b ->
+        [ kInsertion, "insa", 0], //  -> insa
+      ];
+      await changeText("p2", "insa", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abc -> def: coalesced substitutions
+
+      events = [
+        [ kRemoval, "abc", 0 ], // abc ->
+        [ kInsertion, "def", 0], //  -> def
+      ];
+      await changeText("p3", "def", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abcabc -> abcDEFabc: coalesced insertions
+
+      events = [
+        [ kInsertion, "DEF", 3], // abcabc -> abcDEFabc
+      ];
+      await changeText("p4", "abcDEFabc", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abc -> defabc: insertion into begin
+
+      events = [
+        [ kInsertion, "def", 0], // abc -> defabc
+      ];
+      await changeText("p5", "defabc", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abc -> abcdef: insertion into end
+
+      events = [
+        [ kInsertion, "def", 3], // abc -> abcdef
+      ];
+      await changeText("p6", "abcdef", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // defabc -> abc: removal from begin
+
+      events = [
+        [ kRemoval, "def", 0], // defabc -> abc
+      ];
+      await changeText("p7", "abc", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abcdef -> abc: removal from the end
+
+      events = [
+        [ kRemoval, "def", 3], // abcdef -> abc
+      ];
+      await changeText("p8", "abc", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // abcDEFabc -> abcabc: coalesced removals
+
+      events = [
+        [ kRemoval, "DEF", 3], // abcDEFabc -> abcabc
+      ];
+      await changeText("p9", "abcabc", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // !abcdef@ -> @axbcef!: insertion, deletion and substitutions
+
+      events = [
+        [ kRemoval, "!", 0 ], // !abcdef@ -> abcdef@
+        [ kInsertion, "@", 0], // abcdef@ -> @abcdef@
+        [ kInsertion, "x", 2 ], // @abcdef@ -> @axbcdef@
+        [ kRemoval, "d", 5], // @axbcdef@ -> @axbcef@
+        [ kRemoval, "@", 7 ], // @axbcef@ -> @axbcef
+        [ kInsertion, "!", 7 ], // @axbcef -> @axbcef!
+      ];
+      await changeText("p10", "@axbcef!", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // meilenstein -> levenshtein: insertion, complex and simple substitutions
+
+      events = [
+        [ kRemoval, "m", 0 ], // meilenstein -> eilenstein
+        [ kInsertion, "l", 0], // eilenstein -> leilenstein
+        [ kRemoval, "il", 2 ], // leilenstein -> leenstein
+        [ kInsertion, "v", 2], // leenstein -> levenstein
+        [ kInsertion, "h", 6 ], // levenstein -> levenshtein
+      ];
+      await changeText("p11", "levenshtein", events);
+
+      // ////////////////////////////////////////////////////////////////////////
+      // long strings, remove/insert pair as the old string was replaced on
+      // new one
+
+      let longStr1 = expStr("x", 16);
+      let longStr2 = expStr("X", 16);
+
+      let newStr = "a" + longStr1 + "b";
+      events = [
+        [ kRemoval, "", 1, kUnexpected ],
+        [ kInsertion, longStr1, 1 ],
+      ];
+      await changeText("p12", newStr, events);
+
+      newStr = "a" + longStr2 + "b";
+      events = [
+        [ kRemoval, longStr1, 1 ],
+        [ kInsertion, longStr2, 1],
+      ];
+      await changeText("p12", newStr, events);
+
+      newStr = "ab";
+      events = [
+        [ kRemoval, longStr2, 1 ],
+        [ kInsertion, "", 1, kUnexpected ],
+      ];
+      await changeText("p12", newStr, events);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=626660"
+     title="Cache rendered text on a11y side">
+    Mozilla Bug 626660
+  </a>
+  <br>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <!-- Note: only editable text gets diffed this way. -->
+  <div contenteditable="true">
+    <p id="p1">wqrema</p>
+    <p id="p2">b</p>
+    <p id="p3">abc</p>
+    <p id="p4">abcabc</p>
+    <p id="p5">abc</p>
+    <p id="p6">abc</p>
+    <p id="p7">defabc</p>
+    <p id="p8">abcdef</p>
+    <p id="p9">abcDEFabc</p>
+    <p id="p10">!abcdef@</p>
+    <p id="p11">meilenstein</p>
+    <p id="p12">ab</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+"use strict";
+
+const {
+  Component,
+} = require("resource://devtools/client/shared/vendor/react.mjs");
+const {
+  L10N,
+} = require("resource://devtools/client/netmonitor/src/utils/l10n.js");
+
+const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
+const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
+const {
+  getAbbreviatedMimeType,
+} = require("resource://devtools/client/netmonitor/src/utils/request-utils.js");
+
+class RequestListColumnType extends Component {
+  static get propTypes() {
+    return {
+      item: PropTypes.object.isRequired,
+    };
+  }
+
+  shouldComponentUpdate(nextProps) {
+    return (
+      this.props.item.mimeType !== nextProps.item.mimeType ||
+      this.props.item.isRedirect !== nextProps.item.isRedirect
+    );
+  }
+
+  render() {
+    const { mimeType, isRedirect } = this.props.item;
+    let abbrevType;
+
+    if (mimeType) {
+      abbrevType = getAbbreviatedMimeType(mimeType);
+    }
+
+    return dom.td(
+      {
+        className: "requests-list-column requests-list-type",
+        title: mimeType,
+      },
+      isRedirect
+        ? L10N.getFormatStr("networkMenu.redirect", abbrevType)
+        : abbrevType
+    );
+  }
+}
+
+module.exports = RequestListColumnType;

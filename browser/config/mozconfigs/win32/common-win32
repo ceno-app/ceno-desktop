@@ -1,0 +1,5 @@
+# This file is used by all Win32 builds
+
+ac_add_options --target=i686-pc-windows-msvc
+
+. $topsrcdir/build/mozconfig.clang-cl

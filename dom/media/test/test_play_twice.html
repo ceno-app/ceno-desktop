@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test playback of media files that should play OK</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+var manager = new MediaTestManager;
+
+function startTest(test, token) {
+  const video = document.createElement('video');
+  video.token = token;
+  manager.started(token);
+  video.src = test.name;
+  video.name = test.name;
+  video.playingCount = 0;
+  video._playedOnce = false;
+
+  var check = function() {
+    checkMetadata(test.name, video, test);
+  };
+
+  var noLoad = function() {
+    ok(false, test.name + " should not fire 'load' event");
+  };
+
+  function finish(v) {
+    removeNodeAndSource(v);
+    manager.finished(v.token);
+  }
+
+  function mayFinish(v) {
+    if (v.seenEnded && v.seenSuspend) {
+      finish(v);
+    }
+  }
+
+  var checkEnded = function() {
+    if (test.duration) {
+      ok(Math.abs(video.currentTime - test.duration) < 0.1,
+         test.name + " current time at end: " + video.currentTime);
+    }
+
+    is(video.readyState, video.HAVE_CURRENT_DATA, test.name + " checking readyState");
+    ok(video.ended, test.name + " checking playback has ended");
+    ok(video.playingCount > 0, "Expect at least one playing event");
+    video.playingCount = 0;
+
+    if (video._playedOnce) {
+      video.seenEnded = true;
+      mayFinish(video);
+    } else {
+      video._playedOnce = true;
+      video.play();
+    }
+  };
+
+  var checkSuspended = function() {
+    if (video.seenSuspend) {
+      return;
+    }
+
+    video.seenSuspend = true;
+    ok(true, test.name + " got suspend");
+    mayFinish(video);
+  };
+
+  var checkPlaying = function() {
+    is(test.name, video.name, "Should be testing file we think we're testing...");
+    video.playingCount++;
+  };
+
+  video.addEventListener("load", noLoad);
+  video.addEventListener("loadedmetadata", check);
+  video.addEventListener("playing", checkPlaying);
+
+  // We should get "ended" and "suspend" events for every resource
+  video.addEventListener("ended", checkEnded);
+  video.addEventListener("suspend", checkSuspended);
+
+  document.body.appendChild(video);
+  video.play();
+}
+
+manager.runTests(gReplayTests, startTest);
+
+</script>
+</pre>
+</body>
+</html>

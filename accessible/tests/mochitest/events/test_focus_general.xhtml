@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="Accessible focus event testing">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+    const { TestUtils } = ChromeUtils.importESModule(
+      "resource://testing-common/TestUtils.sys.mjs");
+
+    async function doTests() {
+      // Test focus events.
+      let focused = waitForEvent(EVENT_FOCUS, getNode("textbox"));
+      getNode("textbox").focus();
+      await focused;
+
+      focused = waitForEvent(
+        EVENT_FOCUS,
+        getNode("editabledoc").contentDocument
+      );
+      getNode("editabledoc").contentDocument.body.focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "radiosweater");
+      getNode("radioclothes").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "radiojacket");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "checkbox");
+      getNode("checkbox").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "button");
+      getNode("button").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "checkbutton");
+      getNode("checkbutton").focus();
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, "radiobutton");
+      getNode("radiobutton").focus();
+      await focused;
+
+      // focus menubutton
+      focused = waitForEvent(EVENT_FOCUS, "menubutton");
+      getNode("menubutton").focus();
+      await focused;
+
+      let popupstart = waitForEvent(EVENT_MENUPOPUP_START);
+      // click menubutton, open popup, focus stays on menu button
+      getNode("menubutton").click();
+      await popupstart;
+
+      // select first menu item ("item 1"), focus on menu item
+      focused = waitForEvent(EVENT_FOCUS, "mb_item1");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      // choose select menu item, focus gets back to menubutton
+      focused = waitForEvent(EVENT_FOCUS, "menubutton");
+      synthesizeKey("VK_RETURN", {});
+      await focused;
+
+      await TestUtils.waitForTick();
+
+      popupstart = waitForEvent(EVENT_MENUPOPUP_START);
+      synthesizeKey("VK_RETURN", {});
+      await popupstart;
+
+      // select second menu item ("item 2"), focus on menu item
+      focused = waitForEvent(EVENT_FOCUS, "mb_item2");
+      synthesizeKey("VK_UP", {});
+      await focused;
+
+      // close the popup
+      focused = waitForEvent(EVENT_FOCUS, "menubutton");
+      synthesizeKey("VK_ESCAPE", {});
+      await focused;
+
+      await TestUtils.waitForTick();
+
+      // clicking on button having associated popup doesn't change focus
+      let shown = new Promise(r =>
+        getNode("backpopup").addEventListener("popupshown", r, { once: true })
+      );
+      getNode("popupbutton").click();
+      await shown;
+
+      // select first menu item ("item 1"), focus on menu item
+      focused = waitForEvent(EVENT_FOCUS, "bp_item1");
+      synthesizeKey("VK_DOWN", {});
+      await focused;
+
+      // choose select menu item, focus gets back to menubutton
+      focused = waitForEvent(EVENT_FOCUS, "menubutton");
+      synthesizeKey("VK_RETURN", {});
+      await focused;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=552368"
+         title=" fire focus event on document accessible whenever the root or body element is focused">
+        Mozilla Bug 552368
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <html:input id="textbox" value="hello"/>
+      <iframe id="editabledoc" src="focus.html"/>
+      <radiogroup id="radioclothes">
+        <radio id="radiosweater" label="radiosweater"/>
+        <radio id="radiocap" label="radiocap" disabled="true"/>
+        <radio id="radiojacket" label="radiojacket"/>
+      </radiogroup>
+      <checkbox id="checkbox" label="checkbox"/>
+      <button id="button" label="button"/>
+
+      <button id="menubutton" type="menu" label="menubutton">
+        <menupopup nonnative="">
+          <menuitem id="mb_item1" label="item1"/>
+          <menuitem id="mb_item2" label="item2"/>
+        </menupopup>
+      </button>
+
+      <button id="checkbutton" type="checkbox" label="checkbutton"/>
+      <button id="radiobutton" type="radio" group="rbgroup" label="radio1"/>
+
+      <popupset>
+        <menupopup id="backpopup" position="after_start" nonnative="">
+          <menuitem id="bp_item1" label="Page 1"/>
+          <menuitem id="bp_item2" label="Page 2"/>
+        </menupopup>
+      </popupset>
+      <button id="popupbutton" label="Pop Me Up" popup="backpopup"/>
+
+      <vbox id="eventdump"/>
+    </vbox>
+  </hbox>
+</window>

@@ -1,0 +1,41 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef WidevineFileIO_h_
+#define WidevineFileIO_h_
+
+#include <string>
+
+#include "content_decryption_module.h"
+#include "gmp-api/gmp-storage.h"
+
+namespace mozilla {
+
+class WidevineFileIO final : public cdm::FileIO, public GMPRecordClient {
+ public:
+  explicit WidevineFileIO(cdm::FileIOClient* aClient) : mClient(aClient) {}
+
+  // cdm::FileIO
+  void Open(const char* aFilename, uint32_t aFilenameLength) override;
+  void Read() override;
+  void Write(const uint8_t* aData, uint32_t aDataSize) override;
+  void Close() override;
+
+  // GMPRecordClient
+  void OpenComplete(GMPErr aStatus) override;
+  void ReadComplete(GMPErr aStatus, const uint8_t* aData,
+                    uint32_t aDataSize) override;
+  void WriteComplete(GMPErr aStatus) override;
+
+ private:
+  void DestroyRecord();
+
+  cdm::FileIOClient* mClient;
+  GMPRecord* mRecord = nullptr;
+  std::string mName;
+};
+
+}  // namespace mozilla
+
+#endif  // WidevineFileIO_h_

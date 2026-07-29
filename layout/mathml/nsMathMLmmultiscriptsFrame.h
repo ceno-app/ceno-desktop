@@ -1,0 +1,49 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsMathMLmmultiscriptsFrame_h_
+#define nsMathMLmmultiscriptsFrame_h_
+
+#include "nsMathMLContainerFrame.h"
+
+namespace mozilla {
+class PresShell;
+}  // namespace mozilla
+
+//
+// <mmultiscripts> -- attach prescripts and tensor indices to a base
+// <msub> -- attach a subscript to a base
+// <msubsup> -- attach a subscript-superscript pair to a base
+// <msup> -- attach a superscript to a base
+//
+
+class nsMathMLmmultiscriptsFrame final : public nsMathMLContainerFrame {
+ public:
+  NS_DECL_FRAMEARENA_HELPERS(nsMathMLmmultiscriptsFrame)
+
+  friend nsIFrame* NS_NewMathMLmmultiscriptsFrame(
+      mozilla::PresShell* aPresShell, ComputedStyle* aStyle);
+
+  NS_IMETHOD
+  TransmitAutomaticData() override;
+
+  void Place(DrawTarget* aDrawTarget, const PlaceFlags& aFlags,
+             ReflowOutput& aDesiredSize) override;
+
+  static void PlaceMultiScript(
+      nsPresContext* aPresContext, DrawTarget* aDrawTarget,
+      const PlaceFlags& aFlags, ReflowOutput& aDesiredSize,
+      nsMathMLContainerFrame* aFrame, nscoord aUserSubScriptShift,
+      nscoord aUserSupScriptShift, float aFontSizeInflation);
+
+  uint8_t ScriptIncrement(nsIFrame* aFrame) override;
+
+ protected:
+  explicit nsMathMLmmultiscriptsFrame(ComputedStyle* aStyle,
+                                      nsPresContext* aPresContext)
+      : nsMathMLContainerFrame(aStyle, aPresContext, kClassID) {}
+  virtual ~nsMathMLmmultiscriptsFrame();
+};
+
+#endif /* nsMathMLmmultiscriptsFrame_h_ */
