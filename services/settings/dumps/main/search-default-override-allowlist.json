@@ -1,0 +1,214 @@
+{
+  "data": [
+    {
+      "engineName": "Startpage",
+      "id": "0624436f-2562-46e4-8752-9afad4887d35",
+      "last_modified": 1776781146223,
+      "overridesAppIdv2": "startpage",
+      "overridesId": "startpage@search.mozilla.org",
+      "schema": 1776297618072,
+      "thirdPartyId": "opensearch@search.mozilla.org",
+      "urls": [
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=english"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=nederlands"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=francais"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=deutsch"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=italiano"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=espanol"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=polski"
+        },
+        {
+          "search_url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=portugues"
+        }
+      ]
+    },
+    {
+      "id": "3c252ad3-ecf8-4adc-8d94-4a35e81617c8",
+      "last_modified": 1744749743529,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740937637,
+      "thirdPartyId": "{9b43dad5-885b-4f0d-882f-e945b7e4b96f}",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U506DF&PC=U506&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "4a049bd8-0e8b-4153-a0fb-171e8c8bb2ad",
+      "last_modified": 1744749743527,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740858731,
+      "thirdPartyId": "bingwallpaperdse@microsoft.com",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=BWMFDF&PC=W250&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "6d49a07a-cd38-4da1-a04f-57659f8d4793",
+      "last_modified": 1744749743524,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744368014364,
+      "thirdPartyId": "MicrosoftRewards@microsoft.com",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U523DF&PC=U523&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "9b73a729-565f-45ba-8b54-318b77282745",
+      "last_modified": 1744749743522,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740859512,
+      "thirdPartyId": "{de0a6401-5089-4e02-920c-97a3bf70f644}",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U521DF&PC=U521&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "c53efa63-72dc-4c5b-b0fe-c14532843b52",
+      "last_modified": 1744749743519,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740858923,
+      "thirdPartyId": "{3e06d96e-26f5-4a68-ac64-2b6bc583a35d}",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U528DF&PC=U528&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "5fb6770b-f77d-4544-8d2a-01bb52968488",
+      "last_modified": 1744749743517,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740859116,
+      "thirdPartyId": "bingsearch_HIBF@microsoft.com",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=HIBFDF&PC=HIBF&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "7fa4d87d-c6da-4f64-a8cd-6221ff2772c9",
+      "last_modified": 1744749743514,
+      "overridesAppIdv2": "bing",
+      "overridesId": "bing@search.mozilla.org",
+      "schema": 1744740937435,
+      "thirdPartyId": "{8d8ca802-6b23-43ed-9445-e05d48579542}",
+      "urls": [
+        {
+          "search_url": "https://www.bing.com/search?FORM=U504DF&PC=U504&q={searchTerms}"
+        }
+      ]
+    },
+    {
+      "id": "ecdce1ec-bbc3-47fa-9908-d82c3133a4d0",
+      "last_modified": 1721063513248,
+      "overridesAppIdv2": "qwant",
+      "overridesId": "qwant@search.mozilla.org",
+      "schema": 1721037040785,
+      "thirdPartyId": "qwant-p1-firefox@qwant.com",
+      "urls": [
+        {
+          "search_url": "https://www.qwant.com/?q={searchTerms}&client=p1-firefox-sb"
+        }
+      ]
+    },
+    {
+      "id": "c5de2b3f-da15-4bc5-b36f-9555043b5ef3",
+      "last_modified": 1721063513245,
+      "overridesAppIdv2": "ddg",
+      "overridesId": "ddg@search.mozilla.org",
+      "schema": 1721062219338,
+      "thirdPartyId": "jid1-ZAdIEUB7XOzOJw@jetpack",
+      "urls": [
+        {
+          "search_url": "https://duckduckgo.com/?q={searchTerms}&t=newext"
+        }
+      ]
+    },
+    {
+      "id": "b5b71917-3375-40d2-a538-3d07bfb989ac",
+      "last_modified": 1721063513243,
+      "overridesAppIdv2": "qwant",
+      "overridesId": "qwant@search.mozilla.org",
+      "schema": 1721062177273,
+      "thirdPartyId": "qwantcomforfirefox@jetpack",
+      "urls": [
+        {
+          "search_url": "https://www.qwant.com/?q={searchTerms}&client=ext-firefox-sb"
+        }
+      ]
+    },
+    {
+      "engineName": "Ecosia",
+      "id": "a5f64364-3fdf-426e-94cf-b499460a58c9",
+      "last_modified": 1721063513241,
+      "overridesAppIdv2": "ecosia",
+      "overridesId": "ecosia@search.mozilla.org",
+      "schema": 1721062201232,
+      "thirdPartyId": "opensearch@search.mozilla.org",
+      "urls": [
+        {
+          "search_url": "https://www.ecosia.org/search?q={searchTerms}&addon=opensearch"
+        }
+      ]
+    },
+    {
+      "engineName": "Qwant",
+      "id": "fc297e76-6e20-48ba-8474-919e3e4380bf",
+      "last_modified": 1721063513239,
+      "overridesAppIdv2": "qwant",
+      "overridesId": "qwant@search.mozilla.org",
+      "schema": 1721062208990,
+      "thirdPartyId": "opensearch@search.mozilla.org",
+      "urls": [
+        {
+          "search_url": "https://www.qwant.com?q={searchTerms}&client=opensearch"
+        }
+      ]
+    },
+    {
+      "id": "c5de2b3f-da15-4bc5-b36f-9555043b5ef4",
+      "last_modified": 1721063513237,
+      "overridesAppIdv2": "qwant",
+      "overridesId": "qwant@search.mozilla.org",
+      "schema": 1721061561202,
+      "thirdPartyId": "qwant-search-firefox@qwant.com",
+      "urls": [
+        {
+          "search_url": "https://www.qwant.com/?q={searchTerms}&client=ext-firefox-sb"
+        },
+        {
+          "search_url": "https://www.qwant.com/?q={searchTerms}&client=plgn-firefox-sb"
+        }
+      ]
+    }
+  ],
+  "timestamp": 1776781146223
+}
