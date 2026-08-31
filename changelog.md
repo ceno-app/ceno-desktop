@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Updated Base Browser to 140.14.0esr-15.0-1-build1
 - Updated CA Certificates to 2026-08-13
+- Updated uBlock Origin to 1.74.0
 
 ## [0.1.6] - 2026-07-27
 ### Fixed
