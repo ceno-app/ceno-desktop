@@ -980,6 +980,7 @@ nsSocketTransportService::CreateRoutedTransport(
   return NS_OK;
 }
 
+#if defined(XP_WIN)
 #include <windows.h>
 #include "nsNativeCharsetUtils.h"
 nsresult NS_CopyUnicodeToNative2(const nsAString& aInput, nsACString& aOutput) {
@@ -1015,6 +1016,7 @@ nsresult NS_CopyUnicodeToNative2(const nsAString& aInput, nsACString& aOutput) {
   }
   return NS_OK;
 }
+#endif
 
 NS_IMETHODIMP
 nsSocketTransportService::CreateUnixDomainTransport(

@@ -11,7 +11,7 @@
 #include "mozilla/ScopeExit.h"
 #include <windows.h>
 
-#include "OuinetNativeHelpers.h"
+#include "../OuinetNativeHelpers.h"
 
 namespace mozilla {
 
@@ -58,21 +58,6 @@ static bool CheckProcessImageName(HANDLE processHandle) {
 
 NS_IMETHODIMP
 OuinetNativeHelpers::EndNetworkClientProcess(const int32_t pid) {
-    HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
-    if (NULL == hProcess) return NS_ERROR_INVALID_ARG;
-    auto handleGuard = MakeScopeExit([&hProcess] { CloseHandle(hProcess); });
-
-    if (!CheckProcessImageName(hProcess)) return NS_ERROR_INVALID_ARG;
-
-    EnumCtx ctx { static_cast<DWORD>(pid), nullptr };
-    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&ctx));
-    if (nullptr == ctx.hWndResult) return NS_ERROR_INVALID_ARG;
-
-    return ::PostMessageW(ctx.hWndResult, WM_CLOSE, 0, 0) ? NS_OK : NS_ERROR_INVALID_ARG;
-}
-
-NS_IMETHODIMP
-OuinetNativeHelpers::EndOrKillNetworkClientProcess(const int32_t pid) {
     HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_TERMINATE, 0, pid);
     if (NULL == hProcess) return NS_ERROR_INVALID_ARG;
     auto handleGuard = MakeScopeExit([&hProcess] { CloseHandle(hProcess); });

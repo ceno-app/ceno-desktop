@@ -18,7 +18,7 @@ endif
 ifeq ($(SIGNING_MODE),airgap)
   SIGN_CALL += --airgap "$(DIST)/airgap"
 else ifeq ($(SIGNING_MODE),none)
-  SIGN_CALL := shell echo "Skipping code signing"
+  SIGN_CALL := echo "Skipping code signing"
 else ifeq ($(SIGNING_MODE),autosign)
   SIGN_CALL += --auto-generate-cert
 else

@@ -8,12 +8,26 @@ XPCOM_MANIFESTS += [ "components.conf" ]
 EXPORTS += [ "OuinetNativeHelpers.h" ]
 
 UNIFIED_SOURCES += [
-    "Firewall.cpp",
-    "MetricsGeoTimezone.cpp",
-    "NetworkStatusMonitor.cpp",
     "OuinetNativeHelpers.cpp",
-    "ProcessManagement.cpp",
-    "VirtualAppData.cpp",
 ]
 
-CXXFLAGS += [ "/std:c++20" ]
+if CONFIG['OS_TARGET'] == 'WINNT':
+    UNIFIED_SOURCES += [
+        "windows/Firewall.cpp",
+        "windows/MetricsGeoTimezone.cpp",
+        "windows/NetworkStatusMonitor.cpp",
+        "windows/ProcessManagement.cpp",
+        "windows/VirtualAppData.cpp",
+    ]
+    CXXFLAGS += ['/std:c++20']
+elif CONFIG['OS_TARGET'] == 'Linux':
+    UNIFIED_SOURCES += [
+        "linux/MetricsTimezone.cpp",
+        "linux/ProcessManagement.cpp",
+
+        "mock/Firewall.cpp",
+        "mock/MetricsGeo.cpp",
+        "mock/NetworkStatusMonitor.cpp",
+        "mock/VirtualAppData.cpp",
+    ]
+    CXXFLAGS += ['-std=gnu++20']

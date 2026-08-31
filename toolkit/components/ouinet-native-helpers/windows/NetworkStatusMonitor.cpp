@@ -15,7 +15,7 @@
 #include <combaseapi.h>
 #include <wrl/client.h>
 
-#include "OuinetNativeHelpers.h"
+#include "../OuinetNativeHelpers.h"
 
 namespace mozilla {
 

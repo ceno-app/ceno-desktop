@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <timezoneapi.h>
 
-#include "OuinetNativeHelpers.h"
+#include "../OuinetNativeHelpers.h"
 
 namespace mozilla {
 
@@ -26,14 +26,19 @@ OuinetNativeHelpers::GetTimezone(nsAString& timezone) {
   } else {
     calculatedBias += timeZoneInformation.StandardBias;
   }
+  calculatedBias = -calculatedBias;  // convert to UTC offset
 
-  // UTC = local time + bias
-  calculatedBias = 0 - calculatedBias;
+  const bool negative = calculatedBias < 0;
+  const unsigned long absBias = negative
+      ? -static_cast<unsigned long>(calculatedBias)
+      :  static_cast<unsigned long>(calculatedBias);
 
-  long biasHours = calculatedBias / 60;
-  long biasMinutes = calculatedBias % 60;
-  timezone = std::format(L"UTC{0:+03}:{1:02}", biasHours, biasMinutes).c_str();
+  const long hours   = static_cast<long>(absBias / 60);
+  const long minutes = static_cast<long>(absBias % 60);
 
+  nsAutoString tz;
+  tz.AppendPrintf("UTC%s%02ld:%02ld", negative ? "-" : "+", hours, minutes);
+  timezone = tz;
   return NS_OK;
 }
 
