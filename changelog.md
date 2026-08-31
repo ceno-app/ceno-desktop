@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.7] - 2026-08-31
+### Changed
+- Updated Base Browser to 140.14.0esr-15.0-1-build1
+- Updated CA Certificates to 2026-08-13
+
 ## [0.1.6] - 2026-07-27
 ### Fixed
 - Reopening tabs on startup with Ceno Network autoconnect used to show proxy refusal error. This change prevents tab from loading resources while connecting/disconnect to Ceno Network and also on startup until the Ceno Network connection is established or the connection errors out.
