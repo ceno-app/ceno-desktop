@@ -420,8 +420,10 @@ class _CenoNetwork {
 
           try {
             await this.#sendMetrics('APP_VERSION', lazy.AppConstants.BASE_BROWSER_VERSION);
-            await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
-            await this.#sendMetrics('NETWORK_COUNTRY_CONFIDENCE', "1");
+            if (this.#metricsRegion) {
+              await this.#sendMetrics('NETWORK_COUNTRY', this.#metricsRegion);
+              await this.#sendMetrics('NETWORK_COUNTRY_CONFIDENCE', "1");
+            }
             await this.#sendMetrics('TIMEZONE', this.#metricsTimezone);
             await this.#sendMetrics('BRIDGE_OPT_IN', this.#ouinetState.bridge ? "true" : "false");
           } catch (e) {

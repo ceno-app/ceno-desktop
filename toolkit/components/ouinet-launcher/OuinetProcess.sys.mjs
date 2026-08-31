@@ -137,20 +137,11 @@ export class OuinetProcess {
       return;
     }
 
-    if (lazy.OuinetLauncherUtil.isWindows) {
-      try {
-        Services.OuinetNativeHelpers.EndNetworkClientProcess(pid);
-      } catch (_) {
-        lazy.logger.error('Failed to end process. Retrying with fallback to kill process');
-        try {
-          Services.OuinetNativeHelpers.EndOrKillNetworkClientProcess(pid);
-        } catch (e) {
-          lazy.logger.error('Failed to end or kill process');
-          Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
-        }
-      }
-    } else {
-      throw new Error("OuinetProcess.stop() is not implemented for this platform");
+    try {
+      Services.OuinetNativeHelpers.EndNetworkClientProcess(pid);
+    } catch (_) {
+      lazy.logger.error('Failed to end process');
+      Services.prefs.setIntPref(OuinetProcess.#pidPref, null);
     }
   }
 

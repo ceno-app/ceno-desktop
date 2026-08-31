@@ -12,6 +12,10 @@
 #include "nsIObserver.h"
 #include "nsIThread.h"
 
+#if defined(XP_WIN)
+#include <windows.h> // HANDLE typedef
+#endif
+
 // The implementation can be namespaced, while the XPCOM interface is globally namespaced.
 namespace mozilla {
 
@@ -27,9 +31,13 @@ class OuinetNativeHelpers final : public nsIOuinetNativeHelpers, public nsIObser
   nsCOMPtr<nsIThread> networkStatusMonitorThread = nullptr;
   std::atomic<int32_t> udpPort;
 
+#if defined(XP_WIN)
   HANDLE shutdownEvent = nullptr;
   HANDLE portUpdateEvent = nullptr;
-
+#elif defined(XP_LINUX)
+  int shutdownEvent[2] = {-1, -1};
+  int portUpdateEvent[2] = {-1, -1};
+#endif
   bool isRegistered = false;
 
  public:

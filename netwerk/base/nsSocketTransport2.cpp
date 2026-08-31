@@ -599,7 +599,6 @@ nsSocketOutputStream::Write(const char* buf, uint32_t count,
       profiler_count_bandwidth_written_bytes(n);
     } else if (n < 0) {
       PRErrorCode code = PR_GetError();
-      SOCKET_LOG(("  WSAGetLastError returned %d\n", WSAGetLastError()));
       if (code == PR_WOULD_BLOCK_ERROR) return NS_BASE_STREAM_WOULD_BLOCK;
       mCondition = ErrorAccordingToNSPR(code);
     }

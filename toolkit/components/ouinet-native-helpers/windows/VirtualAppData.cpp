@@ -7,7 +7,7 @@
 #include <appmodel.h>
 #include <winnls.h>
 
-#include "OuinetNativeHelpers.h"
+#include "../OuinetNativeHelpers.h"
 
 namespace mozilla {
 

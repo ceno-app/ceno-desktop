@@ -50,7 +50,7 @@ CXXFLAGS += ["/MT"]
 OS_LIBS += [
     "shell32",
     "user32",
-    "Comctl32",
+    "comctl32",
     "ole32",
     "iphlpapi",
 ]
