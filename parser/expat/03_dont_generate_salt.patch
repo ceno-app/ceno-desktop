@@ -1,0 +1,37 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -1046,6 +1046,8 @@ static const XML_Char implicitContext[]
+        ASCII_s,     ASCII_p,     ASCII_a,      ASCII_c,      ASCII_e,
+        '\0'};
+ 
++/* BEGIN MOZILLA CHANGE (we already set a salt through XML_SetHashSalt) */
++#if 0
+ /* To avoid warnings about unused functions: */
+ #if ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)
+ 
+@@ -1210,9 +1212,13 @@ ENTROPY_DEBUG(const char *label, unsigned long entropy) {
+   }
+   return entropy;
+ }
++#endif
++/* END MOZILLA CHANGE */
+ 
+ static unsigned long
+ generate_hash_secret_salt(XML_Parser parser) {
++/* BEGIN MOZILLA CHANGE (we already set a salt through XML_SetHashSalt) */
++#if 0
+   unsigned long entropy;
+   (void)parser;
+ 
+@@ -1252,6 +1258,10 @@ generate_hash_secret_salt(XML_Parser parser) {
+                          entropy * (unsigned long)2305843009213693951ULL);
+   }
+ #endif
++#else
++  abort();
++#endif
++/* END MOZILLA CHANGE */
+ }
+ 
+ static unsigned long

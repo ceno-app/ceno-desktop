@@ -1,0 +1,11 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+toolkit.jar:
+% content gfxsanity %content/gfxsanity/
+% resource gfxsanity %res/gfxsanity/
+  content/gfxsanity/sanityparent.html (content/sanityparent.html)
+  res/gfxsanity/gfxFrameScript.js     (content/gfxFrameScript.js)
+  res/gfxsanity/sanitytest.html       (content/sanitytest.html)
+  res/gfxsanity/videotest.mp4         (content/videotest.mp4)
