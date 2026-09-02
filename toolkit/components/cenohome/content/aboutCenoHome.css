@@ -1,0 +1,167 @@
+/* Copyright (c) 2021, The Tor Project, Inc. */
+
+@import url("chrome://global/skin/error-pages.css");
+
+:root {
+  --ceno-opacity: 1;
+  --ceno-color: var(--card-outline-color);
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+#connect-to-ceno {
+  margin-inline-start: 0;
+}
+
+@media only screen and (max-width: 480px) {
+  #tryAgainButton {
+    margin-top: 4px;
+  }
+}
+
+form#locationDropdown {
+  width: 240px;
+}
+
+form#locationDropdown select {
+  max-width: 100%;
+  margin-inline: 0;
+  font-weight: 700;
+}
+
+:root {
+  --progressbar-shadow-start: rgba(255, 255, 255, 0.7);
+  --progressbar-gradient: linear-gradient(90deg, #FC00FF 0%, #00DBDE 50%, #FC00FF 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --progressbar-shadow-start: rgba(28, 27, 34, 0.7);
+  }
+}
+
+#connectPageContainer {
+  margin-top: 10vh;
+  width: 100%;
+  max-width: 45em;
+}
+
+body.aboutCenoHome {
+  justify-content: space-between;
+  padding-block-end: 175px;
+}
+
+body.aboutCenoHome .title {
+  -moz-context-properties: stroke, fill, fill-opacity;
+  fill-opacity: var(--ceno-opacity);
+  fill: var(--ceno-color);
+  stroke: var(--ceno-color);
+  /* Make sure there is no padding between the title and #breadcrumbs. */
+  padding-block-start: 0;
+}
+
+/* Android-specific CSS, to be removed when we use only the native UI. */
+:root {
+  --android-dark-accents-buttons: #9059FF;
+  --android-dark-background-secondary: #E1E0E7;
+  --android-dark-text-primary: #FBFBFE;
+  --android-light-text-primary: #15141A;
+}
+
+[hidden=true] {
+  display: none !important;
+}
+
+body:not(.android) #connectButtonContainer {
+  /* Use the .button-container context */
+  display: contents;
+}
+
+:root {
+  --progressbar-shadow-start: rgba(255, 255, 255, 0.7);
+  --progressbar-gradient: linear-gradient(90deg, #FC00FF 0%, #00DBDE 50%, #FC00FF 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --progressbar-shadow-start: rgba(28, 27, 34, 0.7);
+  }
+}
+
+#progressBar:not([hidden]) {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: grid;
+  --progress-percent: 0%;
+  --progress-animation: progressAnimation 5s ease infinite;
+  --progress-bar-height: 7px;
+}
+
+#progressBar > * {
+  grid-area: 1 / 1;
+}
+
+#progressBarBackground {
+  width: 100%;
+  height: var(--progress-bar-height);
+  background: var(--in-content-box-info-background);
+}
+
+#progressBackground {
+  z-index: 1;
+  width: var(--progress-percent);
+  height: 66px;
+  margin-block-start: -26px;
+  background-image:
+    linear-gradient(var(--progressbar-shadow-start), var(--in-content-page-background) 100%),
+    var(--progressbar-gradient);
+  animation: var(--progress-animation);
+  filter: blur(5px);
+  border-end-end-radius: 33px;
+}
+
+#progressSolid {
+  z-index: 2;
+  width: var(--progress-percent);
+  height: var(--progress-bar-height);
+  border-start-end-radius: calc(var(--progress-bar-height) / 2);
+  border-end-end-radius: calc(var(--progress-bar-height) / 2);
+  background-image: var(--progressbar-gradient);
+  animation: var(--progress-animation);
+}
+
+#progressBackground, #progressSolid {
+  background-size: 200% 100%;
+}
+
+@keyframes progressAnimation {
+  0% {
+    background-position: 200%;
+  }
+  50% {
+    background-position: 100%;
+  }
+  100% {
+    background-position: 0%;
+  }
+}
+
+@keyframes progressAnimation {
+  0% {
+    background-position: 200%;
+  }
+  50% {
+    background-position: 100%;
+  }
+  100% {
+    background-position: 0%;
+  }
+}
+
+div#error-container p {
+  font-weight: bold;
+}

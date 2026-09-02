@@ -1,10 +1,7 @@
-. $topsrcdir/browser/config/mozconfigs/base-browser
+. $topsrcdir/browser/config/mozconfigs/ceno-release
 
-# Moz switched to lld for all Linux targets in Bug 1839739.
-ac_add_options --enable-linker=lld
-
-ac_add_options --disable-strip
-ac_add_options --disable-install-strip
+ac_add_options --target=x86_64-unknown-linux-gnu
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-x86_64-unknown-linux-gnu
 
 ac_add_options --enable-default-toolkit=cairo-gtk3
 
@@ -13,3 +10,12 @@ ac_add_options --disable-eme
 
 # tor-browser#44067: geckodriver has become a host-only tool
 ac_add_options --enable-geckodriver
+
+ac_add_options --disable-default-browser-agent
+
+ac_add_options --disable-updater
+
+ac_add_options --with-l10n-base="$topsrcdir/firefox-l10n"
+ac_add_options --with-relative-data-dir=BaseBrowser/Data/Browser
+
+ac_add_options --with-base-browser-version=dev-build

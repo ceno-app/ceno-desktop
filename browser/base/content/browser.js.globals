@@ -236,5 +236,10 @@
   "ProfilesDatastoreService",
   "gTrustPanelHandler",
   "ContentSharingUtils",
-  "SecurityLevelButton"
+  "SecurityLevelButton",
+  "CenoHome",
+  "CenoHomeTopics",
+  "CenoHomeStateName",
+  "gOuinetConnectTitlebarStatus",
+  "gOuinetConnectUrlbarButton",
 ]

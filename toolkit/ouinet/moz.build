@@ -1,0 +1,10 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+
+FINAL_TARGET_FILES["Ouinet"] += [
+    "metrics-server-cacert.pem",
+    "ssl-inj-cert.pem",
+]
+
+if CONFIG["OS_ARCH"] == "WINNT":
+    DIRS += [ "ceno-network-client" ]

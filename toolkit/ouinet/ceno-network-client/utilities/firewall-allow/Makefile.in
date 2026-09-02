@@ -1,0 +1,6 @@
+MOZ_WINCONSOLE = 0
+
+EXTRA_DEPS += \
+  $(srcdir)/admin.h \
+  $(srcdir)/ceno.ico \
+  $(srcdir)/paths.h \

@@ -1,0 +1,9 @@
+. $topsrcdir/browser/config/mozconfigs/base-browser
+
+export MOZ_APP_BASENAME="Ceno Beta"
+export MOZ_APP_NAME=ceno-beta
+export MOZ_APP_REMOTINGNAME="Ceno Beta"
+export MOZ_UPDATE_CHANNEL=ceno-beta
+
+ac_add_options --with-branding=browser/branding/ceno-beta
+ac_add_options --enable-update-channel=ceno-beta

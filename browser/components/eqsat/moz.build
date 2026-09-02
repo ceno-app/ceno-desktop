@@ -1,0 +1,19 @@
+EXTRA_JS_MODULES += [
+	'modules/about_eQsat.sys.mjs',
+	'modules/about_eQsatChild.sys.mjs',
+	'modules/about_eQsatParent.sys.mjs',
+	'modules/eQsatCommandLine.sys.mjs',
+	'modules/eQsatExtractor.sys.mjs',
+	'modules/eQsatFilePicker.js',
+	'modules/eQsatToolbar.sys.mjs',
+]
+
+FINAL_TARGET_FILES.modules += [
+	'modules/eQsat.png',
+]
+
+FINAL_TARGET_PP_FILES.modules += [
+	'content/about-eqsat.xhtml',
+]
+
+XPCOM_MANIFESTS += ['components.conf']

@@ -1,0 +1,13 @@
+EXTRA_JS_MODULES += [
+    "OuinetLauncherUtil.sys.mjs",
+    "OuinetProcess.sys.mjs",
+    "OuinetStartupService.sys.mjs",
+]
+
+XPCOM_MANIFESTS += [
+    "components.conf",
+]
+
+EXTRA_COMPONENTS += [
+    "ouinet-launcher.manifest",
+]

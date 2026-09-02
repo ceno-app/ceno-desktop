@@ -1,0 +1,43 @@
+# Ceno Network Client has 2 build systems
+# CMake and moz.build
+# moz.build is used as part of Ceno Browser build process
+# This CMakeLists.txt is here to allow building it separately,
+# for testing and debugging purposes
+
+cmake_minimum_required(VERSION 4.0)
+project(ceno-network-client-firewall-allow)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_VERBOSE_MAKEFILE=ON)
+add_definitions(
+    -DNTDDI_VERSION=0x0A000000
+    -DWINVER=0x0A00
+    -D_WIN32_WINNT=0x0A00
+    -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP
+    -DUNICODE
+    -D_UNICODE
+    -DWIN32=1
+    -DWIN32_LEAN_AND_MEAN=1
+    -D_WINDOWS=1
+    -DWIN32_EXECUTABLE=1
+)
+
+if(MINGW)
+    SET(EXTRA_SOURCES uuid.cpp)
+endif()
+
+add_executable(ceno-network-client-firewall-allow WIN32
+    app.rc
+    ceno-network-client-firewall-allow.cpp admin.cpp admin.h paths.cpp paths.h
+    ${EXTRA_SOURCES}
+)
+
+if(MSVC)
+#    target_link_options(ceno-network-client-firewall-allow PRIVATE "/MANIFEST:NO")
+else()
+    target_compile_options(ceno-network-client-firewall-allow PUBLIC -municode -fno-exceptions)
+    target_link_options(ceno-network-client-firewall-allow PUBLIC -municode)
+endif()

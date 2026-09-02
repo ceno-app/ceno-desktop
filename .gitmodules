@@ -1,0 +1,7 @@
+[submodule "browser/extensions/ceno"]
+	path = browser/extensions/ceno
+	url = https://gitlab.com/ceno-app/ceno-ext-settings
+  branch = master
+[submodule "firefox-l10n"]
+	path = firefox-l10n
+	url = https://gitlab.com/ceno-app/firefox-l10n

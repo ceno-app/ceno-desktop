@@ -1,0 +1,14 @@
+MOZ_WINCONSOLE = 0
+
+# Rebuild if manifest changes.
+EXTRA_DEPS += \
+	$(srcdir)/ceno.ico \
+	$(srcdir)/cenogray.ico \
+	$(srcdir)/ArgumentsConverter.h \
+	$(srcdir)/ErrorUtils.h \
+	$(srcdir)/GuiWindow.h \
+	$(srcdir)/NetworkAddressMonitor.cpp \
+	$(srcdir)/NetworkStatusMonitor.cpp \
+	$(srcdir)/Resource.h \
+	$(srcdir)/StatePoller.h \
+	$(srcdir)/ceno-network-client.manifest.xml

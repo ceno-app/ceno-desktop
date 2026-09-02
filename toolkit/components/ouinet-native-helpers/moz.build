@@ -1,0 +1,33 @@
+XPIDL_SOURCES += [ "nsIOuinetNativeHelpers.idl" ]
+
+XPIDL_MODULE = "nsIOuinetNativeHelpers"
+FINAL_LIBRARY = "xul"
+
+XPCOM_MANIFESTS += [ "components.conf" ]
+
+EXPORTS += [ "OuinetNativeHelpers.h" ]
+
+UNIFIED_SOURCES += [
+    "OuinetNativeHelpers.cpp",
+]
+
+if CONFIG['OS_TARGET'] == 'WINNT':
+    UNIFIED_SOURCES += [
+        "windows/Firewall.cpp",
+        "windows/MetricsGeoTimezone.cpp",
+        "windows/NetworkStatusMonitor.cpp",
+        "windows/ProcessManagement.cpp",
+        "windows/VirtualAppData.cpp",
+    ]
+    CXXFLAGS += ['/std:c++20']
+elif CONFIG['OS_TARGET'] == 'Linux':
+    UNIFIED_SOURCES += [
+        "linux/MetricsTimezone.cpp",
+        "linux/ProcessManagement.cpp",
+
+        "mock/Firewall.cpp",
+        "mock/MetricsGeo.cpp",
+        "mock/NetworkStatusMonitor.cpp",
+        "mock/VirtualAppData.cpp",
+    ]
+    CXXFLAGS += ['-std=gnu++20']
