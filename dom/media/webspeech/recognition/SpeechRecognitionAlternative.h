@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_SpeechRecognitionAlternative_h
+#define mozilla_dom_SpeechRecognitionAlternative_h
+
+#include "js/TypeDecls.h"
+#include "nsCycleCollectionParticipant.h"
+#include "nsString.h"
+#include "nsWrapperCache.h"
+
+namespace mozilla::dom {
+
+class SpeechRecognition;
+
+class SpeechRecognitionAlternative final : public nsISupports,
+                                           public nsWrapperCache {
+ public:
+  explicit SpeechRecognitionAlternative(SpeechRecognition* aParent);
+
+  NS_DECL_CYCLE_COLLECTING_ISUPPORTS_FINAL
+  NS_DECL_CYCLE_COLLECTION_WRAPPERCACHE_CLASS(SpeechRecognitionAlternative)
+
+  nsISupports* GetParentObject() const;
+
+  JSObject* WrapObject(JSContext* aCx,
+                       JS::Handle<JSObject*> aGivenProto) override;
+
+  void GetTranscript(nsString& aRetVal) const;
+
+  float Confidence() const;
+
+  nsString mTranscript;
+  float mConfidence;
+
+ private:
+  ~SpeechRecognitionAlternative();
+
+  RefPtr<SpeechRecognition> mParent;
+};
+
+}  // namespace mozilla::dom
+
+#endif

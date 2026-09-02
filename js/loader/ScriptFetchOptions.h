@@ -1,0 +1,133 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef js_loader_ScriptFecthOptions_h
+#define js_loader_ScriptFecthOptions_h
+
+#include "mozilla/AlreadyAddRefed.h"
+#include "mozilla/CORSMode.h"
+#include "mozilla/MemoryReporting.h"
+#include "mozilla/dom/ReferrerPolicyBinding.h"
+#include "mozilla/dom/RequestBinding.h"  // RequestPriority
+#include "nsCOMPtr.h"
+#include "nsIPrincipal.h"
+
+namespace JS::loader {
+
+// https://fetch.spec.whatwg.org/#concept-request-parser-metadata
+// All scripts are either "parser-inserted" or "not-parser-inserted", so
+// the empty string is not necessary.
+enum class ParserMetadata : uint8_t {
+  NotParserInserted,
+  ParserInserted,
+};
+
+/*
+ * ScriptFetchOptions loosely corresponds to HTML's "script fetch options",
+ * https://html.spec.whatwg.org/multipage/webappapis.html#script-fetch-options
+ * with the exception of the following properties:
+ *   integrity metadata
+ *      The integrity metadata used for the initial fetch. This is
+ *      implemented in ScriptLoadRequest, as it changes for every
+ *      ScriptLoadRequest.
+ *
+ *   referrerPolicy
+ *     For a module script, its referrerPolicy will be updated if there is a
+ *     HTTP Response 'REFERRER-POLICY' header, given this value may be different
+ *     for every ScriptLoadRequest, so we store it directly in
+ *     ScriptLoadRequest.
+ *
+ * In the case of classic scripts without dynamic import, this object is
+ * used once. For modules, this object is propogated throughout the module
+ * tree. If there is a dynamically imported module in any type of script,
+ * the ScriptFetchOptions object will be propogated from its importer.
+ */
+
+class ScriptFetchOptions {
+  ~ScriptFetchOptions();
+
+ public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ScriptFetchOptions)
+
+  ScriptFetchOptions(mozilla::CORSMode aCORSMode, const nsAString& aNonce,
+                     mozilla::dom::RequestPriority aFetchPriority,
+                     const ParserMetadata aParserMetadata,
+                     nsIPrincipal* aTriggeringPrincipal = nullptr);
+
+  // https://html.spec.whatwg.org/#default-script-fetch-options
+  static already_AddRefed<ScriptFetchOptions> CreateDefault();
+
+  void SetTriggeringPrincipal(nsIPrincipal* aTriggeringPrincipal);
+
+  // Returns true if given fetch option is compatible with this fetch option
+  // in term of sharing the server response.
+  //
+  // Nonce is excluded here because the cached response can have different
+  // nonce, and in that case ScriptLoadRequest is responsible for using the
+  // appropriate one.
+  // See ScriptLoadRequest::SetCacheEntry.
+  inline bool IsCompatibleExcludingNonce(ScriptFetchOptions* other) {
+    if (this == other) {
+      return true;
+    }
+
+    if (mTriggeringPrincipal && other->mTriggeringPrincipal) {
+      bool equals;
+      (void)mTriggeringPrincipal->Equals(other->mTriggeringPrincipal, &equals);
+      if (!equals) {
+        return false;
+      }
+    } else if (mTriggeringPrincipal || other->mTriggeringPrincipal) {
+      return false;
+    }
+
+    // NOTE: mParserMetadata and mFetchPriority can be ignored.
+    return mCORSMode == other->mCORSMode;
+  }
+
+  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
+    return aMallocSizeOf(this) + SizeOfExcludingThis(aMallocSizeOf);
+  }
+  size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
+    return mNonce.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  }
+
+ public:
+  /* Fields */
+
+  /*
+   *  The credentials mode used for the initial fetch (for module scripts)
+   *  and for fetching any imported modules (for both module scripts and
+   *  classic scripts)
+   */
+  const mozilla::CORSMode mCORSMode;
+
+  /*
+   * <https://html.spec.whatwg.org/multipage/webappapis.html#script-fetch-options>.
+   */
+  const mozilla::dom::RequestPriority mFetchPriority;
+
+  /*
+   * The parser metadata used for the initial fetch and for fetching any
+   * imported modules
+   */
+  const ParserMetadata mParserMetadata;
+
+  /*
+   *  Used to determine CSP and if we are on the About page.
+   *  Only used in DOM content scripts.
+   *  TODO: Move to ScriptLoadContext
+   */
+  nsCOMPtr<nsIPrincipal> mTriggeringPrincipal;
+
+  /*
+   * The cryptographic nonce metadata used for the initial fetch and for
+   * fetching any imported modules.
+   */
+  const nsString mNonce;
+};
+
+}  // namespace JS::loader
+
+#endif  // js_loader_ScriptFetchOptions_h

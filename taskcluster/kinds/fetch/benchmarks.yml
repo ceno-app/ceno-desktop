@@ -1,0 +1,36 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+octane:
+    description: Octane benchmark
+    fetch:
+        type: static-url
+        url: https://github.com/mozilla/perf-automation/releases/download/octane-v1/octane-0f5b8d48d4a9.zip
+        sha256: 38425ee1abfc5feca178b2f60fbd82b5873897c345112a85359be00024402f9f
+        size: 1816138
+
+web-tooling-benchmark:
+    description: Web Tooling Benchmark
+    fetch:
+        type: static-url
+        url: https://github.com/mozilla/perf-automation/releases/download/V1/web-tooling-benchmark-b2ac25c897c9.zip
+        sha256: 93b0b51df0cec3ca9bfa0bdf81d782306dcf18532e39b3ff3180409125daaff1
+        size: 5444135
+
+# A collection of benchmarks for use in PGO profiling runs. Currently it is
+# just JetStream3.
+#
+# Keep this in sync with the version used in performance testing by updating:
+#   1. `testing/raptor/raptor/tests/benchmarks/jetstream3-desktop.toml`
+#   2. `testing/raptor/raptor/tests/benchmarks/jetstream3-mobile.toml`
+pgo-extended-corpus:
+    description: JetStream3 benchmark suite
+    fetch:
+        type: static-url
+        url: https://github.com/WebKit/JetStream/archive/3967678fa8ab98d847ab33cf3728dba726fa854b.tar.gz
+        sha256: d62e9dc22ae6b52b3d467a7fbd45689fbb77ddd57a4fd56422c0ffb022d4f9ee
+        size: 194403447
+        artifact-name: pgo-extended-corpus.tar.zst
+        strip-components: 1
+        add-prefix: pgo-extended-corpus/JetStream/

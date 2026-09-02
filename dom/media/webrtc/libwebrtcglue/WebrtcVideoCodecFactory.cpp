@@ -1,0 +1,267 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "WebrtcVideoCodecFactory.h"
+
+#include "GmpVideoCodec.h"
+#include "MediaDataCodec.h"
+#include "MediaMIMETypes.h"
+#include "VideoConduit.h"
+#include "WebrtcGmpVideoCodec.h"
+#include "WebrtcMediaDataDecoderCodec.h"
+#include "WebrtcMediaDataEncoderCodec.h"
+#include "mozilla/StaticPrefs_media.h"
+
+// libwebrtc includes
+#include "api/video_codecs/video_codec.h"
+#include "api/video_codecs/video_encoder_software_fallback_wrapper.h"
+#include "media/engine/simulcast_encoder_adapter.h"
+#include "modules/video_coding/codecs/av1/dav1d_decoder.h"
+#include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
+#include "modules/video_coding/codecs/vp8/include/vp8.h"
+#include "modules/video_coding/codecs/vp9/include/vp9.h"
+
+namespace mozilla {
+
+// Keep in sync with the doc comment on media.webrtc.encoder_creation_strategy
+// in StaticPrefList.yaml.
+enum EncoderCreationStrategy {
+  PreferWebRTCEncoder = 0,
+  PreferPlatformEncoder = 1,
+};
+
+/* static */
+media::DecodeSupportSet WebrtcVideoDecoderFactory::SupportsCodec(
+    const MediaExtendedMIMEType& aMime, const SupportDecoderParams& aParams) {
+  const auto codec =
+      webrtc::PayloadStringToCodecType(std::string(aMime.Subtype().View()));
+  if (auto support = WebrtcMediaDataDecoder::Supports(codec, aParams);
+      !support.isEmpty()) {
+    return support;
+  }
+
+  switch (codec) {
+    case webrtc::VideoCodecType::kVideoCodecH264:
+      return WebrtcGmpDecoderSupports(aMime, aParams);
+    case webrtc::VideoCodecType::kVideoCodecVP8:
+    case webrtc::VideoCodecType::kVideoCodecVP9:
+    case webrtc::VideoCodecType::kVideoCodecAV1:
+      return {media::DecodeSupport::SoftwareDecode};
+    case webrtc::VideoCodecType::kVideoCodecGeneric:
+    case webrtc::VideoCodecType::kVideoCodecH265:
+      return {};
+  }
+  return {};
+}
+
+/* static */
+media::EncodeSupportSet WebrtcVideoEncoderFactory::SupportsCodec(
+    const EncoderConfig& aConfig) {
+  const auto strategy = static_cast<EncoderCreationStrategy>(
+      StaticPrefs::media_webrtc_encoder_creation_strategy());
+  media::EncodeSupportSet libwebrtcSupport;
+  switch (aConfig.mCodec) {
+    case CodecType::VP8:
+    case CodecType::VP9:
+    case CodecType::AV1:
+      libwebrtcSupport += media::EncodeSupport::SoftwareEncode;
+      break;
+    case CodecType::H264:
+      libwebrtcSupport += WebrtcGmpEncoderSupports(aConfig);
+      break;
+    default:
+      break;
+  }
+  switch (strategy) {
+    case EncoderCreationStrategy::PreferWebRTCEncoder: {
+      // When libwebrtc has SW for this codec, CreateEncoder will always pick
+      // it over a PEM, so we report libwebrtc's set alone — any PEM HW
+      // capability is intentionally hidden to keep reported support aligned
+      // with the encoder that will actually be used.
+      if (libwebrtcSupport.isEmpty()) {
+        return MediaDataCodec::SupportsEncoderCodec(aConfig);
+      }
+      return libwebrtcSupport;
+    }
+    case EncoderCreationStrategy::PreferPlatformEncoder: {
+      return MediaDataCodec::SupportsEncoderCodec(aConfig) + libwebrtcSupport;
+    }
+  }
+  return {};
+}
+
+std::unique_ptr<webrtc::VideoDecoder> WebrtcVideoDecoderFactory::Create(
+    const webrtc::Environment& aEnv, const webrtc::SdpVideoFormat& aFormat) {
+  std::unique_ptr<webrtc::VideoDecoder> decoder;
+  auto type = webrtc::PayloadStringToCodecType(aFormat.name);
+
+  // Attempt to create a decoder using MediaDataDecoder.
+  decoder = MediaDataCodec::CreateDecoder(type, mTrackingId);
+  if (decoder) {
+    return decoder;
+  }
+
+  switch (type) {
+    case webrtc::VideoCodecType::kVideoCodecH264: {
+      // Get an external decoder
+      auto gmpDecoder = GmpVideoCodec::CreateDecoder(mPCHandle, mTrackingId);
+      {
+        MutexAutoLock lock(mGmpPluginMutex);
+        mCreatedGmpPluginEvent.Forward(*gmpDecoder->InitPluginEvent());
+        mReleasedGmpPluginEvent.Forward(*gmpDecoder->ReleasePluginEvent());
+      }
+      decoder = std::move(gmpDecoder);
+      break;
+    }
+
+    // Use libvpx decoders as fallbacks.
+    case webrtc::VideoCodecType::kVideoCodecVP8:
+      if (!decoder) {
+        decoder = webrtc::CreateVp8Decoder(aEnv);
+      }
+      break;
+    case webrtc::VideoCodecType::kVideoCodecVP9:
+      decoder = webrtc::VP9Decoder::Create();
+      break;
+    case webrtc::VideoCodecType::kVideoCodecAV1:
+      decoder = webrtc::CreateDav1dDecoder();
+      break;
+    default:
+      break;
+  }
+
+  return decoder;
+}
+
+std::unique_ptr<webrtc::VideoEncoder> WebrtcVideoEncoderFactory::Create(
+    const webrtc::Environment& aEnv, const webrtc::SdpVideoFormat& aFormat) {
+  if (!mInternalFactory->Supports(aFormat)) {
+    return nullptr;
+  }
+  auto type = webrtc::PayloadStringToCodecType(aFormat.name);
+  switch (type) {
+    case webrtc::VideoCodecType::kVideoCodecGeneric:
+    case webrtc::VideoCodecType::kVideoCodecH265:
+      MOZ_CRASH("Unimplemented codec");
+    case webrtc::VideoCodecType::kVideoCodecAV1:
+      if (StaticPrefs::media_webrtc_simulcast_av1_enabled()) {
+        return std::make_unique<webrtc::SimulcastEncoderAdapter>(
+            aEnv, mInternalFactory.get(), nullptr, aFormat);
+      }
+      break;
+    case webrtc::VideoCodecType::kVideoCodecH264:
+      if (StaticPrefs::media_webrtc_simulcast_h264_enabled()) {
+        return std::make_unique<webrtc::SimulcastEncoderAdapter>(
+            aEnv, mInternalFactory.get(), nullptr, aFormat);
+      }
+      break;
+    case webrtc::VideoCodecType::kVideoCodecVP8:
+      return std::make_unique<webrtc::SimulcastEncoderAdapter>(
+          aEnv, mInternalFactory.get(), nullptr, aFormat);
+    case webrtc::VideoCodecType::kVideoCodecVP9:
+      if (StaticPrefs::media_webrtc_simulcast_vp9_enabled()) {
+        return std::make_unique<webrtc::SimulcastEncoderAdapter>(
+            aEnv, mInternalFactory.get(), nullptr, aFormat);
+      }
+      break;
+  }
+  return mInternalFactory->Create(aEnv, aFormat);
+}
+
+bool WebrtcVideoEncoderFactory::InternalFactory::Supports(
+    const webrtc::SdpVideoFormat& aFormat) {
+  switch (webrtc::PayloadStringToCodecType(aFormat.name)) {
+    case webrtc::VideoCodecType::kVideoCodecVP8:
+    case webrtc::VideoCodecType::kVideoCodecVP9:
+    case webrtc::VideoCodecType::kVideoCodecH264:
+    case webrtc::VideoCodecType::kVideoCodecAV1:
+      return true;
+    default:
+      return false;
+  }
+}
+
+std::unique_ptr<webrtc::VideoEncoder>
+WebrtcVideoEncoderFactory::InternalFactory::Create(
+    const webrtc::Environment& aEnv, const webrtc::SdpVideoFormat& aFormat) {
+  MOZ_ASSERT(Supports(aFormat));
+
+  std::unique_ptr<webrtc::VideoEncoder> platformEncoder;
+
+  auto createPlatformEncoder = [&]() -> std::unique_ptr<webrtc::VideoEncoder> {
+    return MediaDataCodec::CreateEncoder(aFormat);
+  };
+
+  auto createWebRTCEncoder =
+      [this, &aEnv, &aFormat]() -> std::unique_ptr<webrtc::VideoEncoder> {
+    std::unique_ptr<webrtc::VideoEncoder> encoder;
+    switch (webrtc::PayloadStringToCodecType(aFormat.name)) {
+      case webrtc::VideoCodecType::kVideoCodecH264: {
+        // get an external encoder
+        auto gmpEncoder = GmpVideoCodec::CreateEncoder(aFormat, mPCHandle);
+        {
+          MutexAutoLock lock(mGmpPluginMutex);
+          mCreatedGmpPluginEvent.Forward(*gmpEncoder->InitPluginEvent());
+          mReleasedGmpPluginEvent.Forward(*gmpEncoder->ReleasePluginEvent());
+        }
+        encoder = std::move(gmpEncoder);
+        break;
+      }
+      // libvpx fallbacks.
+      case webrtc::VideoCodecType::kVideoCodecVP8:
+        encoder = webrtc::CreateVp8Encoder(aEnv);
+        break;
+      case webrtc::VideoCodecType::kVideoCodecVP9:
+        encoder = webrtc::CreateVp9Encoder(aEnv);
+        break;
+      case webrtc::VideoCodecType::kVideoCodecAV1:
+        encoder = webrtc::CreateLibaomAv1Encoder(aEnv);
+        break;
+      default:
+        break;
+    }
+    return encoder;
+  };
+
+  std::unique_ptr<webrtc::VideoEncoder> encoder = nullptr;
+  EncoderCreationStrategy strategy = static_cast<EncoderCreationStrategy>(
+      StaticPrefs::media_webrtc_encoder_creation_strategy());
+  switch (strategy) {
+    case EncoderCreationStrategy::PreferWebRTCEncoder: {
+      encoder = createWebRTCEncoder();
+      // In a single case this happens: H264 is requested and OpenH264 isn't
+      // available yet (e.g. first run). Attempt to use a platform encoder in
+      // this case. They are not entirely ready yet but it's better than
+      // erroring out.
+      if (!encoder) {
+        NS_WARNING(
+            "Failed creating libwebrtc video encoder, falling back on platform "
+            "encoder");
+        return createPlatformEncoder();
+      }
+      return encoder;
+    }
+    case EncoderCreationStrategy::PreferPlatformEncoder:
+      platformEncoder = createPlatformEncoder();
+      encoder = createWebRTCEncoder();
+      if (encoder && platformEncoder) {
+        return webrtc::CreateVideoEncoderSoftwareFallbackWrapper(
+            aEnv, std::move(encoder), std::move(platformEncoder), false);
+      }
+      if (platformEncoder) {
+        NS_WARNING(nsPrintfCString("No WebRTC encoder to fall back to for "
+                                   "codec %s, only using platform encoder",
+                                   aFormat.name.c_str())
+                       .get());
+        return platformEncoder;
+      }
+      return encoder;
+  };
+
+  MOZ_ASSERT_UNREACHABLE("Bad enum value");
+
+  return nullptr;
+}
+
+}  // namespace mozilla

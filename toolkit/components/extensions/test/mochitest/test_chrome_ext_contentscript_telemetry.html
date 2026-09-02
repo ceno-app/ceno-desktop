@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test for telemetry for content script injection</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/ExtensionTestUtils.js"></script>
+  <script src="head.js"></script>
+  <link rel="stylesheet" href="chrome://mochikit/contents/tests/SimpleTest/test.css"/>
+</head>
+<body>
+
+<script>
+"use strict";
+
+const GLEAN_METRIC_ID = "contentScriptInjection";
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["test.wait300msAfterTabSwitch", true]],
+  });
+});
+
+add_task(async function test_contentscript_telemetry() {
+  function background() {
+    browser.test.onMessage.addListener(() => {
+      browser.tabs.executeScript({code: 'browser.test.sendMessage("content-script-run");'});
+    });
+  }
+
+  let extensionData = {
+    manifest: {
+      permissions: ["<all_urls>"],
+    },
+    background,
+  };
+
+  let tab = await AppTestDelegate.openNewForegroundTab(
+    window,
+    "https://example.com",
+    true
+  );
+
+  let extension = ExtensionTestUtils.loadExtension(extensionData);
+
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
+
+  is(
+    Glean.extensionsTiming[GLEAN_METRIC_ID].testGetValue(),
+    null,
+    `No data recorded for Glean metric extensionsTiming.${GLEAN_METRIC_ID}`
+  );
+
+  await extension.startup();
+
+  await Services.fog.testFlushAllChildren();
+  is(
+    Glean.extensionsTiming[GLEAN_METRIC_ID].testGetValue(),
+    null,
+    `No data recorded for Glean metric extensionsTiming.${GLEAN_METRIC_ID}`
+  );
+
+  extension.sendMessage();
+  await extension.awaitMessage("content-script-run");
+
+  await Services.fog.testFlushAllChildren();
+
+  ok(
+    Glean.extensionsTiming[GLEAN_METRIC_ID].testGetValue()?.sum > 0,
+    `Data recorded for first extension on Glean metric extensionsTiming.${GLEAN_METRIC_ID}`
+  );
+
+  await AppTestDelegate.removeTab(window, tab);
+  await extension.unload();
+});
+</script>
+
+</body>
+</html>

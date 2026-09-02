@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible focus testing">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript"
+          src="../treeview.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    function getLastChild(aID)
+    {
+      return getAccessible(aID).lastChild;
+    }
+
+    async function doTests()
+    {
+      const lastChild = getLastChild("tree");
+      // XXX: Bug 2034893 - We need to wait for both focus and ACTIVATE
+      // state change events to ensure that the focus has been fully processed
+      // and the ACTIVATE state has been applied to the focused element.
+      let focusedAndActivated = waitForEvents([
+        [EVENT_FOCUS, lastChild],
+        stateChangeEventArgs(lastChild, EXT_STATE_ACTIVE, true, true),
+      ]);
+      lastChild.takeFocus();
+      await focusedAndActivated;
+
+      const listitem2Acc = getAccessible("listitem2");
+      focusedAndActivated = waitForEvents([
+        [EVENT_FOCUS, listitem2Acc],
+        stateChangeEventArgs(listitem2Acc, EXT_STATE_ACTIVE, true, true),
+      ]);
+      listitem2Acc.takeFocus();
+      await focusedAndActivated;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yXULTreeLoadEvent(doTests, "tree", new nsTableTreeView(5));
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=706067"
+         title="Make takeFocus work on widget items">
+        Mozilla Bug 706067
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <tree id="tree" flex="1">
+        <treecols>
+          <treecol id="col1" flex="1" primary="true" label="column"/>
+          <treecol id="col2" flex="1" label="column 2"/>
+        </treecols>
+        <treechildren id="treechildren"/>
+      </tree>
+
+      <richlistbox id="listbox">
+        <richlistitem id="listitem1"><label value="item1"/></richlistitem>
+        <richlistitem id="listitem2"><label value="item2"/></richlistitem>
+      </richlistbox>
+
+      <vbox id="eventdump"/>
+    </vbox>
+  </hbox>
+</window>

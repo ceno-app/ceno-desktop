@@ -1,0 +1,27 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef AboutWindowsMessages_h_
+#define AboutWindowsMessages_h_
+
+#include "mozilla/MozPromise.h"
+#include "nsIAboutWindowsMessages.h"
+
+namespace mozilla {
+
+class AboutWindowsMessages final : public nsIAboutWindowsMessages {
+  ~AboutWindowsMessages() = default;
+
+ public:
+  static already_AddRefed<AboutWindowsMessages> GetSingleton();
+
+  AboutWindowsMessages() = default;
+
+  NS_DECL_THREADSAFE_ISUPPORTS
+  NS_DECL_NSIABOUTWINDOWSMESSAGES
+};
+
+}  // namespace mozilla
+
+#endif  // AboutWindowsMessages_h_

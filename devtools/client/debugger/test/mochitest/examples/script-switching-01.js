@@ -1,0 +1,31 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at <http://mozilla.org/MPL/2.0/>. */
+
+function a() {}
+function firstCall() {
+  a();
+  secondCall();
+  return 43;
+}
+
+function logPointTest(){
+  firstCall();
+}
+
+function dbgTestTimeout(cb, delay) {
+  setTimeout(cb, delay);
+}
+
+function dbgTestPromiseThen(cb) {
+  Promise.resolve().then(cb);
+}
+
+const dbgTestOnTimeout = () => {
+  return "hello";
+};
+const dbgTestOnPromiseThen = () => dbgTestTimeout(dbgTestOnTimeout, 1);
+
+function dbgTestAsyncStack() {
+  dbgTestPromiseThen(dbgTestOnPromiseThen);
+}

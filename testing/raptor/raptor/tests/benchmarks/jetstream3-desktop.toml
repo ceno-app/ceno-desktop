@@ -1,0 +1,25 @@
+[default]
+alert_threshold = 2.0
+subtest_alert_threshold = 5.0
+apps = "firefox, chrome, safari, safari-tp, custom-car"
+gecko_profile_interval = 1
+expose_browser_profiler = true
+expose_chrome_trace = true
+lower_is_better = false
+owner = ":jandem and spidermonkey team"
+page_cycles = 1
+page_timeout = 2000000
+subtest_lower_is_better = true
+subtest_unit = "ms"
+test_url = "http://<host>:<port>/"
+type = "benchmark"
+unit = "score"
+support_class = "jetstream3.py"
+repository = "https://github.com/webkit/jetstream"
+# Keep this in sync with the version used in PGO instrumentation by updating
+# `taskcluster/kinds/fetch/benchmarks.yml`.
+repository_revision = "3967678fa8ab98d847ab33cf3728dba726fa854b"
+test_script = "jetstream3.js"
+
+["jetstream3"]
+suite_name = "JetStream3.0"

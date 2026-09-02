@@ -1,0 +1,190 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/in-content/common.css");
+
+:root {
+  --in-content-container-min-width: 13em;
+  --in-content-container-max-width: 52em;
+  --info-pages-body-space-padding: var(--dimension-40) var(--dimension-48);
+  --info-pages-list-space-column-gap: var(--dimension-80);
+  --info-pages-title-space-image-offset: calc(2.5 * var(--space-xxlarge));
+}
+
+/* Body and container */
+body {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: var(--info-pages-body-space-padding);
+  align-items: center;
+  justify-content: center;
+}
+
+body.wide-container {
+  display: block;
+}
+
+.container {
+  min-width: var(--in-content-container-min-width);
+  max-width: var(--in-content-container-max-width);
+}
+
+/* Typography */
+.title {
+  background-position: left 0;
+  background-repeat: no-repeat;
+  background-size: 1.6em;
+  /* Ensure sufficient space for the background image: */
+  min-height: 1.6em;
+  margin-inline-start: calc(-1 * var(--info-pages-title-space-image-offset));
+  padding-inline-start: var(--info-pages-title-space-image-offset);
+  font-size: var(--font-size-xxxlarge);
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+.title:-moz-locale-dir(rtl),
+.title:dir(rtl) {
+  background-position: right 0;
+}
+
+.title-text {
+  font-size: var(--font-size-xxxlarge);
+  padding-bottom: var(--space-medium);
+}
+
+@media (max-width: 970px) {
+  .title {
+    padding-inline-start: 0;
+    margin-inline-start: 0;
+    padding-top: var(--info-pages-title-space-image-offset);
+  }
+
+  .title-text {
+    padding-top: 0;
+  }
+}
+
+.page-subtitle {
+  margin-bottom: var(--space-xxlarge);
+}
+
+ul,
+ol {
+  margin: var(--space-large) 0;
+  padding: 0;
+  margin-inline-start: var(--space-xxlarge);
+}
+
+ul > li,
+ol > li {
+  margin-bottom: var(--space-small);
+}
+
+ul {
+  list-style: disc;
+}
+
+dt {
+  font-weight: var(--font-weight-bold);
+}
+
+ul.columns {
+  column-count: 2;
+  column-gap: var(--info-pages-list-space-column-gap);
+}
+
+@media (max-width: 35em) {
+  ul.columns {
+    column-count: 1;
+  }
+}
+
+/* Buttons */
+.button-container {
+  margin-top: var(--space-large);
+}
+
+button {
+  padding: 0 var(--space-xlarge);
+}
+
+.button-container > button:first-child {
+  margin-inline-start: 0;
+}
+
+.button-container > button:last-child {
+  margin-inline-end: 0;
+}
+
+/* Trees */
+
+tree {
+  width: 100%;
+}
+
+/* Tables */
+
+table {
+  background-color: var(--table-background-color);
+  color: var(--text-color);
+  font: message-box;
+  text-align: start;
+  width: 100%;
+  border: 1px solid var(--table-border-color);
+  border-radius: var(--border-radius-small);
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+table button {
+  padding-inline: var(--space-xsmall);
+}
+
+th,
+td {
+  padding: var(--space-xsmall);
+  text-align: match-parent;
+}
+
+thead th {
+  text-align: center;
+}
+
+th {
+  background-color: var(--table-header-background-color);
+  color: var(--table-header-text-color);
+  border: 1px solid var(--table-border-color);
+}
+
+th.column {
+  white-space: nowrap;
+  width: 0;
+}
+
+td {
+  border: 1px solid var(--table-border-color);
+  unicode-bidi: plaintext; /* Make sure file paths will be LTR */
+}
+
+.action-box {
+  background-color: var(--table-background-color);
+  border: 1px solid var(--table-border-color);
+  border-radius: var(--border-radius-small);
+  padding: var(--space-large);
+  flex: 1 1 25%;
+}
+
+.header-flex {
+  display: flex;
+  gap: var(--space-xlarge);
+  margin-bottom: var(--space-large);
+  flex-wrap: wrap;
+}
+
+.content-flex {
+  flex: 1 1 65%;
+}

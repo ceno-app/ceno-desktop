@@ -1,0 +1,40 @@
+diff --git a/fdlibm.h b/fdlibm.h
+--- a/fdlibm.h
++++ b/fdlibm.h
+@@ -9,20 +9,23 @@
+  * ====================================================
+  */
+ 
+ /*
+  * from: @(#)fdlibm.h 5.1 93/09/24
+  * $FreeBSD$
+  */
+ 
+-#ifndef _MATH_H_
+-#define	_MATH_H_
++#ifndef mozilla_imported_fdlibm_h
++#define	mozilla_imported_fdlibm_h
+ 
++#ifndef M_PI_2
+ #define	M_PI_2		1.57079632679489661923	/* pi/2 */
++#endif
++
+ double	acos(double);
+ double	asin(double);
+ double	atan(double);
+ double	atan2(double, double);
+ double	cos(double);
+ double	sin(double);
+ double	tan(double);
+ 
+@@ -54,9 +57,9 @@ float	tanf(float);
+ float	exp2f(float);
+ float	expf(float);
+ float	log10f(float);
+ float	logf(float);
+ float	powf(float, float);
+ 
+ float	hypotf(float, float);
+ 
+-#endif /* !_MATH_H_ */
++#endif /* !mozilla_imported_fdlibm_h */

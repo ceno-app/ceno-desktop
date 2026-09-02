@@ -1,0 +1,235 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="menu tree and events">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+
+    // Linux and Windows menu trees discrepancy: bug 527646.
+
+    /**
+     * Return the context menu tree before submenus were open.
+     */
+    function getMenuTree1() {
+      if (LINUX || SOLARIS) {
+        let tree = {
+          role: ROLE_MENUPOPUP,
+          children: [
+            {
+              name: "item0",
+              role: ROLE_MENUITEM,
+              children: []
+            },
+            {
+              name: "item1",
+              role: ROLE_MENUITEM,
+              children: []
+            },
+            {
+              name: "item2",
+              role: ROLE_PARENT_MENUITEM,
+              children: [ ]
+            }
+          ]
+        };
+        return tree;
+      }
+
+      // Windows
+      let tree = {
+        role: ROLE_MENUPOPUP,
+        children: [
+          {
+            name: "item0",
+            role: ROLE_MENUITEM,
+            children: []
+          },
+          {
+            name: "item1",
+            role: ROLE_MENUITEM,
+            children: []
+          },
+          {
+            name: "item2",
+            role: ROLE_PARENT_MENUITEM,
+            children: [
+              {
+                name: "item2",
+                role: ROLE_MENUPOPUP,
+                children: [ ]
+              }
+            ]
+          }
+        ]
+      };
+      return tree;
+    }
+
+    /**
+     * Return context menu tree when submenu was open.
+     */
+    function getMenuTree2() {
+      const tree = getMenuTree1();
+      if (LINUX || SOLARIS) {
+        let submenuTree =
+        {
+          name: "item2.0",
+          role: ROLE_PARENT_MENUITEM,
+          children: [ ]
+        };
+        tree.children[2].children.push(submenuTree);
+        return tree;
+      }
+
+      // Windows
+      let submenuTree =
+      {
+        name: "item2.0",
+        role: ROLE_PARENT_MENUITEM,
+        children: [
+          {
+            name: "item2.0",
+            role: ROLE_MENUPOPUP,
+            children: [ ]
+          }
+        ]
+      };
+
+      tree.children[2].children[0].children.push(submenuTree);
+      return tree;
+    }
+
+    /**
+     * Return context menu tree when subsub menu was open.
+     */
+    function getMenuTree3() {
+      const tree = getMenuTree2();
+      const subsubmenuTree =
+      {
+        name: "item2.0.0",
+        role: ROLE_MENUITEM,
+        children: []
+      };
+
+      if (LINUX || SOLARIS)
+        tree.children[2].children[0].children.push(subsubmenuTree);
+      else
+        tree.children[2].children[0].children[0].children[0].children.push(subsubmenuTree);
+
+      return tree;
+    }
+
+
+    async function doTests() {
+      // Check initial empty tree
+      testAccessibleTree("context", { MENUPOPUP: [] });
+
+      // Open context menu and check that menu item accesibles are created.
+      let button = getNode("button");
+      let popupStarted = waitForEvent(EVENT_MENUPOPUP_START, getNode("context"));
+      getNode("context").openPopup(button, "after_start", 0, 0, true, false);
+      await popupStarted;
+      testStates("context", STATE_FLOATING, 0, STATE_INVISIBLE | STATE_OFFSCREEN | STATE_COLLAPSED);
+      testAccessibleTree("context", getMenuTree1());
+
+      // Select items and check focus event on them.
+      let focused = waitForEvent(EVENT_FOCUS, getNode("item0"));
+      synthesizeKey("KEY_ArrowDown");
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("item1"));
+      synthesizeKey("KEY_ArrowDown");
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("item2"));
+      synthesizeKey("KEY_ArrowDown");
+      await focused;
+
+      // Open sub menu and check menu accessible tree and focus event.
+      focused = waitForEvent(EVENT_FOCUS, getNode("item2.0"));
+      synthesizeKey("KEY_Enter");
+      await focused;
+      testAccessibleTree("context", getMenuTree2());
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("item2.0.0"));
+      synthesizeKey("KEY_Enter");
+      await focused;
+      testAccessibleTree("context", getMenuTree3());
+
+      // Close submenus and check that focus goes to parent.
+      focused = waitForEvent(EVENT_FOCUS, getNode("item2.0"));
+      synthesizeKey("KEY_Escape");
+      await focused;
+
+      focused = waitForEvent(EVENT_FOCUS, getNode("item2"));
+      synthesizeKey("KEY_Escape");
+      await focused;
+
+      let popupEnded = waitForEvent(EVENT_MENUPOPUP_END, getNode("context"));
+      synthesizeKey("KEY_Escape");
+      await popupEnded;
+      testStates("context", STATE_FLOATING | STATE_INVISIBLE | STATE_OFFSCREEN, 0);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <a target="_blank"
+       href="https://bugzilla.mozilla.org/show_bug.cgi?id=630194"
+       title="Update accessible tree when opening the menu popup">
+      Mozilla Bug 630194
+    </a>
+    <a target="_blank"
+       href="https://bugzilla.mozilla.org/show_bug.cgi?id=630486"
+       title="Don't force accessible creation for popup children.">
+      Mozilla Bug 630486
+    </a>
+  <p id="display"></p>
+    <div id="content" style="display: none">
+    </div>
+    <pre id="test">
+    </pre>
+  </body>
+
+    <vbox flex="1">
+
+      <menupopup id="context" nonnative="">
+        <menuitem id="item0" label="item0"/>
+        <menuitem id="item1" label="item1"/>
+        <menu id="item2" label="item2">
+          <menupopup id="submenu2" nonnative="">
+            <menu id="item2.0" label="item2.0">
+              <menupopup id="submenu2.0" nonnative="">
+                <menuitem id="item2.0.0" label="item2.0.0"/>
+              </menupopup>
+            </menu>
+          </menupopup>
+        </menu>
+      </menupopup>
+
+      <button context="context" id="button">btn</button>
+    </vbox>
+  </hbox>
+</window>

@@ -1,0 +1,233 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+#include "nsIAsyncInputStream.idl"
+#include "nsIEventTarget.idl"
+
+/**
+ * imgIEncoder interface
+ */
+[scriptable, builtinclass, uuid(a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d)]
+interface imgIEncoder : nsIAsyncInputStream
+{
+  // Possible values for outputOptions. Multiple values are semicolon-separated.
+  //
+  // PNG:
+  // ----
+  // transparency=[yes|no|none]  --  default: "yes"
+  //     Overrides default from input format. "no" and "none" are equivalent.
+  // png-zlib-level=[0-9]  --  default: "3"
+  //     Overrides default from compression level for zlib.
+  // png-filter=[no_filters|none|sub|up|avg|paeth|fast|all]  --  default: "sub"
+  //     Overrides default filter.
+  //
+  //
+  // APNG:
+  // -----
+  // The following options can be used with startImageEncode():
+  //
+  // transparency=[yes|no|none]  --  default: "yes"
+  //     Overrides default from input format. "no" and "none" are equivalent.
+  // skipfirstframe=[yes|no]  --  default: "no"
+  //     Controls display of the first frame in animations. PNG-only clients
+  //     always display the first frame (and only that frame).
+  // frames=#  --  default: "1"
+  //     Total number of frames in the image. The first frame, even if skipped,
+  //     is always included in the count.
+  // plays=#  --  default: "0"
+  //     Number of times to play the animation sequence. "0" will repeat
+  //     forever.
+  //
+  // The following options can be used for each frame, with addImageFrame():
+  //
+  // transparency=[yes|no|none]  --  default: "yes"
+  //     Overrides default from input format. "no" and "none" are equivalent.
+  // delay=#  --  default: "500"
+  //     Number of milliseconds to display the frame, before moving to the next
+  //     frame.
+  // dispose=[none|background|previous]  --  default: "none"
+  //     What to do with the image's canvas before rendering the next frame.
+  //     See APNG spec.
+  // blend=[source|over]  --  default: "source"
+  //     How to render the new frame on the canvas. See APNG spec.
+  // xoffset=#  --  default: "0"
+  // yoffset=#  --  default: "0"
+  //     Where to draw the frame, relative to the canvas.
+  //
+  //
+  // JPEG:
+  // -----
+  //
+  // quality=#  --  default: "92"
+  //    Quality of compression, 0-100 (worst-best).
+  //    Quality >= 90 prevents down-sampling of the color channels.
+  //
+  //
+  // WEBP:
+  // -----
+  //
+  // quality=#  --  default: "92"
+  //    Quality of compression, 0-100 (worst-best).
+
+
+  // Possible values for input format (note that not all image formats
+  // support saving alpha channels):
+
+    // Input is RGB each pixel is represented by three bytes:
+    // R, G, and B (in that order, regardless of host endianness)
+  const uint32_t INPUT_FORMAT_RGB = 0;
+
+    // Input is RGB each pixel is represented by four bytes:
+    // R, G, and B (in that order, regardless of host endianness).
+    // POST-MULTIPLIED alpha us used (50% transparent red is 0xff000080)
+  const uint32_t INPUT_FORMAT_RGBA = 1;
+
+    // Input is host-endian ARGB: On big-endian machines each pixel is therefore
+    // ARGB, and for little-endian machiens (Intel) each pixel is BGRA
+    // (This is used by canvas to match it's internal representation)
+    //
+    // PRE-MULTIPLIED alpha is used (That is, 50% transparent red is 0x80800000,
+    // not 0x80ff0000
+  const uint32_t INPUT_FORMAT_HOSTARGB = 2;
+
+    // Input is R10G10B10A2 packed in a single uint32 (4 bytes/pixel).
+    // Bit layout: 0bAARRRRRRRRRRGGGGGGGGGGBBBBBBBBBB (little-endian).
+    // 10-bit color channels [0, 1023], 2-bit alpha [0, 3].
+    // POST-MULTIPLIED alpha is used.
+  const uint32_t INPUT_FORMAT_R10G10B10A2 = 3;
+
+    // Input is RGBA with 10-bit unsigned integer per channel, right-justified
+    // in uint16 (8 bytes/pixel). Values in [0, 1023].
+    // POST-MULTIPLIED alpha is used.
+  const uint32_t INPUT_FORMAT_RGBA_U10 = 4;
+
+    // Input is RGBA with 12-bit unsigned integer per channel, right-justified
+    // in uint16 (8 bytes/pixel). Values in [0, 4095].
+    // POST-MULTIPLIED alpha is used.
+  const uint32_t INPUT_FORMAT_RGBA_U12 = 5;
+
+    // Input is RGBA with 16-bit unsigned integer per channel (8 bytes/pixel).
+    // POST-MULTIPLIED alpha is used.
+  const uint32_t INPUT_FORMAT_RGBA_U16 = 6;
+
+    // Input is RGBA with 16-bit float (half-float) per channel (8 bytes/pixel).
+    // POST-MULTIPLIED alpha is used.
+  const uint32_t INPUT_FORMAT_RGBA_F16 = 7;
+
+  // CICP colour primaries (ISO/IEC 23091-2 / ITU-T H.273).
+  cenum CICPColourPrimaries : 8 {
+    CP_BT709 = 1,
+    CP_UNSPECIFIED = 2,
+    CP_BT470M = 4,
+    CP_BT470BG = 5,
+    CP_BT601 = 6,
+    CP_SMPTE240 = 7,
+    CP_GENERIC_FILM = 8,
+    CP_BT2020 = 9,
+    CP_XYZ = 10,
+    CP_SMPTE431 = 11,
+    CP_SMPTE432 = 12,
+    CP_EBU3213 = 22,
+  };
+
+  // CICP transfer characteristics (ISO/IEC 23091-2 / ITU-T H.273).
+  cenum CICPTransferCharacteristics : 8 {
+    TC_BT709 = 1,
+    TC_UNSPECIFIED = 2,
+    TC_BT470M = 4,
+    TC_BT470BG = 5,
+    TC_BT601 = 6,
+    TC_SMPTE240 = 7,
+    TC_LINEAR = 8,
+    TC_LOG_100 = 9,
+    TC_LOG_100_SQRT10 = 10,
+    TC_IEC61966 = 11,
+    TC_BT_1361 = 12,
+    TC_SRGB = 13,
+    TC_BT2020_10BIT = 14,
+    TC_BT2020_12BIT = 15,
+    TC_SMPTE2084 = 16,
+    TC_SMPTE428 = 17,
+    TC_HLG = 18,
+  };
+
+  // CICP matrix coefficients (ISO/IEC 23091-2 / ITU-T H.273).
+  cenum CICPMatrixCoefficients : 8 {
+    MC_IDENTITY = 0,
+    MC_BT709 = 1,
+    MC_UNSPECIFIED = 2,
+    MC_FCC = 4,
+    MC_BT470BG = 5,
+    MC_BT601 = 6,
+    MC_SMPTE240 = 7,
+    MC_YCGCO = 8,
+    MC_BT2020_NCL = 9,
+    MC_BT2020_CL = 10,
+    MC_SMPTE2085 = 11,
+    MC_CHROMAT_NCL = 12,
+    MC_CHROMAT_CL = 13,
+    MC_ICTCP = 14,
+  };
+
+  // Set color space information using CICP values. Must be called before
+  // initFromData or startImageEncode. Encoders that do not support color space
+  // metadata may ignore this.
+  void setColorSpaceInfo(in imgIEncoder_CICPColourPrimaries colourPrimaries,
+                         in imgIEncoder_CICPTransferCharacteristics transferCharacteristics,
+                         in imgIEncoder_CICPMatrixCoefficients matrixCoefficients,
+                         in boolean fullRange);
+
+  /* data - list of bytes in the format specified by inputFormat
+   * width  - width in pixels
+   * height - height in pixels
+   * stride - number of bytes per row in the image
+   *          Normally (width*3) or (width*4), depending on your input format,
+   *          but some data uses padding at the end of each row, which would
+   *          be extra.
+   * inputFormat - one of INPUT_FORMAT_* specifying the format of data
+   * outputOptions - semicolon-delimited list of name=value pairs that can
+   *                 give options to the output encoder. Options are encoder-
+   *                 specific. Just give empty string for default behavior.
+   */
+  void initFromData([array, size_is(length), const] in uint8_t data,
+                    in unsigned long length,
+                    in uint32_t width,
+                    in uint32_t height,
+                    in uint32_t stride,
+                    in uint32_t inputFormat,
+                    in AString outputOptions,
+                    in ACString randomizationKey);
+
+  /*
+   * For encoding images which may contain multiple frames, the 1-shot
+   * initFromData() interface is too simplistic. The alternative is to
+   * use startImageEncode(), call addImageFrame() one or more times, and
+   * then finish initialization with endImageEncode().
+   *
+   * The arguments are basically the same as in initFromData().
+   */
+  void startImageEncode(in uint32_t width,
+                    in uint32_t height,
+                    in uint32_t inputFormat,
+                    in AString outputOptions);
+
+  void addImageFrame( [array, size_is(length), const] in uint8_t data,
+                    in unsigned long length,
+                    in uint32_t width,
+                    in uint32_t height,
+                    in uint32_t stride,
+                    in uint32_t frameFormat,
+                    in AString frameOptions);
+
+  void endImageEncode();
+
+  /*
+   * Sometimes an encoder can contain another encoder and direct access
+   * to its buffer is necessary.   It is only safe to assume that the buffer
+   * returned from getImageBuffer() is of size equal to getImageBufferUsed().
+   */
+  [noscript] unsigned long getImageBufferUsed();
+  [noscript] charPtr getImageBuffer();
+};

@@ -1,0 +1,47 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+with Files("**"):
+    BUG_COMPONENT = ("Core", "XML")
+
+MOCHITEST_MANIFESTS += ["tests/mochitest/mochitest.toml"]
+BROWSER_CHROME_MANIFESTS += ["tests/mochitest/browser.toml"]
+
+XPIDL_SOURCES += [
+    "nsIExpatSink.idl",
+]
+
+XPIDL_MODULE = "htmlparser"
+
+EXPORTS += [
+    "nsElementTable.h",
+    "nsHTMLTagList.inc",
+    "nsHTMLTags.h",
+    "nsIContentSink.h",
+    "nsIFragmentContentSink.h",
+    "nsIParser.h",
+    "nsParserBase.h",
+    "nsParserConstants.h",
+    "nsRLBoxExpatDriver.h",
+    "nsScannerString.h",
+]
+
+UNIFIED_SOURCES += [
+    "CParserContext.cpp",
+    "nsElementTable.cpp",
+    "nsExpatDriver.cpp",
+    "nsHTMLTags.cpp",
+    "nsParser.cpp",
+    "nsParserMsgUtils.cpp",
+    "nsScanner.cpp",
+    "nsScannerString.cpp",
+]
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+FINAL_LIBRARY = "xul"
+
+LOCAL_INCLUDES += [
+    "!/security/rlbox",
+]

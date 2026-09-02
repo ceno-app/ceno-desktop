@@ -1,0 +1,51 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef D3D11TextureWrapper_h_
+#define D3D11TextureWrapper_h_
+
+#include <functional>
+
+#include "mozilla/gfx/Types.h"
+
+struct AVFrame;
+struct AVBufferRef;
+struct ID3D11Texture2D;
+
+namespace mozilla {
+
+struct FFmpegLibWrapper;
+
+// D3D11TextureWrapper manages the lifecycle of hardware buffers used
+// by the FFVPX hardware decoder when zero-copy decoding is enabled. By
+// adding a reference to the hardware buffer, it prevents the FFVPX decoder
+// from reusing the buffer too early (while it is still being used for display),
+// which can help avoid significant playback stutter.
+class D3D11TextureWrapper final {
+ public:
+  D3D11TextureWrapper(AVFrame* aAVFrame, const FFmpegLibWrapper* aLib,
+                      ID3D11Texture2D* aTexture,
+                      const gfx::SurfaceFormat aFormat,
+                      const unsigned int aArrayIdx,
+                      std::function<void()>&& aReleaseMethod);
+  D3D11TextureWrapper(D3D11TextureWrapper&& aWrapper) = delete;
+  D3D11TextureWrapper(const D3D11TextureWrapper&& aWrapper) = delete;
+
+  ~D3D11TextureWrapper();
+
+  ID3D11Texture2D* GetTexture() const { return mTexture; }
+
+  const gfx::SurfaceFormat mFormat;
+  const unsigned int mArrayIdx;
+  const std::function<void()> mReleaseMethod;
+
+ private:
+  const FFmpegLibWrapper* mLib;
+  ID3D11Texture2D* mTexture;
+  AVBufferRef* mHWAVBuffer;
+};
+
+}  // namespace mozilla
+
+#endif  // D3D11TextureWrapper_h_

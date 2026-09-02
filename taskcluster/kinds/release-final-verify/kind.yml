@@ -1,0 +1,38 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+kind-dependencies:
+    - release-bouncer-check
+    - release-update-verify-config
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.final_verify:transforms
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+tasks:
+    final-verify:
+        from-deps:
+            kinds: [release-update-verify-config]
+            group-by:
+                # `build_platform` includes `shippable` and `devedition` so
+                # this effectively groups by platform+shipping product
+                attribute: build_platform
+            copy-attributes: true
+
+        description: final verify
+        shipping-phase: push
+        treeherder:
+            symbol: FV
+        run-on-repo-type: [hg]
+        name: final-verify
+        run-on-projects: []  # to make sure this never runs as part of CI
+        worker-type: b-linux
+        worker:
+            docker-image:
+                in-tree: "update-verify"
+            max-run-time: 7200

@@ -1,0 +1,14 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -2536,6 +2536,10 @@ XML_ParseBuffer(XML_Parser parser, int len, int isFinal) {
+   XmlUpdatePosition(parser->m_encoding, parser->m_positionPtr,
+                     parser->m_bufferPtr, &parser->m_position);
+   parser->m_positionPtr = parser->m_bufferPtr;
++/* BEGIN MOZILLA CHANGE (always set m_eventPtr/m_eventEndPtr) */
++  parser->m_eventPtr = parser->m_bufferPtr;
++  parser->m_eventEndPtr = parser->m_bufferPtr;
++/* END MOZILLA CHANGE */
+   return result;
+ }
+ 

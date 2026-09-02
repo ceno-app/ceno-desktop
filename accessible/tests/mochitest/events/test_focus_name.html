@@ -1,0 +1,111 @@
+<html>
+
+<head>
+  <title>Accessible name testing on focus</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    const gFocusHandler = {
+      handleEvent(aEvent) {
+        const elm = aEvent.target;
+        if (elm.nodeType != Node.ELEMENT_NODE)
+          return;
+
+        gTooltipElm.style.display = "block";
+
+        elm.setAttribute("aria-describedby", "tooltip");
+      },
+    };
+
+    const gBlurHandler = {
+      handleEvent(aEvent) {
+        gTooltipElm.style.display = "none";
+
+        const elm = aEvent.target;
+        if (elm.nodeType == Node.ELEMENT_NODE)
+          elm.removeAttribute("aria-describedby");
+      },
+    };
+
+    /**
+     * Do tests.
+     */
+
+    let gButtonElm = null;
+    let gTextboxElm = null;
+    let gTooltipElm = null;
+
+    async function doTests() {
+      gButtonElm = getNode("button");
+      gTextboxElm = getNode("textbox");
+      gTooltipElm = getNode("tooltip");
+
+      gButtonElm.addEventListener("focus", gFocusHandler);
+      gButtonElm.addEventListener("blur", gBlurHandler);
+      gTextboxElm.addEventListener("focus", gFocusHandler);
+      gTextboxElm.addEventListener("blur", gBlurHandler);
+
+      // The aria-describedby is changed on DOM focus. Accessible description
+      // should be updated when a11y focus is fired.
+      const descr = "It's a tooltip";
+
+      let focused = waitForEvent(EVENT_FOCUS, "button");
+      selectAllTextAndFocus("button");
+      let evt = await focused;
+      is(
+        evt.accessible.description,
+        descr,
+        "Wrong description for " + prettyName(evt.accessible)
+      );
+
+      focused = waitForEvent(EVENT_FOCUS, "textbox");
+      synthesizeKey("KEY_Tab", { shiftKey: false });
+      evt = await focused;
+      is(
+        evt.accessible.description,
+        descr,
+        "Wrong description for " + prettyName(evt.accessible)
+      );
+
+      gButtonElm.removeEventListener("focus", gFocusHandler);
+      gButtonElm.removeEventListener("blur", gBlurHandler);
+      gTextboxElm.removeEventListener("focus", gFocusHandler);
+      gTextboxElm.removeEventListener("blur", gBlurHandler);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=520709"
+     title="mochitest to ensure name/description are updated on a11y focus if they were changed on DOM focus">
+    Mozilla Bug 520709
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="tooltip" style="display: none" aria-hidden="true">It's a tooltip</div>
+  <button id="button">button</button>
+  <input id="textbox">
+
+  <div id="eventdump"></div>
+</body>
+</html>

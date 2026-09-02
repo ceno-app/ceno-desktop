@@ -1,0 +1,65 @@
+[DEFAULT]
+firefox-appdir = "browser"
+head = "head.js"
+
+["test_AttributionDistribution.js"]
+run-if = [
+  "os != 'android'", # FOG isn't responsible for attribution/distribution on Android.
+]
+
+["test_FOGIPCLimit.js"]
+
+["test_FOGInit.js"]
+run-if = [
+  "appname != 'thunderbird'", # Won't run on thunderbird due to a race condition with the generated serverknobs conf.
+]
+
+["test_FOGPrefs.js"]
+run-if = [
+  "os != 'android'", # FOG isn't responsible for monitoring prefs and controlling upload on Android
+]
+
+["test_GIFFT.js"]
+
+["test_GIFFTIPC.js"]
+run-if = [
+  "os != 'android'", # Telemetry IPC doesn't run on Android (bug 1896896)
+]
+
+["test_Glean.js"]
+
+["test_GleanExperiments.js"]
+run-if = [
+  "os != 'android'", # FOG isn't responsible for experiment annotations on Android
+]
+
+["test_GleanIPC.js"]
+
+["test_GleanServerKnobs.js"]
+run-if = [
+  "os != 'android'", # Server Knobs on mobile will be handled by the specific app
+]
+
+["test_JOG.js"]
+run-if = [
+  "appname != 'thunderbird'", # Won't run on thunderbird due to a race condition with the generated serverknobs conf.
+]
+
+["test_JOGIPC.js"]
+
+["test_MillionQ.js"]
+run-if = [
+  "appname != 'thunderbird'", # interesting_serverknobs.json isn't applied before init.
+]
+skip-if = [
+  "os == 'android'", # Android inits its own FOG, so the test won't work.
+]
+
+["test_OHTTP.js"]
+skip-if = [
+  "os == 'android'", # FOG isn't responsible for monitoring prefs and controlling upload on Android
+]
+
+["test_ProfilerMarkers.js"]
+
+["test_ProfilerMarkersIPC.js"]

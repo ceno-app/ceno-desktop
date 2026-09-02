@@ -1,0 +1,49 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "mozilla/dom/PermissionMessageUtils.h"
+
+#include "ipc/IPCMessageUtilsSpecializations.h"
+#include "mozilla/ipc/BackgroundUtils.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
+#include "nsCOMPtr.h"
+#include "nsIPrincipal.h"
+
+namespace IPC {
+
+void ParamTraits<nsIPrincipal*>::Write(IPC::MessageWriter* aWriter,
+                                       nsIPrincipal* aParam) {
+  mozilla::Maybe<mozilla::ipc::PrincipalInfo> info;
+  if (aParam) {
+    info.emplace();
+    nsresult rv = PrincipalToPrincipalInfo(aParam, info.ptr());
+    MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv));
+  }
+
+  WriteParam(aWriter, info);
+}
+
+bool ParamTraits<nsIPrincipal*>::Read(IPC::MessageReader* aReader,
+                                      RefPtr<nsIPrincipal>* aResult) {
+  mozilla::Maybe<mozilla::ipc::PrincipalInfo> info;
+  if (!ReadParam(aReader, &info)) {
+    return false;
+  }
+
+  if (info.isNothing()) {
+    return true;
+  }
+
+  auto principalOrErr = PrincipalInfoToPrincipal(info.ref());
+
+  if (NS_WARN_IF(principalOrErr.isErr())) {
+    return false;
+  }
+
+  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
+  *aResult = principal;
+  return true;
+}
+
+}  // namespace IPC

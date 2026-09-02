@@ -1,0 +1,67 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef dom_base_MessageManagerCallback_h_
+#define dom_base_MessageManagerCallback_h_
+
+#include "mozilla/NotNull.h"
+#include "mozilla/RefPtr.h"
+#include "mozilla/dom/ProcessIsolation.h"
+#include "nsError.h"
+#include "nsStringFwd.h"
+#include "nsTArrayForwardDeclare.h"
+
+class nsIDOMProcessParent;
+class nsIPrincipal;
+
+namespace mozilla {
+
+class ErrorResult;
+
+namespace dom {
+
+class ContentChild;
+class ContentParent;
+class ProcessMessageManager;
+
+namespace ipc {
+
+class StructuredCloneData;
+
+class MessageManagerCallback {
+ public:
+  virtual ~MessageManagerCallback() = default;
+
+  virtual bool DoLoadMessageManagerScript(const nsAString& aURL,
+                                          bool aRunInGlobalScope) {
+    return true;
+  }
+
+  virtual bool DoSendBlockingMessage(
+      const nsAString& aMessage, NotNull<ipc::StructuredCloneData*> aData,
+      nsTArray<NotNull<RefPtr<ipc::StructuredCloneData>>>* aRetVal) {
+    return true;
+  }
+
+  virtual nsresult DoSendAsyncMessage(
+      const nsAString& aMessage, NotNull<ipc::StructuredCloneData*> aData) {
+    return NS_OK;
+  }
+
+  virtual mozilla::dom::ProcessMessageManager* GetProcessMessageManager()
+      const {
+    return nullptr;
+  }
+
+  virtual void DoGetRemoteType(nsACString& aRemoteType,
+                               ErrorResult& aError) const;
+
+  virtual nsIDOMProcessParent* ProcessParent() { return nullptr; }
+};
+
+}  // namespace ipc
+}  // namespace dom
+}  // namespace mozilla
+
+#endif

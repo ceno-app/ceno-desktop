@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef moz_dom_ServiceWorkerContainerProxy_h
+#define moz_dom_ServiceWorkerContainerProxy_h
+
+#include "mozilla/RefPtr.h"
+#include "mozilla/dom/ServiceWorkerUtils.h"
+
+namespace mozilla::dom {
+
+class ServiceWorkerContainerParent;
+
+class ServiceWorkerContainerProxy final {
+  // Background thread only
+  RefPtr<ServiceWorkerContainerParent> mActor;
+
+  ~ServiceWorkerContainerProxy();
+
+ public:
+  explicit ServiceWorkerContainerProxy(ServiceWorkerContainerParent* aActor);
+
+  void RevokeActor(ServiceWorkerContainerParent* aActor);
+
+  RefPtr<ServiceWorkerRegistrationPromise> Register(
+      const ClientInfo& aClientInfo, const nsACString& aScopeURL,
+      const WorkerType& aType, const nsACString& aScriptURL,
+      ServiceWorkerUpdateViaCache aUpdateViaCache);
+
+  RefPtr<ServiceWorkerRegistrationPromise> GetRegistration(
+      const ClientInfo& aClientInfo, const nsACString& aURL);
+
+  RefPtr<ServiceWorkerRegistrationListPromise> GetRegistrations(
+      const ClientInfo& aClientInfo);
+
+  RefPtr<ServiceWorkerRegistrationPromise> GetReady(
+      const ClientInfo& aClientInfo);
+
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ServiceWorkerContainerProxy);
+};
+
+}  // namespace mozilla::dom
+
+#endif  // moz_dom_ServiceWorkerContainerProxy_h

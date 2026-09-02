@@ -1,0 +1,115 @@
+/* Any copyright is dedicated to the Public Domain.
+   https://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["test.wait300msAfterTabSwitch", true]],
+  });
+});
+
+add_task(async function test_events_prevented() {
+  await BrowserTestUtils.withNewTab(
+    {
+      gBrowser,
+      url: SHORT_TEST_PAGE,
+    },
+    async browser => {
+      let helper = new ScreenshotsHelper(browser);
+      helper.triggerUIFromToolbar();
+      await helper.waitForOverlay();
+
+      let contentBounds = await SpecialPowers.spawn(browser, [], async () => {
+        let { ScreenshotsComponentChild } = ChromeUtils.importESModule(
+          "resource:///actors/ScreenshotsComponentChild.sys.mjs"
+        );
+        let allOverlayEvents = ScreenshotsComponentChild.OVERLAY_EVENTS.concat(
+          ScreenshotsComponentChild.PREVENTABLE_EVENTS
+        );
+
+        content.eventsReceived = [];
+
+        function eventListener(event) {
+          let target = event.target?.nodeName ?? "";
+          let relatedTarget = event.relatedTarget?.nodeName ?? "";
+          content.window.eventsReceived.push({
+            type: event.type,
+            target,
+            relatedTarget,
+          });
+        }
+
+        for (let eventName of [...allOverlayEvents, "wheel"]) {
+          content.addEventListener(eventName, eventListener, true);
+        }
+        return content.document.body.getBoundingClientRect().toJSON();
+      });
+      const centerX = contentBounds.width / 2;
+
+      // key events
+      await key.down("s");
+      await key.up("s");
+      await key.press("s");
+
+      // touch events
+      await touch.start(centerX + 10, 10);
+      await touch.move(centerX + 20, 20);
+      await touch.end(centerX + 20, 20);
+
+      // pointermove/mousemove, pointerdown/mousedown, pointerup/mouseup events
+      await helper.clickTestPageElement();
+
+      // pointerover/mouseover, pointerout/mouseout
+      await mouse.over(centerX + 100, 100);
+      await mouse.out(centerX + 100, 100);
+
+      // click events and contextmenu
+      await mouse.dblclick(centerX + 100, 100);
+      await mouse.auxclick(centerX + 100, 100, { button: 1 });
+      await mouse.click(centerX + 100, 100);
+
+      await mouse.contextmenu(centerX + 100, 100);
+      const menu = document.getElementById("contentAreaContextMenu");
+
+      let wheelEventPromise = helper.waitForContentEventOnce("wheel");
+      await SpecialPowers.spawn(browser, [], () => {
+        content.dispatchEvent(new content.WheelEvent("wheel", { deltaY: 1 }));
+      });
+      await wheelEventPromise;
+
+      let contentEventsReceived = await SpecialPowers.spawn(
+        browser,
+        [],
+        async () => {
+          return content.eventsReceived;
+        }
+      );
+      info(
+        "contentEventsReceived: " +
+          JSON.stringify(contentEventsReceived, null, 2)
+      );
+
+      // Events are synchronous so if we only have 1 wheel at the end,
+      // we did not receive any other events
+      is(
+        contentEventsReceived.length,
+        1,
+        "Only 1 wheel event should reach the content document because everything else was prevent and stopped propagation"
+      );
+      is(
+        contentEventsReceived[0].type,
+        "wheel",
+        "Only 1 wheel event should reach the content document because everything else was prevent and stopped propagation"
+      );
+
+      // Clean up
+      if (!menu.hidden) {
+        // Close context menu
+        let popuphidden = BrowserTestUtils.waitForPopupEvent(menu, "hidden");
+        menu.hidePopup();
+        await popuphidden;
+      }
+    }
+  );
+});

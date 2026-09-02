@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Test accessible recreation</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTest() {
+      // adds onclick on element, text leaf should inherit its action
+      const divNode = getNode("div");
+      divNode.setAttribute("onclick", "alert(3);");
+      let textLeaf = getAccessible(divNode).firstChild;
+      is(textLeaf.actionCount, 1, "setOnClickAttr: wrong action numbers!");
+
+      // remove onclick attribute, text leaf shouldn't have any action
+      divNode.removeAttribute("onclick");
+      textLeaf = getAccessible(divNode).firstChild;
+      is(textLeaf.actionCount, 0, "removeOnClickAttr: wrong action numbers!");
+
+      // set onclick attribute making span accessible, it's inserted into tree
+      // and adopts text leaf accessible, text leaf should have an action
+      const spanNode = getNode("span");
+      let reordered = waitForEvent(EVENT_REORDER, spanNode.parentNode);
+      spanNode.setAttribute("role", "link");
+      spanNode.setAttribute("onclick", "alert(3);");
+      await reordered;
+
+      textLeaf = getAccessible(spanNode).firstChild;
+      is(textLeaf.actionCount, 1, "Wrong action numbers!");
+
+      // text data removal of text node should remove its text accessible
+      const pNode = getNode("p");
+      const pTextNode = pNode.firstChild;
+      let tree = {
+        role: ROLE_PARAGRAPH,
+        children: [ { role: ROLE_TEXT_LEAF, name: "text" } ],
+      };
+      testAccessibleTree(pNode, tree);
+
+      reordered = waitForEvent(EVENT_REORDER, pNode);
+      pTextNode.data = "";
+      await reordered;
+
+      tree = { role: ROLE_PARAGRAPH, children: [] };
+      testAccessibleTree(pNode, tree);
+
+      const preNode = getNode("pre");
+      const preTextNode = preNode.firstChild;
+      tree = {
+        role: ROLE_TEXT_CONTAINER,
+        children: [ { role: ROLE_TEXT_LEAF, name: "text" } ],
+      };
+      testAccessibleTree(preNode, tree);
+
+      reordered = waitForEvent(EVENT_REORDER, preNode);
+      preTextNode.data = "";
+      await reordered;
+
+      tree = { role: ROLE_TEXT_CONTAINER, children: [] };
+      testAccessibleTree(preNode, tree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body>
+
+  <a target="_blank"
+     title="Clean up the code of accessible initialization and binding to the tree"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=545465">
+    Mozilla Bug 545465
+  </a>
+  <a target="_blank"
+     title="Make sure accessible tree is correct when rendered text is changed"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=625652">
+    Mozilla Bug 625652
+  </a>
+  <a target="_blank"
+     title="Remove text accesible getting no text inside a preformatted area"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=706335">
+    Mozilla Bug 706335
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="container">
+    <div id="div">div</div>
+    <span id="span">span</span>
+  </div>
+
+  <p id="p">text</p>
+  <pre id="pre">text</pre>
+
+  <div id="eventdump"></div>
+</body>
+</html>

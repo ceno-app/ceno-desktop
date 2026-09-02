@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+<?xml-stylesheet href="../treeview.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible XUL tree actions tests">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../treeview.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+  <script type="application/javascript"
+          src="../actions.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    /* global testAction */
+
+    async function doTestActions()
+    {
+      var treeNode = getNode("tabletree");
+
+      var treeBodyNode = treeNode.treeBody;
+      treeNode.focus();
+
+      var tree = getAccessible(treeNode);
+
+      var expandedTreeItem = tree.getChildAt(2);
+      var collapsedTreeItem = tree.getChildAt(5);
+      var cycleCell = expandedTreeItem.getChildAt(0);
+      var checkableCell = expandedTreeItem.getChildAt(3);
+
+      await testAction({
+        id: expandedTreeItem,
+        actionName: "activate",
+        actionIndex: 0,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode,
+        eventSeq: [
+          [EVENT_FOCUS, expandedTreeItem,
+           () => testStates(expandedTreeItem, STATE_FOCUSED | STATE_SELECTED | STATE_EXPANDED)]
+        ]
+      });
+
+      await testAction({
+        id: collapsedTreeItem,
+        actionName: "expand",
+        actionIndex: 1,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode
+      });
+      testStates(collapsedTreeItem, STATE_EXPANDED);
+
+      await testAction({
+        id: collapsedTreeItem,
+        actionName: "collapse",
+        actionIndex: 1,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode
+      });
+      testStates(collapsedTreeItem, STATE_COLLAPSED);
+
+      await testAction({
+        id: cycleCell,
+        actionName: "cycle",
+        actionIndex: 0,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode
+      });
+
+      await testAction({
+        id: checkableCell,
+        actionName: "uncheck",
+        actionIndex: 0,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode,
+        eventSeq: [
+          [EVENT_STATE_CHANGE, checkableCell,
+           () => testStates(checkableCell, STATE_CHECKABLE, 0, STATE_CHECKED)]
+        ]
+      });
+
+      await testAction({
+        id: checkableCell,
+        actionName: "check",
+        actionIndex: 0,
+        events: CLICK_EVENTS,
+        targetId: treeBodyNode,
+        eventSeq: [
+          [EVENT_STATE_CHANGE, checkableCell,
+           () => testStates(checkableCell, STATE_CHECKED)]
+        ]
+      });
+
+      SimpleTest.finish();
+    }
+
+    async function doTest()
+    {
+      var treeNode = getNode("tabletree");
+      let reordered = waitForEvent(EVENT_REORDER, treeNode);
+      treeNode.view = new nsTreeTreeView();
+      await reordered;
+      await doTestActions();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank" rel="opener"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=503727"
+         title="Reorganize implementation of XUL tree accessibility">
+        Mozilla Bug 503727
+      </a><br/>
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <tree id="tabletree" flex="1" editable="true">
+        <treecols>
+          <treecol id="tabletree_col1" cycler="true" label="cycler"/>
+          <treecol id="tabletree_col2" flex="1" primary="true" label="column1"/>
+          <treecol id="tabletree_col3" flex="1" label="column2"/>
+          <treecol id="tabletree_col4" flex="1" label="checker"
+                   type="checkbox" editable="true"/>
+        </treecols>
+        <treechildren/>
+      </tree>
+
+      <vbox id="debug"/>
+    </vbox>
+  </hbox>
+
+</window>

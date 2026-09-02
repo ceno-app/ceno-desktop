@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Audio decoder in Utility process (AAC)</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="head.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script type="text/javascript">
+SimpleTest.waitForExplicitFinish();
+
+(async function() {
+  // FIXME: Remove all after Bug 1934009
+  for (let src of [
+    "small-shot.m4a",
+  ]) {
+    try {
+      if (SpecialPowers.getBoolPref("media.android-media-codec.enabled")) {
+        await runMochitestUtilityAudio(src, { expectUtility: "", expectDecoder: "android decoder", expectContent: false, expectJava: true });
+      } else if (SpecialPowers.getBoolPref("media.ffvpx-hw.enabled")) {
+        await runMochitestUtilityAudio(src, { expectUtility: "Utility Generic", expectDecoder: "ffvpx audio decoder", expectContent: false, expectJava: false });
+      } else {
+        ok(false, `Failure for ${src}, unknown configuration`);
+      }
+    } catch (ex) {
+      ok(false, `Failure for ${src} ${ex}`);
+    }
+  }
+
+  SimpleTest.finish();
+})();
+</script>
+</pre>
+</body>
+</html>

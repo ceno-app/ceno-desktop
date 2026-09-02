@@ -1,0 +1,138 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+});
+
+/**
+ * Listens for interactions in the child process and passes information to the
+ * parent.
+ */
+export class InteractionsChild extends JSWindowActorChild {
+  #progressListener;
+  #currentURL;
+
+  actorCreated() {
+    this.isContentWindowPrivate =
+      lazy.PrivateBrowsingUtils.isContentWindowPrivate(this.contentWindow);
+
+    if (this.isContentWindowPrivate) {
+      return;
+    }
+
+    this.#progressListener = {
+      onLocationChange: (webProgress, request, location, flags) => {
+        this.onLocationChange(webProgress, request, location, flags);
+      },
+
+      QueryInterface: ChromeUtils.generateQI([
+        "nsIWebProgressListener2",
+        "nsIWebProgressListener",
+        "nsISupportsWeakReference",
+      ]),
+    };
+
+    let webProgress = this.docShell
+      .QueryInterface(Ci.nsIInterfaceRequestor)
+      .getInterface(Ci.nsIWebProgress);
+    webProgress.addProgressListener(
+      this.#progressListener,
+      Ci.nsIWebProgress.NOTIFY_STATE_DOCUMENT |
+        Ci.nsIWebProgress.NOTIFY_LOCATION
+    );
+  }
+
+  didDestroy() {
+    // If the tab is closed then the docshell is no longer available.
+    if (!this.#progressListener || !this.docShell) {
+      return;
+    }
+
+    let webProgress = this.docShell
+      .QueryInterface(Ci.nsIInterfaceRequestor)
+      .getInterface(Ci.nsIWebProgress);
+    webProgress.removeProgressListener(this.#progressListener);
+  }
+
+  onLocationChange(webProgress, request, location, flags) {
+    // We don't care about inner-frame navigations.
+    if (!webProgress.isTopLevel) {
+      return;
+    }
+
+    // If this is a new document then the DOMContentLoaded event will trigger
+    // the new interaction instead.
+    if (!(flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT)) {
+      return;
+    }
+
+    this.#recordNewPage();
+  }
+
+  #recordNewPage() {
+    if (!this.docShell.currentDocumentChannel) {
+      // If there is no document channel, then it is something we're not
+      // interested in, but we do need to know that the previous interaction
+      // has ended.
+      this.sendAsyncMessage("Interactions:PageHide");
+      return;
+    }
+
+    let doc = this.document;
+    let url = doc.documentURIObject.specIgnoringRef;
+
+    // This may happen when the page calls replaceState or pushState with the
+    // same URL. We'll just consider this to not be a new page.
+    if (url == this.#currentURL) {
+      return;
+    }
+
+    this.#currentURL = url;
+
+    if (
+      this.docShell.currentDocumentChannel instanceof Ci.nsIHttpChannel &&
+      !this.docShell.currentDocumentChannel.requestSucceeded
+    ) {
+      return;
+    }
+
+    let referrer = doc.referrer
+      ? Services.io.newURI(doc.referrer).specIgnoringRef
+      : undefined;
+    this.sendAsyncMessage("Interactions:PageLoaded", { referrer });
+  }
+
+  async handleEvent(event) {
+    if (this.isContentWindowPrivate) {
+      // No recording in private browsing mode.
+      return;
+    }
+    switch (event.type) {
+      case "DOMContentLoaded": {
+        this.#recordNewPage();
+        break;
+      }
+      case "pagehide": {
+        // We generally expect this to be an nsIHttpChannel, if it isn't
+        // then the if statement below will return early anyway.
+        let currentDocumentChannel = /** @type {nsIHttpChannel} */ (
+          this.docShell.currentDocumentChannel
+        );
+        if (!currentDocumentChannel) {
+          return;
+        }
+
+        if (!currentDocumentChannel.requestSucceeded) {
+          return;
+        }
+
+        this.sendAsyncMessage("Interactions:PageHide");
+        break;
+      }
+    }
+  }
+}

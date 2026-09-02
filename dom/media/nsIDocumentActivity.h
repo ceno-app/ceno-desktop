@@ -1,0 +1,24 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsIDocumentActivity_h_
+#define nsIDocumentActivity_h_
+
+#include "nsISupports.h"
+
+#define NS_IDOCUMENTACTIVITY_IID \
+  {0x9b9f584e, 0xefa8, 0x11e3, {0xbb, 0x74, 0x5e, 0xdd, 0x1d, 0x5d, 0x46, 0xb0}}
+
+class nsIDocumentActivity : public nsISupports {
+ public:
+  NS_INLINE_DECL_STATIC_IID(NS_IDOCUMENTACTIVITY_IID)
+
+  virtual void NotifyOwnerDocumentActivityChanged() = 0;
+};
+
+/* Use this macro when declaring classes that implement this interface. */
+#define NS_DECL_NSIDOCUMENTACTIVITY \
+  virtual void NotifyOwnerDocumentActivityChanged() override;
+
+#endif /* nsIDocumentActivity_h_ */

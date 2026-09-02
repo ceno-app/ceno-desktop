@@ -1,0 +1,157 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=633602
+-->
+<head>
+  <title>Bug 633602 - file_childIframe.html</title>
+  <script src="/tests/SimpleTest/SimpleTest.js">
+  </script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
+  <script type="application/javascript" src="pointerlock_utils.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+  <style>
+    #parent, #childDiv, #iframe, #table, #table td {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+    #iframe, #table {
+      background-color: red;
+      width: 100%;
+      height: 100%;
+    }
+    #childDiv, #table td {
+      background-color: blue;
+      width: 50%;
+      height: 50%;
+    }
+  </style>
+</head>
+<body>
+  <a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=633602">
+    Mozilla Bug 633602
+  </a>
+
+  <div id="parent">
+    <table id="childTable">
+      <tr>
+        <td>
+          <iframe id="iframe" src="iframe_differentDOM.html">
+          </iframe>
+        </td>
+        <td>
+          <div id="childDiv">
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <pre id="test">
+    <script type="application/javascript">
+      /*
+       * Test for Bug 633602
+       * Check if pointer is locked when over a child iframe of
+       * the locked element
+       * Check if pointer is being repositioned back to center of
+       * the locked element even when pointer goes over a child iframe
+       */
+
+      SimpleTest.waitForExplicitFinish();
+
+      var parent = document.getElementById("parent")
+        , childDiv = document.getElementById("childDiv")
+        , iframe = document.getElementById("iframe");
+
+      function MovementStats(aEvent) {
+        this.movementX = aEvent.movementX;
+        this.movementY = aEvent.movementY;
+      }
+
+      var hoverIframe;
+      var firstMove, secondMove;
+
+      function runTests () {
+        ok(
+          hoverIframe,
+          "Pointer should be locked even when pointer hovers over a child iframe"
+        );
+        is(
+          firstMove?.movementX,
+          secondMove?.movementX,
+          "MovementX of first move to childDiv should be equal to movementX of second move to child div"
+        );
+        is(
+          firstMove?.movementY,
+          secondMove?.movementY,
+          "MovementY of first move to childDiv should be equal to movementY of second move to child div"
+        );
+      }
+
+      var firstMoveChild = function (e) {
+        info(`got firstMoveChild called: { screenX: ${e.screenX}, screenY: ${
+          e.screenY
+        }, movementX: ${e.movementX}, movementY: ${e.movementY} }`);
+
+        firstMove = new MovementStats(e);
+
+        parent.removeEventListener("mousemove", firstMoveChild);
+
+        requestAnimationFrame(() => {
+          parent.addEventListener("mousemove", moveIframe);
+          synthesizeMouseAtCenter(iframe, {type: "mousemove"}, window);
+        });
+      };
+
+      var moveIframe = function (e) {
+        info(`got moveIframe called: { screenX: ${e.screenX}, screenY: ${
+          e.screenY
+        }, movementX: ${e.movementX}, movementY: ${e.movementY} }`);
+
+        hoverIframe = !!document.pointerLockElement;
+
+        parent.removeEventListener("mousemove", moveIframe);
+
+        requestAnimationFrame(() => {
+          parent.addEventListener("mousemove", secondMoveChild);
+          synthesizeMouseAtCenter(childDiv, {type: "mousemove"}, window);
+        });
+      };
+
+      var secondMoveChild = function (e) {
+        info(`got secondMoveChild called: { screenX: ${e.screenX}, screenY: ${
+          e.screenY
+        }, movementX: ${e.movementX}, movementY: ${e.movementY} }`);
+
+        secondMove = new MovementStats(e);
+        parent.removeEventListener("mousemove", secondMoveChild);
+
+        addFullscreenChangeContinuation("exit", function() {
+          runTests();
+          SimpleTest.finish();
+        });
+        info("Calling exitFullscreen()...");
+        document.exitFullscreen();
+      };
+
+      document.addEventListener("pointerlockchange", function () {
+        info(`Got pointerlockchange: pointerLockElement:\n${document.pointerLockElement?.outerHTML}`);
+        if (document.pointerLockElement === parent) {
+          parent.addEventListener("mousemove", firstMoveChild);
+          synthesizeMouseAtCenter(childDiv, {type: "mousemove"}, window);
+        }
+      });
+
+      function start() {
+        addFullscreenChangeContinuation("enter", function() {
+          info("Calling requestPointerLock()...");
+          parent.requestPointerLock();
+        });
+        info("Calling requestFullscreen()...");
+        parent.requestFullscreen();
+      }
+    </script>
+  </pre>
+</body>
+</html>

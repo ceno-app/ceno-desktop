@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Tree update on XUL deck panel switching">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    async function doTest() {
+      // showDeckPanel: verify no REORDER fires when showing a hidden deck panel
+      const container = getAccessible("container");
+      const deckNode = getNode("hidden");
+      const initialTree =
+        { GROUPING: [ // role="group"
+          { GROUPING: [ // groupbox, a selected panel #2
+            { PUSHBUTTON: [ ] } // button
+          ] }
+        ] };
+
+      let unexpected = new UnexpectedEvents([[EVENT_REORDER, container]]);
+      window.windowUtils.advanceTimeAndRefresh(100);
+
+      testAccessibleTree(container, initialTree);
+      deckNode.style.display = "-moz-box";
+      window.windowUtils.advanceTimeAndRefresh(100);
+
+      testAccessibleTree(container, initialTree);
+      window.windowUtils.restoreNormalRefresh();
+      unexpected.stop();
+
+      // switchDeckPanel
+      const mainDeckNode = getNode("deck");
+      const prevPanel = getAccessible(mainDeckNode.selectedPanel);
+      const panelNode = mainDeckNode.childNodes[0];
+
+      testAccessibleTree(container, initialTree);
+
+      let hidden = waitForEvent(EVENT_HIDE, prevPanel);
+      let shown = waitForEvent(EVENT_SHOW, panelNode);
+      let reordered = waitForEvent(EVENT_REORDER, container);
+      mainDeckNode.selectedIndex = 0;
+      await hidden;
+      await shown;
+      await reordered;
+
+      const finalTree =
+        { GROUPING: [ // role="group"
+          { LABEL: [ // description, a selected panel #1
+            { TEXT_LEAF: []  } // text leaf, a description value
+          ] }
+        ] };
+      testAccessibleTree(container, finalTree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+     <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=814836"
+         title=" xul:deck element messes up screen reader">
+        Mozilla Bug 814836
+     </a>
+
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1" id="container" role="group">
+
+      <deck id="deck" selectedIndex="1">
+        <description>This is the first page</description>
+        <groupbox>
+          <button label="This is the second page"/>
+        </groupbox>
+        <hbox id="hidden" style="display: none;"><label>This is the third page</label></hbox>
+      </deck>
+
+    </vbox>
+  </hbox>
+
+</window>
+

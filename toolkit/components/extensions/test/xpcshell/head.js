@@ -1,0 +1,653 @@
+"use strict";
+/* exported createHttpServer, cleanupDir, clearCache, optionalPermissionsPromptHandler, promiseConsoleOutput,
+            promiseQuotaManagerServiceReset, promiseQuotaManagerServiceClear,
+            runWithPrefs, testEnv, withHandlingUserInput, resetHandlingUserInput,
+            assertPersistentListeners, promiseExtensionEvent, assertHasPersistedScriptsCachedFlag,
+            assertIsPersistedScriptsCachedFlag,
+            setup_crash_reporter_override_and_cleaner, crashFrame, crashExtensionBackground,
+            makeRkvDatabaseDir
+*/
+
+var { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
+var { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+var {
+  clearInterval,
+  clearTimeout,
+  setInterval,
+  setIntervalWithTarget,
+  setTimeout,
+  setTimeoutWithTarget,
+} = ChromeUtils.importESModule("resource://gre/modules/Timer.sys.mjs");
+var { AddonTestUtils, MockAsyncShutdown } = ChromeUtils.importESModule(
+  "resource://testing-common/AddonTestUtils.sys.mjs"
+);
+
+ChromeUtils.defineESModuleGetters(this, {
+  ContentTask: "resource://testing-common/ContentTask.sys.mjs",
+  Extension: "resource://gre/modules/Extension.sys.mjs",
+  ExtensionData: "resource://gre/modules/Extension.sys.mjs",
+  ExtensionParent: "resource://gre/modules/ExtensionParent.sys.mjs",
+  ExtensionTestUtils:
+    "resource://testing-common/ExtensionXPCShellUtils.sys.mjs",
+  FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
+  Management: "resource://gre/modules/Extension.sys.mjs",
+  MessageChannel: "resource://testing-common/MessageChannel.sys.mjs",
+  MockRegistrar: "resource://testing-common/MockRegistrar.sys.mjs",
+  NetUtil: "resource://gre/modules/NetUtil.sys.mjs",
+  PromiseTestUtils: "resource://testing-common/PromiseTestUtils.sys.mjs",
+  Schemas: "resource://gre/modules/Schemas.sys.mjs",
+  TestUtils: "resource://testing-common/TestUtils.sys.mjs",
+});
+
+PromiseTestUtils.allowMatchingRejectionsGlobally(
+  /Message manager disconnected/
+);
+
+// Persistent Listener test functionality
+const { assertPersistentListeners } = ExtensionTestUtils.testAssertions;
+
+// https_first automatically upgrades http to https, but the tests are not
+// designed to expect that. And it is not easy to change that because
+// nsHttpServer does not support https (bug 1742061). So disable https_first.
+Services.prefs.setBoolPref("dom.security.https_first", false);
+
+// These values may be changed in later head files and tested in check_remote
+// below.
+Services.prefs.setBoolPref("extensions.webextensions.remote", false);
+const testEnv = {
+  expectRemote: false,
+};
+
+add_setup(function check_remote() {
+  Assert.equal(
+    WebExtensionPolicy.useRemoteWebExtensions,
+    testEnv.expectRemote,
+    "useRemoteWebExtensions matches"
+  );
+  Assert.equal(
+    WebExtensionPolicy.isExtensionProcess,
+    !testEnv.expectRemote,
+    "testing from extension process"
+  );
+});
+
+ExtensionTestUtils.init(this);
+
+var createHttpServer = (...args) => {
+  AddonTestUtils.maybeInit(this);
+  return AddonTestUtils.createHttpServer(...args);
+};
+
+async function makeRkvDatabaseDir(name, { mockCorrupted = false } = {}) {
+  const databaseDir = PathUtils.join(PathUtils.profileDir, name);
+  await IOUtils.makeDirectory(databaseDir);
+  if (mockCorrupted) {
+    // Mock a corrupted db.
+    await IOUtils.write(
+      PathUtils.join(databaseDir, "data.safe.bin"),
+      new Uint8Array([0x00, 0x00, 0x00, 0x00])
+    );
+  }
+  return databaseDir;
+}
+
+// Some tests load non-moz-extension:-URLs in their extension document. When
+// extensions run in-process (extensions.webextensions.remote set to false),
+// that fails.
+// For details, see: https://bugzilla.mozilla.org/show_bug.cgi?id=1724099
+// To avoid skip-if on the whole file, use this:
+//
+//   add_task(async function test_description_here() {
+//     // Comment explaining why.
+//     allow_unsafe_parent_loads_when_extensions_not_remote();
+//     ...
+//     revert_allow_unsafe_parent_loads_when_extensions_not_remote();
+//   });
+var private_upl_cleanup_handlers = [];
+function allow_unsafe_parent_loads_when_extensions_not_remote() {
+  if (WebExtensionPolicy.useRemoteWebExtensions) {
+    // We should only allow remote iframes in the main process.
+    return;
+  }
+  if (!Cu.isInAutomation) {
+    // isInAutomation is false by default in xpcshell (bug 1598804). Flip pref.
+    Services.prefs.setBoolPref(
+      "security.turn_off_all_security_so_that_viruses_can_take_over_this_computer",
+      true
+    );
+    private_upl_cleanup_handlers.push(() => {
+      Services.prefs.setBoolPref(
+        "security.turn_off_all_security_so_that_viruses_can_take_over_this_computer",
+        false
+      );
+    });
+    // Sanity check: Fail immediately if setting the above pref does somehow
+    // not flip the isInAutomation flag.
+    if (!Cu.isInAutomation) {
+      // This condition is unexpected, because it is enforced at:
+      // https://searchfox.org/mozilla-central/rev/ea65de7c/js/xpconnect/src/xpcpublic.h#753-759
+      throw new Error("Failed to set isInAutomation to true");
+    }
+  }
+  // Note: The following pref requires the isInAutomation flag to be set.
+  // When unset, the pref is ignored, and tests would encounter bug 1724099.
+  if (!Services.prefs.getBoolPref("security.allow_unsafe_parent_loads")) {
+    info("Setting pref security.allow_unsafe_parent_loads to true");
+    Services.prefs.setBoolPref("security.allow_unsafe_parent_loads", true);
+    private_upl_cleanup_handlers.push(() => {
+      info("Reverting pref security.allow_unsafe_parent_loads to false");
+      Services.prefs.setBoolPref("security.allow_unsafe_parent_loads", false);
+    });
+  }
+
+  registerCleanupFunction(
+    // eslint-disable-next-line no-use-before-define
+    revert_allow_unsafe_parent_loads_when_extensions_not_remote
+  );
+}
+
+function revert_allow_unsafe_parent_loads_when_extensions_not_remote() {
+  for (let revert of private_upl_cleanup_handlers.splice(0)) {
+    revert();
+  }
+}
+
+/**
+ * Clears the HTTP and all subresource caches.
+ */
+function clearCache() {
+  Services.cache2.clear();
+
+  let imageCache = Cc["@mozilla.org/image/tools;1"]
+    .getService(Ci.imgITools)
+    .getImgCacheForDocument(null);
+  imageCache.clearCache(false);
+
+  ChromeUtils.clearResourceCache();
+}
+
+var promiseConsoleOutput = async function (task) {
+  const DONE = `=== console listener ${Math.random()} done ===`;
+
+  let listener;
+  let messages = [];
+  let awaitListener = new Promise(resolve => {
+    listener = msg => {
+      if (msg == DONE) {
+        resolve();
+      } else {
+        void (msg instanceof Ci.nsIConsoleMessage);
+        void (msg instanceof Ci.nsIScriptError);
+        messages.push(msg);
+      }
+    };
+  });
+
+  Services.console.registerListener(listener);
+  try {
+    let result = await task();
+
+    Services.console.logStringMessage(DONE);
+    await awaitListener;
+
+    return { messages, result };
+  } finally {
+    Services.console.unregisterListener(listener);
+  }
+};
+
+// Attempt to remove a directory.  If the Windows OS is still using the
+// file sometimes remove() will fail.  So try repeatedly until we can
+// remove it or we give up.
+function cleanupDir(dir) {
+  let count = 0;
+  return new Promise((resolve, reject) => {
+    function tryToRemoveDir() {
+      count += 1;
+      try {
+        dir.remove(true);
+      } catch (e) {
+        // ignore
+      }
+      if (!dir.exists()) {
+        return resolve();
+      }
+      if (count >= 25) {
+        return reject(`Failed to cleanup directory: ${dir}`);
+      }
+      setTimeout(tryToRemoveDir, 100);
+    }
+    tryToRemoveDir();
+  });
+}
+
+// Run a test with the specified preferences and then restores their initial values
+// right after the test function run (whether it passes or fails).
+async function runWithPrefs(prefsToSet, testFn) {
+  const setPrefs = prefs => {
+    for (let [pref, value] of prefs) {
+      if (value === undefined) {
+        // Clear any pref that didn't have a user value.
+        info(`Clearing pref "${pref}"`);
+        Services.prefs.clearUserPref(pref);
+        continue;
+      }
+
+      info(`Setting pref "${pref}": ${value}`);
+      switch (typeof value) {
+        case "boolean":
+          Services.prefs.setBoolPref(pref, value);
+          break;
+        case "number":
+          Services.prefs.setIntPref(pref, value);
+          break;
+        case "string":
+          Services.prefs.setStringPref(pref, value);
+          break;
+        default:
+          throw new Error("runWithPrefs doesn't support this pref type yet");
+      }
+    }
+  };
+
+  const getPrefs = prefs => {
+    return prefs.map(([pref, value]) => {
+      info(`Getting initial pref value for "${pref}"`);
+      if (!Services.prefs.prefHasUserValue(pref)) {
+        // Check if the pref doesn't have a user value.
+        return [pref, undefined];
+      }
+      switch (typeof value) {
+        case "boolean":
+          return [pref, Services.prefs.getBoolPref(pref)];
+        case "number":
+          return [pref, Services.prefs.getIntPref(pref)];
+        case "string":
+          return [pref, Services.prefs.getStringPref(pref)];
+        default:
+          throw new Error("runWithPrefs doesn't support this pref type yet");
+      }
+    });
+  };
+
+  let initialPrefsValues = [];
+
+  try {
+    initialPrefsValues = getPrefs(prefsToSet);
+
+    setPrefs(prefsToSet);
+
+    await testFn();
+  } finally {
+    info("Restoring initial preferences values on exit");
+    setPrefs(initialPrefsValues);
+  }
+}
+
+// "Handling User Input" test helpers.
+
+let extensionHandlers = new WeakSet();
+
+function handlingUserInputFrameScript() {
+  /* globals content */
+  // eslint-disable-next-line no-shadow
+  const { MessageChannel } = ChromeUtils.importESModule(
+    "resource://testing-common/MessageChannel.sys.mjs"
+  );
+  const { Assert } = ChromeUtils.importESModule(
+    "resource://testing-common/Assert.sys.mjs"
+  );
+
+  let targetInnerWindowId = content.windowGlobalChild.innerWindowId;
+  let handle;
+  const handlingUserInputHelper = {
+    // MessageChannel receiveMessage handler.
+    receiveMessage({ data }) {
+      // If handle was set while receiving a new request to create it,
+      // we will destroy it but also report it as an explicit test failure
+      // and stop the test earlier when a leak has been detected.
+      if (handle && data) {
+        handle.destruct();
+        handle = null;
+        Assert.ok(false, "leaked HandlingUserInput handle found");
+      }
+
+      if (data) {
+        handle = content.windowUtils.setHandlingUserInput(true);
+      } else {
+        handle?.destruct();
+        handle = null;
+      }
+    },
+    // Observer Service notifications observer.
+    observe(subject, topic) {
+      if (topic !== "inner-window-destroyed") {
+        return;
+      }
+      const innerWindowId = subject.QueryInterface(Ci.nsISupportsPRUint64).data;
+      if (innerWindowId != targetInnerWindowId) {
+        // Return earlier when called as an "inner-window-destroyed" observer
+        // and the innerWindowID isn't matching the innerWindowId gathered
+        // when the frame script was originally executed.
+        return;
+      }
+      Services.obs.removeObserver(this, "inner-window-destroyed");
+      if (handle) {
+        handle.destruct();
+        handle = null;
+        // This error would not be triggering an explicit test failure
+        // unfortunately, and so not using Assert methods to not make it
+        // look like if this would be captured as a test failure
+        // (also compared with Assert.ok it the resulting error log is more
+        // verbose and easier to spot in the test logs).
+        throw new Error(
+          "Unexpected leaked HandlingUserInput handle found while handling inner-window-destroyed"
+        );
+      }
+    },
+  };
+
+  MessageChannel.addListener(
+    this,
+    "ExtensionTest:HandleUserInput",
+    handlingUserInputHelper
+  );
+  Services.obs.addObserver(handlingUserInputHelper, "inner-window-destroyed");
+}
+
+// If you use withHandlingUserInput then restart the addon manager,
+// you need to reset this before using withHandlingUserInput again.
+function resetHandlingUserInput() {
+  extensionHandlers = new WeakSet();
+}
+
+// TODO(Bug 1598804): most of xpcshell tests should now be able to use the
+// browser.test.withHandlingUserInput test helper, consider either restrict
+// this helper to when that isn't possible or to remove it completely if
+// not needed anymore and technically redundant.
+async function withHandlingUserInput(extension, fn) {
+  let { messageManager } = extension.extension.groupFrameLoader;
+
+  if (!extensionHandlers.has(extension)) {
+    messageManager.loadFrameScript(
+      `data:,(${encodeURI(handlingUserInputFrameScript)}).call(this)`,
+      false,
+      true
+    );
+    extensionHandlers.add(extension);
+  }
+
+  await MessageChannel.sendMessage(
+    messageManager,
+    "ExtensionTest:HandleUserInput",
+    true
+  );
+  try {
+    await fn();
+  } catch (err) {
+    // Log the error along with its full stack trace to make it easier
+    // to investigate its root cause.
+    Cu.reportError(err);
+    // Capture an explicit failure to avoid an exception raised from
+    // MessageChannel.sendMessage in the finally block to be hiding
+    // the actual test failure.
+    ok(
+      false,
+      `Unexpected error raised from withHandlingUserInput callback: ${err}`
+    );
+  } finally {
+    await MessageChannel.sendMessage(
+      messageManager,
+      "ExtensionTest:HandleUserInput",
+      false
+    );
+  }
+}
+
+// QuotaManagerService test helpers.
+
+function promiseQuotaManagerServiceReset() {
+  info("Calling QuotaManagerService.reset to enforce new test storage limits");
+  return new Promise(resolve => {
+    Services.qms.reset().callback = resolve;
+  });
+}
+
+function promiseQuotaManagerServiceClear() {
+  info(
+    "Calling QuotaManagerService.clear to empty the test data and refresh test storage limits"
+  );
+  return new Promise(resolve => {
+    Services.qms.clear().callback = resolve;
+  });
+}
+
+// Optional Permission prompt handling
+const optionalPermissionsPromptHandler = {
+  sawPrompt: false,
+  acceptPrompt: false,
+
+  init() {
+    Services.prefs.setBoolPref(
+      "extensions.webextOptionalPermissionPrompts",
+      true
+    );
+    Services.obs.addObserver(this, "webextension-optional-permission-prompt");
+    registerCleanupFunction(() => {
+      Services.obs.removeObserver(
+        this,
+        "webextension-optional-permission-prompt"
+      );
+      Services.prefs.clearUserPref(
+        "extensions.webextOptionalPermissionPrompts"
+      );
+    });
+  },
+
+  observe(subject, topic) {
+    if (topic == "webextension-optional-permission-prompt") {
+      this.sawPrompt = true;
+      let { resolve } = subject.wrappedJSObject;
+      resolve(this.acceptPrompt);
+    }
+  },
+};
+
+function promiseExtensionEvent(wrapper, event) {
+  return new Promise(resolve => {
+    wrapper.extension.once(event, (...args) => resolve(args));
+  });
+}
+
+async function assertHasPersistedScriptsCachedFlag(ext) {
+  Assert.notEqual(ext.id, null, "Expect a non-null extension id");
+  Assert.notEqual(ext.version, null, "Expect a non-null extension version");
+  const { StartupCache } = ExtensionParent;
+  const allCachedGeneral = StartupCache._data.get("general");
+  equal(
+    allCachedGeneral
+      .get(ext.id)
+      ?.get(ext.version)
+      ?.get("scripting")
+      ?.has("hasPersistedScripts"),
+    true,
+    "Expect the StartupCache to include hasPersistedScripts flag"
+  );
+}
+
+async function assertIsPersistentScriptsCachedFlag(ext, expectedValue) {
+  Assert.notEqual(ext.id, null, "Expect a non-null extension id");
+  Assert.notEqual(ext.version, null, "Expect a non-null extension version");
+  const { StartupCache } = ExtensionParent;
+  const allCachedGeneral = StartupCache._data.get("general");
+  equal(
+    allCachedGeneral
+      .get(ext.id)
+      ?.get(ext.version)
+      ?.get("scripting")
+      ?.get("hasPersistedScripts"),
+    expectedValue,
+    "Expected cached value set on hasPersistedScripts flag"
+  );
+}
+
+// Number of anticipated crashes triggered by a call to crashFrame or
+// crashExtensionBackground. The setup_crash_reporter_override_and_cleaner
+// helper waits until it has observed that many crashes before cleanup
+// to prevent crash reports for expected crashes from being left behind.
+let gNumTriggeredCrashes = 0;
+
+// Only use this function if AppConstants.MOZ_CRASHREPORTER is set. In other
+// cases crash dumps are not generated and we do not need to clean up.
+function setup_crash_reporter_override_and_cleaner() {
+  const crashIds = [];
+  // Override CrashService.sys.mjs to intercept crash dumps, for two reasons:
+  //
+  // - The standard CrashService.sys.mjs implementation uses nsICrashReporter
+  //   through Services.appinfo. Because appinfo has been overridden with an
+  //   incomplete implementation, a promise rejection is triggered when a
+  //   missing method is called at https://searchfox.org/mozilla-central/rev/c615dc4db129ece5cce6c96eb8cab8c5a3e26ac3/toolkit/components/crashes/CrashService.sys.mjs#183
+  //
+  // - We want to intercept the generated crash dumps for expected crashes and
+  //   remove them, to prevent the xpcshell test runner from misinterpreting
+  //   them as "CRASH" failures.
+  let mockClassId = MockRegistrar.register("@mozilla.org/crashservice;1", {
+    addCrash(processType, crashType, id) {
+      // The files are ready to be removed now. We however postpone cleanup
+      // until the end of the test, to minimize noise during the test, and to
+      // ensure that the cleanup completes fully.
+      crashIds.push(id);
+      info(`Detected crash with dumpID: ${id} (total: ${crashIds.length})`);
+    },
+    QueryInterface: ChromeUtils.generateQI(["nsICrashService"]),
+  });
+  registerCleanupFunction(async () => {
+    MockRegistrar.unregister(mockClassId);
+
+    // Cannot use Services.appinfo because createAppInfo overrides it.
+    // eslint-disable-next-line mozilla/use-services
+    const appinfo = Cc["@mozilla.org/toolkit/crash-reporter;1"].getService(
+      Ci.nsICrashReporter
+    );
+
+    let errorIfCrashDumpsNotFound;
+    if (crashIds.length !== gNumTriggeredCrashes) {
+      // We must wait while crashIds.length < gNumTriggeredCrashes in order to
+      // find all crashes that we want to clean up.
+      // If crashIds.length > gNumTriggeredCrashes, we don't have to wait, but
+      // still enter this block to print the informational message showing the
+      // discrepancy between expected vs actual crashes. The test would most
+      // likely fail anyway due to the presence of unexpected crashes.
+      info(
+        `Got ${crashIds.length} instead of ${gNumTriggeredCrashes} crash dumps`
+      );
+      try {
+        await TestUtils.waitForCondition(
+          () => crashIds.length >= gNumTriggeredCrashes,
+          `Waiting for all expected crash dumps to have been written`
+        );
+      } catch (e) {
+        // Even if we did not get all expected crashes, just continue to clean
+        // up the crashes that we did have so far, so that these (expected)
+        // crash dumps are not flagged as unexpected crashes.
+        info(`Did not find all expected crash dumps, cleaning up what we have`);
+        errorIfCrashDumpsNotFound = e;
+      }
+    }
+    info(`Observed ${crashIds.length} crash dump(s).`);
+    let deletedCount = 0;
+    for (let id of crashIds) {
+      info(`Checking whether dumpID ${id} should be removed`);
+      let minidumpFile = appinfo.getMinidumpForID(id);
+      let extraFile = appinfo.getExtraFileForID(id);
+      let extra;
+      try {
+        extra = await IOUtils.readJSON(extraFile.path);
+      } catch (e) {
+        info(`Cannot parse crash metadata from ${extraFile.path} :: ${e}\n`);
+        continue;
+      }
+      // The "BrowserTestUtils:CrashFrame" handler annotates the crash
+      // report before triggering a crash.
+      if (extra.TestKey !== "CrashFrame") {
+        info(`Keeping ${minidumpFile.path}; we did not trigger the crash`);
+        continue;
+      }
+      info(`Deleting minidump ${minidumpFile.path} and ${extraFile.path}`);
+      minidumpFile.remove(false);
+      extraFile.remove(false);
+      ++deletedCount;
+    }
+    info(`Removed ${deletedCount} crash dumps out of ${crashIds.length}`);
+    if (errorIfCrashDumpsNotFound) {
+      throw errorIfCrashDumpsNotFound;
+    }
+  });
+}
+
+// Crashes a <browser>'s remote process.
+// Based on BrowserTestUtils.crashFrame.
+function crashFrame(browser) {
+  if (!browser.isRemoteBrowser) {
+    // The browser should be remote, or the test runner would be killed.
+    throw new Error("<browser> must be remote");
+  }
+
+  ++gNumTriggeredCrashes;
+
+  const { BrowserTestUtils } = ChromeUtils.importESModule(
+    "resource://testing-common/BrowserTestUtils.sys.mjs"
+  );
+
+  // Trigger crash by sending a message to BrowserTestUtils actor.
+  BrowserTestUtils.sendAsyncMessage(
+    browser.browsingContext,
+    "BrowserTestUtils:CrashFrame",
+    {}
+  );
+}
+
+/**
+ * Crash background page of browser and wait for the crash to have been
+ * detected and processed by ext-backgroundPage.js.
+ *
+ * @param {ExtensionWrapper} extension
+ * @param {XULElement} [bgBrowser] - The background browser. Optional, but must
+ *   be set if the background's ProxyContextParent has not been initialized yet.
+ */
+async function crashExtensionBackground(extension, bgBrowser) {
+  bgBrowser ??= extension.extension.backgroundContext.xulBrowser;
+
+  let byeProm = promiseExtensionEvent(extension, "shutdown-background-script");
+  if (WebExtensionPolicy.useRemoteWebExtensions) {
+    info("Killing background page through process crash.");
+    crashFrame(bgBrowser);
+  } else {
+    // If extensions are not running in out-of-process mode, then the
+    // non-remote process should not be killed (or the test runner dies).
+    // Remove <browser> instead, to simulate the immediate disconnection
+    // of the message manager (that would happen if the process crashed).
+    info("Closing background page by destroying <browser>.");
+
+    if (extension.extension.backgroundState === "running") {
+      // TODO bug 1844217: remove this whole if-block When close() is hooked up
+      // to setBgStateStopped. It currently is not, and browser destruction is
+      // currently not detected by the implementation.
+      let messageManager = bgBrowser.messageManager;
+      TestUtils.topicObserved(
+        "message-manager-close",
+        subject => subject === messageManager
+      ).then(() => {
+        Management.emit("extension-process-crash", { childID: 1337 });
+      });
+    }
+    bgBrowser.remove();
+  }
+
+  info("Waiting for crash to be detected by the internals");
+  await byeProm;
+}

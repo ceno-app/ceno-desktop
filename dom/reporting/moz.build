@@ -1,0 +1,49 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS.mozilla.dom = [
+    "CrashReport.h",
+    "CSPViolationReportBody.h",
+    "DeprecationReportBody.h",
+    "FeaturePolicyViolationReportBody.h",
+    "IntegrityViolationReportBody.h",
+    "Report.h",
+    "ReportBody.h",
+    "ReportDeliver.h",
+    "ReportingHeader.h",
+    "ReportingObserver.h",
+    "ReportingUtils.h",
+    "TestingDeprecatedInterface.h",
+    "TestReportBody.h",
+    "TestReportGenerator.h",
+]
+
+UNIFIED_SOURCES += [
+    "CrashReport.cpp",
+    "CSPViolationReportBody.cpp",
+    "DeprecationReportBody.cpp",
+    "FeaturePolicyViolationReportBody.cpp",
+    "IntegrityViolationReportBody.cpp",
+    "Report.cpp",
+    "ReportBody.cpp",
+    "ReportDeliver.cpp",
+    "ReportingHeader.cpp",
+    "ReportingObserver.cpp",
+    "ReportingUtils.cpp",
+    "TestingDeprecatedInterface.cpp",
+    "TestReportBody.cpp",
+    "TestReportGenerator.cpp",
+]
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+with Files("**"):
+    BUG_COMPONENT = ("Core", "DOM: Security")
+
+FINAL_LIBRARY = "xul"
+
+MOCHITEST_MANIFESTS += ["tests/mochitest.toml"]
+BROWSER_CHROME_MANIFESTS += ["tests/browser.toml"]
+
+TEST_DIRS += ["tests/gtest"]

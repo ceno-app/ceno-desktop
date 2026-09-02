@@ -1,0 +1,37 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+with Files("moz.build"):
+    BUG_COMPONENT = ("Firefox Build System", "General")
+
+with Files("app-services-tools/**"):
+    BUG_COMPONENT = ("Application Services", "General")
+
+DIRS += [
+    "common",
+    "crypto",
+    "interfaces",
+    "settings",
+]
+
+# The automation dir is only included in nightlies and debug
+if not CONFIG["RELEASE_OR_BETA"] or CONFIG["MOZ_DEBUG"]:
+    DIRS += ["automation"]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] != "android":
+    DIRS += [
+        "fxaccounts",
+        "application-services/components/viaduct-necko",
+    ]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":
+    DIRS += [
+        "app-services-tools/embedded-uniffi-bindgen",
+        "app-services-tools/nimbus-fml",
+    ]
+
+if CONFIG["MOZ_SERVICES_SYNC"]:
+    DIRS += ["sync"]
+
+SPHINX_TREES["/services"] = "docs"

@@ -1,0 +1,22 @@
+== between-whitespaces.html between-whitespaces-ref.html
+== currency-2.html currency-2-ref.html
+pref(gfx.font_rendering.fallback.async,false) == emoji-1.html emoji-1-ref.html
+# The following three tests may fail if rendering with Core Text (see bug 389074)
+# due to subpixel glyph positioning differences between the reference cases with <br>
+# and the automatically-wrapped lines in the test file
+== ja-1.html ja-1-ref.html
+== ja-2.html ja-2-ref.html
+== ja-3.html ja-3-ref.html
+== khmer-1.html khmer-1-ref.html
+== non-breakable-1.html non-breakable-1-ref.html
+== non-breakable-2.html non-breakable-2-ref.html
+== numerics-1.html numerics-1-ref.html
+== punctuation-open-1.html punctuation-open-1-ref.html
+== punctuation-open-2.html punctuation-open-2-ref.html
+== punctuation-open-3.html punctuation-open-3-ref.html
+== punctuation-open-4.html punctuation-open-4-ref.html
+== space-cluster-1.html space-cluster-1-ref.html
+random-if(cocoaWidget) == space-cluster-2.html space-cluster-2-ref.html # harfbuzz vs coretext, different positioning of stray diacritics
+== surrogates-1.html surrogates-1-ref.html
+== surrogates-3.html surrogates-3-ref.html
+== zwnbsp-1.html zwnbsp-1-ref.html

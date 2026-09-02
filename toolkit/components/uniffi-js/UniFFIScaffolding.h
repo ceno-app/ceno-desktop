@@ -1,0 +1,60 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_UniFFI_h
+#define mozilla_dom_UniFFI_h
+
+#include "mozilla/ErrorResult.h"
+#include "mozilla/dom/RootedDictionary.h"
+#include "mozilla/dom/TypedArray.h"
+#include "mozilla/dom/UniFFIBinding.h"
+#include "mozilla/dom/UniFFIBindingFwd.h"
+
+namespace mozilla::dom {
+
+// Handle functions defined in UniFFIScaffolding.webidl
+class UniFFIScaffolding {
+ public:
+  static void CallSync(
+      const GlobalObject& aGlobal, uint64_t aId,
+      const Sequence<OwningUniFFIScaffoldingValue>& aArgs,
+      RootedDictionary<UniFFIScaffoldingCallResult>& aReturnValue,
+      ErrorResult& aErrorResult);
+
+  static already_AddRefed<Promise> CallAsync(
+      const GlobalObject& aGlobal, uint64_t aId,
+      const Sequence<OwningUniFFIScaffoldingValue>& aArgs,
+      ErrorResult& aErrorResult);
+
+  static already_AddRefed<Promise> CallAsyncWrapper(
+      const GlobalObject& aGlobal, uint64_t aId,
+      const Sequence<OwningUniFFIScaffoldingValue>& aArgs,
+      ErrorResult& aErrorResult);
+
+  static already_AddRefed<UniFFIPointer> ReadPointer(
+      const GlobalObject& aGlobal, uint64_t aId, const ArrayBuffer& aArrayBuff,
+      long aPosition, ErrorResult& aError);
+
+  static void WritePointer(const GlobalObject& aGlobal, uint64_t aId,
+                           const UniFFIPointer& aPtr,
+                           const ArrayBuffer& aArrayBuff, long aPosition,
+                           ErrorResult& aError);
+
+  static void RegisterCallbackHandler(GlobalObject& aGlobal,
+                                      uint64_t interfaceId,
+                                      UniFFICallbackHandler& aCallbackHandler,
+                                      ErrorResult& aError);
+  static void DeregisterCallbackHandler(GlobalObject& aGlobal,
+                                        uint64_t interfaceId,
+                                        ErrorResult& aError);
+
+  static uint64_t CallbackHandleCreate(GlobalObject& aGlobal);
+  static uint32_t CallbackHandleRelease(GlobalObject& aGlobal,
+                                        uint64_t aHandle);
+  static void CallbackHandleFree(GlobalObject& aGlobal, uint64_t aHandle);
+};
+
+}  // namespace mozilla::dom
+
+#endif /* mozilla_dom_UniFFI_h */

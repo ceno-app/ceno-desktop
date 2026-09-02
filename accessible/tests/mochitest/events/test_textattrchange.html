@@ -1,0 +1,83 @@
+<html>
+
+<head>
+  <title>Text attribute changed event for misspelled text</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+  <script type="application/javascript"
+          src="../attributes.js"></script>
+
+  <script type="application/javascript">
+
+    const {InlineSpellChecker} = ChromeUtils.importESModule(
+      "resource://gre/modules/InlineSpellChecker.sys.mjs"
+    );
+
+    async function doTests() {
+      // Synth focus before spellchecking turning on to make sure editor
+      // gets a time for initialization.
+      let focused = waitForEvent(EVENT_FOCUS, "input");
+      selectAllTextAndFocus("input");
+      await focused;
+
+      let inputNode = getNode("input");
+      let p = waitForEvent(EVENT_TEXT_ATTRIBUTE_CHANGED, inputNode);
+      let editor = inputNode.editor;
+      let spellChecker = new InlineSpellChecker(editor);
+      spellChecker.enabled = true;
+      inputNode.value = "valid text inalid tixt";
+      await p;
+
+      let defAttrs = buildDefaultTextAttrs(inputNode, kInputFontSize,
+                                           kNormalFontWeight,
+                                           kInputFontFamily);
+      testDefaultTextAttrs("input", defAttrs);
+
+      let attrs = { };
+      let misspelledAttrs = {
+        "invalid": "spelling",
+      };
+
+      testTextAttrs("input", 0, attrs, defAttrs, 0, 11);
+      testTextAttrs("input", 11, misspelledAttrs, defAttrs, 11, 17);
+      testTextAttrs("input", 17, attrs, defAttrs, 17, 18);
+      testTextAttrs("input", 18, misspelledAttrs, defAttrs, 18, 22);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=345759"
+     title="Implement text attributes">
+    Mozilla Bug 345759
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <input id="input"/>
+
+  <div id="eventdump"></div>
+</body>
+</html>

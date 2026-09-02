@@ -1,0 +1,185 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/design-system/text-and-typography.css");
+
+@layer input-common {
+  :host {
+    --input-space-offset: calc(var(--input-width) + var(--space-small));
+    --input-nested-offset: var(--input-space-offset);
+    --input-margin-block-adjust: calc((1lh - var(--input-height)) / 2);
+    --input-icon-margin-block-adjust: calc((1lh - var(--icon-size)) / 2);
+    --input-margin-inline-start-adjust: calc(-1 * var(--input-space-offset));
+  }
+
+  :host(:not(:state(has-label))) {
+    --input-space-offset: var(--input-width);
+  }
+
+  :host([inputlayout="block"]) {
+    --input-space-offset: 0;
+    --input-nested-offset: var(--space-xlarge);
+    --input-margin-block-adjust: var(--space-xsmall) 0;
+  }
+
+  :host([inputlayout="block"]:not(:state(has-label), :state(has-description))) {
+    --input-margin-block-adjust: 0;
+  }
+
+  :host([inputlayout="inline-end"]) {
+    --input-space-offset: 0;
+    --input-nested-offset: var(--space-xlarge);
+  }
+
+  :host(:not([hidden])) {
+    display: block;
+  }
+
+  :host(:not([hidden], :state(has-label), [inputlayout="block"])) {
+    display: inline-block;
+  }
+
+  @media (forced-colors) {
+    :host(:state(disabled)) {
+      color: var(--text-color-disabled);
+    }
+  }
+
+  /* Inline-end layout */
+
+  :host([inputlayout="inline-end"]) .content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-medium);
+
+    > .label-wrapper {
+      flex: 1;
+    }
+  }
+
+  :host([inputlayout="inline-end"]) .description {
+    margin-block-start: var(--space-xxsmall);
+  }
+
+  /* Label text */
+
+  .label-wrapper {
+    display: block;
+    padding-inline-start: var(--input-space-offset);
+  }
+
+  label {
+    display: block;
+
+    &:has(+ a[is="moz-support-link"]),
+    :host(:not(:state(has-description)):state(has-support-link)) & {
+      display: inline;
+      margin-inline-end: var(--space-xsmall);
+    }
+
+    :host(:state(disabled)) & {
+      color: var(--text-color-disabled);
+    }
+  }
+
+  :host(.text-truncated-ellipsis) .text-container {
+    display: inline-block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Undocumented hack for AI controls, do not use, it WILL be removed. (bug 2012250) */
+  h3.text {
+    display: inline-block;
+    margin: 0;
+  }
+
+  /* Input */
+
+  #input {
+    -moz-theme: non-native;
+    min-width: var(--input-width);
+    min-height: var(--input-height);
+    font-size: inherit;
+    /* Bug 1901865: Due to the "MS Shell Dlg 2" font, we need inherits to
+    * keep the checkbox aligned */
+    font-family: inherit;
+    line-height: inherit;
+    vertical-align: top;
+    margin-block: var(--input-margin-block-adjust);
+    margin-inline: var(--input-margin-inline-start-adjust) var(--space-small);
+
+    :host(:not(:state(has-label))) & {
+      margin-inline-end: 0;
+    }
+
+    @media not (forced-colors) {
+      accent-color: var(--color-accent-primary);
+    }
+  }
+
+  /* Icon */
+
+  .icon {
+    vertical-align: top;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    /* Margin is calculated from line height and icon size. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    margin-block: var(--input-icon-margin-block-adjust);
+    -moz-context-properties: fill, fill-opacity, stroke;
+    fill: currentColor;
+    stroke: currentColor;
+
+    + .text {
+      margin-inline-start: var(--space-small);
+    }
+  }
+
+  /* Description */
+
+  :host(:state(has-description)) .description {
+    margin-block-start: var(--space-xxsmall);
+  }
+
+  :host(:state(has-description):state(has-support-link)) .description-text {
+    margin-inline-end: var(--space-xsmall);
+  }
+
+  ::slotted([slot="description"]) {
+    display: inline;
+  }
+
+  :host(.text-truncated-ellipsis) .description {
+    white-space: initial;
+  }
+
+  /* Support link */
+
+  a[is="moz-support-link"]:not([hidden]),
+  ::slotted([slot="support-link"]:not([hidden])) {
+    display: inline-block;
+  }
+
+  /* Nested fields */
+
+  .nested {
+    margin-inline-start: var(--input-nested-offset);
+    display: flex;
+    flex-direction: column;
+  }
+
+  ::slotted([slot="nested"]) {
+    /* Apply margin to all elements rather than using gap so the first visible
+     * element has a margin between it and the parent. */
+    margin-block-start: var(--space-large);
+  }
+
+  /* Maintain direction in some input types, even when the page is rtl */
+  input:is([type="tel"], [type="url"], [type="email"], [type="number"]):not(:placeholder-shown) {
+    direction: ltr;
+    text-align: match-parent;
+  }
+}

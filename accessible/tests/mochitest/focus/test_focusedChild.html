@@ -1,0 +1,63 @@
+<html>
+
+<head>
+  <title>nsIAccessible::focusedChild testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTest() {
+      enableLogging("focus,doclifecycle");
+
+      let dialog;
+      let p = waitForEvent(EVENT_FOCUS, evt => {
+        return evt.accessible === getAccessible(dialog.document);
+      });
+      dialog = window.browsingContext.topChromeWindow
+                     .openDialog("about:mozilla",
+                                 "AboutMozilla",
+                                 "chrome,width=600,height=600");
+      await p;
+
+      let app = getApplicationAccessible();
+      is(app.focusedChild, getAccessible(dialog.document),
+         "Wrong focused child");
+
+      dialog.close();
+
+      disableLogging();
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=677467"
+     title="focusedChild crashes on application accessible">
+    Mozilla Bug 677467
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+</body>
+</html>

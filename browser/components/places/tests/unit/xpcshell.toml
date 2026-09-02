@@ -1,0 +1,43 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+head = "head_bookmarks.js"
+firefox-appdir = "browser"
+support-files = [
+  "bookmarks.glue.html",
+  "bookmarks.glue.json",
+  "corruptDB.sqlite",
+  "distribution.ini",
+]
+
+["test_PUIU_batchUpdatesForNode.js"]
+
+["test_PUIU_setCharsetForPage.js"]
+
+["test_PUIU_title_difference_spotter.js"]
+
+["test_browserGlue_bookmarkshtml.js"]
+
+["test_browserGlue_corrupt.js"]
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+
+["test_browserGlue_corrupt_nobackup.js"]
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+
+["test_browserGlue_corrupt_nobackup_default.js"]
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+
+["test_browserGlue_distribution.js"]
+
+["test_browserGlue_migrate.js"]
+
+["test_browserGlue_prefs.js"]
+
+["test_browserGlue_restore.js"]
+
+["test_clearHistory_shutdown_v2.js"]
+
+["test_interactions_blocklist.js"]
+
+["test_invalid_defaultLocation.js"]

@@ -1,0 +1,70 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIURI;
+interface nsIFile;
+interface nsIReferrerInfo;
+
+[scriptable, uuid(9f556e4a-d9b3-46c3-9f8f-d0db1ac6c8c1)]
+interface mozIDownloadPlatform : nsISupports
+{
+  /**
+   * Perform platform specific operations when a download is done.
+   *
+   *   Windows:
+   *     Add the download to the recent documents list
+   *     Set the file to be indexed for searching
+   *   Mac:
+   *     Bounce the downloads dock icon
+   *   GTK:
+   *     Add the download to the recent documents list
+   *     Save the source uri in the downloaded file's metadata
+   *   Android:
+   *     Scan media
+   *
+   * @param aSource
+   *        Source URI of the download
+   * @param aReferrer
+   *        Referrer URI of the download
+   * @param aTarget
+   *        Downloaded file
+   * @param aContentType
+   *        The source's content type
+   * @param aIsPrivate
+   *        True for private downloads
+   * @return Promise that resolves once operations have completed.
+   */
+  [implicit_jscontext]
+  Promise downloadDone(in nsIURI aSource, in nsIURI aReferrer, in nsIFile aTarget,
+                       in ACString aContentType, in boolean aIsPrivate);
+
+  /**
+   * Writes origin information for the downloaded file, if one should be
+   * written.  Windows uses this to store Zone:Information for downloads.
+   * This is currently a no-op on other OSs.
+   *
+   * @param aTargetFile   The saved file
+   * @param aSourceUrl    URL of the source of the download.  The URL must
+   *                      be valid or else an error is returned.  This value
+   *                      determines the trust.  For example, on Windows,
+   *                      this URL determines the zone of origin of the file
+   *                      (e.g. this computer, intranet, internet, etc).
+   * @param aReferrerInfo Referrer of the download, or null if none.
+   * @param aIsPrivate    Did the download result from private browsing?  In
+   *                      that case, origin information is sanitized so that
+   *                      no precise source information (like an URL) is
+   *                      written.
+   * @return Promise that resolves to true if zone was successfully written,
+   *         false if the zone was not written due to a policy, and rejects on
+   *         errors.
+   */
+  [implicit_jscontext]
+  Promise maybeWriteDownloadOriginInformation(
+    in nsIFile aTargetFile,
+    in nsIURI aSourceUrl,
+    in nsIReferrerInfo aReferrerInfo,
+    in boolean aIsPrivate);
+};

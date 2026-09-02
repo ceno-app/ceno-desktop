@@ -1,0 +1,82 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host(login-alert) {
+  display: grid;
+  column-gap: var(--space-large);
+  grid-template-areas: "icon title action" "icon content content";
+  grid-template-columns: min-content 1fr auto;
+  padding: var(--space-large) var(--space-xxlarge);
+  color: var(--text-color);
+  background-color: var(--background-color-box);
+  border-radius: var(--border-radius-small);
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: var(--box-shadow-level-2);
+  font-size: var(--font-size-small);
+  margin-block-end: var(--space-large);
+}
+
+:host([variant="info"]) {
+  background-color: var(--background-color-box);
+}
+
+:host([variant="error"]) {
+  background-color: var(--background-color-critical);
+  color: var(--text-color);
+}
+
+:host([variant="warning"]) {
+  background: var(--background-color-warning);
+  color: var(--text-color);
+}
+
+:host(login-alert) img {
+  grid-area: icon;
+  width: 24px;
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+:host(login-alert) h3 {
+  grid-area: title;
+  font-size: 1.5em;
+  font-weight: normal;
+  margin: 0;
+  padding: 0;
+}
+
+:host(login-alert) slot[name="action"] {
+  grid-area: action;
+}
+
+:host(login-alert) slot[name="content"] {
+  grid-area: content;
+}
+
+:host(login-breach-alert) div[slot="content"],
+:host(login-vulnerable-password-alert) div[slot="content"] {
+  margin-block-start: 8px;
+}
+
+:host(login-vulnerable-password-alert) a {
+  font-weight: var(--font-weight-semibold);
+}
+
+:host(login-vulnerable-password-alert) div[slot="content"] > a {
+  color: var(--link-color);
+}
+
+:host(login-vulnerable-password-alert) a[slot="action"] {
+  color: var(--text-color-deemphasized);
+}
+
+:host(login-breach-alert) h4 {
+  margin: 0;
+  padding: 0;
+}
+
+:host(login-breach-alert) a {
+  font-weight: var(--font-weight-semibold);
+  color: inherit;
+}

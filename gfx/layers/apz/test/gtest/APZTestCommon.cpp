@@ -1,0 +1,14 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "APZTestCommon.h"
+
+already_AddRefed<AsyncPanZoomController> TestAPZCTreeManager::NewAPZCInstance(
+    LayersId aLayersId, GeckoContentController* aController) {
+  MockContentControllerDelayed* mcc =
+      static_cast<MockContentControllerDelayed*>(aController);
+  return MakeRefPtr<TestAsyncPanZoomController>(
+             aLayersId, mcc, this, AsyncPanZoomController::USE_GESTURE_DETECTOR)
+      .forget();
+}

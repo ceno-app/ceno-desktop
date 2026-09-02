@@ -1,0 +1,25 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+include("/dom/media/webrtc/third_party_build/webrtc.mozbuild")
+
+EXPORTS.mozilla.dom += ["CandidateInfo.h"]
+
+EXPORTS.mozilla += ["IceServerParser.h"]
+
+LOCAL_INCLUDES += [
+    "!/dist/include/libwebrtc_overrides",
+    "/dom/media/webrtc/transport/third_party/nrappkit/src/util/libekr",
+    "/third_party/abseil-cpp",
+    "/third_party/libwebrtc",
+]
+
+UNIFIED_SOURCES += [
+    "browser_logging/CSFLog.cpp",
+    "browser_logging/WebRtcLog.cpp",
+    "IceServerParser.cpp",
+    "time_profiling/timecard.c",
+    "YuvStamper.cpp",
+]
+
+FINAL_LIBRARY = "xul"

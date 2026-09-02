@@ -1,0 +1,9 @@
+extend = "../../pyproject.toml"
+src = [
+    # Treat direct imports in the test modules as first party.
+    "mozpack/test",
+    "mozbuild/test",
+]
+
+[lint.isort]
+known-first-party = ["mozbuild"]

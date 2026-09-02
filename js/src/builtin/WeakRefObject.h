@@ -1,0 +1,44 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef builtin_WeakRefObject_h
+#define builtin_WeakRefObject_h
+
+#include "gc/FinalizationObservers.h"
+#include "vm/NativeObject.h"
+
+namespace js {
+
+class WeakRefObject : public gc::ObserverListObject {
+ public:
+  enum { TargetSlot = ObserverListObject::SlotCount, SlotCount };
+
+  static const JSClass class_;
+  static const JSClass protoClass_;
+
+  Value target();
+
+  void setTarget(Value target);
+  void setTargetUnbarriered(Value target);
+  void clearTargetAndUnlink();
+
+ private:
+  static const JSClassOps classOps_;
+  static const ClassSpec classSpec_;
+  static const JSPropertySpec properties[];
+  static const JSFunctionSpec methods[];
+
+  [[nodiscard]] static bool construct(JSContext* cx, unsigned argc, Value* vp);
+  static void trace(JSTracer* trc, JSObject* obj);
+  static void finalize(JS::GCContext* gcx, JSObject* obj);
+
+  static bool preserveDOMWrapper(JSContext* cx, HandleObject obj);
+
+  static bool deref(JSContext* cx, unsigned argc, Value* vp);
+  static void readBarrier(JSContext* cx, Handle<WeakRefObject*> self);
+};
+
+}  // namespace js
+
+#endif /* builtin_WeakRefObject_h */

@@ -1,0 +1,818 @@
+[DEFAULT]
+tags = "condprof"
+prefs = [
+  "formhelper.autozoom.force-disable.test-only=true",
+  "network.http.referer.sendFromRefresh=false",
+  "plugins.rewrite_youtube_embeds=true",
+]
+support-files = [
+  "audio.ogg",
+  "iframe_bug962251.html",
+  "iframe_bug976673.html",
+  "iframe_main_bug1022229.html",
+  "iframe_sandbox_bug1022229.html",
+  "file_empty.html",
+  "iframe_postMessage_solidus.html",
+  "file_setname.html",
+  "345339_iframe.html",
+  "Ahem.ttf",
+  "accesscontrol.resource",
+  "accesscontrol.resource^headers^",
+  "badContentType.eventsource",
+  "badContentType.eventsource^headers^",
+  "badHTTPResponseCode.eventsource",
+  "badHTTPResponseCode.eventsource^headers^",
+  "badMessageEvent.eventsource",
+  "badMessageEvent.eventsource^headers^",
+  "badMessageEvent2.eventsource",
+  "badMessageEvent2.eventsource^headers^",
+  "bug282547.sjs",
+  "bug298064-subframe.html",
+  "bug313646.txt",
+  "bug382113_object.html",
+  "bug403852_fileOpener.js",
+  "bug419132.html",
+  "bug426308-redirect.sjs",
+  "bug435425.sjs",
+  "bug435425_redirect.sjs",
+  "bug444322.js",
+  "bug444322.txt",
+  "bug455629-helper.svg",
+  "bug457746.sjs",
+  "bug461735-post-redirect.js",
+  "bug461735-redirect1.sjs",
+  "bug461735-redirect2.sjs",
+  "bug466080.sjs",
+  "bug466409-empty.css",
+  "bug466409-page.html",
+  "bug475156.sjs",
+  "bug482935.sjs",
+  "bug540854.sjs",
+  "bug578096LoadChromeScript.js",
+  "bug638112-response.txt",
+  "bug638112.sjs",
+  "bug696301-script-1.js",
+  "bug696301-script-1.js^headers^",
+  "bug696301-script-2.js",
+  "bug704320.sjs",
+  "bug704320_counter.sjs",
+  "bug819051.sjs",
+  "bug1576154.sjs",
+  "chrome/bug418986-1.js",
+  "delayedServerEvents.sjs",
+  "eventsource_message.sjs",
+  "eventsource_reconnect.sjs",
+  "eventsource.resource",
+  "eventsource.resource^headers^",
+  "eventsource_redirect.resource",
+  "eventsource_redirect.resource^headers^",
+  "eventsource_redirect_to.resource",
+  "eventsource_redirect_to.resource^headers^",
+  "eventsource_worker.js",
+  "file_bug1091883_frame.html",
+  "file_bug1091883_subframe.html",
+  "file_bug1091883_target.html",
+  "file_bug28293.sjs",
+  "file_bug326337.xml",
+  "file_bug326337_inner.html",
+  "file_bug326337_outer.html",
+  "file_bug416317.xhtml",
+  "file_bug426646-1.html",
+  "file_bug426646-2.html",
+  "file_bug428847-1.xhtml",
+  "file_bug428847-2.xhtml",
+  "file_bug498897.css",
+  "file_bug498897.html",
+  "file_bug498897.html^headers^",
+  "file_bug503481.sjs",
+  "file_bug503481b_inner.html",
+  "file_bug557892.html",
+  "file_bug562137.txt",
+  "file_bug590812-ref.xhtml",
+  "file_bug590812.xml",
+  "file_bug590870.html",
+  "file_bug601803a.html",
+  "file_bug601803b.html",
+  "file_bug604660-1.xml",
+  "file_bug604660-2.xsl",
+  "file_bug604660-3.js",
+  "file_bug604660-4.js",
+  "file_bug604660-5.xml",
+  "file_bug604660-6.xsl",
+  "file_bug622088.sjs",
+  "file_bug622088_inner.html",
+  "file_bug675121.sjs",
+  "file_bug687859-16.js",
+  "file_bug687859-16.js^headers^",
+  "file_bug687859-bom.js",
+  "file_bug687859-bom.js^headers^",
+  "file_bug687859-charset.js",
+  "file_bug687859-http.js",
+  "file_bug687859-http.js^headers^",
+  "file_bug687859-inherit.js",
+  "file_bug692434.xml",
+  "file_bug704320_preload_attr.html",
+  "file_bug704320_preload_common.js",
+  "file_bug704320_preload_reuse.html",
+  "file_bug704320_redirect.html",
+  "file_bug707142_baseline.json",
+  "file_bug707142_bom.json",
+  "file_bug707142_utf-16.json",
+  "file_bug708620-2.html",
+  "file_bug708620.html",
+  "file_bug753278.html",
+  "file_bug769117.html",
+  "file_bug782342.txt",
+  "file_bug787778.sjs",
+  "file_bug869432.eventsource",
+  "file_bug869432.eventsource^headers^",
+  "file_bug907892.html",
+  "file_bug945152.jar",
+  "file_bug1274806.html",
+  "file_current_inner_window.html",
+  "file_domwindowutils_animation.html",
+  "file_domwindowutils_dynamic_toolbar.html",
+  "file_focus_shadow_dom.html",
+  "file_focus_shadow_dom_oop_iframe_inner.html",
+  "file_general_document.html",
+  "file_history_document_open.html",
+  "file_lock_orientation_with_pending_fullscreen.html",
+  "file_mozfiledataurl_img.jpg",
+  "file_restrictedEventSource.sjs",
+  "file_settimeout_inner.html",
+  "file_timer_flood.html",
+  "file_viewport_scroll_quirks.html",
+  "file_viewport_scroll_xml.xml",
+  "file_window_close.html",
+  "file_window_close_2.html",
+  "file_x-frame-options_main.html",
+  "file_x-frame-options_page.sjs",
+  "file_youtube_flash_embed.html",
+  "forRemoval.resource",
+  "forRemoval.resource^headers^",
+  "formReset.html",
+  "invalid_accesscontrol.resource",
+  "invalid_accesscontrol.resource^headers^",
+  "script-1_bug597345.sjs",
+  "script-2_bug597345.js",
+  "script_bug602838.sjs",
+  "send_gzip_content.sjs",
+  "somedatas.resource",
+  "somedatas.resource^headers^",
+  "variable_style_sheet.sjs",
+  "w3element_traversal.svg",
+  "wholeTexty-helper.xml",
+  "referrerHelper.js",
+  "file_audioLoop.html",
+  "file_webaudio_startstop.html",
+  "referrer_helper.js",
+  "referrer_testserver.sjs",
+  "script_postmessages_fileList.js",
+  "common_postMessages.js",
+  "iframe_postMessages.html",
+  "worker_postMessages.js",
+  "test_anonymousContent_style_csp.html^headers^",
+  "file_explicit_user_agent.sjs",
+  "referrer_change_server.sjs",
+  "file_change_policy_redirect.html",
+  "file_bug1198095.js",
+  "file_bug1126851_post_unload.html",
+  "file_bug1250148.sjs",
+  "file_bug1268962.sjs",
+  "iframe_meta_refresh.sjs",
+  "!/dom/security/test/cors/file_CrossSiteXHR_server.sjs",
+  "!/image/test/mochitest/blue.png",
+  "script_bug1238440.js",
+  "intersectionobserver_iframe.html",
+  "intersectionobserver_cross_domain_iframe.html",
+  "intersectionobserver_window.html",
+  "object_bug353334.html",
+  "embed_bug455472.html",
+  "object_bug455472.html",
+  "iframe1_bug431701.html",
+  "iframe2_bug431701.html",
+  "iframe3_bug431701.html",
+  "iframe4_bug431701.xml",
+  "iframe5_bug431701.xml",
+  "iframe6_bug431701.xml",
+  "iframe7_bug431701.xml",
+  "iframe1_bug426646.html",
+  "iframe2_bug426646.html",
+  "iframe_shared_compartment2a.html",
+  "iframe_shared_compartment2b.html",
+  "file1_setting_opener.html",
+  "file2_setting_opener.html",
+  "file3_setting_opener.html",
+  "file4_setting_opener.html",
+  "PASS.html",
+  "FAIL.html",
+  "!/dom/animation/test/testcommon.js",
+  "!/dom/events/test/event_leak_utils.js",
+  "../../../toolkit/components/pdfjs/test/file_pdfjs_test.pdf",
+  "green.png",
+  "slow.sjs",
+]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && debug && verify-standalone",
+]
+
+["test_EventSource_redirects.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_Image_constructor.html"]
+
+["test_NodeIterator_basics_filters.xhtml"]
+skip-if = [
+  "xorigin", # JavaScript error: http://mochi.test:8888/tests/SimpleTest/SimpleTest.js, line 76: DataCloneError: The object could not be cloned.
+]
+
+["test_NodeIterator_mutations_1.xhtml"]
+
+["test_NodeIterator_mutations_2.html"]
+
+["test_NodeIterator_mutations_3.html"]
+
+["test_anchor_area_referrer.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_anchor_area_referrer_changing.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_anchor_area_referrer_invalid.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_anchor_area_referrer_rel.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_anonymousContent_api.html"]
+
+["test_anonymousContent_append_after_reflow.html"]
+
+["test_anonymousContent_canvas.html"]
+skip-if = [
+  "headless", # Bug 1405867
+  "os == 'android' && arch == 'x86_64' && debug", # Bug 1908272
+]
+
+["test_anonymousContent_insert.html"]
+
+["test_anonymousContent_manipulate_content.html"]
+
+["test_anonymousContent_style_csp.html"]
+
+["test_async_setTimeout_stack.html"]
+
+["test_async_setTimeout_stack_across_globals.html"]
+
+["test_base.xhtml"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_caretPositionFromPoint.html"]
+
+["test_change_policy.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_ckeditor4_compat_hack.html"]
+
+["test_clearTimeoutIntervalNoArg.html"]
+
+["test_clipboard_nbsp.html"]
+
+["test_constructor-assignment.html"]
+
+["test_constructor.html"]
+
+["test_content_iterator_post_order.html"]
+
+["test_content_iterator_pre_order.html"]
+
+["test_content_iterator_subtree.html"]
+
+["test_content_iterator_subtree_shadow_tree.html"]
+
+["test_createHTMLDocument.html"]
+
+["test_current_inner_window.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_custom_element.html"]
+
+["test_custom_element_invalid_name.html"]
+
+["test_custom_element_reflector.html"]
+
+["test_data_uri.html"]
+
+["test_delazification_strategy.html"]
+skip-if = [
+  "ccov",
+]
+support-files = [
+  "file_delazification_strategy.html",
+  "file_delazification_strategy.js",
+]
+
+["test_devtoolschildremoved.html"]
+
+["test_document.all_iteration.html"]
+
+["test_document.all_unqualified.html"]
+
+["test_document_constructor.html"]
+
+["test_document_importNode_document.html"]
+
+["test_document_wireframe.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_domparser_null_char.html"]
+
+["test_domparsing.html"]
+
+["test_domwindowutils.html"]
+skip-if = [
+  "os == 'android'", # Bug 1525959
+]
+
+["test_drag_drop_caret.html"]
+skip-if = [
+  "os == 'android'",
+]
+
+["test_drag_drop_shadow_crossing_selection.html"]
+
+["test_element.matches.html"]
+
+["test_elementTraversal.html"]
+
+["test_element_closest.html"]
+
+["test_embed_xorigin_document.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_eventsource_event_listener_leaks.html"]
+
+["test_eventsourceservice_basic.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_eventsourceservice_reconnect_error.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_eventsourceservice_status_error.html"]
+
+["test_eventsourceservice_worker.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_explicit_user_agent.html"]
+
+["test_find.html"]
+skip-if = [
+  "os == 'win' && opt && standalone", # Bug 2026600
+]
+
+["test_find_bug1601118.html"]
+
+["test_find_bug1654683.html"]
+
+["test_find_nac.html"]
+
+["test_focus_design_mode.html"]
+support-files = ["file_focus_design_mode_inner.html"]
+
+["test_focus_display_none_xorigin_iframe.html"]
+support-files = ["file_focus_display_none_xorigin_iframe_inner.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_focus_hidden_overflow.html"]
+
+["test_focus_keyboard_event.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_focus_radio.html"]
+
+["test_focus_scroll_padding_tab.html"]
+
+["test_focus_scrollable_fieldset.html"]
+
+["test_focus_scrollable_input.html"]
+
+["test_focus_shadow_dom.html"]
+
+["test_focus_shadow_dom_oop_iframe.html"]
+
+["test_focus_shadow_dom_root.html"]
+
+["test_getAttribute_after_createAttribute.html"]
+
+["test_getElementById.html"]
+
+["test_gsp-qualified.html"]
+
+["test_gsp-quirks.html"]
+
+["test_gsp-standards.html"]
+
+["test_history_document_open.html"]
+
+["test_history_state_null.html"]
+
+["test_html_colors_quirks.html"]
+
+["test_html_colors_standards.html"]
+
+["test_iframe_event_listener_leaks.html"]
+
+["test_iframe_referrer.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_iframe_referrer_changing.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_iframe_referrer_invalid.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_innersize_scrollport.html"]
+
+["test_input_vsync_alignment_inner_event_loop.html"]
+
+["test_input_vsync_alignment_input_while_vsync.html"]
+
+["test_input_vsync_alignment_lower_than_normal.html"]
+
+["test_integer_attr_with_leading_zero.html"]
+
+["test_intersectionobservers.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_link_prefetch.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_link_preload.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_link_stylesheet.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_location_href_unknown_protocol.html"]
+support-files = ["file_location_href_unknown_protocol.html"]
+
+["test_lock_orientation_after_fullscreen.html"]
+run-if = [
+  "os == 'android'", # Only run on Android.
+]
+
+["test_lock_orientation_with_pending_fullscreen.html"]
+skip-if = [
+  "headless",
+  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland'",
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'",
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'",
+  "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # Bug 1929448
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2019401
+]
+
+["test_meta_refresh_referrer.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_mozMatchesSelector.html"]
+
+["test_mutationobservers.html"]
+
+["test_named_frames.html"]
+
+["test_navigate_window_open_aboutblank.html"]
+
+["test_navigatorPrefOverride.html"]
+
+["test_navigator_cookieEnabled.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_navigator_hardwareConcurrency.html"]
+
+["test_navigator_language.html"]
+
+["test_nested_event_loop_spin_and_idle_tasks.html"]
+
+["test_nodelist_holes.html"]
+
+["test_omt_eager_baseline.html"]
+skip-if = [
+  "ccov",
+]
+support-files = [
+  "file_omt_eager_baseline.html",
+  "file_omt_eager_baseline.js"
+]
+
+["test_openDialogChromeOnly.html"]
+tags = "openwindow"
+
+["test_open_null_features.html"]
+
+["test_pasting_svg_image.html"]
+skip-if = [
+  "headless", # Bug 1669923.
+]
+
+["test_pdf_print.html"]
+skip-if = [
+  "os == 'android'", # We don't ship pdf.js on Android
+]
+
+["test_plugin_freezing.html"]
+
+["test_postMessage_originAttributes.html"]
+support-files = ["file_receiveMessage.html"]
+skip-if = [
+  "true", # Uses mismatched OriginAttributes for iframe (bug 1616353)
+]
+
+["test_postMessage_solidus.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_postMessages_broadcastChannel.html"]
+
+["test_postMessages_messagePort.html"]
+
+["test_postMessages_window.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_postMessages_workers.html"]
+
+["test_processing_instruction_update_stylesheet.xhtml"]
+
+["test_progress_events_for_gzip_data.html"]
+skip-if = [
+  "tsan", # Bug 1621323
+]
+
+["test_pushState_structuredclone.html"]
+scheme = "https"
+
+["test_range_bounds.html"]
+
+["test_reentrant_flush.html"]
+
+["test_reportPatternFailure.html"]
+
+["test_root_iframe.html"]
+
+["test_sandbox_and_document_uri.html"]
+support-files = ["file_sandbox_and_document_uri.html"]
+
+["test_screen_orientation.html"]
+
+["test_script_loader_crossorigin_data_url.html"]
+
+["test_selection_change_null_presshell.html"]
+support-files = ["file_selection_change_null_presshell.html"]
+
+["test_setInterval_from_start.html"]
+
+["test_setInterval_uncatchable_exception.html"]
+skip-if = [
+  "asan",
+  "ccov",
+  "opt",
+  "tsan",
+]
+
+["test_setTimeoutWith0.html"]
+
+["test_settimeout_extra_arguments.html"]
+
+["test_settimeout_inner.html"]
+
+["test_setting_opener.html"]
+
+["test_shared_compartment1.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_shared_compartment2.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_structuredclone_backref.html"]
+
+["test_structuredclone_error.html"]
+
+["test_style_cssText.html"]
+
+["test_suppressed_events_and_scrolling.html"]
+support-files = ["file_suppressed_events_and_scrolling.html"]
+
+["test_suppressed_events_nested_iframe.html"]
+support-files = [
+  "file_suppressed_events_top_xhr.html",
+  "file_suppressed_events_top_modalstate.html",
+  "file_suppressed_events_top.html",
+  "file_suppressed_events_middle.html",
+  "file_suppressed_events_inner.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'android'",
+]
+
+["test_suppressed_microtasks.html"]
+skip-if = [
+  "asan",
+  "debug",
+  "os == 'android'", # The test needs to run reasonably fast.
+  "tsan",
+]
+
+["test_text-fragments-create-text-directive-no-reveal.html"]
+
+["test_text-fragments-create-text-directive.html"]
+
+["test_text-fragments-get-text-directive-ranges.html"]
+
+["test_text_wholeText.html"]
+
+["test_textnode_normalize_in_selection.html"]
+
+["test_textnode_split_in_selection.html"]
+
+["test_timeout_clamp.html"]
+
+["test_timer_flood.html"]
+
+["test_title.html"]
+support-files = ["file_title.xhtml"]
+
+["test_toScreenRect.html"]
+support-files = ["file_toScreenRect.html"]
+
+["test_treewalker_nextsibling.xml"]
+
+["test_user_select.html"]
+skip-if = [
+  "os == 'android'", # Bug 1791049
+]
+
+["test_viewport_metrics_on_landscape_content.html"]
+support-files = ["file_viewport_metrics_on_landscape_content.html"]
+
+["test_viewport_scroll.html"]
+
+["test_viewsource_forbidden_in_object.html"]
+
+["test_w3element_traversal.html"]
+
+["test_w3element_traversal.xhtml"]
+
+["test_w3element_traversal_svg.html"]
+
+["test_warning_for_blocked_cross_site_request.html"]
+skip-if = [
+  "debug && verify-standalone",
+  "http2",
+  "http3",
+]
+
+["test_window_close.html"]
+
+["test_window_constructor.html"]
+
+["test_window_content.html"]
+
+["test_window_cross_origin_props.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_window_define_nonconfigurable.html"]
+
+["test_window_define_symbol.html"]
+
+["test_window_element_enumeration.html"]
+
+["test_window_enumeration.html"]
+
+["test_window_extensible.html"]
+
+["test_window_focus_by_close_and_open.html"]
+support-files = ["file_window_focus_by_close_and_open.html"]
+
+["test_window_indexing.html"]
+
+["test_window_keys.html"]
+
+["test_window_named_frame_enumeration.html"]
+skip-if = [
+  "http2",
+  "http3",
+]
+
+["test_window_own_props.html"]
+
+["test_window_proto.html"]
+
+["test_writable-replaceable.html"]
+
+["test_x-frame-options.html"]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'android' && debug",
+  "xorigin", # JavaScript error: http://mochi.test:8888/tests/dom/base/test/test_x-frame-options.html, line 48: TypeError: can't access property "textContent", this.content.document.getElementById(...) is null, JavaScript error: resource://gre/modules/ProcessSelector.jsm, line 56: TypeError: can't access property "tabCount", process is null
+]
+
+["test_youtube_flash_embed.html"]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland' && debug", # Bug 1870499 and other bugs with crashes after this test start
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && debug", # Bug 1870499 and other bugs with crashes after this test start
+]
+
+["test_ze_srcdoc.html"]
+
+# Please keep alphabetical order.

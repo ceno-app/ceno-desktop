@@ -1,0 +1,16 @@
+[DEFAULT]
+firefox-appdir = "browser"
+subprocess = true
+
+["test_proc_info.js"]
+
+["test_process_kill.js"]
+skip-if = [
+  "os == 'android'",
+]
+
+["test_total_cpu_time.js"]
+support-files = ["test_total_cpu_time_child.js"]
+skip-if = [
+  "socketprocess_networking",
+]

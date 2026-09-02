@@ -1,0 +1,295 @@
+ifdef out unused functions from base/threading to prevent dependencies.
+
+diff --git a/base/threading/platform_thread.cc b/base/threading/platform_thread.cc
+--- a/base/threading/platform_thread.cc
++++ b/base/threading/platform_thread.cc
+@@ -4,7 +4,9 @@
+ 
+ #include "base/threading/platform_thread.h"
+ 
++#if !defined(MOZ_SANDBOX)
+ #include "base/task/current_thread.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/threading/thread_id_name_manager.h"
+ #include "base/trace_event/trace_event.h"
+ 
+@@ -14,6 +16,7 @@
+ 
+ namespace base {
+ 
++#if !defined(MOZ_SANDBOX)
+ namespace {
+ 
+ constinit thread_local ThreadType current_thread_type = ThreadType::kDefault;
+@@ -55,12 +58,14 @@ std::optional<TimeDelta> PlatformThreadBase::GetThreadLeewayOverride() {
+ #endif
+   return std::nullopt;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // static
+ void PlatformThreadBase::SetNameCommon(const std::string& name) {
+   ThreadIdNameManager::GetInstance()->SetName(name);
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ namespace internal {
+ 
+ void RemoveThreadTypeOverride(
+@@ -69,4 +74,5 @@ void RemoveThreadTypeOverride(
+ }
+ 
+ }  // namespace internal
++#endif  // !defined(MOZ_SANDBOX)
+ }  // namespace base
+diff --git a/base/threading/platform_thread.h b/base/threading/platform_thread.h
+--- a/base/threading/platform_thread.h
++++ b/base/threading/platform_thread.h
+@@ -17,7 +17,9 @@
+ #include <type_traits>
+ 
+ #include "base/base_export.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/message_loop/message_pump_type.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/process/process_handle.h"
+ #include "base/threading/platform_thread_ref.h"
+ #include "base/trace_event/base_tracing_forward.h"
+@@ -248,6 +250,7 @@ class BASE_EXPORT PlatformThreadBase {
+   // Gets the thread name, if previously set by SetName.
+   static const char* GetName();
+ 
++#if !defined(MOZ_SANDBOX)
+   // Creates a new thread.  The `stack_size` parameter can be 0 to indicate
+   // that the default stack size should be used.  Upon success,
+   // `*thread_handle` will be assigned a handle to the newly created thread,
+@@ -289,6 +292,7 @@ class BASE_EXPORT PlatformThreadBase {
+       Delegate* delegate,
+       ThreadType thread_type,
+       MessagePumpType pump_type_hint = MessagePumpType::DEFAULT);
++#endif  // !defined(MOZ_SANDBOX)
+ 
+   // Joins with a thread created via the Create function.  This function blocks
+   // the caller until the designated thread exits.  This will invalidate
+@@ -303,10 +307,12 @@ class BASE_EXPORT PlatformThreadBase {
+   // of a thread in current process from `from` to `to`.
+   static bool CanChangeThreadType(ThreadType from, ThreadType to);
+ 
++#if !defined(MOZ_SANDBOX)
+   // Declares the type of work running on the current thread. This will affect
+   // things like thread priority and thread QoS (Quality of Service) to the best
+   // of the current platform's abilities.
+   static void SetCurrentThreadType(ThreadType thread_type);
++#endif  // !defined(MOZ_SANDBOX)
+ 
+   // Get the last `thread_type` set by SetCurrentThreadType, no matter if the
+   // underlying priority successfully changed or not.
+@@ -464,8 +470,10 @@ void RemoveThreadTypeOverrideImpl(
+     const PlatformPriorityOverride& priority_override_handle,
+     ThreadType thread_type);
+ 
++#if !defined(MOZ_SANDBOX)
+ void SetCurrentThreadTypeImpl(ThreadType thread_type,
+                               MessagePumpType pump_type_hint);
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ }  // namespace internal
+ 
+diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
+--- a/base/threading/platform_thread_posix.cc
++++ b/base/threading/platform_thread_posix.cc
+@@ -20,9 +20,13 @@
+ #include "base/lazy_instance.h"
+ #include "base/logging.h"
+ #include "base/memory/raw_ptr.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/notimplemented.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/threading/platform_thread_internal_posix.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/threading/platform_thread_metrics.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/thread_id_name_manager.h"
+ #include "base/threading/thread_restrictions.h"
+@@ -30,7 +34,9 @@
+ #include "partition_alloc/buildflags.h"
+ 
+ #if !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_FUCHSIA)
++#if !defined(MOZ_SANDBOX)
+ #include "base/posix/can_lower_nice_to.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #endif
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+@@ -59,6 +65,7 @@ size_t GetDefaultThreadStackSize(const pthread_attr_t& attributes);
+ 
+ namespace {
+ 
++#if !defined(MOZ_SANDBOX)
+ struct ThreadParams {
+   ThreadParams() = default;
+ 
+@@ -167,6 +174,7 @@ bool CreateThread(size_t stack_size,
+ 
+   return success;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+ 
+@@ -313,6 +321,7 @@ const char* PlatformThreadBase::GetName() {
+   return ThreadIdNameManager::GetInstance()->GetName(CurrentId());
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ // static
+ bool PlatformThreadBase::CreateWithType(size_t stack_size,
+                                         Delegate* delegate,
+@@ -341,6 +350,7 @@ bool PlatformThreadBase::CreateNonJoinableWithType(
+                              delegate, &unused, thread_type, pump_type_hint);
+   return result;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // static
+ void PlatformThreadBase::Join(PlatformThreadHandle thread_handle) {
+@@ -361,6 +371,7 @@ void PlatformThreadBase::Detach(PlatformThreadHandle thread_handle) {
+ // GetCurrentThreadPriorityForTest() implementations.
+ #if !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_FUCHSIA)
+ 
++#if !defined(MOZ_SANDBOX)
+ // static
+ bool PlatformThreadBase::CanChangeThreadType(ThreadType from, ThreadType to) {
+   if (from >= to) {
+@@ -387,6 +398,7 @@ ThreadType PlatformThreadBase::GetCurrentEffectiveThreadTypeForTest() {
+ 
+   return internal::NiceValueToThreadTypeForTest(nice_value);  // IN-TEST
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ #endif  // !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_FUCHSIA)
+ 
+diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
+--- a/base/threading/platform_thread_win.cc
++++ b/base/threading/platform_thread_win.cc
+@@ -12,7 +12,9 @@
+ 
+ #include "base/debug/alias.h"
+ #include "base/debug/crash_logging.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/debug/profiler.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/feature_list.h"
+ #include "base/logging.h"
+ #include "base/memory/raw_ptr.h"
+@@ -75,6 +77,7 @@ void SetNameInternal(PlatformThreadId thread_id, const char* name) {
+ #endif
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ struct ThreadParams {
+   raw_ptr<PlatformThread::Delegate> delegate;
+   bool joinable;
+@@ -209,6 +212,7 @@ bool CreateThreadInternal(size_t stack_size,
+   }
+   return true;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ }  // namespace
+ 
+@@ -294,6 +298,7 @@ const char* PlatformThread::GetName() {
+   return ThreadIdNameManager::GetInstance()->GetName(CurrentId());
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ // static
+ bool PlatformThread::CreateWithType(size_t stack_size,
+                                     Delegate* delegate,
+@@ -317,6 +322,7 @@ bool PlatformThread::CreateNonJoinableWithType(size_t stack_size,
+   return CreateThreadInternal(stack_size, delegate, nullptr /* non-joinable */,
+                               thread_type);
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // static
+ void PlatformThread::Join(PlatformThreadHandle thread_handle) {
+@@ -353,6 +359,7 @@ bool PlatformThread::CanChangeThreadType(ThreadType from, ThreadType to) {
+   return true;
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ namespace {
+ 
+ void SetThreadPriority(PlatformThreadHandle thread_handle,
+@@ -486,6 +493,7 @@ void RemoveThreadTypeOverrideImpl(
+ }
+ 
+ }  // namespace internal
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // static
+ ThreadType PlatformThread::GetCurrentEffectiveThreadTypeForTest() {
+diff --git a/base/threading/scoped_thread_priority.h b/base/threading/scoped_thread_priority.h
+--- a/base/threading/scoped_thread_priority.h
++++ b/base/threading/scoped_thread_priority.h
+@@ -13,7 +13,9 @@
+ #include "base/location.h"
+ #include "base/macros/uniquify.h"
+ #include "base/memory/raw_ptr.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/task/task_observer.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "base/threading/thread_checker.h"
+ #include "build/build_config.h"
+ 
+@@ -103,6 +105,7 @@ class BASE_EXPORT ScopedBoostablePriority {
+   THREAD_CHECKER(thread_checker_);
+ };
+ 
++#if !defined(MOZ_SANDBOX)
+ // This wraps ScopedBoostPriority with a callback to determine whether
+ // the priority should be boosted or not before every task execution.
+ class BASE_EXPORT TaskMonitoringScopedBoostPriority : public TaskObserver {
+@@ -127,6 +130,7 @@ class BASE_EXPORT TaskMonitoringScopedBoostPriority : public TaskObserver {
+   ThreadType target_thread_type_;
+   RepeatingCallback<bool()> should_boost_callback_;
+ };
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ namespace internal {
+ 
+diff --git a/base/threading/thread_restrictions.cc b/base/threading/thread_restrictions.cc
+--- a/base/threading/thread_restrictions.cc
++++ b/base/threading/thread_restrictions.cc
+@@ -5,9 +5,13 @@
+ #include "base/threading/thread_restrictions.h"
+ 
+ #include "base/check.h"
++#if !defined(MOZ_SANDBOX)
+ #include "base/threading/hang_watcher.h"
+ #include "base/trace_event/interned_args_helper.h"
+ #include "base/trace_event/typed_macros.h"
++#else
++#include "base/trace_event/trace_event.h"
++#endif  // !defined(MOZ_SANDBOX)
+ #include "build/build_config.h"
+ 
+ namespace base {
+@@ -253,6 +259,7 @@ ScopedAllowBlocking::~ScopedAllowBlocking() {
+       << "tls_blocking_disallowed " << tls_blocking_disallowed;
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ ScopedAllowBaseSyncPrimitivesOutsideBlockingScope::
+     ScopedAllowBaseSyncPrimitivesOutsideBlockingScope(const Location& from_here)
+     : resetter_(&tls_base_sync_primitives_disallowed,
+@@ -280,5 +287,6 @@ ScopedAllowBaseSyncPrimitivesOutsideBlockingScope::
+       << "tls_base_sync_primitives_disallowed "
+       << tls_base_sync_primitives_disallowed;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ }  // namespace base
+

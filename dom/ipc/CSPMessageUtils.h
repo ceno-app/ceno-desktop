@@ -1,0 +1,24 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_csp_message_utils_h_
+#define mozilla_dom_csp_message_utils_h_
+
+#include "ipc/IPCMessageUtils.h"
+#include "nsCOMPtr.h"
+
+class nsIContentSecurityPolicy;
+
+namespace IPC {
+
+template <>
+struct ParamTraits<nsIContentSecurityPolicy*> {
+  static void Write(MessageWriter* aWriter, nsIContentSecurityPolicy* aParam);
+  static bool Read(MessageReader* aReader,
+                   RefPtr<nsIContentSecurityPolicy>* aResult);
+};
+
+}  // namespace IPC
+
+#endif  // mozilla_dom_csp_message_utils_h_

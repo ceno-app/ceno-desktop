@@ -1,0 +1,150 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * A class that handles loading and evaluation of <script> elements.
+ */
+
+#ifndef mozilla_dom_ScriptLoadHandler_h
+#define mozilla_dom_ScriptLoadHandler_h
+
+#include "mozilla/Encoding.h"
+#include "mozilla/RefPtr.h"
+#include "mozilla/UniquePtr.h"
+#include "nsIChannelEventSink.h"
+#include "nsIIncrementalStreamLoader.h"
+#include "nsIInterfaceRequestor.h"
+#include "nsISupports.h"
+
+namespace JS::loader {
+class ScriptLoadRequest;
+}
+
+namespace mozilla {
+
+class Decoder;
+
+namespace dom {
+
+#ifdef NIGHTLY_BUILD
+class ResourceHasher;
+#endif
+class ScriptLoader;
+class SRICheckDataVerifier;
+
+class ScriptDecoder {
+ public:
+  enum BOMHandling { Ignore, Remove };
+
+  ScriptDecoder(const Encoding* aEncoding,
+                ScriptDecoder::BOMHandling handleBOM);
+
+  ~ScriptDecoder() = default;
+
+  /*
+   * Once the charset is found by the EnsureDecoder function, we can
+   * incrementally convert the charset to the one expected by the JS Parser.
+   */
+  nsresult DecodeRawData(JS::loader::ScriptLoadRequest* aRequest,
+                         const uint8_t* aData, uint32_t aDataLength,
+                         bool aEndOfStream);
+
+ private:
+  /*
+   * Decode the given data into the already-allocated internal
+   * |ScriptTextBuffer<Unit>|.
+   *
+   * This function is intended to be called only by |DecodeRawData| after
+   * determining which sort of |ScriptTextBuffer<Unit>| has been allocated.
+   */
+  template <typename Unit>
+  nsresult DecodeRawDataHelper(JS::loader::ScriptLoadRequest* aRequest,
+                               const uint8_t* aData, uint32_t aDataLength,
+                               bool aEndOfStream);
+
+  // Unicode decoder for charset.
+  mozilla::UniquePtr<mozilla::Decoder> mDecoder;
+};
+
+class ScriptLoadHandler final : public nsIIncrementalStreamLoaderObserver,
+                                public nsIChannelEventSink,
+                                public nsIInterfaceRequestor {
+ public:
+  explicit ScriptLoadHandler(
+      ScriptLoader* aScriptLoader, JS::loader::ScriptLoadRequest* aRequest,
+      UniquePtr<SRICheckDataVerifier>&& aSRIDataVerifier);
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIINCREMENTALSTREAMLOADEROBSERVER
+  NS_DECL_NSICHANNELEVENTSINK
+  NS_DECL_NSIINTERFACEREQUESTOR
+
+ private:
+  virtual ~ScriptLoadHandler();
+
+  nsresult DoOnStreamComplete(nsIChannel* aChannel, nsresult aStatus,
+                              uint32_t aDataLength, const uint8_t* aData);
+
+  /*
+   * Discover the charset by looking at the stream data, the script tag, and
+   * other indicators.  Returns true if charset has been discovered.
+   */
+  bool EnsureDecoder(nsIChannel* aChannel, const uint8_t* aData,
+                     uint32_t aDataLength, bool aEndOfStream) {
+    // Check if the decoder has already been created.
+    if (mDecoder) {
+      return true;
+    }
+
+    return TrySetDecoder(aChannel, aData, aDataLength, aEndOfStream);
+  }
+
+  /*
+   * Attempt to determine how script data will be decoded, when such
+   * determination hasn't already been made.  (If you don't know whether it's
+   * been made yet, use |EnsureDecoder| above instead.)  Return false if there
+   * isn't enough information yet to make the determination, or true if a
+   * determination was made.
+   */
+  bool TrySetDecoder(nsIChannel* aChannel, const uint8_t* aData,
+                     uint32_t aDataLength, bool aEndOfStream);
+
+  /*
+   * When streaming serialized Stencil, we have the opportunity to fallback
+   * early if SRI does not match the expectation of the document.
+   *
+   * If SRI hash is decoded, `sriLength` is set to the length of the hash.
+   */
+  nsresult MaybeDecodeSRI(uint32_t* sriLength);
+
+  // Query the channel to find the data type associated with the input stream.
+  nsresult EnsureKnownDataType(nsIChannel* aChannel);
+
+  // ScriptLoader which will handle the parsed script.
+  RefPtr<ScriptLoader> mScriptLoader;
+
+  // The ScriptLoadRequest for this load. Decoded data are accumulated on it.
+  RefPtr<JS::loader::ScriptLoadRequest> mRequest;
+
+  // SRI data verifier.
+  UniquePtr<SRICheckDataVerifier> mSRIDataVerifier;
+
+  // Status of SRI data operations.
+  nsresult mSRIStatus;
+
+  UniquePtr<ScriptDecoder> mDecoder;
+
+  // Flipped to true after calling NotifyStart the first time
+  bool mPreloadStartNotified = false;
+
+#ifdef NIGHTLY_BUILD
+  // Resource hasher for WAICT.
+  RefPtr<mozilla::dom::ResourceHasher> mResourceHasher;
+#endif
+};
+
+}  // namespace dom
+}  // namespace mozilla
+
+#endif  // mozilla_dom_ScriptLoadHandler_h

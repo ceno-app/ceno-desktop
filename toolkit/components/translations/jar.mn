@@ -1,0 +1,15 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+toolkit.jar:
+    content/global/translations/about-translations.html       (content/about-translations.html)
+    content/global/translations/about-translations.css        (content/about-translations.css)
+    content/global/translations/about-translations.mjs        (content/about-translations.mjs)
+    # Exclude translations engine-related content scripts. tor-browser#44045.
+    content/global/translations/TranslationsTelemetry.sys.mjs (TranslationsTelemetry.sys.mjs)
+    content/global/translations/TranslationsFeature.sys.mjs   (TranslationsFeature.sys.mjs)
+    content/global/translations/TranslationsUtils.mjs         (TranslationsUtils.mjs)
+
+    # Uncomment the following line to test a local build of Bergamot. It will automatically be loaded in.
+    # content/global/translations/bergamot-translator.wasm.zst   (bergamot-translator/thirdparty/translations/inference/build-wasm/bergamot-translator.wasm.zst)

@@ -1,0 +1,113 @@
+<html>
+
+<head>
+  <title>Testing of isFromUserInput in text events</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    const kNotFromUserInput = false;
+    const kFromUserInput = true;
+
+    function checkTextChangeEvent(
+      evt,
+      aID,
+      aStart,
+      aEnd,
+      aText,
+      aIsInserted,
+      aFromUser
+    ) {
+      let tcEvent = evt.QueryInterface(nsIAccessibleTextChangeEvent);
+      let modifiedTextLen = aEnd == -1 ? aText.length : aEnd - aStart;
+      is(tcEvent.start, aStart, "Wrong start offset for " + prettyName(aID));
+      is(
+        tcEvent.length,
+        modifiedTextLen,
+        "Wrong length for " + prettyName(aID)
+      );
+      let changeInfo = aIsInserted ? "inserted" : "removed";
+      is(
+        tcEvent.isInserted,
+        aIsInserted,
+        "Text was " + changeInfo + " for " + prettyName(aID)
+      );
+      is(
+        tcEvent.modifiedText,
+        aText,
+        "Wrong " + changeInfo + " text for " + prettyName(aID)
+      );
+      if (typeof aFromUser != "undefined") {
+        is(
+          tcEvent.isFromUserInput,
+          aFromUser,
+          "wrong value of isFromUserInput() for " + prettyName(aID)
+        );
+      }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+
+    async function doTests() {
+      // Focused editable text node
+      let divNode = getNode("div");
+      let p = waitForEvent(EVENT_TEXT_REMOVED, "div");
+      divNode.focus();
+      let textNode = divNode.firstChild;
+      let selection = window.getSelection();
+      let range = document.createRange();
+      range.setStart(textNode, 0);
+      range.setEnd(textNode, 3);
+      selection.addRange(range);
+      synthesizeKey("KEY_Delete");
+      let evt = await p;
+      checkTextChangeEvent(evt, "div", 0, 3, "hel", false, kFromUserInput);
+
+      // Focused editable HTML input
+      let inputNode = getNode("input");
+      p = waitForEvent(EVENT_TEXT_REMOVED, "input");
+      inputNode.focus();
+      inputNode.setSelectionRange(1, 2);
+      synthesizeKey("KEY_Delete");
+      evt = await p;
+      checkTextChangeEvent(evt, "input", 1, 2, "n", false, kFromUserInput);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+
+  </script>
+</head>
+
+
+<body>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=686909"
+     title="isFromUserInput flag on accessible text change events not correct">
+    Mozilla Bug 686909
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test"></pre>
+  <div id="eventdump"></div>
+
+  <div id="div" contentEditable="true">hello</div>
+  <input id="input" value="input">
+
+</body>
+
+</html>

@@ -1,0 +1,699 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// Tests addon quick suggest results.
+
+"use strict";
+
+ChromeUtils.defineESModuleGetters(this, {
+  AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
+  AddonTestUtils: "resource://testing-common/AddonTestUtils.sys.mjs",
+  ExtensionTestCommon: "resource://testing-common/ExtensionTestCommon.sys.mjs",
+});
+
+AddonTestUtils.init(this, false);
+AddonTestUtils.createAppInfo(
+  "xpcshell@tests.mozilla.org",
+  "XPCShell",
+  "42",
+  "42"
+);
+
+// TODO: Firefox no longer uses `rating` and `number_of_ratings` but they are
+// still present in Merino and RS suggestions, so they are included here for
+// greater accuracy. We should remove them from Merino, RS, and tests.
+const MERINO_SUGGESTIONS = [
+  {
+    provider: "amo",
+    icon: "icon",
+    url: "https://example.com/merino-addon",
+    title: "title",
+    description: "description",
+    custom_details: {
+      amo: {
+        rating: "5",
+        number_of_ratings: "1234567",
+        guid: "test@addon",
+      },
+    },
+  },
+];
+
+const REMOTE_SETTINGS_RESULTS = [
+  {
+    type: "amo-suggestions",
+    attachment: [
+      {
+        url: "https://example.com/first-addon",
+        guid: "first@addon",
+        icon: "https://example.com/first-addon.svg",
+        title: "First Addon",
+        rating: "4.7",
+        keywords: ["first", "1st", "two words", "aa b c"],
+        description: "Description for the First Addon",
+        number_of_ratings: 1256,
+        score: 0.25,
+      },
+      {
+        url: "https://example.com/second-addon",
+        guid: "second@addon",
+        icon: "https://example.com/second-addon.svg",
+        title: "Second Addon",
+        rating: "1.7",
+        keywords: ["second", "2nd"],
+        description: "Description for the Second Addon",
+        number_of_ratings: 256,
+        score: 0.25,
+      },
+      {
+        url: "https://example.com/third-addon",
+        guid: "third@addon",
+        icon: "https://example.com/third-addon.svg",
+        title: "Third Addon",
+        rating: "3.7",
+        keywords: ["third", "3rd"],
+        description: "Description for the Third Addon",
+        number_of_ratings: 3,
+        score: 0.25,
+      },
+      {
+        url: "https://example.com/fourth-addon?utm_medium=aaa&utm_source=bbb",
+        guid: "fourth@addon",
+        icon: "https://example.com/fourth-addon.svg",
+        title: "Fourth Addon",
+        rating: "4.7",
+        keywords: ["fourth", "4th"],
+        description: "Description for the Fourth Addon",
+        number_of_ratings: 4,
+        score: 0.25,
+      },
+    ],
+  },
+];
+
+add_setup(async function init() {
+  await AddonTestUtils.promiseStartupManager();
+
+  // Disable search suggestions so we don't hit the network.
+  Services.prefs.setBoolPref("browser.search.suggest.enabled", false);
+
+  await QuickSuggestTestUtils.ensureQuickSuggestInit({
+    remoteSettingsRecords: REMOTE_SETTINGS_RESULTS,
+    merinoSuggestions: MERINO_SUGGESTIONS,
+    prefs: [["suggest.quicksuggest.all", true]],
+  });
+});
+
+add_task(async function telemetryType() {
+  Assert.equal(
+    QuickSuggest.getFeature("AddonSuggestions").getSuggestionTelemetryType({}),
+    "amo",
+    "Telemetry type should be 'amo'"
+  );
+});
+
+// When quick suggest prefs are disabled, addon suggestions should be disabled.
+add_task(async function prefsDisabled() {
+  let prefs = [
+    "quicksuggest.enabled",
+    "addons.featureGate",
+    "suggest.quicksuggest.all",
+    "suggest.addons",
+  ];
+  for (let pref of prefs) {
+    info("Testing pref: " + pref);
+
+    // Before disabling the pref, first make sure the suggestion is added.
+    await check_results({
+      context: createContext("test", {
+        providers: [UrlbarProviderQuickSuggest.name],
+        isPrivate: false,
+      }),
+      matches: [
+        makeExpectedResult({
+          suggestion: MERINO_SUGGESTIONS[0],
+          source: "merino",
+          provider: "amo",
+        }),
+      ],
+    });
+
+    // Now disable the pref.
+    UrlbarPrefs.set(pref, false);
+    await check_results({
+      context: createContext("test", {
+        providers: [UrlbarProviderQuickSuggest.name],
+        isPrivate: false,
+      }),
+      matches: [],
+    });
+
+    UrlbarPrefs.set(pref, true);
+    await QuickSuggestTestUtils.forceSync();
+  }
+});
+
+// Check wheather the addon suggestions will be shown by the setup of Nimbus
+// variable.
+add_task(async function nimbus() {
+  // Disable the fature gate.
+  UrlbarPrefs.set("addons.featureGate", false);
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [],
+  });
+
+  // Enable by Nimbus.
+  const cleanUpNimbusEnable = await UrlbarTestUtils.initNimbusFeature({
+    addonsFeatureGate: true,
+  });
+  await QuickSuggestTestUtils.forceSync();
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [
+      makeExpectedResult({
+        suggestion: MERINO_SUGGESTIONS[0],
+        source: "merino",
+        provider: "amo",
+      }),
+    ],
+  });
+  await cleanUpNimbusEnable();
+
+  // Enable locally.
+  UrlbarPrefs.set("addons.featureGate", true);
+  await QuickSuggestTestUtils.forceSync();
+
+  // Disable by Nimbus.
+  const cleanUpNimbusDisable = await UrlbarTestUtils.initNimbusFeature({
+    addonsFeatureGate: false,
+  });
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [],
+  });
+  await cleanUpNimbusDisable();
+
+  // Revert.
+  UrlbarPrefs.clear("addons.featureGate");
+  await QuickSuggestTestUtils.forceSync();
+});
+
+add_task(async function hideIfAlreadyInstalled() {
+  // Show suggestion.
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [
+      makeExpectedResult({
+        suggestion: MERINO_SUGGESTIONS[0],
+        source: "merino",
+        provider: "amo",
+      }),
+    ],
+  });
+
+  // Install an addon for the suggestion.
+  const xpi = ExtensionTestCommon.generateXPI({
+    manifest: {
+      browser_specific_settings: {
+        gecko: { id: "test@addon" },
+      },
+    },
+  });
+  const addon = await AddonManager.installTemporaryAddon(xpi);
+
+  // Show suggestion for the addon installed.
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [],
+  });
+
+  await addon.uninstall();
+  xpi.remove(false);
+});
+
+add_task(async function remoteSettings() {
+  const testCases = [
+    {
+      input: "f",
+      expected: null,
+    },
+    {
+      input: "fi",
+      expected: null,
+    },
+    {
+      input: "fir",
+      expected: null,
+    },
+    {
+      input: "firs",
+      expected: null,
+    },
+    {
+      input: "first",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "1st",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "t",
+      expected: null,
+    },
+    {
+      input: "tw",
+      expected: null,
+    },
+    {
+      input: "two",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two ",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two w",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two wo",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two wor",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two word",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "two words",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "aa",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "aa ",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "aa b",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "aa b ",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "aa b c",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+      }),
+    },
+    {
+      input: "second",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[1],
+      }),
+    },
+    {
+      input: "2nd",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[1],
+      }),
+    },
+    {
+      input: "third",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[2],
+      }),
+    },
+    {
+      input: "3rd",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[2],
+      }),
+    },
+    {
+      input: "fourth",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[3],
+        setUtmParams: false,
+      }),
+    },
+    {
+      input: "FoUrTh",
+      expected: makeExpectedResult({
+        suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[3],
+        setUtmParams: false,
+      }),
+    },
+  ];
+
+  // Disable Merino so we trigger only remote settings suggestions.
+  UrlbarPrefs.set("quicksuggest.online.enabled", false);
+
+  for (let { input, expected } of testCases) {
+    await check_results({
+      context: createContext(input, {
+        providers: [UrlbarProviderQuickSuggest.name],
+        isPrivate: false,
+      }),
+      matches: expected ? [expected] : [],
+    });
+  }
+
+  UrlbarPrefs.clear("quicksuggest.online.enabled");
+});
+
+add_task(async function merinoIsTopPick() {
+  const suggestion = JSON.parse(JSON.stringify(MERINO_SUGGESTIONS[0]));
+
+  // is_top_pick is specified as false.
+  suggestion.is_top_pick = false;
+  MerinoTestUtils.server.response.body.suggestions = [suggestion];
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [
+      makeExpectedResult({
+        suggestion,
+        source: "merino",
+        provider: "amo",
+      }),
+    ],
+  });
+
+  // is_top_pick is undefined.
+  delete suggestion.is_top_pick;
+  MerinoTestUtils.server.response.body.suggestions = [suggestion];
+  await check_results({
+    context: createContext("test", {
+      providers: [UrlbarProviderQuickSuggest.name],
+      isPrivate: false,
+    }),
+    matches: [
+      makeExpectedResult({
+        suggestion,
+        source: "merino",
+        provider: "amo",
+      }),
+    ],
+  });
+});
+
+// Tests the "Dismiss" command: a dismissed suggestion shouldn't be added.
+add_task(async function dismiss() {
+  // Disable Merino suggestions to make this task simpler.
+  UrlbarPrefs.set("quicksuggest.online.enabled", false);
+
+  await doDismissOneTest({
+    result: makeExpectedResult({
+      suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+    }),
+    command: "dismiss",
+    feature: QuickSuggest.getFeature("AddonSuggestions"),
+    queriesForDismissals: [
+      {
+        query: REMOTE_SETTINGS_RESULTS[0].attachment[0].keywords[0],
+      },
+    ],
+    queriesForOthers: [
+      {
+        query: REMOTE_SETTINGS_RESULTS[0].attachment[1].keywords[0],
+        expectedResults: [
+          makeExpectedResult({
+            suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[1],
+          }),
+        ],
+      },
+    ],
+  });
+
+  UrlbarPrefs.clear("quicksuggest.online.enabled");
+});
+
+// Tests the "Not interested" command: all addon suggestions should be disabled
+// and not added anymore.
+add_task(async function notInterested() {
+  await doDismissAllTest({
+    result: makeExpectedResult({
+      suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+    }),
+    command: "not_interested",
+    feature: QuickSuggest.getFeature("AddonSuggestions"),
+    pref: "suggest.addons",
+    queries: [
+      {
+        query: REMOTE_SETTINGS_RESULTS[0].attachment[0].keywords[0],
+      },
+      {
+        query: REMOTE_SETTINGS_RESULTS[0].attachment[1].keywords[0],
+        expectedResults: [
+          makeExpectedResult({
+            suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[1],
+          }),
+        ],
+      },
+    ],
+  });
+});
+
+// Tests the "show less frequently" behavior.
+add_task(async function showLessFrequently() {
+  await doShowLessFrequentlyTest({
+    feature: QuickSuggest.getFeature("AddonSuggestions"),
+    keyword: "two words",
+    minKeywordLengthPref: "addons.minKeywordLength",
+    showLessFrequentlyCountPref: "addons.showLessFrequentlyCount",
+    expectedResult: makeExpectedResult({
+      suggestion: REMOTE_SETTINGS_RESULTS[0].attachment[0],
+    }),
+  });
+});
+
+// The `Amo` Rust provider should be passed to the Rust component when querying
+// depending on whether addon suggestions are enabled.
+add_task(async function rustProviders() {
+  await doRustProvidersTests({
+    searchString: "first",
+    tests: [
+      {
+        prefs: {
+          "suggest.addons": true,
+        },
+        expectedUrls: ["https://example.com/first-addon"],
+      },
+      {
+        prefs: {
+          "suggest.addons": false,
+        },
+        expectedUrls: [],
+      },
+    ],
+  });
+
+  UrlbarPrefs.clear("suggest.addons");
+  await QuickSuggestTestUtils.forceSync();
+});
+
+function makeExpectedResult({
+  suggestion,
+  source,
+  provider,
+  setUtmParams = true,
+}) {
+  return QuickSuggestTestUtils.amoResult({
+    source,
+    provider,
+    setUtmParams,
+    title: suggestion.title,
+    description: suggestion.description,
+    url: suggestion.url,
+    originalUrl: suggestion.url,
+    icon: suggestion.icon,
+  });
+}
+
+/**
+ * Tests the `show_less_frequently` command for a given feature.
+ *
+ * @param {object} options
+ *   Options object.
+ * @param {SuggestFeature} options.feature
+ *   The feature being tested.
+ * @param {SuggestFeature} options.keyword
+ *   The keyword to search for. Its length must be at least 3, and each prefix
+ *   starting at `keyword.length - 3` must match a suggestion.
+ * @param {object} options.expectedResult
+ *   The result that is expected to match the keyword and its prefixes.
+ * @param {string} options.minKeywordLengthPref
+ *   The name of the pref for the min keyword length being tested.
+ * @param {string} options.showLessFrequentlyCountPref
+ *   The name of the pref for the "show less frequently" count being tested.
+ */
+async function doShowLessFrequentlyTest({
+  feature,
+  keyword,
+  expectedResult,
+  minKeywordLengthPref,
+  showLessFrequentlyCountPref,
+}) {
+  let showLessFrequentlyCap = 3;
+
+  if (keyword.length < showLessFrequentlyCap) {
+    throw new Error(
+      "keyword must be long enough to 'Show less frequently' enough times"
+    );
+  }
+
+  await QuickSuggestTestUtils.withConfig({
+    config: { show_less_frequently_cap: showLessFrequentlyCap },
+    callback: async () => {
+      // Do `showLessFrequentlyCap` searches and trigger the
+      // `show_less_frequently` command after each one. In each iteration, the
+      // length of `searchString` increases by 1.
+      for (let count = 0; count < showLessFrequentlyCap; count++) {
+        let searchString = keyword.substring(
+          0,
+          keyword.length - showLessFrequentlyCap + count + 1
+        );
+
+        info(
+          "Doing search: " +
+            JSON.stringify({
+              count,
+              searchString,
+            })
+        );
+
+        // Check prefs and other values before searching.
+        Assert.equal(
+          UrlbarPrefs.get(minKeywordLengthPref),
+          count == 0 ? 0 : searchString.length,
+          "minKeywordLength pref should be correct before search " + count
+        );
+        Assert.equal(
+          feature.showLessFrequentlyCount,
+          count,
+          "showLessFrequentlyCount should be correct before search " + count
+        );
+        Assert.equal(
+          UrlbarPrefs.get(showLessFrequentlyCountPref),
+          count,
+          "showLessFrequentlyCount pref should be correct before search " +
+            count
+        );
+        Assert.ok(
+          feature.canShowLessFrequently,
+          "canShowLessFrequently should be correct before search " + count
+        );
+
+        // Do the search.
+        await check_results({
+          context: createContext(searchString, {
+            providers: [UrlbarProviderQuickSuggest.name],
+            isPrivate: false,
+          }),
+          matches: [expectedResult],
+        });
+
+        // Trigger the command.
+        triggerCommand({
+          feature,
+          searchString,
+          command: "show_less_frequently",
+          result: expectedResult,
+          expectedCountsByCall: {
+            acknowledgeFeedback: 1,
+            invalidateResultMenuCommands:
+              count == showLessFrequentlyCap - 1 ? 1 : 0,
+          },
+        });
+
+        // The same search should now match nothing.
+        await check_results({
+          context: createContext(searchString, {
+            providers: [UrlbarProviderQuickSuggest.name],
+            isPrivate: false,
+          }),
+          matches: [],
+        });
+      }
+
+      // Check prefs and other values now that all searches are done.
+      Assert.equal(
+        UrlbarPrefs.get(minKeywordLengthPref),
+        keyword.length + 1,
+        "minKeywordLength pref should be correct after all searches"
+      );
+      Assert.equal(
+        feature.showLessFrequentlyCount,
+        showLessFrequentlyCap,
+        "showLessFrequentlyCount should be correct after all searches"
+      );
+      Assert.equal(
+        UrlbarPrefs.get(showLessFrequentlyCountPref),
+        showLessFrequentlyCap,
+        "showLessFrequentlyCap pref should be correct after all searches"
+      );
+      Assert.ok(
+        !feature.canShowLessFrequently,
+        "canShowLessFrequently should be correct after all searches"
+      );
+    },
+  });
+
+  UrlbarPrefs.clear(minKeywordLengthPref);
+  UrlbarPrefs.clear(showLessFrequentlyCountPref);
+}

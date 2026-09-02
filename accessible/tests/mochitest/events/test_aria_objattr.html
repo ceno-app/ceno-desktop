@@ -1,0 +1,66 @@
+<html>
+
+<head>
+  <title>Accessible ARIA object attribute changes</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../attributes.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    function objAttrChangedMatcher(aID, aAttr) {
+      return e => {
+        if (!(e instanceof nsIAccessibleObjectAttributeChangedEvent)) {
+          return false;
+        }
+        return (
+          e.accessible == getAccessible(aID) &&
+          e.QueryInterface(nsIAccessibleObjectAttributeChangedEvent)
+            .changedAttribute == aAttr
+        );
+      };
+    }
+    async function doTests() {
+      let p = waitForEvent(
+        EVENT_OBJECT_ATTRIBUTE_CHANGED,
+        objAttrChangedMatcher("sortable", "aria-sort")
+      );
+      getNode("sortable").setAttribute("aria-sort", "ascending");
+      await p;
+
+      // For experimental ARIA extensions
+      p = waitForEvent(
+        EVENT_OBJECT_ATTRIBUTE_CHANGED,
+        objAttrChangedMatcher("custom", "aria-blah")
+      );
+      getNode("custom").setAttribute("aria-blah", "true");
+      await p;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="sortable" role="columnheader" aria-sort="none">aria-sort</div>
+
+  <div id="custom" role="custom" aria-blah="false">Fat free cheese</div>
+</body>
+</html>

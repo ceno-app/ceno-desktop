@@ -1,0 +1,49 @@
+[DEFAULT]
+support-files = [
+    "head.js",
+    "shared-head.js"
+]
+prefs = [
+    # Ignoring the blocklist is necessary to run tests in CI on old Mesa versions
+    # (https://bugzilla.mozilla.org/show_bug.cgi?id=1985348).
+    "gfx.webgpu.ignore-blocklist=true",
+]
+
+["browser_ml_autofill_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_engine_multi_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_engine_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_llama_summarizer_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+skip-if = [
+  "true", #  Bug 1952456
+]
+
+["browser_ml_security_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_semantic_history_search_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_smart_tab_clustering_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_smart_tab_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_speecht5_tts.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_suggest_feature_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_suggest_inference.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"
+
+["browser_ml_summarizer_perf.js"]
+disabled = "Disabled as we want to run this only as perftest, not regular CI"

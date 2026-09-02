@@ -1,0 +1,73 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// Basic test to check the adding of cookies.
+
+"use strict";
+
+add_task(async function () {
+  const TEST_URL = MAIN_URL + "storage-cookies.html";
+  await openTabAndSetupStorage(TEST_URL);
+  showAllColumns(true);
+
+  const rowId = await performAdd(["cookies", MAIN_ORIGIN]);
+  checkCookieData(rowId);
+
+  await performAdd(["cookies", MAIN_ORIGIN]);
+  await performAdd(["cookies", MAIN_ORIGIN]);
+  await performAdd(["cookies", MAIN_ORIGIN]);
+  await performAdd(["cookies", MAIN_ORIGIN]);
+
+  info("Check it does work in private tabs too");
+  const privateWindow = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  ok(PrivateBrowsingUtils.isWindowPrivate(privateWindow), "window is private");
+  const privateTab = await addTab(TEST_URL, { window: privateWindow });
+  await openStoragePanel({ tab: privateTab });
+  const privateTabRowId = await performAdd(["cookies", MAIN_ORIGIN]);
+  checkCookieData(privateTabRowId);
+
+  await performAdd(["cookies", MAIN_ORIGIN]);
+  privateWindow.close();
+});
+
+function checkCookieData(rowId) {
+  is(getCellValue(rowId, "value"), "value", "value is correct");
+  is(getCellValue(rowId, "host"), MAIN_HOST, "host is correct");
+  is(getCellValue(rowId, "path"), "/", "path is correct");
+  const actualExpiry = Math.floor(
+    new Date(getCellValue(rowId, "expires")) / 1000
+  );
+  const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
+
+  const creationTime = Math.floor(
+    new Date(getCellValue(rowId, "creationTime")) / 1000
+  );
+  Assert.lessOrEqual(
+    actualExpiry - (creationTime + ONE_DAY_IN_SECONDS),
+    2,
+    "expiry is in expected range"
+  );
+
+  const updateTime = Math.floor(
+    new Date(getCellValue(rowId, "updateTime")) / 1000
+  );
+  Assert.equal(
+    creationTime,
+    updateTime,
+    "Update time matches the creation time"
+  );
+  Assert.lessOrEqual(
+    actualExpiry - (updateTime + ONE_DAY_IN_SECONDS),
+    2,
+    "expiry is in expected range"
+  );
+
+  is(getCellValue(rowId, "size"), "43", "size is correct");
+  is(getCellValue(rowId, "isHttpOnly"), "false", "httpOnly is not set");
+  is(getCellValue(rowId, "isSecure"), "false", "secure is not set");
+  is(getCellValue(rowId, "sameSite"), "Lax", "sameSite is Lax");
+  is(getCellValue(rowId, "hostOnly"), "true", "hostOnly is not set");
+}

@@ -1,0 +1,597 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tests tabs.captureTab and tabs.captureVisibleTab</title>
+  <script type="text/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="/tests/SimpleTest/ExtensionTestUtils.js"></script>
+  <script type="text/javascript" src="head.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script type="text/javascript">
+"use strict";
+
+async function runTest({ html, fullZoom, coords, rect, scale }) {
+  let url = `data:text/html,${encodeURIComponent(html)}#scroll`;
+
+  async function background({ coords, rect, scale, method, fullZoom }) {
+    try {
+      // Wait for the page to load
+      await new Promise(resolve => {
+        browser.webNavigation.onCompleted.addListener(
+          () => resolve(),
+          {url: [{schemes: ["data"]}]});
+      });
+
+      let [tab] = await browser.tabs.query({
+        currentWindow: true,
+        active: true,
+      });
+
+      // TODO: Bug 1665429 - on mobile we ignore zoom for now
+      if (browser.tabs.setZoom) {
+        await browser.tabs.setZoom(tab.id, fullZoom ?? 1);
+      }
+
+      let id = method === "captureVisibleTab" ? tab.windowId : tab.id;
+
+      let [jpeg, png, ...pngs] = await Promise.all([
+        browser.tabs[method](id, { format: "jpeg", quality: 95, rect, scale }),
+        browser.tabs[method](id, { format: "png", quality: 95, rect, scale }),
+        browser.tabs[method](id, { quality: 95, rect, scale }),
+        browser.tabs[method](id, { rect, scale }),
+      ]);
+
+      if (!tab.width) {
+        // We query the tab as soon as webNavigation.onCompleted is fired, but
+        // that does not guarantee that the tab dimensions are available.
+        // The tabs.captureVisibleTab and tabs.capture methods flush layout as
+        // needed, after which dimensions are expected to be available.
+        tab = await browser.tabs.get(tab.id);
+        browser.test.assertTrue(tab.width > 0, `Tab has dimensions`);
+      }
+
+      browser.test.assertTrue(
+        pngs.every(url => url == png),
+        "All PNGs are identical"
+      );
+
+      browser.test.assertTrue(
+        jpeg.startsWith("data:image/jpeg;base64,"),
+        "jpeg is JPEG"
+      );
+      browser.test.assertTrue(
+        png.startsWith("data:image/png;base64,"),
+        "png is PNG"
+      );
+
+      let promises = [jpeg, png].map(
+        url =>
+          new Promise(resolve => {
+            let img = new Image();
+            img.src = url;
+            img.onload = () => resolve(img);
+          })
+      );
+
+      let width = (rect?.width ?? tab.width) * (scale ?? devicePixelRatio);
+      let height = (rect?.height ?? tab.height) * (scale ?? devicePixelRatio);
+
+      [jpeg, png] = await Promise.all(promises);
+      let images = { jpeg, png };
+      for (let format of Object.keys(images)) {
+        let img = images[format];
+
+        // WGP.drawSnapshot() deals in int coordinates, and rounds down.
+        browser.test.assertTrue(
+          Math.abs(width - img.width) <= 1,
+          `${format} ok image width: ${img.width}, expected: ${width}`
+        );
+        browser.test.assertTrue(
+          Math.abs(height - img.height) <= 1,
+          `${format} ok image height ${img.height}, expected: ${height}`
+        );
+
+        let canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.mozOpaque = true;
+
+        let ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+
+        for (let { x, y, color } of coords) {
+          x = (x + img.width) % img.width;
+          y = (y + img.height) % img.height;
+          let imageData = ctx.getImageData(x, y, 1, 1).data;
+
+          if (format == "png") {
+            browser.test.assertEq(
+              `rgba(${color},255)`,
+              `rgba(${[...imageData]})`,
+              `${format} image color is correct at (${x}, ${y})`
+            );
+          } else {
+            // Allow for some deviation in JPEG version due to lossy compression.
+            const SLOP = 3;
+
+            browser.test.log(
+              `Testing ${format} image color at (${x}, ${y}), have rgba(${[
+                ...imageData,
+              ]}), expecting approx. rgba(${color},255)`
+            );
+
+            browser.test.assertTrue(
+              Math.abs(color[0] - imageData[0]) <= SLOP,
+              `${format} image color.red is correct at (${x}, ${y})`
+            );
+            browser.test.assertTrue(
+              Math.abs(color[1] - imageData[1]) <= SLOP,
+              `${format} image color.green is correct at (${x}, ${y})`
+            );
+            browser.test.assertTrue(
+              Math.abs(color[2] - imageData[2]) <= SLOP,
+              `${format} image color.blue is correct at (${x}, ${y})`
+            );
+            browser.test.assertEq(
+              255,
+              imageData[3],
+              `${format} image color.alpha is correct at (${x}, ${y})`
+            );
+          }
+        }
+      }
+
+      browser.test.notifyPass("captureTab");
+    } catch (e) {
+      browser.test.fail(`Error: ${e} :: ${e.stack}`);
+      browser.test.notifyFail("captureTab");
+    }
+  }
+
+  for (let method of ["captureTab", "captureVisibleTab"]) {
+    let options = { coords, rect, scale, method, fullZoom };
+    info(`Testing configuration: ${JSON.stringify(options)}`);
+
+    let extension = ExtensionTestUtils.loadExtension({
+      manifest: {
+        permissions: ["<all_urls>", "webNavigation"],
+      },
+
+      background: `(${background})(${JSON.stringify(options)})`,
+    });
+
+    await extension.startup();
+
+    let tab = await AppTestDelegate.openNewForegroundTab(window, url);
+    await extension.awaitFinish("captureTab");
+
+    await AppTestDelegate.removeTab(window, tab);
+    await extension.unload();
+  }
+}
+
+async function testEdgeToEdge({ color, fullZoom }) {
+  let neutral = [0xaa, 0xaa, 0xaa];
+
+  let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="background-color: rgb(${color})">
+      <!-- Fill most of the image with a neutral color to test edge-to-edge scaling. -->
+      <div style="position: absolute;
+                  left: 2px;
+                  right: 2px;
+                  top: 2px;
+                  bottom: 2px;
+                  background: rgb(${neutral});"></div>
+    </body>
+    </html>
+  `;
+
+  // Check the colors of the first and last pixels of the image, to make
+  // sure we capture the entire frame, and scale it correctly.
+  let coords = [
+    { x: 0, y: 0, color },
+    { x: -1, y: -1, color },
+    { x: 300, y: 200, color: neutral },
+  ];
+
+  info(`Test edge to edge color ${color} at fullZoom=${fullZoom}`);
+  await runTest({ html, fullZoom, coords });
+}
+
+add_task(async function testCaptureEdgeToEdge() {
+  await testEdgeToEdge({ color: [0, 0, 0], fullZoom: 1 });
+  await testEdgeToEdge({ color: [0, 0, 0], fullZoom: 2 });
+  await testEdgeToEdge({ color: [0, 0, 0], fullZoom: 0.5 });
+  await testEdgeToEdge({ color: [255, 255, 255], fullZoom: 1 });
+});
+
+const tallDoc = `<!DOCTYPE html>
+  <meta charset=utf-8>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <div style="background: yellow; width: 50%; height: 500px;"></div>
+  <div id=scroll style="background: red; width: 25%; height: 5000px;"></div>
+  Opened with the #scroll fragment, scrolls the div ^ into view.
+`;
+
+// Test currently visible viewport is captured if scrolling is involved.
+add_task(async function testScrolledViewport() {
+  await runTest({
+    html: tallDoc,
+    coords: [
+      { x: 50, y: 50, color: [255, 0, 0] },
+      { x: 50, y: -50, color: [255, 0, 0] },
+      { x: -50, y: -50, color: [255, 255, 255] },
+    ],
+  });
+});
+
+// Test rect and scale options.
+add_task(async function testRectAndScale() {
+  await runTest({
+    html: tallDoc,
+    rect: { x: 50, y: 50, width: 10, height: 1000 },
+    scale: 4,
+    coords: [
+      { x: 0, y: 0, color: [255, 255, 0] },
+      { x: -1, y: 0, color: [255, 255, 0] },
+      { x: 0, y: -1, color: [255, 0, 0] },
+      { x: -1, y: -1, color: [255, 0, 0] },
+    ],
+  });
+});
+
+// Test OOP iframes are captured, for Fission compatibility.
+add_task(async function testOOPiframe() {
+  await runTest({
+    html: `<!DOCTYPE html>
+      <meta charset=utf-8>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <iframe src="http://example.net/tests/toolkit/components/extensions/test/mochitest/file_green.html"></iframe>
+    `,
+    coords: [
+      { x: 50, y: 50, color: [0, 255, 0] },
+      { x: 50, y: -50, color: [255, 255, 255] },
+      { x: -50, y: 50, color: [255, 255, 255] },
+    ],
+  });
+});
+
+add_task(async function testOOPiframeScale() {
+  let scale = 2;
+  await runTest({
+    html: `<!DOCTYPE html>
+      <meta charset=utf-8>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        body {
+          background: yellow;
+          margin: 0;
+        }
+      </style>
+      <iframe frameborder="0" style="width: 300px; height: 300px" src="http://example.net/tests/toolkit/components/extensions/test/mochitest/file_green_blue.html"></iframe>
+    `,
+    coords: [
+      { x: 20 * scale, y: 20 * scale, color: [0, 255, 0] },
+      { x: 200 * scale, y: 20 * scale, color: [0, 0, 255] },
+      { x: 20 * scale, y: 200 * scale, color: [0, 0, 255] },
+    ],
+    scale,
+  });
+});
+
+async function do_test_without_all_urls_permission(manifest) {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      permissions: ["tabs"],
+      ...manifest,
+    },
+
+    background() {
+      browser.test.assertEq(
+        undefined,
+        browser.tabs.captureTab,
+        'Extension without "<all_urls>" permission should not have access to captureTab'
+      );
+      browser.test.assertEq(
+        undefined,
+        browser.tabs.captureVisibleTab,
+        'Extension without "<all_urls>" permission should not have access to captureVisibleTab'
+      );
+      browser.test.notifyPass("withoutPermissions");
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitFinish("withoutPermissions");
+  await extension.unload();
+}
+
+add_task(async function test_without_all_urls_permission_mv2() {
+  await do_test_without_all_urls_permission({
+    manifest_version: 2,
+  });
+});
+
+add_task(async function test_without_all_urls_permission_mv3() {
+  await do_test_without_all_urls_permission({
+    manifest_version: 3,
+  });
+});
+
+add_task(async function test_without_all_urls_permission_mv3_not_granted() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["extensions.originControls.grantByDefault", false]],
+  });
+  await do_test_without_all_urls_permission({
+    manifest_version: 3,
+    host_permissions: ["<all_urls>"],
+  });
+  await SpecialPowers.popPrefEnv();
+});
+
+// <all_urls> is internally treated as a host permission and an API permission;
+// this test verifies that the permission is available when granted at install
+// time in MV3 (other tests in this file already verifies MV2 behavior).
+// Regression test for https://bugzilla.mozilla.org/show_bug.cgi?id=2014047
+add_task(async function test_with_all_urls_permission_mv3() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      manifest_version: 3,
+      host_permissions: ["<all_urls>"],
+      permissions: ["tabs"],
+    },
+
+    async background() {
+      // captureTab and captureVisibleTab default to the current window's tab
+      // when tabId / windowId are not explicitly specified, which is expected
+      // to be this test's tab.
+      let dataUrl = await browser.tabs.captureVisibleTab();
+      browser.test.assertTrue(
+        dataUrl.startsWith("data:"),
+        "Got data:-URL from tabs.captureVisibleTab"
+      );
+
+      dataUrl = await browser.tabs.captureTab();
+      browser.test.assertTrue(
+        dataUrl.startsWith("data:"),
+        "Got data:-URL from tabs.captureTab"
+      );
+      browser.test.notifyPass("withPermissions");
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitFinish("withPermissions");
+  await extension.unload();
+});
+
+add_task(async function testCaptureVisibleTabWithActiveTab() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      browser_action: {
+        default_area: "navbar",
+      },
+      permissions: ["webNavigation", "tabs", "activeTab"],
+    },
+
+    async background() {
+      // Wait for the page (in the test window) to load.
+      await new Promise(resolve => {
+        browser.webNavigation.onCompleted.addListener(
+        () => resolve(),
+        {url: [{schemes: ["data"]}]});
+      });
+
+      browser.browserAction.onClicked.addListener(async tab => {
+        await browser.tabs.captureVisibleTab(tab.windowId);
+        browser.test.notifyPass("captureVisibleTabPermissions");
+      });
+
+      browser.test.sendMessage("ready");
+    },
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body><h1>hello</h1></body>
+    </html>
+  `;
+
+  await extension.startup();
+
+  let url = `data:text/html,${encodeURIComponent(html)}#scroll`;
+  let tab = await AppTestDelegate.openNewForegroundTab(window, url);
+  await extension.awaitMessage("ready");
+  await AppTestDelegate.clickBrowserAction(window, extension);
+  await extension.awaitFinish("captureVisibleTabPermissions");
+  await AppTestDelegate.closeBrowserAction(window, extension);
+  await AppTestDelegate.removeTab(window, tab);
+
+  await extension.unload();
+});
+
+add_task(async function testCaptureVisibleTabWithActiveTabAndNotUserInteraction() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      permissions: ["webNavigation", "tabs", "activeTab"],
+    },
+
+    async background() {
+      // Wait for the page (in the test window) to load.
+      await new Promise(resolve => {
+        browser.webNavigation.onCompleted.addListener(
+        () => resolve(),
+        {url: [{schemes: ["data"]}]});
+      });
+
+      let [tab] = await browser.tabs.query({ currentWindow: true, active: true });
+      await browser.test.assertRejects(
+        browser.tabs.captureVisibleTab(tab.windowId),
+        /Missing activeTab permission/,
+        "Expected rejection because activeTab permission isn't set"
+      );
+
+      browser.test.notifyPass("captureVisibleTabPermissions");
+    },
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body><h1>hello</h1></body>
+    </html>
+  `;
+
+  await extension.startup();
+
+  let url = `data:text/html,${encodeURIComponent(html)}#scroll`;
+  let tab = await AppTestDelegate.openNewForegroundTab(window, url);
+  await extension.awaitFinish("captureVisibleTabPermissions");
+  await AppTestDelegate.removeTab(window, tab);
+
+  await extension.unload();
+});
+
+add_task(async function testCaptureVisibleTabWithActiveTabAndAllURLs() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      permissions: ["webNavigation", "tabs", "activeTab", "<all_urls>"],
+    },
+
+    async background() {
+      // Wait for the page (in the test window) to load.
+      await new Promise(resolve => {
+        browser.webNavigation.onCompleted.addListener(
+        () => resolve(),
+        {url: [{schemes: ["data"]}]});
+      });
+
+      let [tab] = await browser.tabs.query({ currentWindow: true, active: true });
+      await browser.tabs.captureVisibleTab(tab.windowId);
+
+      browser.test.notifyPass("captureVisibleTabPermissions");
+    },
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body><h1>hello</h1></body>
+    </html>
+  `;
+
+  await extension.startup();
+
+  let url = `data:text/html,${encodeURIComponent(html)}#scroll`;
+  let tab = await AppTestDelegate.openNewForegroundTab(window, url);
+  await extension.awaitFinish("captureVisibleTabPermissions");
+  await AppTestDelegate.removeTab(window, tab);
+
+  await extension.unload();
+});
+
+add_task(async function test_captureTab_inactive_tab() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      permissions: ["tabs", "activeTab", "<all_urls>"],
+    },
+
+    async background() {
+      const tab = await browser.tabs.create({
+        url: "about:blank",
+        active: false,
+      });
+
+      let captureTabPromise = browser.tabs.captureTab(tab.id);
+      if (navigator.userAgent.includes("Android")) {
+        // On Android, capturing is only supported for the foreground tab.
+        // See https://bugzilla.mozilla.org/show_bug.cgi?id=2040023#c1
+        await browser.test.assertRejects(
+          captureTabPromise,
+          "Cannot capture invisible tab",
+          "On Android, only the foreground tab can be captured by captureTab"
+        );
+      } else {
+        browser.test.assertTrue(
+          await captureTabPromise,
+          "Got result from captureTab for background tab"
+        );
+      }
+
+      await browser.tabs.remove(tab.id);
+
+      browser.test.sendMessage("done");
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("done");
+  await extension.unload();
+});
+
+add_task(async function test_captureTab_discarded_tab() {
+  if (navigator.userAgent.includes("Android")) {
+    // TODO bug 1402338: Remove skip if tabs.discard is supported.
+    todo(false, "tabs.discard not supported on Android (bug 1402338).");
+    return;
+  }
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      permissions: ["tabs", "activeTab", "<all_urls>"],
+    },
+
+    async background() {
+      const tab = await browser.tabs.create({
+        url: "https://example.com/?immediately_discarded",
+        discarded: true,
+      });
+
+      // Log message here is to help with discovering if it gets stuck.
+      browser.test.log("Calling captureTab and expecting it to reject");
+      await browser.test.assertRejects(
+        browser.tabs.captureTab(tab.id),
+        "Cannot capture invisible tab",
+        "captureTab should reject tab that starts out as discarded"
+      );
+
+      await browser.test.assertRejects(
+        browser.tabs.captureTab(tab.id),
+        "Cannot capture invisible tab",
+        "captureTab should reject tab that is still discarded, again"
+      );
+
+      await browser.tabs.remove(tab.id);
+
+      browser.test.sendMessage("done");
+    },
+  });
+
+  await extension.startup();
+  await extension.awaitMessage("done");
+  await extension.unload();
+});
+
+</script>
+</body>
+</html>

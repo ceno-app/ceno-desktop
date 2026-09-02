@@ -1,0 +1,22 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+toolkit.jar:
+% content mozapps %content/mozapps/
+#ifndef MOZ_GECKOVIEW
+  content/mozapps/extensions/OpenH264-license.txt               (content/OpenH264-license.txt)
+  content/mozapps/extensions/aboutaddons.html                   (content/aboutaddons.html)
+  content/mozapps/extensions/aboutaddons.mjs                    (content/aboutaddons.mjs)
+  content/mozapps/extensions/aboutaddons-utils.mjs              (content/aboutaddons-utils.mjs)
+  content/mozapps/extensions/aboutaddons.css                    (content/aboutaddons.css)
+  content/mozapps/extensions/abuse-reports.mjs                  (content/abuse-reports.mjs)
+  content/mozapps/extensions/components                         (content/components/*.css)
+  content/mozapps/extensions/components                         (content/components/*.mjs)
+  content/mozapps/extensions/shortcuts.css                      (content/shortcuts.css)
+  content/mozapps/extensions/view-controller.mjs                (content/view-controller.mjs)
+
+% resource default-theme %content/mozapps/extensions/default-theme/
+  content/mozapps/extensions/default-theme                      (default-theme/*.svg)
+  content/mozapps/extensions/default-theme/manifest.json        (default-theme/manifest.json)
+#endif

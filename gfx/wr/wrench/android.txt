@@ -1,0 +1,117 @@
+Running Wrench on Android devices.
+==================================
+
+Setting up the environment:
+---------------------------
+
+    Install Rust Android targets:
+        rustup target add aarch64-linux-android x86_64-linux-android
+
+    Install cargo-apk:
+        cargo install cargo-apk
+
+    Install the Android SDK and NDK via mach bootstrap:
+        ./mach bootstrap --application-choice mobile_android
+
+    This downloads NDK r29 and the Android SDK into ~/.mozbuild/. After it
+    completes, install the SDK platform that matches NDK r29's max platform
+    level (35), which cargo-apk requires:
+
+        ~/.mozbuild/android-sdk-linux/cmdline-tools/20.0/bin/sdkmanager \
+            "platforms;android-35" \
+            --sdk_root=$HOME/.mozbuild/android-sdk-linux
+
+    Consider adding ~/.mozbuild/android-sdk-linux/platform-tools to your
+    path, for the adb commands below.
+
+Compiling and running:
+----------------------
+
+    Compile wrench:
+        cd wrench
+        export ANDROID_HOME=$HOME/.mozbuild/android-sdk-linux
+        export ANDROID_NDK_ROOT=$HOME/.mozbuild/android-ndk-r29
+        cargo apk build --lib
+
+    Install the APK:
+        adb install -r ../target/debug/apk/wrench.apk
+
+    Set command line arguments and env vars for wrench.
+    The app data directory requires app-level permissions; use run-as with
+    stdin piping since the APK is built with debuggable=true:
+
+        adb shell run-as org.mozilla.wrench mkdir -p /data/data/org.mozilla.wrench/files/wrench
+
+        echo "reftest" | adb shell run-as org.mozilla.wrench tee /data/data/org.mozilla.wrench/files/wrench/args
+        echo "env: WRENCH_REFTEST_CONDITION_DEVICE=1" | adb shell run-as org.mozilla.wrench tee -a /data/data/org.mozilla.wrench/files/wrench/args
+            # Or for an emulator:
+        echo "env: WRENCH_REFTEST_CONDITION_EMULATOR=1" | adb shell run-as org.mozilla.wrench tee -a /data/data/org.mozilla.wrench/files/wrench/args
+
+    Push reftests (if you need these files for what you're doing).
+    adb push cannot write directly to app data directories, so stage via
+    /data/local/tmp first:
+
+        adb push reftests /data/local/tmp/wrench-reftests
+        adb shell run-as org.mozilla.wrench cp -r /data/local/tmp/wrench-reftests /data/data/org.mozilla.wrench/files/wrench/reftests
+
+    Run the application:
+        adb shell am start -n org.mozilla.wrench/android.app.NativeActivity
+            (or click the icon in the launcher)
+
+    Inspect the output:
+        adb logcat -s Wrench
+
+        stdout and stderr are redirected to the logcat, however, long lines
+        will be truncated meaning the reftest analyzer will not work correctly.
+        We therefore additionally redirect the output to the file
+        /data/data/org.mozilla.wrench/files/wrench/stdout, which can be pulled:
+
+        adb shell run-as org.mozilla.wrench cat /data/data/org.mozilla.wrench/files/wrench/stdout > /tmp/wrench-stdout.txt
+
+Release mode:
+-------------
+
+    Building in release does work as well. Use the following steps to compile wrench:
+        cd wrench
+        export ANDROID_HOME=$HOME/.mozbuild/android-sdk-linux
+        export ANDROID_NDK_ROOT=$HOME/.mozbuild/android-ndk-r29
+        cargo apk build --lib --release
+
+    Now the APK at ../target/release/apk/wrench.apk
+    should be signed and installable (you may need to uninstall the debug APK first if you
+    have that installed).
+
+Running reftests like a boss (on a local emulator):
+---------------------------------------------------
+
+    First, compile wrench as described above (debug mode).
+    Then, from the root gecko source dir, run:
+        ./mach python testing/mozharness/scripts/android_wrench.py --config testing/mozharness/configs/android/wrench.py
+    This will automatically do the following:
+        - Download the blessed android AVDs from taskcluster
+        - Start the emulator (using your ~/.mozbuild/android-sdk-linux emulator binaries)
+        - Install the debug APK (from gfx/wr/wrench/target/debug/apk/wrench.apk)
+        - Copy the reftests to the sdcard
+        - Write an args file to the sdcard
+        - Run wrench
+        - Wait for wrench to finish running
+        - Scrape the logcat for reftest output
+    Other logs (e.g. full logcat) can be found in your ~/.wrench/logs folder. Note that
+    this will also leave the android emulator running, so repeating the command will be
+    even faster the next time around as it won't need to redownload the AVDs or restart
+    the emulator. It will reinstall the APK and re-push the reftests folder though.
+
+    If you want to use a release APK (runs much faster), build it as per the "Release mode"
+    instructions above and set the WRENCH_APK env var to point to the APK:
+        export WRENCH_APK=gfx/wr/target/release/apk/wrench.apk
+        ./mach python testing/mozharness/scripts/android_wrench.py --config testing/mozharness/configs/android/wrench.py
+
+Running reftests like a boss (on a local device):
+-------------------------------------------------
+
+    Same steps as running on a local emulator, except you need to do this:
+        export ANDROID_SERIAL=<your device's serial>
+    before running the `./mach python` command. You can get the serial of
+    your device by running `adb devices` with the device plugged in. When running
+    on a device, the android_emulator_wrench.py script will skip the steps to
+    download the AVDs and start the emulator.

@@ -1,0 +1,68 @@
+[
+  {
+    "namespace": "aboutConfigPrefs",
+    "description": "experimental API extension to allow access to about:config preferences",
+    "events": [
+      {
+        "name": "onPrefChange",
+        "type": "function",
+        "parameters": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "The preference which changed"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "The preference to monitor"
+          }
+        ]
+      }
+    ],
+    "functions": [
+      {
+        "name": "getCheckableGlobalPrefs",
+        "type": "function",
+        "description": "Lists the global prefs the addon may read",
+        "parameters": [],
+        "returns": {
+          "type": "array",
+          "description": "The list of pref names.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "getPref",
+        "type": "function",
+        "description": "Get a preference's value",
+        "parameters": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "The preference name"
+          },
+          {
+            "name": "defaultValue",
+            "type": "boolean",
+            "optional": true,
+            "description": "Default value to return if the pref is not set"
+          }
+        ],
+        "returns": {
+          "choices": [
+            { "type": "boolean" },
+            { "type": "integer" },
+            { "type": "string" }
+          ],
+          "optional": true,
+          "description": "returns the value of a pref."
+        }
+      }
+    ]
+  }
+]

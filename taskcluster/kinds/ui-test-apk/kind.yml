@@ -1,0 +1,322 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - gecko_taskgraph.transforms.test_apk:transforms
+    - gecko_taskgraph.transforms.ui_test_apk:transforms
+    # While not a build, the build optimization works well for these tasks.
+    - gecko_taskgraph.transforms.build_schedules:transforms
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - toolchain
+    - signing-apk
+
+task-defaults:
+    run-on-repo-type: [hg]
+    attributes:
+        build_platform: android
+        build-type: debug
+        retrigger: true
+    worker-type: b-linux-medium
+    worker:
+        docker-image: {in-tree: android-ui-tests}
+        max-run-time: 7200
+        env:
+            GOOGLE_APPLICATION_CREDENTIALS: '.firebase_token.json'
+            GOOGLE_PROJECT:
+                by-shipping-product:
+                    fenix: moz-fenix
+                    focus: moz-focus-android
+                    default: ''
+        artifacts:
+            - name: public
+              path: /builds/worker/artifacts
+              type: directory
+        retry-exit-status: [20]
+    treeherder:
+        kind: test
+        tier: 2
+        platform:
+            by-shipping-product:
+                fenix: fenix-android-all/opt
+                focus: focus-android-all/opt
+                default: ''
+    run:
+        using: run-commands
+        dummy-secrets:
+            - content: "faketoken"
+              path: .adjust_token
+        secrets:
+            by-shipping-product:
+                fenix:
+                    - name: project/gecko/level-any/firefox-android/fenix/firebase
+                      key: firebaseToken
+                      path: mobile/android/test_infra/.firebase_token.json
+                      json: true
+                focus:
+                    - name: project/gecko/level-any/firefox-android/focus-android/firebase
+                      key: firebaseToken
+                      path: mobile/android/test_infra/.firebase_token.json
+                      json: true
+                default: []
+    routes:
+        by-level:
+            '3':
+                - notify.slack-channel.C0134KJ4JHL.on-failed
+            'default': []
+    scopes:
+        by-level:
+            '3':
+                - queue:route:notify.slack-channel.C0134KJ4JHL.on-failed
+                - notify:slack-channel:C0134KJ4JHL
+            'default': []
+    extra:
+        notify:
+            by-level:
+                '3':
+                    enabled: true
+                'default':
+                    enabled: false
+
+tasks:
+    focus-arm-debug:
+        attributes:
+            build-type: focus-debug-firebase
+            shipping-product: focus
+        description: 'Focus UI tests with firebase'
+        dependencies:
+            signed-apk-debug-apk: signing-apk-focus-debug
+            signed-apk-android-test: signing-apk-focus-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        flank-config: focus/arm64-v8a.yml
+        treeherder:
+            symbol: focus-debug(ui-test-arm)
+
+    focus-arm-nightly:
+        attributes:
+            build-type: focus-nightly-firebase
+            shipping-product: focus
+        description: 'UI tests on Nightly with firebase'
+        dependencies:
+            signed-apk-debug-apk: signing-apk-focus-nightly-firebase
+            signed-apk-android-test: signing-apk-focus-android-test-nightly
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [trunk]
+        flank-config: focus/arm-start-test.yml
+        treeherder:
+            symbol: focus-nightly(ui-test-arm-nightly)
+
+    focus-arm-beta:
+        attributes:
+            build-type: focus-beta-firebase
+            shipping-product: focus
+        description: 'UI tests on Beta with firebase'
+        dependencies:
+            signed-apk-debug-apk: signing-apk-focus-beta-firebase
+            signed-apk-android-test: signing-apk-focus-android-test-beta
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [release]
+        flank-config: focus/arm-beta.yml
+        treeherder:
+            symbol: focus-beta(ui-test-arm-beta)
+
+    fenix-arm-debug:
+        attributes:
+            build-type: fenix-debug-firebase
+            shipping-product: fenix
+        description: Test Fenix
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+            signed-apk-android-test: signing-apk-fenix-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        flank-config: fenix/arm64-v8a.yml
+        treeherder:
+            symbol: fenix-debug(ui-test-arm)
+
+    fenix-detect-leaks-arm-debug:
+        attributes:
+            build-type: fenix-debug-firebase
+            shipping-product: fenix
+        description: Run Fenix tests with memory leak detection enabled
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+            signed-apk-android-test: signing-apk-fenix-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [trunk]
+        flank-config: fenix/arm64-v8a-detect-leaks.yml
+        artifact-type: memory_leaks
+        treeherder:
+            symbol: fenix-debug(detect-leaks-arm)
+
+    fenix-arm-beta:
+        attributes:
+            build-type: fenix-beta-firebase
+            shipping-product: fenix
+        description: Test Fenix
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-beta-firebase
+            signed-apk-android-test: signing-apk-fenix-android-test-beta
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [release]
+        flank-config: fenix/arm-beta.yml
+        treeherder:
+            symbol: fenix-beta(ui-test-arm-beta)
+
+    fenix-arm-nightly:
+        attributes:
+            build-type: fenix-nightly-firebase
+            shipping-product: fenix
+        description: Test Fenix
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-nightly-firebase
+            signed-apk-android-test: signing-apk-fenix-android-test-nightly
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [trunk]
+        flank-config: fenix/arm-start-test.yml
+        treeherder:
+            symbol: fenix-nightly(ui-test-arm-nightly)
+
+    fenix-legacy-arm:
+        attributes:
+            build-type: fenix-legacy
+            legacy: true
+            shipping-product: fenix
+        description: Run select UI tests on legacy Android devices and API levels
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+            signed-apk-android-test: signing-apk-fenix-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        flank-config: fenix/arm-legacy-api-tests.yml
+        treeherder:
+            symbol: fenix-debug(legacy-arm)
+
+    fenix-robo-arm-debug:
+        attributes:
+            build-type: fenix-robo
+            shipping-product: fenix
+        description: Run Robo test on ARM devices
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        flank-config: fenix/arm-robo-test.yml
+        no-test-apk: true
+        treeherder:
+            symbol: fenix-debug(robo-arm)
+
+    fenix-experimental-arm-debug:
+        attributes:
+            build-type: fenix-debug-firebase
+            shipping-product: fenix
+        description: Run Fenix tests using experimental POM design
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+            signed-apk-android-test: signing-apk-fenix-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization:
+            skip-unless-backstop: null
+        run-on-projects: [trunk]
+        flank-config: fenix/arm-experimental-api-tests.yml
+        treeherder:
+            symbol: fenix-debug(experimental-arm)
+
+    fenix-arm-debug-smoke:
+        attributes:
+            build-type: fenix-debug-firebase
+            shipping-product: fenix
+        description: Run smoke tests on ARM devices
+        dependencies:
+            signed-apk-debug-apk: signing-apk-fenix-debug
+            signed-apk-android-test: signing-apk-fenix-android-test-debug
+        fetches:
+            signed-apk-debug-apk:
+                - artifact: target.arm64-v8a.apk
+                  extract: false
+            signed-apk-android-test:
+                - artifact: target.noarch.apk
+                  extract: false
+        optimization: {"test": ["android", "fenix"]}
+        run-on-projects: ['autoland', 'mozilla-central']
+        flank-config: fenix/arm-smoke-tests.yml
+        treeherder:
+            symbol: fenix-debug(smoke-arm)
+            tier: 1

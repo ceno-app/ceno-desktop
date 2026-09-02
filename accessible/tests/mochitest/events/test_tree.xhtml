@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="DOM TreeRowCountChanged and a11y name change events.">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../treeview.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    let gView;
+
+    function checkTreeInvalidated(
+      event,
+      startRow,
+      endRow,
+      startCol,
+      endCol,
+      msg
+    ) {
+      const propBag = event.detail.QueryInterface(Ci.nsIPropertyBag2);
+      function getPropOrNull(name) {
+        try {
+          return propBag.getPropertyAsInt32(name);
+        } catch (e) {
+          if (e.name != "NS_ERROR_NOT_AVAILABLE") {
+            throw e;
+          }
+          return null;
+        }
+      }
+      is(getPropOrNull("startrow"), startRow,
+         "Wrong 'startrow' of 'treeInvalidated' event on " + msg);
+      is(getPropOrNull("endrow"), endRow,
+         "Wrong 'endrow' of 'treeInvalidated' event on " + msg);
+      is(getPropOrNull("startcolumn"), startCol,
+         "Wrong 'startcolumn' of 'treeInvalidated' event on " + msg);
+      is(getPropOrNull("endcolumn"), endCol,
+         "Wrong 'endcolumn' of 'treeInvalidated' event on " + msg);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Test
+
+    let gTree = null;
+
+    async function doTest() {
+      // Initialize the tree
+      gTree = document.getElementById("tree");
+      gView = new nsTableTreeView(5);
+
+      // setTreeView
+      let reordered = waitForEvent(EVENT_REORDER, gTree);
+      gTree.view = gView;
+      await reordered;
+
+      // insertRow
+      let rowCountChanged = new Promise(resolve =>
+        gTree.addEventListener("TreeRowCountChanged", resolve, { once: true })
+      );
+      let treeInvalidated = new Promise(resolve =>
+        gTree.addEventListener("TreeInvalidated", resolve, { once: true })
+      );
+      gView.appendItem("last");
+      gTree.rowCountChanged(0, 1);
+      let rcEvent = await rowCountChanged;
+      let propBag = rcEvent.detail.QueryInterface(Ci.nsIPropertyBag2);
+      is(propBag.getPropertyAsInt32("index"), 0,
+         "Wrong 'index' data of 'treeRowCountChanged' event.");
+      is(propBag.getPropertyAsInt32("count"), 1,
+         "Wrong 'count' data of 'treeRowCountChanged' event.");
+      let tiEvent = await treeInvalidated;
+      checkTreeInvalidated(tiEvent, 0, 5, null, null, "insertRow");
+
+      // invalidateColumn
+      let tableAcc = getAccessible(getAccessible(gTree), [nsIAccessibleTable]);
+      const nameChanged0 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(0, 0)
+      );
+      const nameChanged1 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(1, 0)
+      );
+      const nameChanged2 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(2, 0)
+      );
+      const nameChanged3 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(3, 0)
+      );
+      const nameChanged4 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(4, 0)
+      );
+      const nameChanged5 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(5, 0)
+      );
+      let colInvalidated = new Promise(resolve =>
+        gTree.addEventListener("TreeInvalidated", resolve, { once: true })
+      );
+
+      // Make sure accessible subtree of XUL tree is created otherwise no
+      // name change events for cell accessibles are emitted.
+      const tree = getAccessible(gTree);
+      let child = tree.firstChild;
+      let walkDown = true;
+      while (child != tree) {
+        if (walkDown) {
+          const grandChild = child.firstChild;
+          if (grandChild) {
+            child = grandChild;
+            continue;
+          }
+        }
+
+        const sibling = child.nextSibling;
+        if (sibling) {
+          child = sibling;
+          walkDown = true;
+          continue;
+        }
+
+        child = child.parent;
+        walkDown = false;
+      }
+
+      // Fire 'TreeInvalidated' event by InvalidateColumn()
+      const firstCol = gTree.columns.getFirstColumn();
+      for (let i = 0; i < gView.rowCount; i++) {
+        gView.setCellText(i, firstCol, "hey " + String(i) + "x0");
+      }
+      gTree.invalidateColumn(firstCol);
+
+      await nameChanged0;
+      await nameChanged1;
+      await nameChanged2;
+      await nameChanged3;
+      await nameChanged4;
+      await nameChanged5;
+      let colTiEvent = await colInvalidated;
+      checkTreeInvalidated(colTiEvent, null, null, 0, 0, "invalidateColumn");
+
+      // invalidateRow
+      tableAcc = getAccessible(getAccessible(gTree), [nsIAccessibleTable]);
+      const rowNameChanged0 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(1, 0)
+      );
+      const rowNameChanged1 = waitForEvent(
+        EVENT_NAME_CHANGE,
+        tableAcc.getCellAt(1, 1)
+      );
+      const rowNameChangedRow = waitForEvent(
+        EVENT_NAME_CHANGE,
+        getAccessible(gTree).getChildAt(1 + 1)
+      );
+      let rowInvalidated = new Promise(resolve =>
+        gTree.addEventListener("TreeInvalidated", resolve, { once: true })
+      );
+
+      // Fire 'TreeInvalidated' event by InvalidateRow()
+      // eslint-disable-next-line no-unused-vars
+      const colCount = gTree.columns.count;
+      let column = gTree.columns.getFirstColumn();
+      while (column) {
+        gView.setCellText(1, column, "aloha 1x" + String(column.index));
+        column = column.getNext();
+      }
+      gTree.invalidateRow(1);
+
+      await rowNameChanged0;
+      await rowNameChanged1;
+      await rowNameChangedRow;
+      let rowTiEvent = await rowInvalidated;
+      checkTreeInvalidated(rowTiEvent, 1, 1, null, null, "invalidateRow");
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=368835"
+         title="Fire TreeViewChanged/TreeRowCountChanged events.">
+        Mozilla Bug 368835
+      </a><br/>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=308564"
+         title="No accessibility events when data in a tree row changes.">
+        Mozilla Bug 308564
+      </a><br/>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=739524"
+         title="replace TreeViewChanged DOM event on direct call from XUL tree.">
+        Mozilla Bug 739524
+      </a><br/>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=743568"
+         title="Thunderbird message list tree emitting incorrect focus signals after message deleted.">
+        Mozilla Bug 743568
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox id="debug"/>
+    <tree id="tree" flex="1">
+      <treecols>
+        <treecol id="col1" flex="1" primary="true" label="column"/>
+        <treecol id="col2" flex="1" label="column 2"/>
+      </treecols>
+      <treechildren id="treechildren"/>
+    </tree>
+  </hbox>
+
+</window>

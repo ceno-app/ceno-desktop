@@ -1,0 +1,37 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_RemoteType_h
+#define mozilla_dom_RemoteType_h
+
+#include "nsReadableUtils.h"
+#include "nsString.h"
+
+// These must match the similar ones in E10SUtils.sys.mjs and ProcInfo.h and
+// ChromeUtils.webidl Process names as reported by about:memory are defined in
+// ContentChild:RecvRemoteType.  Add your value there too or it will be called
+// "Web Content".
+#define PREALLOC_REMOTE_TYPE "prealloc"_ns
+#define WEB_REMOTE_TYPE "web"_ns
+#define FILE_REMOTE_TYPE "file"_ns
+#define EXTENSION_REMOTE_TYPE "extension"_ns
+#define PRIVILEGEDABOUT_REMOTE_TYPE "privilegedabout"_ns
+#define PRIVILEGEDMOZILLA_REMOTE_TYPE "privilegedmozilla"_ns
+#define INFERENCE_REMOTE_TYPE "inference"_ns
+
+#define DEFAULT_REMOTE_TYPE WEB_REMOTE_TYPE
+
+// These must start with the WEB_REMOTE_TYPE above.
+#define FISSION_WEB_REMOTE_TYPE "webIsolated"_ns
+#define WITH_COOP_COEP_REMOTE_TYPE "webCOOP+COEP"_ns
+#define WITH_COOP_COEP_REMOTE_TYPE_PREFIX "webCOOP+COEP="_ns
+#define SERVICEWORKER_REMOTE_TYPE "webServiceWorker"_ns
+
+// A flag appended to the origin suffix to disable the JIT for that process.
+#define DISABLE_JIT_REMOTE_TYPE_SUFFIX "disableJit=1"_ns
+
+// Remote type value used to represent being non-remote.
+#define NOT_REMOTE_TYPE VoidCString()
+
+#endif  // mozilla_dom_RemoteType_h

@@ -1,0 +1,21 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef DEFAULT_BROWSER_AGENT_SCHEDULED_TASK_H_
+#define DEFAULT_BROWSER_AGENT_SCHEDULED_TASK_H_
+
+#include <windows.h>
+#include <wtypes.h>
+
+namespace mozilla::default_agent {
+
+// uniqueToken should be a string unique to the installation, so that a
+// separate task can be created for each installation. Typically this will be
+// the install hash string.
+HRESULT RegisterTask(const wchar_t* uniqueToken, BSTR startTime = nullptr);
+HRESULT UpdateTask(const wchar_t* uniqueToken);
+
+}  // namespace mozilla::default_agent
+
+#endif  // DEFAULT_BROWSER_AGENT_SCHEDULED_TASK_H_

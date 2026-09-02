@@ -1,0 +1,20 @@
+[DEFAULT]
+support-files = [
+  "!/toolkit/components/satchel/test/subtst_privbrowsing.html",
+  "formhistory_autocomplete.sqlite",
+]
+
+["browser_autocomplete.js"]
+
+["browser_close_tab.js"]
+
+
+["browser_popup_mouseover.js"]
+skip-if = [
+  "verify-standalone",
+]
+
+["browser_privbrowsing_perwindowpb.js"]
+skip-if = [
+  "verify-standalone",
+]

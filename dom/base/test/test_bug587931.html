@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=587931
+-->
+<head>
+  <title>Test for Bug 587931</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=587931">Mozilla Bug 587931</a>
+<pre id="test">
+<script type="application/javascript">
+/** Test for Bug 587931 */
+SimpleTest.waitForExplicitFinish();
+function verifyScript(n) {
+  var curr = document.currentScript;
+  is(curr, document.getElementById(n), "correct script (" + n + ")");
+}
+
+window.addEventListener("load", function() {
+  SimpleTest.finish();
+});
+</script>
+</pre>
+<!-- Test parser inserted scripts -->
+<script id="parse-inline">
+verifyScript("parse-inline");
+</script>
+<script id="parse-ext" src="data:text/plain,verifyScript('parse-ext');"></script>
+
+<!-- Test DOM inserted scripts -->
+<script>
+var s = document.createElement("script");
+s.textContent = "verifyScript('dom-inline');";
+s.id = "dom-inline";
+document.body.appendChild(s);
+
+s = document.createElement("script");
+s.src = "data:text/plain,verifyScript('dom-ext');";
+s.id = "dom-ext";
+document.body.appendChild(s);
+</script>
+</body>
+</html>

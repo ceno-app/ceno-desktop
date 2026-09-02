@@ -1,0 +1,163 @@
+/* Any copyright is dedicated to the Public Domain.
+http://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+add_setup(() => {
+  // FOG needs to be initialized in order for data to flow.
+  Services.fog.initializeFOG();
+});
+
+/**
+ * Tests that calling `BackupService.takeMeasurements` will call the measure
+ * method of all registered BackupResource classes.
+ */
+add_task(async function test_takeMeasurements() {
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(FakeBackupResource1.prototype, "measure").resolves();
+  sandbox
+    .stub(FakeBackupResource2.prototype, "measure")
+    .rejects(new Error("Some failure to measure"));
+
+  let bs = new BackupService({ FakeBackupResource1, FakeBackupResource2 });
+  await bs.takeMeasurements();
+
+  for (let backupResourceClass of [FakeBackupResource1, FakeBackupResource2]) {
+    Assert.ok(
+      backupResourceClass.prototype.measure.calledOnce,
+      "Measure was called"
+    );
+    Assert.ok(
+      backupResourceClass.prototype.measure.calledWith(PathUtils.profileDir),
+      "Measure was called with the profile directory argument"
+    );
+  }
+
+  sandbox.restore();
+});
+
+/**
+ * Tests that we can measure the disk space available in the profile directory.
+ */
+add_task(async function test_profDDiskSpace() {
+  Services.fog.testResetFOG();
+
+  let bs = new BackupService();
+  await bs.takeMeasurements();
+  let measurement = Glean.browserBackup.profDDiskSpace.testGetValue();
+
+  Assert.greater(
+    measurement,
+    0,
+    "Should have collected a measurement for the profile directory storage " +
+      "device"
+  );
+});
+
+/**
+ * Tests that we record a scalar if the BackupService is configured to
+ * initialize on launch.
+ */
+add_task(async function test_BackupService_enabled_state() {
+  Services.fog.testResetFOG();
+
+  let bs = new BackupService();
+  await bs.takeMeasurements();
+  Assert.ok(
+    Glean.browserBackup.enabled.testGetValue(),
+    "Should have set the enabled scalar."
+  );
+});
+
+/**
+ * Tests that we record a scalar if the BackupService is configured to
+ * initialize on launch.
+ */
+add_task(async function test_BackupService_scheduler_enabled_state() {
+  Services.fog.testResetFOG();
+  const SCHEDULED_BACKUPS_ENABLED_PREF_NAME =
+    "browser.backup.scheduled.enabled";
+  Services.prefs.setBoolPref(SCHEDULED_BACKUPS_ENABLED_PREF_NAME, false);
+
+  let bs = new BackupService();
+  await bs.takeMeasurements();
+  Assert.ok(
+    !Glean.browserBackup.schedulerEnabled.testGetValue(),
+    "Scalar for scheduled backups should be false"
+  );
+
+  Services.fog.testResetFOG();
+  Services.prefs.setBoolPref(SCHEDULED_BACKUPS_ENABLED_PREF_NAME, true);
+  await bs.takeMeasurements();
+  Assert.ok(
+    Glean.browserBackup.schedulerEnabled.testGetValue(),
+    "Scalar for scheduled backups should be true"
+  );
+
+  // Now reset the scheduling state to the default to not interfere with
+  // other tests.
+  Services.prefs.clearUserPref(SCHEDULED_BACKUPS_ENABLED_PREF_NAME);
+});
+
+/**
+ * Tests that we record a scalar if the BackupService is configured to
+ * encrypt backups.
+ */
+add_task(async function test_BackupService_pswd_encrypted_state() {
+  Services.fog.testResetFOG();
+
+  let bs = new BackupService();
+  await bs.takeMeasurements();
+  Assert.ok(
+    !Glean.browserBackup.pswdEncrypted.testGetValue(),
+    "Scalar for encrypted backups should be false"
+  );
+
+  Services.fog.testResetFOG();
+  const tempDir = await IOUtils.createUniqueDirectory(
+    PathUtils.tempDir,
+    "BackupService-takeMeasurements-test"
+  );
+  await bs.enableEncryption("some-fake-password", tempDir);
+
+  await bs.takeMeasurements();
+  Assert.ok(
+    Glean.browserBackup.pswdEncrypted.testGetValue(),
+    "Scalar for encrypted backups should be true"
+  );
+
+  await maybeRemovePath(tempDir);
+});
+
+/**
+ * Tests that we record a scalar that tells us if backups are configured to
+ * be written to the default location, or somewhere else entirely.
+ */
+add_task(async function test_BackupService_location_on_device() {
+  Services.fog.testResetFOG();
+  const DEFAULT_LOCATION = 1;
+  const NON_DEFAULT_LOCATION = 2;
+
+  let bs = new BackupService();
+  await bs.setParentDirPath(PathUtils.tempDir);
+
+  await bs.takeMeasurements();
+  Assert.equal(
+    Glean.browserBackup.locationOnDevice.testGetValue(),
+    NON_DEFAULT_LOCATION,
+    "Scalar for location on device should indicate the non-default " +
+      "location"
+  );
+
+  Services.fog.testResetFOG();
+  // The default will be either the test machine's OneDrive folder, if present,
+  // or else the Docs folder.
+  await bs.setParentDirPath(BackupService.DEFAULT_PARENT_DIR_PATH);
+
+  await bs.takeMeasurements();
+  Assert.equal(
+    Glean.browserBackup.locationOnDevice.testGetValue(),
+    DEFAULT_LOCATION,
+    "Scalar for location on device should indicate the default location"
+  );
+});

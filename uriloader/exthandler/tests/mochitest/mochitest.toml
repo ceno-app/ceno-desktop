@@ -1,0 +1,29 @@
+[DEFAULT]
+
+["test_invalidCharFileExtension.xhtml"]
+skip-if = [
+  "os == 'android'", # Bug 1525959
+]
+support-files = [
+  "HelperAppLauncherDialog_chromeScript.js",
+  "invalidCharFileExtension.sjs",
+]
+
+["test_nullCharFile.xhtml"]
+skip-if = [
+  "os == 'android'", # Bug 1525959
+]
+support-files = ["HelperAppLauncherDialog_chromeScript.js"]
+
+["test_unknown_ext_protocol_handlers.html"]
+
+["test_unsafeBidiChars.xhtml"]
+skip-if = [
+  "http2",
+  "http3",
+  "os == 'android'", # Bug 1525959
+]
+support-files = [
+  "HelperAppLauncherDialog_chromeScript.js",
+  "unsafeBidiFileName.sjs",
+]

@@ -1,0 +1,27 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "OggCodecStore.h"
+
+namespace mozilla {
+
+OggCodecStore::OggCodecStore() : mMonitor("CodecStore") {}
+
+OggCodecState* OggCodecStore::Add(uint32_t serial,
+                                  UniquePtr<OggCodecState> codecState) {
+  MonitorAutoLock mon(mMonitor);
+  return mCodecStates.InsertOrUpdate(serial, std::move(codecState)).get();
+}
+
+bool OggCodecStore::Contains(uint32_t serial) {
+  MonitorAutoLock mon(mMonitor);
+  return mCodecStates.Get(serial, nullptr);
+}
+
+OggCodecState* OggCodecStore::Get(uint32_t serial) {
+  MonitorAutoLock mon(mMonitor);
+  return mCodecStates.Get(serial);
+}
+
+}  // namespace mozilla

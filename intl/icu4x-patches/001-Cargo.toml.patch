@@ -1,0 +1,33 @@
+diff --git a/intl/icu_capi/Cargo.toml b/intl/icu_capi/Cargo.toml
+index 590cc3a60644..e86fbb1be6c5 100644
+--- a/intl/icu_capi/Cargo.toml
++++ b/intl/icu_capi/Cargo.toml
+@@ -74,28 +74,19 @@ calendar = [
+     "dep:icu_calendar",
+     "dep:icu_time",
+     "dep:tinystr",
+ ]
+ casemap = ["dep:icu_casemap"]
+ collator = ["dep:icu_collator"]
+ compiled_data = [
+     "icu_calendar?/compiled_data",
+-    "icu_casemap?/compiled_data",
+-    "icu_collator?/compiled_data",
+-    "icu_datetime?/compiled_data",
+-    "icu_decimal?/compiled_data",
+-    "icu_list?/compiled_data",
+-    "icu_locale?/compiled_data",
+     "icu_normalizer?/compiled_data",
+-    "icu_plurals?/compiled_data",
+     "icu_properties?/compiled_data",
+     "icu_segmenter?/compiled_data",
+-    "icu_time?/compiled_data",
+-    "icu_experimental?/compiled_data",
+ ]
+ datetime = [
+     "calendar",
+     "dep:icu_datetime",
+     "icu_datetime/experimental",
+ ]
+ decimal = [
+     "dep:icu_decimal",

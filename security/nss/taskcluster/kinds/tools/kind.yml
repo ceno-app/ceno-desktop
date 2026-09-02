@@ -1,0 +1,146 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+transforms:
+    - nss_taskgraph.transforms.tools
+
+task-defaults:
+    treeherder:
+        platform: nss-tools/opt
+        kind: test
+    worker-type: b-linux
+    run:
+        using: run-task
+        checkout:
+            nss:
+                path: nss
+    worker:
+        artifacts:
+            - path: /builds/worker/artifacts
+              type: directory
+              name: public
+        max-run-time: 3600
+
+tasks:
+    abi:
+        description: ABI check
+        treeherder:
+            symbol: abi
+        worker:
+            docker-image: {in-tree: builds}
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/check_abi.sh"
+
+    clang-format:
+        description: Run clang-format
+        treeherder:
+            symbol: clang-format
+        worker:
+            docker-image: {in-tree: clang-format}
+        run:
+            command: "${VCS_PATH}/nss/automation/clang-format/run_clang_format.sh"
+
+    acvp:
+        description: ACVP
+        treeherder:
+            symbol: acvp
+        worker:
+            docker-image: {in-tree: acvp}
+        run:
+            command: "bin/run.sh"
+
+    clang-tidy:
+        description: Run clang-tidy static analysis
+        treeherder:
+            symbol: clang-tidy
+        worker:
+            docker-image: {in-tree: fuzz}
+            env:
+                USE_64: "1"
+                CC: clang
+                CCC: clang++
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/run_clang_tidy.sh"
+
+    scan-build:
+        description: Run scan-build
+        treeherder:
+            symbol: scan-build
+        worker:
+            docker-image: {in-tree: fuzz}
+            env:
+                USE_64: "1"
+                CC: clang
+                CCC: clang++
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/run_scan_build.sh"
+
+    hacl:
+        description: HACL checks
+        treeherder:
+            symbol: hacl
+        worker:
+            docker-image: {in-tree: builds}
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/run_hacl.sh"
+
+    test-coverage:
+        description: Generate test coverage report
+        treeherder:
+            symbol: TestCov
+        worker:
+            docker-image: {in-tree: fuzz}
+            max-run-time: 7200
+            artifacts:
+                - path: /builds/worker/artifacts
+                  type: directory
+                  name: public
+                - path: /builds/worker/artifacts/full_coverage_html_report.zip
+                  type: file
+                  name: public/full_coverage_html_report.zip
+                - path: /builds/worker/artifacts/coverage.lcov
+                  type: file
+                  name: public/coverage.lcov
+                - path: /builds/worker/artifacts/diff_coverage.html
+                  type: file
+                  name: public/diff_coverage.html
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/gen_test_coverage_report.sh"
+
+    fuzz-coverage:
+        description: Generate fuzz coverage report
+        treeherder:
+            symbol: FuzzCov
+        worker:
+            docker-image: {in-tree: fuzz}
+            max-run-time: 7200
+            env:
+                ASAN_OPTIONS: "allocator_may_return_null=1:detect_stack_use_after_return=1"
+                UBSAN_OPTIONS: "print_stacktrace=1"
+                CC: clang
+                CCC: clang++
+            artifacts:
+                - path: /builds/worker/artifacts
+                  type: directory
+                  name: public
+                - path: /builds/worker/artifacts/full_coverage_html_report.zip
+                  type: file
+                  name: public/full_coverage_html_report.zip
+                - path: /builds/worker/artifacts/coverage.lcov
+                  type: file
+                  name: public/coverage.lcov
+                - path: /builds/worker/artifacts/diff_coverage.html
+                  type: file
+                  name: public/diff_coverage.html
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/gen_fuzz_coverage_report.sh"
+    doc-lint:
+        description: Check RST documentation for lint errors
+        treeherder:
+            symbol: doc-lint
+        worker:
+            docker-image: {in-tree: docs}
+        run:
+            command: "${VCS_PATH}/nss/automation/taskcluster/scripts/check_doc_lint.sh"

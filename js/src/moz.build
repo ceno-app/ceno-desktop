@@ -1,0 +1,374 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+include("js-config.mozbuild")
+include("js-cxxflags.mozbuild")
+
+# Directory metadata
+component_engine = ("Core", "JavaScript Engine")
+component_debugger = ("Core", "JavaScript: Debugger API")
+component_gc = ("Core", "JavaScript: GC")
+component_intl = ("Core", "JavaScript: Internationalization API")
+component_jit = ("Core", "JavaScript Engine: JIT")
+component_stl = ("Core", "JavaScript: Standard Library")
+component_wasm = ("Core", "JavaScript: WebAssembly")
+
+FILES_PER_UNIFIED_FILE = 6
+
+# Prevent redefining FILES_PER_UNIFIED_FILE in each sub-directory of js. This
+# will not escape this directory.
+export("FILES_PER_UNIFIED_FILE")
+
+with Files("*"):
+    BUG_COMPONENT = component_engine
+
+with Files("wasm/**"):
+    BUG_COMPONENT = component_wasm
+with Files("builtin/**"):
+    BUG_COMPONENT = component_stl
+with Files("ctypes/**"):
+    BUG_COMPONENT = ("Core", "js-ctypes")
+with Files("debugger/**"):
+    BUG_COMPONENT = component_debugger
+with Files("gc/**"):
+    BUG_COMPONENT = component_gc
+with Files("jit/**"):
+    BUG_COMPONENT = component_jit
+
+# File-specific metadata
+for gcfile in ["devtools/rootAnalysis", "devtools/gc-ubench", "devtools/gctrace"]:
+    with Files(gcfile):
+        BUG_COMPONENT = component_gc
+
+with Files("builtin/intl/*"):
+    BUG_COMPONENT = component_intl
+
+with Files("doc/Debugger/**"):
+    BUG_COMPONENT = component_debugger
+
+if not CONFIG["JS_DISABLE_SHELL"]:
+    DIRS += [
+        "rust",
+        "shell",
+    ]
+
+    TEST_DIRS += [
+        "gdb",
+        "jsapi-tests",
+        "tests",
+    ]
+
+    if CONFIG["FUZZING_INTERFACES"]:
+        TEST_DIRS += [
+            "fuzz-tests",
+        ]
+
+LegacyTest(
+    f"%{CONFIG['PYTHON3']}",
+    "/config/check_js_msg_encoding.py",
+    depends=["/config/check_js_msg_encoding.py"],
+)
+
+if CONFIG["FUZZING_JS_FUZZILLI"]:
+    # When building for Fuzzilli, we instrument everything with standard
+    # trace-pc instrumentation.
+    include("/tools/fuzzing/libfuzzer-config.mozbuild")
+
+CONFIGURE_DEFINE_FILES += [
+    "js-confdefs.h",
+]
+
+CONFIGURE_DEFINE_FILES += [
+    "js-config.h",
+]
+
+# Changes to internal header files, used externally, massively slow down
+# browser builds.  Don't add new files here unless you know what you're
+# doing!
+EXPORTS += [
+    "!js-config.h",
+    "jsapi.h",
+    "jsfriendapi.h",
+    "jspubtd.h",
+    "jstypes.h",
+]
+
+EXPORTS.js += [
+    "!../public/PrefsGenerated.h",
+    "../public/AllocationLogging.h",
+    "../public/AllocationRecording.h",
+    "../public/AllocPolicy.h",
+    "../public/Array.h",
+    "../public/ArrayBuffer.h",
+    "../public/ArrayBufferMaybeShared.h",
+    "../public/BigInt.h",
+    "../public/BuildId.h",
+    "../public/CallAndConstruct.h",
+    "../public/CallArgs.h",
+    "../public/CallNonGenericMethod.h",
+    "../public/CharacterEncoding.h",
+    "../public/Class.h",
+    "../public/ColumnNumber.h",
+    "../public/ComparisonOperators.h",
+    "../public/CompilationAndEvaluation.h",
+    "../public/CompileOptions.h",
+    "../public/Context.h",
+    "../public/ContextOptions.h",
+    "../public/Conversions.h",
+    "../public/Date.h",
+    "../public/Debug.h",
+    "../public/DOMEventDispatch.h",
+    "../public/EnvironmentChain.h",
+    "../public/Equality.h",
+    "../public/ErrorInterceptor.h",
+    "../public/ErrorReport.h",
+    "../public/Exception.h",
+    "../public/ForOfIterator.h",
+    "../public/GCAnnotations.h",
+    "../public/GCAPI.h",
+    "../public/GCHashTable.h",
+    "../public/GCPolicyAPI.h",
+    "../public/GCTypeMacros.h",
+    "../public/GCVariant.h",
+    "../public/GCVector.h",
+    "../public/GlobalObject.h",
+    "../public/HashTable.h",
+    "../public/HeapAPI.h",
+    "../public/HelperThreadAPI.h",
+    "../public/Id.h",
+    "../public/Initialization.h",
+    "../public/Interrupt.h",
+    "../public/Iterator.h",
+    "../public/JitCodeAPI.h",
+    "../public/JSON.h",
+    "../public/LocaleSensitive.h",
+    "../public/MapAndSet.h",
+    "../public/MemoryCallbacks.h",
+    "../public/MemoryFunctions.h",
+    "../public/MemoryMetrics.h",
+    "../public/Modules.h",
+    "../public/NativeStackLimits.h",
+    "../public/Object.h",
+    "../public/ObjectWithStashedPointer.h",
+    "../public/Prefs.h",
+    "../public/Principals.h",
+    "../public/Printer.h",
+    "../public/Printf.h",
+    "../public/ProfilingCategory.h",
+    "../public/ProfilingFrameIterator.h",
+    "../public/ProfilingSources.h",
+    "../public/ProfilingStack.h",
+    "../public/Promise.h",
+    "../public/PropertyAndElement.h",
+    "../public/PropertyDescriptor.h",
+    "../public/PropertySpec.h",
+    "../public/ProtoKey.h",
+    "../public/Proxy.h",
+    "../public/Realm.h",
+    "../public/RealmIterators.h",
+    "../public/RealmOptions.h",
+    "../public/RefCounted.h",
+    "../public/RegExp.h",
+    "../public/RegExpFlags.h",
+    "../public/Result.h",
+    "../public/RootingAPI.h",
+    "../public/SavedFrameAPI.h",
+    "../public/ScalarType.h",
+    "../public/ScriptPrivate.h",
+    "../public/SharedArrayBuffer.h",
+    "../public/SliceBudget.h",
+    "../public/SourceText.h",
+    "../public/StableStringChars.h",
+    "../public/Stack.h",
+    "../public/StreamConsumer.h",
+    "../public/String.h",
+    "../public/StructuredClone.h",
+    "../public/SweepingAPI.h",
+    "../public/Symbol.h",
+    "../public/TelemetryTimers.h",
+    "../public/TraceKind.h",
+    "../public/TracingAPI.h",
+    "../public/Transcoding.h",
+    "../public/TypeDecls.h",
+    "../public/UbiNode.h",
+    "../public/UbiNodeBreadthFirst.h",
+    "../public/UbiNodeCensus.h",
+    "../public/UbiNodeDominatorTree.h",
+    "../public/UbiNodePostOrder.h",
+    "../public/UbiNodeShortestPaths.h",
+    "../public/UbiNodeUtils.h",
+    "../public/UniquePtr.h",
+    "../public/Utility.h",
+    "../public/Value.h",
+    "../public/ValueArray.h",
+    "../public/Vector.h",
+    "../public/WaitCallbacks.h",
+    "../public/Warnings.h",
+    "../public/WasmComponent.h",
+    "../public/WasmFeatures.h",
+    "../public/WasmModule.h",
+    "../public/WeakMap.h",
+    "../public/WeakMapPtr.h",
+    "../public/Wrapper.h",
+    "../public/WrapperCallbacks.h",
+    "../public/Zone.h",
+]
+
+# Public APIs that are experimental: the precise contour of the APIs may still
+# change, but they're at least plausible first passes at designing something.
+# We expose them as-is, buyer beware.
+EXPORTS.js.experimental += [
+    "../public/experimental/BindingAllocs.h",
+    "../public/experimental/CodeCoverage.h",
+    "../public/experimental/CompileScript.h",
+    "../public/experimental/CTypes.h",
+    "../public/experimental/Intl.h",
+    "../public/experimental/JitInfo.h",
+    "../public/experimental/JSStencil.h",
+    "../public/experimental/LoggingInterface.h",
+    "../public/experimental/PCCountProfiling.h",
+    "../public/experimental/SourceHook.h",
+    "../public/experimental/TypedData.h",
+]
+
+# Friend APIs are APIs that either basically SpiderMonkey-internal, or their
+# contours are gross and terrible -- but the functionality is too important to
+# some embedder (often, Gecko) to just not expose anything or to agonize through
+# a clean design.  Use this only if you absolutely must, and feel free to
+# propose clean APIs to replace what's here!
+EXPORTS.js.friend += [
+    "../public/friend/CycleCollector.h",
+    "../public/friend/DOMProxy.h",
+    "../public/friend/DumpFunctions.h",
+    "../public/friend/ErrorMessages.h",
+    "../public/friend/ErrorNumbers.msg",
+    "../public/friend/JSMEnvironment.h",
+    "../public/friend/MicroTask.h",
+    "../public/friend/PerformanceHint.h",
+    "../public/friend/StackLimits.h",
+    "../public/friend/UsageStatistics.h",
+    "../public/friend/WindowProxy.h",
+    "../public/friend/Wrapper.h",
+    "../public/friend/XrayJitInfo.h",
+]
+
+# "Shadow" API defines the internal layout of public JSAPI types like |JSObject|
+# and |JSString|, so that other *inline* public functions can efficiently access
+# their internal fields.
+#
+# Embedders must never include these headers themselves or use their contents.
+# These internal layout details are publicly exposed for access *only* so that
+# other public API definitions may use them.
+#
+# When adding new shadow structure definitions (or new fields/static constants
+# to existing structures) for access by inline methods, make sure to add static
+# asserts to the original header file to ensure that offsets and duplicated
+# constants are consistent.  (Long term, it might be worth figuring out some way
+# to back actual implementations *with* these shadow definitions to eliminate
+# this requirement.)
+EXPORTS.js.shadow += [
+    "../public/shadow/Function.h",
+    "../public/shadow/Object.h",
+    "../public/shadow/Realm.h",
+    "../public/shadow/Shape.h",
+    "../public/shadow/String.h",
+    "../public/shadow/Symbol.h",
+    "../public/shadow/Zone.h",
+]
+
+UNIFIED_SOURCES += [
+    "jsapi.cpp",
+    "jsfriendapi.cpp",
+]
+
+# Must be in SOURCES so that Glean symbols from xul will take priority over the
+# no-op symbols implemented in jsglean.cpp
+SOURCES += [
+    "jsglean.cpp",
+]
+
+if CONFIG["MOZ_INSTRUMENTS"]:
+    OS_LIBS += ["-framework CoreFoundation"]
+    SOURCES += [
+        "devtools/Instruments.cpp",
+    ]
+
+DIRS += [
+    "build",
+    "builtin",
+    "debugger",
+    "ds",
+    "frontend",
+    "gc",
+    "irregexp",
+    "jit",
+    "proxy",
+    "threading",
+    "util",
+    "vm",
+    "wasm",
+    "xsum",
+    "builtin/normalizer_glue",
+]
+
+# Glean integration
+if CONFIG["JS_STANDALONE"]:
+    # For MetricTypes.h and related headers
+    include("/toolkit/components/glean/glean.mozbuild")
+
+    glean_parser_flags = [CONFIG["MOZ_APP_VERSION"]]
+    tags_yamls = [
+        "/toolkit/components/glean/tags.yaml",
+    ]
+    GeneratedFile(
+        "JsSrcMetrics.h",
+        script="/toolkit/components/glean/build_scripts/glean_parser_ext/run_glean_parser.py",
+        flags=glean_parser_flags,
+        inputs=["metrics.yaml"] + tags_yamls,
+    )
+    EXPORTS.mozilla.glean += ["!JsSrcMetrics.h"]
+
+if CONFIG["JS_HAS_CTYPES"]:
+    DIRS += ["ctypes"]
+
+if CONFIG["MOZ_VTUNE"]:
+    DIRS += ["vtune"]
+
+if CONFIG["JS_HAS_INTL_API"]:
+    DIRS += [
+        "builtin/intl",
+        "builtin/temporal",
+        "builtin/intl/collator_glue",
+        "builtin/intl/locale_glue",
+        "irregexp/properties_glue",
+    ]
+
+CXXFLAGS += CONFIG["MOZ_ZLIB_CFLAGS"]
+
+# Bug 1722102 - This should never be enabled in Release without explicit
+# security and SpiderMonkey review.
+# See https://bugzilla.mozilla.org/show_bug.cgi?id=1722102#c16
+if CONFIG["ENABLE_WASM_MOZ_INTGEMM"]:
+    DIRS += ["intgemm"]
+
+if CONFIG["JS_JITSPEW"]:
+    DIRS += ["zydis"]
+
+FINAL_LIBRARY = "js"
+
+GeneratedFile(
+    "../public/PrefsGenerated.h",
+    script="GeneratePrefs.py",
+    entry_point="generate_prefs_header",
+    inputs=["../../modules/libpref/init/StaticPrefList.yaml"],
+)
+
+if CONFIG["JS_HAS_INTL_API"]:
+    if CONFIG["JS_STANDALONE"]:
+        DIRS += [
+            "../../intl/bidi",
+            "../../intl/components",
+        ]
+
+    USE_LIBS += ["intlcomponents"]

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="/tests/SimpleTest/EventUtils.js"></script>
+    <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+    <script type="text/javascript" src="NavigationUtils.js"></script>
+    <style type="text/css">
+      iframe { width: 90%; height: 200px; }
+    </style>
+<script>
+if (navigator.platform.startsWith("Mac")) {
+  SimpleTest.expectAssertions(0, 2);
+}
+
+async function testParent() {
+  document.getElementById("frames").innerHTML = '<iframe src="iframe.html#http://test1.example.org:80/tests/docshell/test/navigation/navigate.html#parent,location"></iframe>';
+
+  await waitForFinishedFrames(1);
+  isAccessible(frames[0], "Should not be able to navigate off-domain parent by setting location.");
+  await cleanupWindows();
+
+  document.getElementById("frames").innerHTML = '<iframe src="iframe.html#http://test1.example.org:80/tests/docshell/test/navigation/navigate.html#_parent,open"></iframe>';
+
+  await waitForFinishedFrames(1);
+  isAccessible(frames[0], "Should not be able to navigate off-domain parent by calling window.open.");
+  await cleanupWindows();
+
+  document.getElementById("frames").innerHTML = '<iframe src="iframe.html#http://test1.example.org:80/tests/docshell/test/navigation/navigate.html#_parent,form"></iframe>';
+
+  await waitForFinishedFrames(1);
+  isAccessible(frames[0], "Should not be able to navigate off-domain parent by submitting form.");
+  await cleanupWindows();
+
+  document.getElementById("frames").innerHTML = '<iframe src="iframe.html#http://test1.example.org:80/tests/docshell/test/navigation/navigate.html#_parent,hyperlink"></iframe>';
+
+  await waitForFinishedFrames(1);
+  isAccessible(frames[0], "Should not be able to navigate off-domain parent by targeted hyperlink.");
+  await cleanupWindows();
+
+  document.getElementById("frames").innerHTML = "";
+  SimpleTest.finish();
+}
+
+window.onload = async function() {
+  await testParent();
+};
+</script>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=408052">Mozilla Bug 408052</a>
+<div id="frames">
+</div>
+<pre id="test">
+<script type="text/javascript">
+SimpleTest.waitForExplicitFinish();
+</script>
+</pre>
+</body>
+</html>

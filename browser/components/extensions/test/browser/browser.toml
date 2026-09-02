@@ -1,0 +1,153 @@
+[DEFAULT]
+skip-if = [
+	"debug && standalone", # TODO bug 2048260: Drop skip-if = standalone
+]
+tags = "webextensions"
+prefs = [
+  # We don't want to reset this at the end of the test, so that we don't have
+  # to spawn a new extension child process for each test unit.
+  "dom.ipc.keepProcessesAlive.extension=1",
+]
+support-files = [
+  "head.js",
+  "head_webNavigation.js",
+  "file_find_frames.html",
+  "file_dummy.html",
+  "webNav_createdTarget.html",
+  "webNav_createdTargetSource.html",
+  "webNav_createdTargetSource_subframe.html",
+  "../../../../../toolkit/components/extensions/test/mochitest/head_webrequest.js",
+  "../../../../../toolkit/components/extensions/test/mochitest/redirection.sjs",
+]
+
+["browser_AMBrowserExtensionsImport.js"]
+
+["browser_ext_autocompletepopup.js"]
+disabled = "bug 1438663 # same focus issue as Bug 1438663"
+
+["browser_ext_autoplayInBackground.js"]
+support-files = ["silence.ogg"]
+
+["browser_ext_browsingData_cookieStoreId.js"]
+
+["browser_ext_browsingData_formData.js"]
+
+["browser_ext_browsingData_history.js"]
+
+["browser_ext_canOpenModalPicker.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && socketprocess_networking", # Bug 1949651
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1949651
+]
+
+["browser_ext_commands_execute_browser_action.js"]
+
+["browser_ext_commands_execute_page_action.js"]
+
+["browser_ext_commands_execute_sidebar_action.js"]
+
+["browser_ext_commands_getAll.js"]
+
+["browser_ext_commands_onChanged.js"]
+
+["browser_ext_commands_onCommand.js"]
+
+["browser_ext_commands_openShortcutSettings.js"]
+
+["browser_ext_commands_update.js"]
+
+["browser_ext_find.js"]
+https_first_disabled = true
+
+["browser_ext_getViews.js"]
+
+["browser_ext_history_redirect.js"]
+
+["browser_ext_identity_indication.js"]
+
+["browser_ext_incognito_views.js"]
+tags = "bleedover"
+
+["browser_ext_lastError.js"]
+
+["browser_ext_management.js"]
+
+["browser_ext_mousewheel_zoom.js"]
+
+["browser_ext_nontab_process_switch.js"]
+https_first_disabled = true
+
+["browser_ext_persistent_storage_permission_indication.js"]
+
+["browser_ext_reload_manifest_cache.js"]
+
+["browser_ext_request_permissions.js"]
+
+["browser_ext_connect_and_move_tabs.js"]
+
+["browser_ext_port_disconnect_on_crash.js"]
+https_first_disabled = true
+run-if = [
+  "crashreporter",
+]
+
+["browser_ext_port_disconnect_on_window_close.js"]
+
+["browser_ext_runtime_getContexts.js"]
+support-files = ["head_devtools.js"]
+
+["browser_ext_runtime_onPerformanceWarning.js"]
+
+["browser_ext_runtime_setUninstallURL.js"]
+
+["browser_ext_simple.js"]
+
+["browser_ext_tab_runtimeConnect.js"]
+
+["browser_ext_tabs_capture_blur.js"]
+
+["browser_ext_themes_validation.js"]
+
+["browser_ext_topSites.js"]
+skip-if = [
+  "os == 'linux' && display == 'x11' && opt", # Bug 1775583
+]
+
+["browser_ext_user_events.js"]
+
+["browser_ext_webNavigation_bookmark_transitions.js"]
+support-files = ["!/browser/components/places/tests/browser/head.js"]
+
+["browser_ext_webNavigation_containerIsolation.js"]
+https_first_disabled = true
+
+["browser_ext_webNavigation_frameId0.js"]
+
+["browser_ext_webNavigation_getFrames.js"]
+
+["browser_ext_webNavigation_onCreatedNavigationTarget.js"]
+
+["browser_ext_webNavigation_onCreatedNavigationTarget_contextmenu.js"]
+
+["browser_ext_webNavigation_onCreatedNavigationTarget_named_window.js"]
+
+["browser_ext_webNavigation_onCreatedNavigationTarget_subframe_window_open.js"]
+
+["browser_ext_webNavigation_onCreatedNavigationTarget_window_open.js"]
+
+["browser_ext_webNavigation_urlbar_transitions.js"]
+https_first_disabled = true
+
+["browser_ext_webRequest.js"]
+
+["browser_ext_webRequest_error_after_stopped_or_closed.js"]
+support-files = ["file_slowed_document.sjs"]
+
+["browser_ext_webrtc.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # Bug 1565738
+  "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # Bug 1565738
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1565738
+]
+
+["browser_toolbar_prefers_color_scheme.js"]

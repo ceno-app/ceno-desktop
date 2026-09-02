@@ -1,0 +1,336 @@
+/* Any copyright is dedicated to the Public Domain.
+   http://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+const { Spotlight } = ChromeUtils.importESModule(
+  "resource:///modules/asrouter/Spotlight.sys.mjs"
+);
+const { PanelTestProvider } = ChromeUtils.importESModule(
+  "resource:///modules/asrouter/PanelTestProvider.sys.mjs"
+);
+const { SpecialMessageActions } = ChromeUtils.importESModule(
+  "resource://messaging-system/lib/SpecialMessageActions.sys.mjs"
+);
+
+async function waitForClick(selector, win) {
+  await TestUtils.waitForCondition(() => win.document.querySelector(selector));
+  win.document.querySelector(selector).click();
+}
+
+async function showDialog(dialogOptions) {
+  Spotlight.showSpotlightDialog(
+    dialogOptions.browser,
+    dialogOptions.message,
+    dialogOptions.dispatchStub
+  );
+  const [win] = await TestUtils.topicObserved("subdialog-loaded");
+  return win;
+}
+
+async function dialogClosed(browser) {
+  await TestUtils.waitForCondition(
+    () => !browser.documentGlobal.gDialogBox?.isOpen,
+    "Waiting for dialog to close"
+  );
+}
+
+add_task(async function test_specialAction() {
+  const sandbox = sinon.createSandbox();
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  let dispatchStub = sandbox.stub();
+  let browser = gBrowser.selectedBrowser;
+  let specialActionStub = sandbox.stub(SpecialMessageActions, "handleAction");
+
+  let win = await showDialog({ message, browser, dispatchStub });
+  await waitForClick("button.primary", win);
+  await win.close();
+
+  Assert.equal(
+    specialActionStub.callCount,
+    1,
+    "Should be called by primary action"
+  );
+  Assert.deepEqual(
+    specialActionStub.firstCall.args[0],
+    message.content.screens[0].content.primary_button.action,
+    "Should be called with button action"
+  );
+
+  sandbox.restore();
+});
+
+add_task(async function test_embedded_import() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.migrate.internal-testing.enabled", true]],
+  });
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "IMPORT_SETTINGS_EMBEDDED"
+  );
+  let browser = gBrowser.selectedBrowser;
+  let win = await showDialog({ message, browser });
+  let migrationWizardReady = BrowserTestUtils.waitForEvent(
+    win,
+    "MigrationWizard:Ready"
+  );
+
+  await TestUtils.waitForCondition(() =>
+    win.document.querySelector("migration-wizard")
+  );
+  Assert.ok(
+    win.document.querySelector("migration-wizard"),
+    "Migration Wizard rendered"
+  );
+
+  await migrationWizardReady;
+
+  let panelList = win.document
+    .querySelector("migration-wizard")
+    .openOrClosedShadowRoot.querySelector("panel-list");
+  Assert.equal(panelList.tagName, "PANEL-LIST");
+  Assert.equal(panelList.firstChild.tagName, "PANEL-ITEM");
+
+  await win.close();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_embedded_browser() {
+  const TEST_SCREEN = {
+    id: "EMBEDDED_BROWSER",
+    content: {
+      tiles: {
+        type: "embedded_browser",
+        data: {
+          style: {
+            width: "100%",
+            height: "200px",
+          },
+          url: "https://example.com/",
+        },
+      },
+    },
+  };
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  message.content.screens[0] = TEST_SCREEN;
+
+  let browser = gBrowser.selectedBrowser;
+  let win = await showDialog({ message, browser });
+
+  await TestUtils.waitForCondition(() =>
+    win.document.querySelector("div.embedded-browser-container")
+  );
+
+  const embeddedBrowser = win.document.querySelector(
+    "div.embedded-browser-container browser"
+  );
+  Assert.ok(embeddedBrowser, "Embedded browser rendered");
+
+  await TestUtils.waitForCondition(
+    () =>
+      embeddedBrowser.currentURI.spec === TEST_SCREEN.content.tiles.data.url,
+    "Embedded browser's URI does not match configured URL"
+  );
+  Assert.ok(true, "Embedded browser rendered with configured URL");
+
+  Assert.equal(
+    embeddedBrowser.style.height,
+    TEST_SCREEN.content.tiles.data.style.height,
+    "Embedded browser rendered with configured height"
+  );
+  Assert.equal(
+    embeddedBrowser.style.width,
+    TEST_SCREEN.content.tiles.data.style.width,
+    "Embedded browser rendered with configured width"
+  );
+  Assert.equal(
+    embeddedBrowser.remoteType,
+    "webIsolated=https://example.com",
+    "Embedded browser has remoteType set"
+  );
+
+  win.close();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_disableEscClose() {
+  const sandbox = sinon.createSandbox();
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  message.content.disableEscClose = true;
+
+  let browser = gBrowser.selectedBrowser;
+  let stub = sandbox.stub();
+  let win = await showDialog({ message, browser, stub });
+
+  await TestUtils.waitForCondition(() =>
+    win.document.querySelector("button.dismiss-button")
+  );
+
+  EventUtils.synthesizeKey(
+    "KEY_Escape",
+    { key: "Escape", code: "Escape" },
+    win
+  );
+
+  Assert.ok(
+    browser?.documentGlobal.gDialogBox.isOpen,
+    "Spotlight does not close with ESC key with 'disableEscClose' set to true"
+  );
+
+  // Test Escape when focus is on dialog frame
+  const browserFrame = win.docShell.chromeEventHandler;
+  const parentWindow = browserFrame.documentGlobal;
+  browserFrame.focus();
+  EventUtils.synthesizeKey("KEY_Escape", {}, parentWindow);
+  Assert.ok(
+    browser?.documentGlobal.gDialogBox.isOpen,
+    "Spotlight does not close when ESC key is pressed while focus is on dialog frame"
+  );
+
+  win.document.querySelector("button.dismiss-button").click();
+
+  await dialogClosed(browser);
+
+  Assert.ok(
+    true,
+    "Spotlight closes on dismiss button click with 'disableEscClose' set to true"
+  );
+
+  await win.close();
+  sandbox.restore();
+});
+
+add_task(async function test_spotlight_isOpen_and_close() {
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  let browser = gBrowser.selectedBrowser;
+  let win = browser.documentGlobal;
+  const spotlight_url = "chrome://browser/content/spotlight.html";
+
+  Assert.ok(!Spotlight.isOpen, "Spotlight should not be open initially");
+
+  let openPromise = win.gDialogBox.open(spotlight_url, message.content);
+  Spotlight._dialog = win.gDialogBox.dialog;
+  await TestUtils.topicObserved("subdialog-loaded");
+
+  Assert.ok(Spotlight.isOpen, "Spotlight should be open after opening dialog");
+
+  Spotlight.close();
+  await openPromise;
+  Spotlight._dialog = null;
+
+  Assert.ok(
+    !Spotlight.isOpen,
+    "Spotlight should not be open after calling close()"
+  );
+});
+
+add_task(async function test_spotlight_closes_on_WindowIsClosing() {
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  let browser = gBrowser.selectedBrowser;
+
+  let dialogPromise = Spotlight.showSpotlightDialog(browser, message);
+  await TestUtils.topicObserved("subdialog-loaded");
+
+  Assert.ok(Spotlight.isOpen, "Spotlight should be open");
+
+  // Open a second window so WindowIsClosing doesn't trigger last-window quit.
+  let otherWin = await BrowserTestUtils.openNewBrowserWindow();
+
+  // Calling Spotlight.close() on a different window should not close the Spotlight
+  Spotlight.close(otherWin);
+
+  Assert.ok(
+    Spotlight.isOpen,
+    "Spotlight should remain open when different window closes"
+  );
+
+  // WindowIsClosing dismisses the Spotlight before checking permitUnload.
+  WindowIsClosing();
+
+  await dialogPromise;
+
+  Assert.ok(
+    !Spotlight.isOpen,
+    "Spotlight should be closed after WindowIsClosing on owning window"
+  );
+
+  delete window.skipNextCanClose;
+  await BrowserTestUtils.closeWindow(otherWin);
+});
+
+add_task(async function test_showSpotlightDialog_requires_browser_element() {
+  // showSpotlightDialog expects a <browser> XUL element
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+
+  let win = await Spotlight.showSpotlightDialog(window, message);
+  Assert.strictEqual(
+    win,
+    false,
+    "showSpotlightDialog returns false when passed a chrome window"
+  );
+  Assert.ok(
+    !gBrowser.selectedBrowser.documentGlobal.gDialogBox.isOpen,
+    "No dialog was opened when a chrome Window was passed"
+  );
+
+  let browser = gBrowser.selectedBrowser;
+  let dialogPromise = Spotlight.showSpotlightDialog(browser, message);
+  const [dialogWin] = await TestUtils.topicObserved("subdialog-loaded");
+  Assert.ok(
+    browser.documentGlobal.gDialogBox.isOpen,
+    "Dialog opened when passed a browser element"
+  );
+  dialogWin.close();
+  let dialog = await dialogPromise;
+  Assert.notStrictEqual(
+    dialog,
+    false,
+    "showSpotlightDialog returns for a browser element"
+  );
+});
+
+add_task(async function test_spotlight_modal_fullsize_and_nonzero() {
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "MULTISTAGE_SPOTLIGHT_MESSAGE"
+  );
+  let browser = gBrowser.selectedBrowser;
+  let win = await showDialog({ message, browser });
+
+  await TestUtils.waitForCondition(
+    () => win.document.readyState === "complete",
+    "Waiting for spotlight dialog to finish loading"
+  );
+
+  let docElem = win.document.documentElement;
+  let rect = docElem.getBoundingClientRect();
+
+  Assert.ok(
+    rect.width > 0 && rect.height > 0,
+    `Spotlight modal container should have non-zero dimensions, got ${rect.width}px × ${rect.height}px`
+  );
+
+  let parentWin = win.opener;
+  Assert.equal(
+    rect.width,
+    parentWin.innerWidth,
+    `Container width (${rect.width}px) should fill parent window's innerWidth (${parentWin.innerWidth}px)`
+  );
+  Assert.equal(
+    rect.height,
+    parentWin.innerHeight,
+    `Container height (${rect.height}px) should fill parent window's innerHeight (${parentWin.innerHeight}px)`
+  );
+
+  await win.close();
+});

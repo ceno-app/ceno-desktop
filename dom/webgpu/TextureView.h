@@ -1,0 +1,34 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef GPU_TextureView_H_
+#define GPU_TextureView_H_
+
+#include "CanvasContext.h"
+#include "ObjectModel.h"
+#include "mozilla/webgpu/WebGPUTypes.h"
+#include "nsWrapperCache.h"
+
+namespace mozilla::webgpu {
+
+class CanvasContext;
+class Texture;
+
+class TextureView final : public nsWrapperCache,
+                          public ObjectBase,
+                          public ChildOf<Texture> {
+ public:
+  GPU_DECL_CYCLE_COLLECTION(TextureView)
+  GPU_DECL_JS_WRAP(TextureView)
+
+  TextureView(Texture* const aParent, RawId aId);
+  WeakPtr<CanvasContext> GetTargetContext() const;
+
+ private:
+  virtual ~TextureView();
+};
+
+}  // namespace mozilla::webgpu
+
+#endif  // GPU_TextureView_H_

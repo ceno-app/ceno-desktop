@@ -1,0 +1,51 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef MOZ_CONTAINER_WAYLAND_H_
+#define MOZ_CONTAINER_WAYLAND_H_
+
+#include <gtk/gtk.h>
+#include "mozilla/Mutex.h"
+#include "WindowSurface.h"
+#include "WaylandSurface.h"
+
+/*
+ * MozContainer
+ *
+ * This class serves three purposes in the nsIWidget implementation.
+ *
+ *   - It provides objects to receive signals from GTK for events on native
+ *     windows.
+ *
+ *   - It provides GdkWindow to draw content on Wayland or when Gtk+ renders
+ *     client side decorations to mShell.
+ */
+
+/* Workaround for bug at wayland-util.h,
+ * present in wayland-devel < 1.12
+ */
+struct wl_surface;
+struct wl_subsurface;
+
+struct _MozContainer;
+struct _MozContainerClass;
+typedef struct _MozContainer MozContainer;
+typedef struct _MozContainerClass MozContainerClass;
+
+struct MozContainerWayland {
+  explicit MozContainerWayland(RefPtr<mozilla::widget::WaylandSurface> aSurface)
+      : mSurface(aSurface) {}
+
+  RefPtr<mozilla::widget::WaylandSurface> mSurface;
+  gboolean before_first_size_alloc = false;
+};
+
+void moz_container_wayland_map(GtkWidget*);
+gboolean moz_container_wayland_map_event(GtkWidget*, GdkEventAny*);
+void moz_container_wayland_size_allocate(GtkWidget*, GtkAllocation*);
+void moz_container_wayland_unmap(GtkWidget*);
+wl_surface* moz_gtk_widget_get_wl_surface(GtkWidget* aWidget);
+double moz_container_wayland_get_scale(MozContainer* container);
+
+#endif /* MOZ_CONTAINER_WAYLAND_H_ */

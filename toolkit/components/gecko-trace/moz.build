@@ -1,0 +1,36 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+include("/third_party/opentelemetry-cpp/opentelemetry-config.mozbuild")
+
+GeneratedFile(
+    "GeckoTraceEvents.h",
+    script="scripts/codegen.py",
+    entry_point="generate_cpp_events",
+)
+
+GeneratedFile(
+    "src/generated/glean_adapter.rs",
+    script="scripts/codegen.py",
+    entry_point="generate_glean_adapter",
+)
+
+EXPORTS.mozilla += ["!GeckoTraceEvents.h", "GeckoTrace.h"]
+EXPORTS.mozilla.gecko_trace += ["SpanEvent.h"]
+
+if CONFIG["GECKO_TRACE_ENABLE"]:
+    include("/ipc/chromium/chromium-config.mozbuild")
+
+    DIRS += [
+        "/third_party/opentelemetry-cpp",
+    ]
+
+    UNIFIED_SOURCES += ["GeckoTrace.cpp"]
+
+TEST_DIRS += ["tests/gtest"]
+
+FINAL_LIBRARY = "xul"
+
+with Files("**"):
+    BUG_COMPONENT = ("Toolkit", "Gecko Trace")

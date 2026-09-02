@@ -1,0 +1,22 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_SchedulerGroup_h
+#define mozilla_SchedulerGroup_h
+
+#include "nsIEventTarget.h"
+#include "mozilla/AlreadyAddRefed.h"
+
+namespace mozilla {
+
+class SchedulerGroup {
+ public:
+  static nsresult Dispatch(
+      already_AddRefed<nsIRunnable> aRunnable,
+      nsIEventTarget::DispatchFlags aFlags = NS_DISPATCH_NORMAL);
+};
+
+}  // namespace mozilla
+
+#endif  // mozilla_SchedulerGroup_h

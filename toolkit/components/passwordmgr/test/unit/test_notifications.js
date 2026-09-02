@@ -1,0 +1,247 @@
+/**
+ * Tests notifications dispatched when modifying stored logins.
+ */
+
+let expectedNotification;
+let expectedData;
+
+let TestObserver = {
+  QueryInterface: ChromeUtils.generateQI([
+    "nsIObserver",
+    "nsISupportsWeakReference",
+  ]),
+
+  observe(subject, topic, data) {
+    Assert.equal(topic, "passwordmgr-storage-changed");
+    Assert.equal(data, expectedNotification);
+
+    switch (data) {
+      case "addLogin":
+        Assert.ok(subject instanceof Ci.nsILoginInfo);
+        Assert.ok(subject instanceof Ci.nsILoginMetaInfo);
+        Assert.ok(expectedData.equals(subject)); // nsILoginInfo.equals()
+        break;
+      case "modifyLogin": {
+        Assert.ok(subject instanceof Ci.nsIArray);
+        Assert.equal(subject.length, 2);
+        let oldLogin = subject.queryElementAt(0, Ci.nsILoginInfo);
+        let newLogin = subject.queryElementAt(1, Ci.nsILoginInfo);
+        Assert.ok(expectedData[0].equals(oldLogin)); // nsILoginInfo.equals()
+        Assert.ok(expectedData[1].equals(newLogin));
+        break;
+      }
+      case "removeLogin":
+        Assert.ok(subject instanceof Ci.nsILoginInfo);
+        Assert.ok(subject instanceof Ci.nsILoginMetaInfo);
+        Assert.ok(expectedData.equals(subject)); // nsILoginInfo.equals()
+        break;
+      case "removeAllLogins":
+        Assert.ok(subject instanceof Ci.nsIArray);
+        break;
+      case "hostSavingEnabled":
+      case "hostSavingDisabled":
+        Assert.ok(subject instanceof Ci.nsISupportsString);
+        Assert.equal(subject.data, expectedData);
+        break;
+      default:
+        do_throw("Unhandled notification: " + data + " / " + topic);
+    }
+
+    expectedNotification = null; // ensure a duplicate is flagged as unexpected.
+    expectedData = null;
+  },
+};
+
+add_task(async function test_notifications() {
+  let testnum = 0;
+  let testdesc = "Setup of nsLoginInfo test-users";
+
+  try {
+    let testuser1 = new LoginInfo(
+      "http://testhost1",
+      "",
+      null,
+      "dummydude",
+      "itsasecret",
+      "put_user_here",
+      "put_pw_here"
+    );
+
+    let testuser2 = new LoginInfo(
+      "http://testhost2",
+      "",
+      null,
+      "dummydude2",
+      "itsasecret2",
+      "put_user2_here",
+      "put_pw2_here"
+    );
+
+    Services.obs.addObserver(TestObserver, "passwordmgr-storage-changed");
+
+    /* ========== 1 ========== */
+    testnum = 1;
+    testdesc = "Initial connection to storage module";
+
+    /* ========== 2 ========== */
+    testnum++;
+    testdesc = "addLogin";
+
+    expectedNotification = "addLogin";
+    expectedData = testuser1;
+    await Services.logins.addLoginAsync(testuser1);
+    await LoginTestUtils.checkLogins([testuser1]);
+    Assert.equal(expectedNotification, null); // check that observer got a notification
+
+    /* ========== 3 ========== */
+    testnum++;
+    testdesc = "modifyLogin";
+
+    expectedNotification = "modifyLogin";
+    expectedData = [testuser1, testuser2];
+    await Services.logins.modifyLoginAsync(testuser1, testuser2);
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([testuser2]);
+
+    /* ========== 4 ========== */
+    testnum++;
+    testdesc = "removeLogin";
+
+    expectedNotification = "removeLogin";
+    expectedData = testuser2;
+    await Services.logins.removeLoginAsync(testuser2);
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([]);
+
+    /* ========== 5 ========== */
+    testnum++;
+    testdesc = "removeAllLogins";
+
+    expectedNotification = "removeAllLogins";
+    expectedData = null;
+    await Services.logins.removeAllLoginsAsync();
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([]);
+
+    /* ========== 6 ========== */
+    testnum++;
+    testdesc = "removeAllLogins (again)";
+
+    expectedNotification = "addLogin";
+    expectedData = testuser1;
+    await Services.logins.addLoginAsync(testuser1);
+
+    expectedNotification = "removeAllLogins";
+    expectedData = null;
+    await Services.logins.removeAllLoginsAsync();
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([]);
+
+    /* ========== 7 ========== */
+    testnum++;
+    testdesc = "setLoginSavingEnabled / false";
+
+    expectedNotification = "hostSavingDisabled";
+    expectedData = "http://site.com";
+    Services.logins.setLoginSavingEnabled("http://site.com", false);
+    Assert.equal(expectedNotification, null);
+    LoginTestUtils.assertDisabledHostsEqual(
+      Services.logins.getAllDisabledHosts(),
+      ["http://site.com"]
+    );
+
+    /* ========== 8 ========== */
+    testnum++;
+    testdesc = "setLoginSavingEnabled / false (again)";
+
+    expectedNotification = "hostSavingDisabled";
+    expectedData = "http://site.com";
+    Services.logins.setLoginSavingEnabled("http://site.com", false);
+    Assert.equal(expectedNotification, null);
+    LoginTestUtils.assertDisabledHostsEqual(
+      Services.logins.getAllDisabledHosts(),
+      ["http://site.com"]
+    );
+
+    /* ========== 9 ========== */
+    testnum++;
+    testdesc = "setLoginSavingEnabled / true";
+
+    expectedNotification = "hostSavingEnabled";
+    expectedData = "http://site.com";
+    Services.logins.setLoginSavingEnabled("http://site.com", true);
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([]);
+
+    /* ========== 10 ========== */
+    testnum++;
+    testdesc = "setLoginSavingEnabled / true (again)";
+
+    expectedNotification = "hostSavingEnabled";
+    expectedData = "http://site.com";
+    Services.logins.setLoginSavingEnabled("http://site.com", true);
+    Assert.equal(expectedNotification, null);
+    await LoginTestUtils.checkLogins([]);
+
+    Services.obs.removeObserver(TestObserver, "passwordmgr-storage-changed");
+
+    LoginTestUtils.clearData();
+  } catch (e) {
+    throw new Error(
+      "FAILED in test #" + testnum + " -- " + testdesc + ": " + e
+    );
+  }
+});
+
+add_task(async function test_notifications_gated_by_isActive() {
+  const { LoginManager } = ChromeUtils.importESModule(
+    "resource://gre/modules/LoginManager.sys.mjs"
+  );
+
+  // LoginManagerStorage is a static singleton — all LoginManager instances
+  // share the same storage. We use a fresh instance to access _storage without
+  // going through the XPCOM interface wrapper.
+  const lm = new LoginManager();
+  await lm.initializationPromise;
+  const storage = lm._storage;
+
+  const login1 = new LoginInfo(
+    "https://isactive-test.example.com",
+    "",
+    null,
+    "user1",
+    "pass1",
+    "",
+    ""
+  );
+  const login2 = new LoginInfo(
+    "https://isactive-test2.example.com",
+    "",
+    null,
+    "user2",
+    "pass2",
+    "",
+    ""
+  );
+
+  let addLoginEventCount = 0;
+  const observer = (subject, topic, data) => {
+    if (data == "addLogin") {
+      addLoginEventCount++;
+    }
+  };
+  Services.obs.addObserver(observer, "passwordmgr-storage-changed");
+
+  // Inactive backend must not fire events.
+  storage.isActive = false;
+  await Services.logins.addLoginAsync(login1);
+  Assert.equal(addLoginEventCount, 0, "No event when isActive=false");
+
+  // Active backend fires events normally.
+  storage.isActive = true;
+  await Services.logins.addLoginAsync(login2);
+  Assert.equal(addLoginEventCount, 1, "Event fires when isActive=true");
+
+  Services.obs.removeObserver(observer, "passwordmgr-storage-changed");
+  await Services.logins.removeAllUserFacingLoginsAsync();
+});

@@ -1,0 +1,18 @@
+UNIFIED_SOURCES = [
+    "mozwer.cpp",
+]
+
+USE_LIBS += [
+    "mozwer_s",
+]
+
+OS_LIBS += [
+    "advapi32",
+    "bcrypt",
+    "synchronization",
+]
+
+DEFFILE = "mozwer.def"
+USE_STATIC_MSVCRT = True
+
+SharedLibrary("mozwer")

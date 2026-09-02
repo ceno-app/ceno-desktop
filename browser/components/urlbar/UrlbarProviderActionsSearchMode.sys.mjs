@@ -1,0 +1,123 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/**
+ * This module exports a provider that returns all the available
+ * actions for an actions search mode.
+ */
+
+import {
+  UrlbarProvider,
+  UrlbarUtils,
+} from "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs";
+
+const lazy = {};
+
+// Default icon shown for actions if no custom one is provided.
+const DEFAULT_ICON = "chrome://global/skin/icons/settings.svg";
+const DYNAMIC_TYPE_NAME = "actions";
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  ActionsProviderQuickActions:
+    "moz-src:///browser/components/urlbar/ActionsProviderQuickActions.sys.mjs",
+  UrlbarResult: "chrome://browser/content/urlbar/UrlbarResult.mjs",
+});
+
+/**
+ * A provider that lets the user view all available actions while in searchMode.
+ */
+export class UrlbarProviderActionsSearchMode extends UrlbarProvider {
+  /**
+   * @returns {Values<typeof UrlbarUtils.PROVIDER_TYPE>}
+   */
+  get type() {
+    return UrlbarUtils.PROVIDER_TYPE.PROFILE;
+  }
+
+  async isActive(queryContext) {
+    return queryContext.searchMode?.source == UrlbarUtils.RESULT_SOURCE.ACTIONS;
+  }
+
+  /**
+   * Starts querying.
+   *
+   * @param {UrlbarQueryContext} queryContext
+   * @param {(provider: UrlbarProvider, result: UrlbarResult) => void} addCallback
+   *   Callback invoked by the provider to add a new result.
+   */
+  async startQuery(queryContext, addCallback) {
+    let input = queryContext.trimmedLowerCaseSearchString;
+    let results = await lazy.ActionsProviderQuickActions.getActions({
+      input,
+      includesExactMatch: true,
+    });
+    results.forEach(resultKey => {
+      let result = new lazy.UrlbarResult({
+        type: UrlbarUtils.RESULT_TYPE.DYNAMIC,
+        source: UrlbarUtils.RESULT_SOURCE.ACTIONS,
+        payload: {
+          key: resultKey,
+          dynamicType: DYNAMIC_TYPE_NAME,
+          inputLength: queryContext.trimmedLowerCaseSearchString.length,
+        },
+      });
+      addCallback(this, result);
+    });
+  }
+
+  onEngagement(queryContext, controller, details) {
+    if (details.element.hasAttribute("disabled")) {
+      return;
+    }
+    lazy.ActionsProviderQuickActions.pickAction(
+      queryContext,
+      controller,
+      details.element,
+      details.element.documentGlobal
+    );
+  }
+
+  getViewTemplate(result) {
+    let action = lazy.ActionsProviderQuickActions.getAction(result.payload.key);
+    let inActive =
+      ("isActive" in action && !action.isActive()) ||
+      !(action.isVisible?.() ?? true);
+    return {
+      children: [
+        {
+          tag: "span",
+          classList: ["urlbarView-action-btn"],
+          attributes: {
+            "data-action": result.payload.key,
+            "data-input-length": result.payload.inputLength,
+            role: "button",
+            disabled: inActive,
+          },
+          children: [
+            {
+              tag: "img",
+              attributes: {
+                src: action.icon || DEFAULT_ICON,
+              },
+            },
+            {
+              name: `label`,
+              tag: "span",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  getViewUpdate(result) {
+    let action = lazy.ActionsProviderQuickActions.getAction(result.payload.key);
+
+    return {
+      label: {
+        l10n: { id: action.label },
+      },
+    };
+  }
+}

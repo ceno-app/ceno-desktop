@@ -1,0 +1,6 @@
+apply plugin: 'java'
+
+dependencies {
+    implementation libs.android.lint
+    implementation libs.android.lint.checks
+}

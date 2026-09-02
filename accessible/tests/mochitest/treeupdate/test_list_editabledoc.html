@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Test HTML li and listitem bullet accessible insertion into editable document</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function doTest() {
+      const listNode = getNode("list");
+      const liNode = document.createElement("li");
+      liNode.textContent = "item";
+
+      let p = waitForEvents([[EVENT_SHOW, liNode], [EVENT_REORDER, listNode]]);
+      listNode.appendChild(liNode);
+      await p;
+
+      const tree = {
+        role: ROLE_LIST,
+        children: [
+          {
+            role: ROLE_LISTITEM,
+            children: [
+              {
+                role: ROLE_LISTITEM_MARKER,
+                name: "1. ",
+                children: [],
+              },
+              {
+                role: ROLE_TEXT_LEAF,
+                children: [],
+              },
+            ],
+          },
+        ],
+      };
+      testAccessibleTree("list", tree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body contentEditable="true">
+
+  <a target="_blank"
+     title="Wrong list bullet text of accessible for the first numbered HTML:li in CKEditor"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=557795">Mozilla Bug 557795</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <ol id="list">
+  </ol>
+
+  <div id="eventdump"></div>
+</body>
+</html>

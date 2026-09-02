@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Bug 1626249: Ensure correct display of neterror page for XFO</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<iframe style="width:100%;" id="xfo_testframe"></iframe>
+
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+
+const { ContentTaskUtils } = SpecialPowers.ChromeUtils.importESModule(
+  "resource://testing-common/ContentTaskUtils.sys.mjs"
+);
+
+const XFO_ERROR_PAGE_MSG = "csp-xfo-error-title";
+
+let xfo_testframe = document.getElementById("xfo_testframe");
+
+xfo_testframe.onload = async function() {
+  let wrappedXFOFrame = SpecialPowers.wrap(xfo_testframe.contentWindow);
+
+  const getErrorPage = () => {
+    const netErrorCard = wrappedXFOFrame.document.querySelector("net-error-card");
+    if (netErrorCard?.shadowRoot) {
+      return netErrorCard.shadowRoot.innerHTML;
+    }
+    return wrappedXFOFrame.document.body?.innerHTML;
+  };
+
+  await ContentTaskUtils.waitForCondition(
+    () => {
+      const content = getErrorPage();
+      return content && content.includes(XFO_ERROR_PAGE_MSG);
+    },
+    "Waiting for XFO error page to load"
+  );
+
+  const frameContentXFO = getErrorPage();
+  ok(frameContentXFO.includes(XFO_ERROR_PAGE_MSG), "xfo error page correct");
+  SimpleTest.finish();
+}
+
+xfo_testframe.onerror = function() {
+  ok(false, "sanity: should not fire onerror for xfo_testframe");
+  SimpleTest.finish();
+}
+
+xfo_testframe.src = "file_xfo_error_page.sjs";
+
+</script>
+</body>
+</html>

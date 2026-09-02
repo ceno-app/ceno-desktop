@@ -1,0 +1,15 @@
+import pytest
+
+URL = "https://y.qq.com/artists/"
+
+SUPPORTED_CSS = "#app"
+UNSUPPORTED_CSS = ".popup_browser .icon_chrome"
+
+
+@pytest.mark.skip_platforms("android")
+@pytest.mark.asyncio
+@pytest.mark.without_interventions
+async def test_regression(client):
+    await client.navigate(URL)
+    assert client.await_css(SUPPORTED_CSS)
+    assert not client.find_css(UNSUPPORTED_CSS, is_displayed=True)

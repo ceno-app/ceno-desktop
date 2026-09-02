@@ -1,0 +1,30 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/content/elements/moz-input-text.css");
+
+:host {
+  --input-text-icon-size: var(--icon-size);
+  width: 100%;
+}
+
+#input {
+  min-width: var(--input-folder-min-width, none);
+  max-width: var(--input-folder-max-width, none);
+}
+
+.container {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--input-folder-gap);
+  flex-wrap: var(--input-folder-wrap);
+}
+
+#choose-folder-button {
+  white-space: nowrap;
+}
+
+slot[name="actions"]::slotted(moz-button) {
+  white-space: nowrap;
+}

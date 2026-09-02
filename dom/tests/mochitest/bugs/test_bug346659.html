@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=346659
+-->
+<head>
+  <title>Test for Bug 346659</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=346659">Mozilla Bug 346659</a>
+<p id="display"></p>
+<div id="content" style="display: none">
+
+</div>
+<pre id="test">
+<script type="application/javascript">
+
+/** Test for Bug 346659 */
+var numTests = 11;
+SimpleTest.requestLongerTimeout(2); // test takes a long time on android and b2g emulators
+SimpleTest.waitForExplicitFinish();
+
+const xorigBase = window.location.href.replace(location.host, "example.com");
+const makeXOrig = tail => xorigBase.replace(/\/[^\/]*$/, "/" + tail);
+
+const tests = [
+  {
+    func: testId => {
+      const win = window.open(`bug346659-echoer.html?${testId}`);
+      win.x = testId;
+    },
+    expectPreserveProp: true,
+    descr: 'Props on new window should be preserved when loading'
+  },
+  {
+    func: testId => {
+      const win = window.open("");
+      win.x = testId;
+      win.document.write(`<script> window.opener.postMessage("${testId} - " + window.x, '*'); window.close(); </scr`+`ipt>`);
+    },
+    expectPreserveProp: true,
+    descr: 'Props on new window should be preserved when writing'
+  },
+  {
+    func: testId => window.open(`file_bug346659.html?testId=${testId}&type=popup`),
+    expectPreserveProp: true,
+    descr: 'Props on window opened from new window should be preserved when loading'
+  },
+  {
+    func: testId => window.open(`file_bug346659.html?testId=${testId}&type=popup&method=write`),
+    expectPreserveProp: true,
+    descr: 'Props on window opened from new window should be preserved when writing'
+  },
+  {
+    func: testId => window.open(`file_bug346659.html?testId=${testId}&type=iframe`),
+    expectPreserveProp: true,
+    descr: "Props on new window's child should be preserved when loading"
+  },
+  {
+    func: testId => window.open(`file_bug346659.html?testId=${testId}&type=iframe&method=write`),
+    expectPreserveProp: true,
+    descr: "Props on new window's child should not go away when writing"
+  },
+  {
+    func: testId => window.open(makeXOrig(`file_bug346659.html?testId=${testId}&type=popup`)),
+    expectPreserveProp: true,
+    descr: 'Props on different-domain window opened from different-domain new window can stay'
+  },
+  {
+    func: testId => window.open(makeXOrig(`file_bug346659.html?testId=${testId}&type=iframe`)),
+    expectPreserveProp: true,
+    descr: "Props on different-domain new window's child should be preserved when loading"
+  },
+  {
+    func: testId => window.open(makeXOrig(`file_bug346659.html?testId=${testId}&type=popup&childHost=${location.host}`)),
+    expectPreserveProp: false,
+    descr: "Props on same-domain window opened from different-domain new window should go away when loading"
+  },
+  {
+    func: testId => window.open(makeXOrig(`file_bug346659.html?testId=${testId}&type=iframe&childHost=${location.host}`)),
+    expectPreserveProp: false,
+    descr: "Props on different-domain new window's same-domain child should go away when loading"
+  },
+  {
+    func: testId => {
+      win = window.open("about:blank");
+      win.x = testId;
+      win.location = new URL(`bug346659-echoer.html?${testId}`, document.baseURI);
+    },
+    expectPreserveProp: false,
+    descr: 'Props should go away when replacing the initial about:blank'
+  },
+];
+
+function runTests() {
+  const remainingTests = new Map();
+
+  window.addEventListener("message", ({ data }) => {
+    if (data.type == 'error') {
+      throw new Error(evt.data.msg);
+    }
+
+    // evt.data has the format 'testNumber - testResult'
+    const testId = parseInt(data);
+    const property = data.substring(3 + Math.floor(Math.log(testId) * Math.LOG10E + 1));
+
+    const test = remainingTests.get(testId);
+    ok(test, `Test number ${testId} is known and still remaining`);
+    if (test.expectPreserveProp) {
+      is(property, `${testId}`, `${testId}: ${test.descr}`);
+    } else {
+      is(property, 'undefined', `${testId}: ${test.descr}`);
+    }
+
+    remainingTests.delete(testId);
+    if (remainingTests.size == 0) {
+      SimpleTest.finish();
+    }
+  });
+
+  let testId = 1;
+  for (const test of tests) {
+    if (!test.func || !test.descr || test.expectPreserveProp == 'undefined') {
+      throw new Error('Invalid test');
+    }
+    test.func(testId);
+    remainingTests.set(testId, test);
+    ++testId;
+  }
+}
+
+// The xorigin tests load http://example.com and from it load http://mochi.test
+SpecialPowers.pushPrefEnv({"set": [["dom.security.https_first", false]]}, runTests);
+</script>
+</pre>
+</body>
+</html>

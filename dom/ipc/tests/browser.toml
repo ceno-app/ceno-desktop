@@ -1,0 +1,117 @@
+[DEFAULT]
+support-files = [
+  "file_disableScript.html",
+  "file_domainPolicy_base.html",
+  "file_cancel_content_js.html",
+  "../../media/test/short.mp4",
+  "../../media/test/owl.mp3",
+]
+
+["browser_CrashService_crash.js"]
+run-if = [
+  "crashreporter",
+]
+
+["browser_ProcessPriorityManager.js"]
+# The Process Priority Manager is only enabled for Windows, Linux, and MacOS so far.
+# Bug 1522879.
+# However, you can still run browser_ProcessPriorityManager.js locally on other
+# OSes. This will test the priority manager infrastructure but not actually
+# change the priority.
+support-files = [
+  "file_cross_frame.html",
+  "file_dummy.html",
+  "../../tests/browser/file_coop_coep.html",
+  "../../tests/browser/file_coop_coep.html^headers^",
+]
+
+["browser_bug1646088.js"]
+support-files = ["file_dummy.html"]
+
+["browser_bug1686194.js"]
+support-files = ["file_dummy.html"]
+
+["browser_cancel_content_js.js"]
+
+["browser_child_clipboard_restricted.js"]
+
+["browser_content_shutdown_with_endless_js.js"]
+support-files = [
+  "file_endless_js.html",
+  "file_dummy.html",
+]
+
+["browser_crash_oopiframe.js"]
+run-if = [
+  "crashreporter",
+]
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && debug && msix", # Bug 1775837
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && msix", # Bug 1775837
+  "os == 'win' && opt && standalone", # Bug 2028656
+]
+
+["browser_domainPolicy.js"]
+
+["browser_gc_schedule.js"]
+# This test is timing sensitive, timing changes due to asan/tsan/debugging
+# can upset it.
+skip-if = [
+  "asan",
+  "arch == 'x86'",
+  "debug",
+  "os != 'linux'",
+  "tsan",
+]
+
+["browser_hide_tooltip.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && opt", # Bug 1971068
+  "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && opt", # Bug 1971068
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && opt", # Bug 1971068
+  "os == 'win' && os_version == '11.26100' && arch == 'x86' && opt", # Bug 1971068
+  "os == 'win' && os_version == '11.26200' && arch == 'x86' && opt", # Bug 1971068
+]
+
+["browser_isactiveintab.js"]
+
+["browser_jsat_serialize.js"]
+
+["browser_layers_unloaded_while_interruptingJS.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && tsan", # Bug 1976484
+]
+
+["browser_memory_distribution_telemetry.js"]
+skip-if = [
+  "true",
+]
+
+["browser_pbrowser_creation_failure.js"]
+
+["browser_subframesPreferUsed.js"]
+
+["browser_transparent.js"]
+
+["browser_very_fission.js"]
+support-files = ["file_dummy.html"]
+run-if = [
+  "os == 'linux'",
+]
+skip-if = [
+  "asan", # appears to hang the machine
+  "tsan", # appears to hang the machine
+]
+
+["browser_wpi_isolate_everything.js"]
+support-files = ["browser_wpi_base.js"]
+
+["browser_wpi_isolate_high_value.js"]
+support-files = ["browser_wpi_base.js"]
+
+["browser_wpi_isolate_nothing.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && debug", # Bug 1741763; high frequency intermittent; leaked 2 windows
+]
+
+support-files = ["browser_wpi_base.js"]

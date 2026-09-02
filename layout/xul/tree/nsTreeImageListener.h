@@ -1,0 +1,64 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsTreeImageListener_h_
+#define nsTreeImageListener_h_
+
+#include "nsCOMPtr.h"
+#include "nsString.h"
+#include "nsTreeBodyFrame.h"
+
+class nsTreeColumn;
+
+// This class handles image load observation.
+class nsTreeImageListener final : public imgINotificationObserver {
+ public:
+  explicit nsTreeImageListener(nsTreeBodyFrame* aTreeFrame);
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_IMGINOTIFICATIONOBSERVER
+
+  void ClearFrame() { mTreeFrame = nullptr; }
+
+  friend class nsTreeBodyFrame;
+
+ protected:
+  ~nsTreeImageListener();
+
+  void UnsuppressInvalidation() { mInvalidationSuppressed = false; }
+  void Invalidate();
+  void AddCell(int32_t aIndex, nsTreeColumn* aCol);
+
+ private:
+  nsTreeBodyFrame* mTreeFrame;
+
+  // A guard that prevents us from recursive painting.
+  bool mInvalidationSuppressed;
+
+  class InvalidationArea {
+   public:
+    explicit InvalidationArea(nsTreeColumn* aCol);
+    ~InvalidationArea() { delete mNext; }
+
+    friend class nsTreeImageListener;
+
+   protected:
+    void AddRow(int32_t aIndex);
+    nsTreeColumn* GetCol() { return mCol.get(); }
+    int32_t GetMin() { return mMin; }
+    int32_t GetMax() { return mMax; }
+    InvalidationArea* GetNext() { return mNext; }
+    void SetNext(InvalidationArea* aNext) { mNext = aNext; }
+
+   private:
+    RefPtr<nsTreeColumn> mCol;
+    int32_t mMin;
+    int32_t mMax;
+    InvalidationArea* mNext;
+  };
+
+  InvalidationArea* mInvalidationArea;
+};
+
+#endif  // nsTreeImageListener_h_

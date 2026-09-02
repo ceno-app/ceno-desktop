@@ -1,0 +1,15 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package org.mozilla.focus.settings.permissions.permissionoptions
+
+import org.mozilla.focus.settings.permissions.SitePermissionOption
+
+/**
+ * Data class representing an item in the site permission options list.
+ */
+data class SitePermissionOptionListItem(
+    val sitePermissionOption: SitePermissionOption,
+    val onClick: (SitePermissionOption) -> Unit,
+)

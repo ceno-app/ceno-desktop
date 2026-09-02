@@ -1,0 +1,71 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+"use strict";
+
+// Tests that if Firefox attempts and fails to load a PKCS#11 module DB that was
+// in FIPS mode, Firefox can still make use of keys in the key database.
+// secomd.db can be created via `certutil -N -d <dir>`. Putting it in FIPS mode
+// involves running `modutil -fips true -dbdir <dir>`. key4.db is from
+// test_sdr_preexisting/key4.db.
+
+function run_test() {
+  // Append a single quote and non-ASCII characters to the profile path.
+  let profd = Services.env.get("XPCSHELL_TEST_PROFILE_DIR");
+  let file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+  file.initWithPath(profd);
+  file.append("'÷1");
+  Services.env.set("XPCSHELL_TEST_PROFILE_DIR", file.path);
+
+  let profile = do_get_profile(); // must be called before initializing NSS
+  Assert.ok(
+    /[^\x20-\x7f]/.test(profile.path),
+    "the profile path should contain a non-ASCII character"
+  );
+  Services.fog.initializeFOG();
+
+  let keyDBName = "key4.db";
+  let keyDBFile = do_get_file(`test_broken_fips/${keyDBName}`);
+  keyDBFile.copyTo(profile, keyDBName);
+
+  let pkcs11modDBName = "pkcs11.txt";
+  let pkcs11modDBFile = do_get_file(`test_broken_fips/${pkcs11modDBName}`);
+  pkcs11modDBFile.copyTo(profile, pkcs11modDBName);
+
+  // Initialize NSS.
+  Cc["@mozilla.org/psm;1"].getService(Ci.nsINSSComponent);
+
+  ok(!Glean.nss.initializationFallbacks.READ_ONLY.testGetValue());
+  equal(Glean.nss.initializationFallbacks.RENAME_MODULE_DB.testGetValue(), 1);
+  ok(
+    !Glean.nss.initializationFallbacks.RENAME_MODULE_DB_READ_ONLY.testGetValue()
+  );
+  ok(!Glean.nss.initializationFallbacks.NO_DB_INIT.testGetValue());
+
+  const fipsUtils = Cc["@mozilla.org/security/fipsutils;1"].getService(
+    Ci.nsIFIPSUtils
+  );
+  ok(!fipsUtils.isFIPSEnabled, "FIPS should not be enabled");
+
+  let sdr = Cc["@mozilla.org/security/sdr;1"].getService(
+    Ci.nsISecretDecoderRing
+  );
+
+  const encrypted =
+    "MDoEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECGeDHwVfyFqzBBAYvqMq/kDMsrARVNdC1C8d";
+  const expectedResult = "password";
+  let decrypted = sdr.decryptString(encrypted);
+  equal(
+    decrypted,
+    expectedResult,
+    "decrypted ciphertext should match expected plaintext"
+  );
+
+  let pkcs11modDBFileFIPS = do_get_profile();
+  pkcs11modDBFileFIPS.append(`${pkcs11modDBName}.fips`);
+  ok(
+    pkcs11modDBFileFIPS.exists(),
+    "backed-up PKCS#11 module db should now exist"
+  );
+}

@@ -1,0 +1,188 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/in-content/common.css");
+
+#restore-from-backup-wrapper {
+  display: grid;
+  grid-template-areas:
+    "header"
+    "content"
+    "button-group";
+  grid-template-rows: auto auto auto;
+
+  #restore-from-backup-header {
+    grid-area: header;
+    margin: 0;
+  }
+
+  & fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #restore-from-backup-content {
+    display: flex;
+    flex-direction: column;
+    grid-area: content;
+    margin-block-start: var(--space-small);
+    margin-block-end: var(--space-large);
+    row-gap: var(--space-large);
+  }
+
+  #backup-restore-controls {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--space-medium);
+  }
+
+  #backup-filepicker-controls {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--space-xsmall);
+
+    #backup-filepicker {
+      display: flex;
+      column-gap: var(--space-small);
+      align-items: center;
+    }
+
+    #backup-filepicker-label {
+      text-align: start;
+    }
+
+    #restore-from-backup-no-backup-file-link,
+    #backup-generic-file-error {
+      text-align: start;
+    }
+
+    #backup-filepicker-input {
+      flex: 1;
+      margin-block: var(--space-xsmall);
+      margin-inline-start: 0;
+      padding-inline-start: var(--space-xxlarge);
+      background-repeat: no-repeat;
+      background-size: var(--icon-size);
+      background-position: var(--space-small) 50%;
+
+      /* For the placeholder icon */
+      fill: currentColor;
+      -moz-context-properties: fill;
+
+      &:dir(rtl) {
+        background-position: calc(100% - var(--space-small)) 50%;
+      }
+
+      &:is(textarea) {
+        background-position: var(--space-small) var(--space-small);
+        background-size: var(--icon-size);
+        resize: none;
+        overflow: hidden;
+      }
+
+      &:is(textarea):dir(rtl) {
+        background-position: calc(100% - var(--space-small)) var(--space-small);
+      }
+    }
+
+    #backup-filepicker-button {
+      margin-block: var(--space-xsmall);
+    }
+
+    #restore-from-backup-backup-found-info {
+      text-align: start;
+      color: var(--text-color-deemphasized);
+      font-size: var(--font-size-small);
+      margin-top: var(--space-xsmall);
+    }
+  }
+
+  #backup-password {
+    display: flex;
+    flex-direction: column;
+
+    & > #backup-password-label {
+      display: flex;
+      flex-direction: column;
+      text-align: start;
+    }
+
+    & > #backup-password-label > input {
+      margin-inline-start: 0;
+      margin-block: var(--space-xsmall);
+      font-weight: var(--label-font-weight, normal);
+    }
+
+    & > #backup-password-error {
+      text-align: start;
+    }
+
+    & > #backup-password-description {
+      color: var(--text-color-deemphasized);
+      font-size: var(--font-size-small);
+      text-align: start;
+    }
+  }
+
+  #restore-from-backup-button-group {
+    grid-area: button-group;
+  }
+
+  #backup-password-input[aria-invalid="true"],
+  #backup-filepicker-input[aria-invalid="true"] {
+    border-color: var(--border-color-error);
+  }
+
+  /* Small, red helper text under the field */
+  .field-error {
+    color: var(--text-color-error);
+    font-size: var(--font-size-small);
+    margin-block-start: var(--space-xsmall);
+  }
+}
+
+/* about:welcome embedded styles */
+:host([aboutwelcomeembedded]) {
+  #restore-from-backup-wrapper {
+    #restore-from-backup-button-group {
+      justify-content: flex-start;
+    }
+
+    #backup-filepicker-controls #backup-filepicker {
+      align-items: flex-end;
+    }
+
+    #password-entry-controls,
+    #backup-filepicker {
+      max-width: 400px;
+    }
+
+    #backup-filepicker-controls {
+      @media (800px < width <= 960px) {
+        #backup-filepicker {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        #backup-filepicker-input:is(textarea) {
+          flex: 1 1 auto;
+        }
+      }
+    }
+
+    .field-error {
+      text-align: start;
+    }
+
+    @media (width <= 800px) {
+      #restore-from-backup-button-group {
+        justify-content: center;
+      }
+
+      #restore-from-backup-confirm-button {
+        min-width: 240px;
+      }
+    }
+  }
+}

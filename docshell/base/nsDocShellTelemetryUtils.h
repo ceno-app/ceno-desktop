@@ -1,0 +1,21 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsDocShellTelemetryUtils_h_
+#define nsDocShellTelemetryUtils_h_
+
+#include "nsLiteralString.h"
+
+namespace mozilla {
+namespace dom {
+/**
+ * Convert page load errors to telemetry labels
+ * Only select nsresults are converted, otherwise this function
+ * will return "errorOther", view the list of errors at
+ * docshell/base/nsDocShellTelemetryUtils.cpp.
+ */
+nsLiteralCString LoadErrorToTelemetryLabel(nsresult aRv);
+}  // namespace dom
+}  // namespace mozilla
+#endif  // nsDocShellTelemetryUtils_h_

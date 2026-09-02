@@ -1,0 +1,1 @@
+set_config("MOZ_JAR_MAKER_FILE_FORMAT", "jar")

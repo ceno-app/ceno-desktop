@@ -1,0 +1,5 @@
+[DEFAULT]
+subsuite = "testing"
+
+["test_wpt_path_utils.py"]
+requirements = "testing/test/test_testing.txt"

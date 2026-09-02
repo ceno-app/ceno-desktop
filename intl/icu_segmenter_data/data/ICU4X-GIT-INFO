@@ -1,0 +1,5 @@
+commit 3579f233b2bdffbd99183d797231f9d7a0448548
+Author: Henri Sivonen <hsivonen@hsivonen.fi>
+Date:   Mon Mar 2 12:30:50 2026 +0200
+
+    Use write16 from crates.io

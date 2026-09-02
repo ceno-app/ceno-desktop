@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Selection event tests">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+    /**
+     * Do tests.
+     */
+    //enableLogging("events");
+
+    async function doTests() {
+      //////////////////////////////////////////////////////////////////////////
+      // tabbox
+      todo(
+        false,
+        "No accessible recreation should happen, just selection event"
+      );
+      let selected = waitForEvent(EVENT_SELECTION, "tab3");
+      getNode("tabs").advanceSelectedTab(1, true);
+      await selected;
+
+      //////////////////////////////////////////////////////////////////////////
+      // single selection listbox, the first item is selected by default
+
+      selected = waitForEvent(EVENT_SELECTION, "lb1_item2");
+      synthesizeMouseAtCenter(getNode("lb1_item2"), {});
+      await selected;
+
+      selected = waitForEvent(EVENT_SELECTION, "lb1_item1");
+      synthesizeKey("VK_UP", {});
+      await selected;
+
+      selected = waitForEvent(EVENT_SELECTION, "lb1_item2");
+      synthesizeKey("VK_DOWN", {});
+      await selected;
+
+      //////////////////////////////////////////////////////////////////////////
+      // multiselectable listbox
+      selected = waitForEvent(EVENT_SELECTION, "lb2_item1");
+      synthesizeMouseAtCenter(getNode("lb2_item1"), {});
+      await selected;
+
+      let selectionAdd = waitForEvent(EVENT_SELECTION_ADD, "lb2_item2");
+      synthesizeKey("VK_DOWN", { shiftKey: true });
+      await selectionAdd;
+
+      let selectionRemove = waitForEvent(EVENT_SELECTION_REMOVE, "lb2_item2");
+      synthesizeKey("VK_UP", { shiftKey: true });
+      await selectionRemove;
+
+      selectionRemove = waitForEvent(EVENT_SELECTION_REMOVE, "lb2_item1");
+      synthesizeKey(" ", { ctrlKey: true });
+      await selectionRemove;
+
+      //////////////////////////////////////////////////////////////////////////
+      // selection event coalescence
+
+      // fire 4 selection_add events
+      let listbox2 = getNode("listbox2");
+      let addEvents = waitForEvents([
+        [EVENT_SELECTION_ADD, listbox2.getItemAtIndex(0)],
+        [EVENT_SELECTION_ADD, listbox2.getItemAtIndex(1)],
+        [EVENT_SELECTION_ADD, listbox2.getItemAtIndex(2)],
+        [EVENT_SELECTION_ADD, listbox2.getItemAtIndex(3)],
+      ]);
+      synthesizeKey("VK_DOWN", { shiftKey: true }); // selects two items
+      synthesizeKey("VK_DOWN", { shiftKey: true });
+      synthesizeKey("VK_DOWN", { shiftKey: true });
+      await addEvents;
+
+      // fire 4 selection_remove events
+      let removeEvents = waitForEvents([
+        [EVENT_SELECTION_REMOVE, listbox2.getItemAtIndex(3)],
+        [EVENT_SELECTION_REMOVE, listbox2.getItemAtIndex(2)],
+        [EVENT_SELECTION_REMOVE, listbox2.getItemAtIndex(1)],
+        [EVENT_SELECTION_REMOVE, listbox2.getItemAtIndex(0)],
+      ]);
+      synthesizeKey("VK_UP", { shiftKey: true });
+      synthesizeKey("VK_UP", { shiftKey: true });
+      synthesizeKey("VK_UP", { shiftKey: true });
+      synthesizeKey(" ", { ctrlKey: true }); // unselect first item
+      await removeEvents;
+
+      // fire selection_within event
+      let withinEvent = waitForEvent(
+        EVENT_SELECTION_WITHIN,
+        getAccessible(listbox2)
+      );
+      synthesizeKey("VK_END", { shiftKey: true });
+      await withinEvent;
+
+      // fire selection_within event
+      withinEvent = waitForEvent(
+        EVENT_SELECTION_WITHIN,
+        getAccessible(listbox2)
+      );
+      synthesizeKey("VK_HOME", { shiftKey: true });
+      await withinEvent;
+
+      // fire selection_remove/add events
+      let removeAddEvents = waitForEvents([
+        [EVENT_SELECTION_REMOVE, listbox2.getItemAtIndex(0)],
+        [EVENT_SELECTION_ADD, listbox2.getItemAtIndex(0)],
+      ]);
+      synthesizeKey(" ", { ctrlKey: true }); // select item
+      synthesizeKey(" ", { ctrlKey: true }); // unselect item
+      await removeAddEvents;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=414302"
+         title="Incorrect selection events in HTML, XUL and ARIA">
+        Mozilla Bug 414302
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <tabbox id="tabbox" selectedIndex="1">
+      <tabs id="tabs">
+        <tab id="tab1" label="tab1"/>
+        <tab id="tab2" label="tab2"/>
+        <tab id="tab3" label="tab3"/>
+        <tab id="tab4" label="tab4"/>
+      </tabs>
+      <tabpanels>
+        <tabpanel><!-- tabpanel First elements go here --></tabpanel>
+        <tabpanel><button id="b1" label="b1"/></tabpanel>
+        <tabpanel><button id="b2" label="b2"/></tabpanel>
+        <tabpanel></tabpanel>
+      </tabpanels>
+    </tabbox>
+
+    <richlistbox id="listbox">
+      <richlistitem id="lb1_item1"><label value="item1"/></richlistitem>
+      <richlistitem id="lb1_item2"><label value="item2"/></richlistitem>
+    </richlistbox>
+
+    <richlistbox id="listbox2" seltype="multiple">
+      <richlistitem id="lb2_item1"><label value="item1"/></richlistitem>
+      <richlistitem id="lb2_item2"><label value="item2"/></richlistitem>
+      <richlistitem id="lb2_item3"><label value="item3"/></richlistitem>
+      <richlistitem id="lb2_item4"><label value="item4"/></richlistitem>
+      <richlistitem id="lb2_item5"><label value="item5"/></richlistitem>
+      <richlistitem id="lb2_item6"><label value="item6"/></richlistitem>
+      <richlistitem id="lb2_item7"><label value="item7"/></richlistitem>
+    </richlistbox>
+
+  </hbox>
+</window>

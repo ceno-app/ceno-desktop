@@ -1,0 +1,51 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+with Files("**"):
+    BUG_COMPONENT = ("Web Compatibility", "Tooling & Investigations")
+
+XPI_NAME = "webcompat"
+XPI_PKGNAME = "webcompat@mozilla.org"
+
+DIST_SUBDIR = ""
+
+# NOTE: Please keep the files listed in here in sync with the ones listed in
+# ../jar.mn, as this ensures that the XPI generated at build time
+# shares the same structure as the built-in instance. (bug 1955994)
+
+FINAL_TARGET_FILES += [
+    "../manifest.json",
+]
+
+include("../preprocessed_intervention_files.mozbuild")
+
+GenerateWebCompatAddonFiles(preprocessed_intervention_files, "../")
+
+FINAL_TARGET_FILES += ["!run.js"]
+for file in preprocessed_intervention_files:
+    FINAL_TARGET_FILES.injections.generated += ["!injections/generated/%s" % file]
+
+FINAL_TARGET_FILES["about-compat"] += [
+    "../about-compat/**",
+]
+
+FINAL_TARGET_FILES.data += [
+    "../data/**",
+]
+
+FINAL_TARGET_FILES["experiment-apis"] += [
+    "../experiment-apis/**",
+]
+
+FINAL_TARGET_FILES.injections += [
+    "../injections/**",
+]
+
+FINAL_TARGET_FILES.lib += [
+    "../lib/**",
+]
+
+FINAL_TARGET_FILES.shims += [
+    "../shims/**",
+]

@@ -1,0 +1,58 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -791,6 +791,9 @@ struct XML_ParserStruct {
+   ENTITY_STATS m_entity_stats;
+ #endif
+   XML_Bool m_reenter;
++/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++  const XML_Char* m_mismatch;
++/* END MOZILLA CHANGE */
+ };
+ 
+ #if XML_GE == 1
+@@ -1538,6 +1541,10 @@ parserCreate(const XML_Char *encodingName,
+     parser->m_internalEncoding = XmlGetInternalEncoding();
+   }
+ 
++/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++  parser->m_mismatch = NULL;
++/* END MOZILLA CHANGE */
++
+   return parser;
+ }
+ 
+@@ -3593,6 +3600,33 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
+         len = XmlNameLength(enc, rawName);
+         if (len != tag->rawNameLength
+             || memcmp(tag->rawName, rawName, len) != 0) {
++/* BEGIN MOZILLA CHANGE (Report opening tag of mismatched closing tag) */
++          /* This code is copied from the |if (parser->m_endElementHandler)|
++             block below
++          */
++          const XML_Char *localPart;
++          const XML_Char *prefix;
++          XML_Char *uri;
++          localPart = tag->name.localPart;
++          if (parser->m_ns && localPart) {
++            /* localPart and prefix may have been overwritten in
++               tag->name.str, since this points to the binding->uri
++               buffer which gets reused; so we have to add them again
++            */
++            uri = (XML_Char *)tag->name.str + tag->name.uriLen;
++            /* don't need to check for space - already done in storeAtts() */
++            while (*localPart)
++              *uri++ = *localPart++;
++            prefix = tag->name.prefix;
++            if (parser->m_ns_triplets && prefix) {
++              *uri++ = parser->m_namespaceSeparator;
++              while (*prefix)
++                *uri++ = *prefix++;
++            }
++            *uri = XML_T('\0');
++          }
++          parser->m_mismatch = tag->name.str;
++/* END MOZILLA CHANGE */
+           *eventPP = rawName;
+           return XML_ERROR_TAG_MISMATCH;
+         }

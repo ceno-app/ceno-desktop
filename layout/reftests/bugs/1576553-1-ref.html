@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<style>
+@font-face {
+  font-family: test;
+  src: url(../fonts/sil/CharisSIL-R.ttf);
+}
+#test {
+  font: 100px test, serif;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke-color: blue;
+  -webkit-text-stroke-width: 2px;
+}
+#test > span {
+  -webkit-text-fill-color: blue;
+  -webkit-text-stroke-width: 0;
+}
+</style>
+<body>
+<div id="test">of<span>f</span>ice</div>

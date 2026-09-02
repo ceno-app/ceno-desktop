@@ -1,0 +1,188 @@
+fuzzy-if(gtkWidget,0-1,0-23) fails-if(useDrawSnapshot) == deferred-anchor2.xhtml deferred-anchor-ref.xhtml#d # bug 1182632
+HTTP == fixed-1.html fixed-1.html?ref
+fuzzy(0-1,0-32200) HTTP == fixed-table-1.html fixed-table-1.html?ref
+HTTP == fixed-opacity-1.html fixed-opacity-1.html?ref
+HTTP == fixed-opacity-2.html fixed-opacity-2.html?ref
+random-if(gtkWidget) fuzzy-if(Android,0-3,0-60) HTTP == fixed-text-1.html fixed-text-1.html?ref
+HTTP == fixed-text-2.html fixed-text-2.html?ref
+random-if(Android) fuzzy-if(winWidget,0-1,0-12) fuzzy-if(winWidget,0-1,0-31) == iframe-border-radius.html iframe-border-radius-ref.html # bug 760269
+random-if(Android) HTTP == image-1.html image-1.html?ref
+random-if(Android) HTTP == opacity-mixed-scrolling-1.html opacity-mixed-scrolling-1.html?ref # bug 760269
+random-if(cocoaWidget) HTTP == opacity-mixed-scrolling-2.html opacity-mixed-scrolling-2.html?ref # see bug 625357
+fails-if(Android) == percent-height-overflowing-image-1.html percent-height-overflowing-image-1-ref.html # bug 1494132
+
+== scroll-behavior-1.html scroll-behavior-1.html?ref
+== scroll-behavior-2.html scroll-behavior-2.html?ref
+== scroll-behavior-3.html scroll-behavior-3.html?ref
+== scroll-behavior-4.html scroll-behavior-4.html?ref
+== scroll-behavior-5.html scroll-behavior-5.html?ref
+fuzzy-if(cocoaWidget,0-2,0-60) fuzzy-if(Android,0-4,0-50) == scroll-behavior-6.html scroll-behavior-6.html?ref
+== scroll-behavior-7.html scroll-behavior-7.html?ref
+== scroll-behavior-8.html scroll-behavior-8.html?ref
+== scroll-behavior-9.html scroll-behavior-9.html?ref
+== scroll-behavior-10.html scroll-behavior-10.html?ref
+== scroll-behavior-textarea.html scroll-behavior-textarea.html?ref
+HTTP == simple-1.html simple-1.html?ref
+HTTP == subpixel-1.html#d subpixel-1-ref.html#d
+fuzzy-if(Android,0-4,0-120) HTTP == text-1.html text-1.html?ref
+fuzzy-if(Android,0-4,0-120) HTTP == text-2.html?up text-2.html?ref
+fuzzy(0-1,0-42) HTTP == transformed-1.html transformed-1.html?ref
+fuzzy(0-1,0-43) HTTP == transformed-1.html?up transformed-1.html?ref
+fuzzy-if(Android,0-5,0-20000) == uncovering-1.html uncovering-1-ref.html
+fuzzy-if(Android,0-5,0-20000) == uncovering-2.html uncovering-2-ref.html
+== less-than-scrollbar-height.html less-than-scrollbar-height-ref.html
+== huge-horizontal-overflow.html huge-horizontal-overflow-ref.html
+== huge-vertical-overflow.html huge-vertical-overflow-ref.html
+pref(apz.allow_zooming,true) fuzzy-if(gtkWidget,0-1,0-80) fuzzy-if(winWidget,0-4,0-170) fuzzy-if(winWidget,0-96,0-1109) == iframe-scrolling-attr-1.html iframe-scrolling-attr-ref.html # win/fission: Bug 1717856
+pref(apz.allow_zooming,true) fuzzy-if(gtkWidget,0-1,0-80) fuzzy-if(winWidget,0-4,0-170) fuzzy-if(winWidget,0-96,0-1109) == iframe-scrolling-attr-2.html iframe-scrolling-attr-ref.html # win/fission: Bug 1717856
+pref(apz.allow_zooming,true) fuzzy(0-1,0-2) fuzzy-if(geckoview,0-1,0-15) fuzzy-if(gtkWidget,0-1,0-48) fuzzy-if(winWidget,0-4,0-108) fuzzy-if(winWidget,0-92,0-1280) == frame-scrolling-attr-1.html frame-scrolling-attr-ref.html
+pref(apz.allow_zooming,true) fuzzy(0-1,0-2) fuzzy-if(geckoview,0-1,0-88) fuzzy-if(gtkWidget,0-1,0-48) fuzzy-if(winWidget,0-4,0-108) fuzzy-if(winWidget,0-92,0-1920) == frame-scrolling-attr-2.html frame-scrolling-attr-ref.html
+== move-item.html move-item-ref.html # bug 1125750
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=200 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=199.6 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=200.4 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=200&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=199.6&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=100&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=99.6&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0&outerBottom=100.4&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=99.6&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=-0.4&outerBottom=100.4&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=99.6&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+== fractional-scroll-area.html?top=0.4&outerBottom=100.4&innerBottom=200.4&scrollBefore=999 fractional-scroll-area.html?top=0&outerBottom=100&innerBottom=200&scrollBefore=999
+!= fractional-scroll-area-invalidation.html about:blank
+
+# "Snapped scrolled content" tests:
+# These tests check the following: No matter how you scroll, the scrolled contents should
+# always be rendered with the same snapping as if you hadn't scrolled; there should not
+# be any subpixel "shimmers" during scrolling. In other words, the device pixel
+# rendering at scroll position zero and the device pixel rendering at any other scroll
+# position should be identical except for an integer device pixel translation of the contents.
+# The zoom tests are marked with fails-if(useDrawSnapshot) due to bug 1917424.
+pref(layout.disable-pixel-alignment,true) == snapped-scrolled-content-1.html snapped-scrolled-content-ref.html
+pref(layout.disable-pixel-alignment,true) == snapped-scrolled-content-1.html?top=-0.4 snapped-scrolled-content-ref.html
+pref(layout.disable-pixel-alignment,true) == snapped-scrolled-content-1.html?top=0.4 snapped-scrolled-content-ref.html
+pref(layout.disable-pixel-alignment,true) == snapped-scrolled-content-1.html?scrollTop=4 snapped-scrolled-content-ref.html?offset=4
+pref(layout.disable-pixel-alignment,true) == snapped-scrolled-content-1.html?scrollTop=999 snapped-scrolled-content-ref.html?offset=48
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?scrollTop=999&innerBottom=240.3 snapped-scrolled-content-ref.html?offset=48
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?top=-0.4&scrollTop=999&innerBottom=240.3 snapped-scrolled-content-ref.html?offset=48
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?top=-0.4&scrollTop=999&innerBottom=239.6 snapped-scrolled-content-ref.html?offset=48
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html snapped-scrolled-content-ref.html
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?scrollTop=4.1667 snapped-scrolled-content-ref.html?offset=5
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?scrollTop=4 snapped-scrolled-content-ref.html?offset=5
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?scrollTop=3 snapped-scrolled-content-ref.html?offset=4
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?scrollTop=2 snapped-scrolled-content-ref.html?offset=2
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?scrollTop=1 snapped-scrolled-content-ref.html?offset=1
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?top=0&scrollIntoViewPos=4.4 snapped-scrolled-content-ref.html?offset=4
+pref(layout.disable-pixel-alignment,true) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?top=0&scrollIntoViewPos=3.7 snapped-scrolled-content-ref.html?offset=4
+
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) == snapped-scrolled-content-1.html?text=1 snapped-scrolled-content-ref.html?text=1
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) == snapped-scrolled-content-1.html?text=1&top=-0.4 snapped-scrolled-content-ref.html?text=1
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) == snapped-scrolled-content-1.html?text=1&top=0.4 snapped-scrolled-content-ref.html?text=1
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) == snapped-scrolled-content-1.html?text=1&scrollTop=4 snapped-scrolled-content-ref.html?text=1&offset=4
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) == snapped-scrolled-content-1.html?text=1&scrollTop=999 snapped-scrolled-content-ref.html?text=1&offset=48
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?text=1&scrollTop=999&innerBottom=240.3 snapped-scrolled-content-ref.html?text=1&offset=48
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?text=1&top=-0.4&scrollTop=999&innerBottom=240.3 snapped-scrolled-content-ref.html?text=1&offset=48
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?text=1&top=-0.4&scrollTop=999&innerBottom=239.6 snapped-scrolled-content-ref.html?text=1&offset=48
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1 snapped-scrolled-content-ref.html?text=1
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1&scrollTop=4.1667 snapped-scrolled-content-ref.html?text=1&offset=5
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1&scrollTop=4 snapped-scrolled-content-ref.html?text=1&offset=5
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1&scrollTop=3 snapped-scrolled-content-ref.html?text=1&offset=4
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1&scrollTop=2 snapped-scrolled-content-ref.html?text=1&offset=2
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-2.html?text=1&scrollTop=1 snapped-scrolled-content-ref.html?text=1&offset=1
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?text=1&top=0&scrollIntoViewPos=4.4 snapped-scrolled-content-ref.html?text=1&offset=4
+pref(layout.disable-pixel-alignment,true) fuzzy-if(Android||cocoaWidget,255-255,296-321) fails-if(useDrawSnapshot) == snapped-scrolled-content-1.html?text=1&top=0&scrollIntoViewPos=3.7 snapped-scrolled-content-ref.html?text=1&offset=4
+
+# Tests for "overflow" styles that may be propagated to the viewport:
+== propagated-overflow-style-1a.html propagated-overflow-style-1-ref.html
+== propagated-overflow-style-1b.html propagated-overflow-style-1-ref.html
+== propagated-overflow-style-1c.html propagated-overflow-style-1-ref.html
+== propagated-overflow-style-2a.html propagated-overflow-style-2-ref.html
+== propagated-overflow-style-2b.html propagated-overflow-style-2-ref.html
+== propagated-overflow-style-2c.html propagated-overflow-style-2-ref.html
+== propagated-overflow-style-2d.html propagated-overflow-style-2-ref.html
+== propagated-overflow-style-2e.html propagated-overflow-style-2-ref.html
+
+fuzzy-if(Android,54-54,8-29) == xul-scrollbar-iterate.html xul-scrollbar-iterate-ref.html
+== scrollbars-area-in-iframe.html scrollbars-area-in-iframe-ref.html
+
+pref(layout.css.anchor-positioning.enabled,true) pref(image.testing.decode-sync.enabled,false) == anchor-scroll-01.html anchor-scroll-ref.html
+
+# Test case for @supports selector(::-webkit-scrollbar).
+# We do return true for the @supports
+pref(layout.css.fake-webkit-scrollbar.enabled,true) == webkit-scrollbar-in-at-supports.html about:blank
+# On Android the HTTP host is not "localhost", it's the IP address of the host machine.
+skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.fake-webkit-scrollbar.disabled-domains,"localhost") HTTP != webkit-scrollbar-in-at-supports.html about:blank
+# Test case for CSS.supports("selector(::-webkit-scrollbar)") (the JS API).
+# We do return true when the pseudo-element is enabled.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) == webkit-scrollbar-in-css-supports.html about:blank
+# And we should return false when the document's domain is on the blocklist.
+skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.fake-webkit-scrollbar.disabled-domains,"localhost") HTTP != webkit-scrollbar-in-css-supports.html about:blank
+# Test case where two containers have ::-webkit-scrollbar has non-zero `width` and `height`, thus overlay scrollbars are disabled on the container, but there's another container has no ::-webkit-scrollbar.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) test-pref(ui.useOverlayScrollbars,1) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) ref-pref(ui.useOverlayScrollbars,0) == webkit-scrollbar.html webkit-scrollbar-ref.html
+# On Android the HTTP host is not "localhost", it's the IP address of the host machine.
+skip-if(Android) pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.fake-webkit-scrollbar.disabled-domains,"localhost") test-pref(ui.useOverlayScrollbars,1) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) ref-pref(ui.useOverlayScrollbars,0) HTTP != webkit-scrollbar.html webkit-scrollbar-ref.html
+# Test case where ::-webkit-scrollbar has zero `width`, thus overlay scrollbars are enabled.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,1)  == webkit-scrollbar-zero-width.html webkit-scrollbar-overlay-ref.html
+# Test case where ::-webkit-scrollbar has zero `width` and `height`, thus the scrollbars SHOULD NOT be visible.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) pref(ui.useOverlayScrollbars,1) == webkit-scrollbar-zero-width-and-height.html webkit-scrollbar-display-none-ref.html
+# Test case where ::-webkit-scrollbar has zero `width` and `height` but `scrollbar-width: thin` clobbers it, thus scrollbars SHOULD be visible.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.scrollbar-width-thin.disabled,false) == webkit-scrollbar-zero-width-and-height-scrollbar-width-thin.html webkit-scrollbar-display-none-scrollbar-width-thin-ref.html
+# Test case where ::-webkit-scrollbar has percent units `width` and `height`, thus overlay scrollbars are enabled.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,1)  == webkit-scrollbar-percent-width-height.html webkit-scrollbar-overlay-ref.html
+# Test case where ::-webkit-scrollbar has neither `width` nor `height`, thus overlay scrollbars are enabled.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,1) == webkit-scrollbar-no-width-height.html webkit-scrollbar-overlay-ref.html
+# Test case when using overlay scrollbars is globally disabled, disabling the horizontal scrollbars properly invalidates its descendants (e.g. scroll thumbs)
+pref(ui.useOverlayScrollbars,0) test-pref(layout.css.fake-webkit-scrollbar.enabled,true) ref-pref(layout.css.fake-webkit-scrollbar.enabled,false) == disable-horizontal-scrollbar-dynamically.html disable-horizontal-scrollbar-dynamically-ref.html
+# Test case where ::-webkit-scrollbar has `width` and `height` with a pseudo class (:focus).
+pref(layout.css.fake-webkit-scrollbar.enabled,true) test-pref(ui.useOverlayScrollbars,1) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) ref-pref(ui.useOverlayScrollbars,0) needs-focus == webkit-scrollbar-focus.html webkit-scrollbar-focus-ref.html
+# Test case that ::-webkit-scrollbar style rules are dynamically added
+pref(layout.css.fake-webkit-scrollbar.enabled,true) test-pref(ui.useOverlayScrollbars,1) ref-pref(ui.useOverlayScrollbars,0) == webkit-scrollbar-dynamic-add.html webkit-scrollbar-dynamic-add-ref.html
+# Test case that ::-webkit-scrollbar style rules are dynamically removed
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,1) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) == webkit-scrollbar-dynamic-remove.html webkit-scrollbar-dynamic-remove-ref.html
+# Test case where -webkit-scrollbar has `width` but with `display: none` and the scroll container has `scrollbar-width: none`.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(ui.useOverlayScrollbars,1) == webkit-scrollbar-display-none-with-scrollbar-width-none.html webkit-scrollbar-display-none-ref.html
+# Test case where -webkit-scrollbar has `width` but with `display: none`, thus the scrollbars SHOULD NOT be visible.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) test-pref(layout.testing.overlay-scrollbars.always-visible,false) test-pref(ui.scrollbarFadeBeginDelay,0) pref(ui.useOverlayScrollbars,1) == webkit-scrollbar-display-none.html webkit-scrollbar-display-none-ref.html
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.scrollbar-width-thin.disabled,false) == webkit-scrollbar-display-none-scrollbar-width-thin.html webkit-scrollbar-display-none-scrollbar-width-thin-ref.html
+pref(layout.css.fake-webkit-scrollbar.enabled,true) pref(layout.css.scrollbar-width-thin.disabled,true) == webkit-scrollbar-display-none-scrollbar-width-thin.html scrollbar-width-auto.html
+# Dynamically change from ::-webkit-scrollbar { display: none } to ::-webkit-scrollbar { display: block }.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) == webkit-scrollbar-display-none-dynamic.html scrollbar-width-auto.html
+# Dynamically change from ::-webkit-scrollbar { display: block } to ::-webkit-scrollbar { display: none }.
+pref(layout.css.fake-webkit-scrollbar.enabled,true) == webkit-scrollbar-display-none-dynamic-2.html webkit-scrollbar-display-none-ref.html

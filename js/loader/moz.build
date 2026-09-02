@@ -1,0 +1,31 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS.js.loader += [
+    "ImportMap.h",
+    "LoadContextBase.h",
+    "LoadedScript.h",
+    "ModuleLoaderBase.h",
+    "ModuleLoadRequest.h",
+    "ResolvedModuleSet.h",
+    "ResolveResult.h",
+    "ScriptFetchOptions.h",
+    "ScriptKind.h",
+    "ScriptLoadRequest.h",
+    "ScriptLoadRequestList.h",
+]
+
+UNIFIED_SOURCES += [
+    "ImportMap.cpp",
+    "LoadContextBase.cpp",
+    "LoadedScript.cpp",
+    "ModuleLoaderBase.cpp",
+    "ModuleLoadRequest.cpp",
+    "ScriptLoadRequest.cpp",
+    "ScriptLoadRequestList.cpp",
+]
+
+FINAL_LIBRARY = "xul"
+
+include("/ipc/chromium/chromium-config.mozbuild")

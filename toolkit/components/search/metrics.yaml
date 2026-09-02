@@ -1,0 +1,808 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Firefox :: Search'
+
+search.engine.default:
+  engine_id:
+    type: string
+    description: |
+      Deprecated in Fx139, please use provider_id, partner_code,
+      overridden_by_third_party and display_name instead.
+
+      The telemetry id of the search engine.
+      For example: "engine1"
+
+      For application-provided engines, this is the identifier plus telemetry
+      suffix supplied by the configuration.
+      For other engines, this is `other-<engineName>`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+
+  provider_id:
+    type: string
+    description: |
+      The identifier of the user's default search engine if the search engine is
+      an application provided engine. For user installed engines, this value will
+      be `other`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  partner_code:
+    type: string
+    description: |
+      The partner code of the user's default search engine, if defined/known,
+      that is being used for the search. Not all search engines have partner
+      codes.
+
+      May be empty for engines that are overridden by a third-party add-on or
+      OpenSearch engine.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  overridden_by_third_party:
+    type: boolean
+    description: |
+      Set to true if the user's default search engine has been allowed to be
+      overridden by a third-party add-on or OpenSearch engine.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  display_name:
+    type: string
+    description: |
+      The display name of the user's default engine.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159#c60
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  load_path:
+    type: string
+    description: |
+      A path relating to where the search engine was installed/loaded from.
+      For example:
+        `[app]appDefault` for a config search engine.
+        `[addon]<extension id>` for a WebExtension-based engine.
+        `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based
+        engine.
+        `[policy]` for an enteprise policy engine.
+        `[user]` for a search engine defined by the user or generated from a
+        web page.
+      Note: this metric is truncated at 100 characters.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159#c60
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  submission_url:
+    type: url
+    description: |
+      The submission URL of the default engine. This is only reported in the
+      cases where:
+        The engine is an application provided engine.
+        The engine has the same name as an application provided engine.
+        The engine matches one of a specific list of well known search engines.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1164159#c60
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  changed:
+    type: event
+    description: |
+      Recorded when the default search engine is changed.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1634555
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1634555
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    extra_keys:
+      previous_engine_id:
+        type: string
+        description: The id of the previous default engine.
+      new_engine_id:
+        type: string
+        description: The id of the new default engine.
+      new_display_name:
+        type: string
+        description: The display name of the new default engine.
+      new_load_path:
+        type: string
+        description: |
+          The path relating to where the new default engine was installed/loaded
+          from.
+      new_submission_url:
+        type: string
+        description: |
+          The new submission URL of the new default engine. This is
+          limited to 100 characters.
+      change_reason:
+        type: string
+        description: |
+          The reason for the change of engine. For possible values,
+          see `REASON_CHANGE_MAP` in
+          https://searchfox.org/firefox-main/source/toolkit/components/search/SearchService.sys.mjs
+          This was renamed from change_source to change_reason in Fx 139.
+
+search.engine.private:
+  engine_id:
+    type: string
+    description: |
+      Deprecated in Fx139, please use provider_id, partner_code,
+      overridden_by_third_party and display_name instead.
+
+      The telemetry id of the search engine.
+      For example: "engine1"
+
+      For application-provided engines, this is the identifier plus telemetry
+      suffix supplied by the configuration.
+      For other engines, this is `other-<engineName>`.
+
+      If this string is an empty string (`""`), this means that one or both of
+      the preferences `browser.search.separatePrivateDefault` and
+      `browser.search.separatePrivateDefault.ui.enabled` are set to false.
+      It is possible that the user selects the same private engine as for the
+      default engine, and hence both versions of these fields will be filled in.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016#c8
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+
+  provider_id:
+    type: string
+    description: |
+      The identifier of the user's default search engine if the search engine is
+      an application provided engine. For user installed engines, this value will
+      be `other`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  partner_code:
+    type: string
+    description: |
+      The partner code of the user's default search engine, if defined/known,
+      that is being used for the search. Not all search engines have partner
+      codes.
+
+      May be empty for engines that are overridden by a third-party add-on or
+      OpenSearch engine.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  overridden_by_third_party:
+    type: boolean
+    description: |
+      Set to true if the user's default search engine has been allowed to be
+      overridden by a third-party add-on or OpenSearch engine.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1089670
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1138503
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1755549
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877721
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961206
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'newtab'
+      - 'events'
+
+  display_name:
+    type: string
+    description: |
+      The display name of the user's default engine.
+
+      If this string is an empty string (`""`), this means that one or both of
+      the preferences `browser.search.separatePrivateDefault` and
+      `browser.search.separatePrivateDefault.ui.enabled` are set to false.
+      It is possible that the user selects the same private engine as for the
+      default engine, and hence both versions of these fields will be filled in.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016#c8
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  load_path:
+    type: string
+    description: |
+      A path relating to where the search engine was installed/loaded from.
+      For example:
+        `[app]appDefault` for a config search engine.
+        `[addon]<extension id>` for a WebExtension-based engine.
+        `[https]developer.mozilla.org/mdn-web-docs.xml` for an OpenSearch-based
+        engine.
+        `[policy]` for an enteprise policy engine.
+        `[user]` for a search engine defined by the user or generated from a
+        web page.
+      Note: this metric is truncated at 100 characters.
+
+      If this string is an empty string (`""`), this means that one or both of
+      the preferences `browser.search.separatePrivateDefault` and
+      `browser.search.separatePrivateDefault.ui.enabled` are set to false.
+      It is possible that the user selects the same private engine as for the
+      default engine, and hence both versions of these fields will be filled in.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016#c8
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  submission_url:
+    type: url
+    description: |
+      The submission URL of the default engine. This is only reported in the
+      cases where:
+        The engine is an application provided engine.
+        The engine has the same name as an application provided engine.
+        The engine matches one of a specific list of well known search engines.
+      If this string is an empty string (`""`), this means that one or both of
+      the preferences `browser.search.separatePrivateDefault` and
+      `browser.search.separatePrivateDefault.ui.enabled` are set to false.
+      It is possible that the user selects the same private engine as for the
+      default engine, and hence both versions of these fields will be filled in.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1563016#c8
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1766999
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    lifetime: application
+    send_in_pings:
+      - 'metrics'
+      - 'events'
+
+  changed:
+    type: event
+    description: |
+      Recorded when the default search engine is changed
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1634555
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1634555
+    data_sensitivity:
+      - web_activity
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - rev-data@mozilla.com
+    expires: never
+    extra_keys:
+      previous_engine_id:
+        type: string
+        description: The id of the previous default engine.
+      new_engine_id:
+        type: string
+        description: The id of the new default engine.
+      new_display_name:
+        type: string
+        description: The display name of the new default engine.
+      new_load_path:
+        type: string
+        description: |
+          The path relating to where the new default engine was installed/loaded
+          from.
+      new_submission_url:
+        type: string
+        description: |
+          The new submission URL of the new default engine. This is
+          limited to 100 characters.
+      change_reason:
+        type: string
+        description: |
+          The reason for the change of engine. For possible values,
+          see `REASON_CHANGE_MAP` in
+          https://searchfox.org/firefox-main/source/toolkit/components/search/SearchService.sys.mjs
+          This was renamed from change_source to change_reason in Fx 139.
+
+search.service:
+  startup_time:
+    type: timing_distribution
+    time_unit: nanosecond
+    description: |
+      The time duration it takes for the search service to start up.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1832509
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1832509#c3
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    data_sensitivity:
+      - technical
+    expires: never
+
+  initialization_status:
+    type: labeled_counter
+    description: |
+      Counts the type of initialization statuses on start up.
+      failedSettings - failed loading and migrating the search settings file.
+      failedFetchEngines - failed to load or parse the configuration from remote
+                           settings.
+      failedLoadEngines - failed to create all the search engines from the
+                          configuration or user installed engines.
+      failedLoadSettingsAddonManager - the addon manager ready promise was rejected. (from FF135)
+      settingsCorrupt - the search settings were reset because of an exception, but
+                        the search service still finished initializing. (from FF136)
+      success - search service successfully initialized.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1849013
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1849013
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    data_sensitivity:
+      - technical
+    expires: never
+    labels:
+      - failedSettings
+      - failedFetchEngines
+      - failedLoadEngines
+      - failedLoadSettingsAddonManager
+      - settingsCorrupt
+      - success
+
+search.counts:
+  totals:
+    type: labeled_quantity
+    description: >
+      Records the type and number of search engines that a user has installed
+      and enabled.
+
+      The total of all labels is the total count of search engines installed.
+
+      - `appProvidedConfig` refers to the search engine integrations provided by
+        the application.
+      - `userInstalledConfig` refers to engines from the application's
+        configuration that the user has chosen to install.
+      - `openSearch` refers to an engine installed via a web page providing an
+        "OpenSearch" definition.
+      - `addon` refers to an engine linked to a particular add-on.
+      - `policy` refers to an engine added by an enterprise policy.
+      - `user` refers to an engine a user has added, e.g. via the settings
+        UI to add an engine, or via right-clicking on a search field on a web
+        page.
+    labels:
+      - appProvidedConfig
+      - userInstalledConfig
+      - openSearch
+      - addon
+      - policy
+      - user
+    unit: number of search engines
+    lifetime: application
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - mbanner@mozilla.com
+    expires: 159
+    bugs:
+      - https://bugzil.la/2044457
+    data_reviews:
+      - https://bugzil.la/2044457
+
+  hidden_engines:
+    type: labeled_quantity
+    description: >
+      Records the count of hidden search engines.
+
+      - `oneOff` refers to an engine hidden from only the one-off buttons or
+        the unified search button.
+      - `disabled` refers to an engine that has been disabled from the whole
+        application, e.g. removed from the old settings (prior to FF 152) or
+        disabled in the new settings (FF 152 & later).
+    labels:
+      - oneOff
+      - disabled
+    unit: number of search engines
+    lifetime: application
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - mbanner@mozilla.com
+    expires: 159
+    bugs:
+      - https://bugzil.la/2044457
+    data_reviews:
+      - https://bugzil.la/2044457
+
+browser.searchinit:
+  engine_invalid_webextension:
+    type: labeled_quantity
+    description: >
+      Records the WebExtension ID of a search engine where the
+      WebExtension is not installed (= 1), disabled (= 2), search engine
+      no longer specified (= 4), a different name (= 5), where the
+      submission URL is different between the search engine and the
+      WebExtension (= 6). The value '3' has been replaced by '6' to
+      distinguish newer entries.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar browser.searchinit.engine_invalid_webextension, which was removed
+      in Fx 139.
+    bugs:
+      - https://bugzil.la/1665938
+      - https://bugzil.la/1691050
+      - https://bugzil.la/1725501
+      - https://bugzil.la/1763528
+      - https://bugzil.la/1801017
+      - https://bugzil.la/1832463
+      - https://bugzil.la/1871199
+      - https://bugzil.la/1897049
+      - https://bugzil.la/1933859
+      - https://bugzil.la/1994584
+      - https://bugzil.la/2034308
+    data_reviews:
+      - https://bugzil.la/1665938
+      - https://bugzil.la/1691050
+      - https://bugzil.la/1725501
+      - https://bugzil.la/1763528
+      - https://bugzil.la/1801017
+      - https://bugzil.la/1832463
+      - https://bugzil.la/1871199
+      - https://bugzil.la/1897049
+      - https://bugzil.la/1933859
+      - https://bugzil.la/1994584
+      - https://bugzil.la/2034308
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+      - mbanner@mozilla.com
+    expires: 159
+    unit: custom enum value
+
+  secure_opensearch_engine_count:
+    type: quantity
+    description: >
+      Records the number of secure (i.e., using https) OpenSearch search
+      engines a given user has installed.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar browser.searchinit.secure_opensearch_engine_count.
+    bugs:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/1984462
+      - https://bugzil.la/2019474
+    data_reviews:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/2019474
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: 157
+    unit: engines
+
+  insecure_opensearch_engine_count:
+    type: quantity
+    description: >
+      Records the number of insecure (i.e., using http) OpenSearch search
+      engines a given user has installed.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar browser.searchinit.insecure_opensearch_engine_count.
+    bugs:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/1984462
+      - https://bugzil.la/2019474
+    data_reviews:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/2019474
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: 157
+    unit: engines
+
+  secure_opensearch_update_count:
+    type: quantity
+    description: >
+      Records the number of OpenSearch search engines with secure updates
+      enabled (i.e., using https) a given user has installed.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar browser.searchinit.secure_opensearch_update_count.
+    bugs:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/1984462
+      - https://bugzil.la/2019474
+    data_reviews:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/2019474
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: 157
+    unit: updates
+
+  insecure_opensearch_update_count:
+    type: quantity
+    description: >
+      Records the number of OpenSearch search engines with insecure
+      updates enabled (i.e., using http) a given user has installed.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar browser.searchinit.insecure_opensearch_update_count.
+    bugs:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/1984462
+      - https://bugzil.la/2019474
+    data_reviews:
+      - https://bugzil.la/1789438
+      - https://bugzil.la/1811158
+      - https://bugzil.la/1846899
+      - https://bugzil.la/1881408
+      - https://bugzil.la/1916866
+      - https://bugzil.la/1984248
+      - https://bugzil.la/2019474
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: 157
+    unit: updates
+
+search.suggestions:
+  latency:
+    type: labeled_timing_distribution
+    description: >
+      Records the latencies (ms) of search suggestions fetches per search
+      engine. Keys in this histogram are the search engine identifier for
+      configuration provided search engines and 'other' for search engines
+      installed via other methods.
+
+      This metric was generated to correspond to the Legacy Telemetry
+      exponential histogram SEARCH_SUGGESTIONS_LATENCY_MS.
+
+      This metric was renamed in Gecko 144 from `search.suggestions_latency`
+      and changed to report the search engine identifier rather than the telemetry
+      identifier.
+    time_unit: millisecond
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1743885
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1987911
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1743885
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1987911
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - fx-search-telemetry@mozilla.com
+    expires: never
+    telemetry_mirror: SEARCH_SUGGESTIONS_LATENCY_MS

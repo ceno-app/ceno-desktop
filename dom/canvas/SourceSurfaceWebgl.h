@@ -1,0 +1,85 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef MOZILLA_GFX_SOURCESURFACEWEBGL_H_
+#define MOZILLA_GFX_SOURCESURFACEWEBGL_H_
+
+#include "mozilla/WeakPtr.h"
+#include "mozilla/gfx/2D.h"
+
+namespace mozilla {
+class WebGLBuffer;
+}  // namespace mozilla
+
+namespace mozilla::gfx {
+
+class DrawTargetWebgl;
+class SharedContextWebgl;
+class TextureHandle;
+
+// SourceSurfaceWebgl holds WebGL resources that can be used to efficiently
+// copy snapshot data between multiple DrawTargetWebgls. It also takes care
+// of copy-on-write behavior when the owner target is modified or destructs.
+class SourceSurfaceWebgl : public DataSourceSurface {
+ public:
+  MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(SourceSurfaceWebgl, override)
+
+  explicit SourceSurfaceWebgl(DrawTargetWebgl* aDT);
+  virtual ~SourceSurfaceWebgl();
+
+  SurfaceType GetType() const override { return SurfaceType::WEBGL; }
+  IntSize GetSize() const override { return mSize; }
+  SurfaceFormat GetFormat() const override { return mFormat; }
+
+  uint8_t* GetData() override;
+  int32_t Stride() override;
+
+  bool Map(MapType aType, MappedSurface* aMappedSurface) override;
+  void Unmap() override;
+
+  bool HasReadData() const { return !!mData; }
+
+  already_AddRefed<SourceSurface> ExtractSubrect(const IntRect& aRect) override;
+
+  bool ReadDataInto(uint8_t* aData, int32_t aStride) override;
+
+ private:
+  friend class DrawTargetWebgl;
+  friend class SharedContextWebgl;
+
+  explicit SourceSurfaceWebgl(const RefPtr<SharedContextWebgl>& aSharedContext);
+
+  bool EnsureData(bool aForce = true, uint8_t* aData = nullptr,
+                  int32_t aStride = 0);
+  bool ForceReadFromPBO();
+
+  void DrawTargetWillChange(bool aNeedHandle);
+
+  void GiveTexture(RefPtr<TextureHandle> aHandle);
+
+  void SetHandle(TextureHandle* aHandle);
+
+  void OnUnlinkTexture(SharedContextWebgl* aContext, TextureHandle* aHandle,
+                       bool aForce);
+
+  DrawTargetWebgl* GetTarget() const { return mDT.get(); }
+
+  SurfaceFormat mFormat = SurfaceFormat::UNKNOWN;
+  IntSize mSize;
+  RefPtr<WebGLBuffer> mReadBuffer;
+  // Any data that has been read back from the WebGL context for mapping.
+  RefPtr<DataSourceSurface> mData;
+  // Whether the data is safe to modify
+  bool mOwnsData = true;
+  // The draw target that currently owns the texture for this surface.
+  WeakPtr<DrawTargetWebgl> mDT;
+  // The actual shared context that any WebGL resources belong to.
+  WeakPtr<SharedContextWebgl> mSharedContext;
+  // If this snapshot has been copied into a cached texture handle.
+  RefPtr<TextureHandle> mHandle;
+};
+
+}  // namespace mozilla::gfx
+
+#endif /* MOZILLA_GFX_SOURCESURFACEWEBGL_H_ */

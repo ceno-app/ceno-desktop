@@ -1,0 +1,18 @@
+commit ce18e87898f32a5f683d8e5ea9841c735b24619a
+Author: Christian Holler <choller@mozilla.com>
+Date:   Thu Jul 30 18:35:46 2020 +0200
+
+    [libFuzzer] Suppress warnings about unused return values
+
+diff --git a/FuzzerIO.cpp b/FuzzerIO.cpp
+index 54cc4ee54be0..8d5b3ae3e1ae 100644
+--- a/FuzzerIO.cpp
++++ b/FuzzerIO.cpp
+@@ -81,7 +81,7 @@ void WriteToFile(const uint8_t *Data, size_t Size, const std::string &Path) {
+   // Use raw C interface because this function may be called from a sig handler.
+   FILE *Out = fopen(Path.c_str(), "wb");
+   if (!Out) return;
+-  fwrite(Data, sizeof(Data[0]), Size, Out);
++  (void)fwrite(Data, sizeof(Data[0]), Size, Out);
+   fclose(Out);
+ }

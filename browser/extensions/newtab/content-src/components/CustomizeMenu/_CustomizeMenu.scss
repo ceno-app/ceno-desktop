@@ -1,0 +1,775 @@
+.personalizeButtonWrapper {
+  margin: 0;
+  padding: 0;
+  // z-index note: menu should cover fixed search bar and asrouter dev tools toggle button
+  z-index: 5;
+  position: fixed;
+  inset-block-end: var(--space-xlarge);
+  inset-inline-end: var(--space-xlarge);
+}
+
+.personalize-button {
+  border: 0;
+  border-radius: var(--border-radius-small);
+  background-color: var(--button-background-color, rgba(21, 20, 26, 7%));
+  box-shadow: 0 0.8px 1.6px 0 rgba(58, 57, 68, 20%);
+  padding: calc(5 * var(--space-xxsmall));
+  position: relative;
+  background-size: var(--icon-size-medium);
+  background-position: center;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+
+  .lightWallpaper &,
+  .darkWallpaper & {
+    background-color: var(--newtab-weather-background-color);
+
+    @media (prefers-contrast) {
+      background-color: var(--background-color-box);
+    }
+  }
+
+  &:hover {
+    background-color: var(--newtab-button-static-hover-background);
+  }
+
+  &:active {
+    background-color: var(--newtab-button-static-active-background);
+  }
+
+  &:focus-visible {
+    @include ds-focus;
+
+    background-color: var(--newtab-button-static-active-background);
+  }
+
+  &.personalize-animate-exit-done {
+    visibility: hidden;
+  }
+
+  > div {
+    width: var(--icon-size-medium);
+    height: var(--icon-size-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    > img {
+      -moz-context-properties: fill;
+      display: inline-block;
+      color: var(--icon-color);
+      fill: currentColor;
+      height: 100%;
+      object-fit: contain;
+      vertical-align: middle;
+      width: 100%;
+    }
+  }
+
+  > label {
+    margin-inline-end: 0;
+    opacity: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 0;
+    transition:
+      opacity 0.3s ease,
+      margin 0.3s ease,
+      max-width 0.3s ease;
+  }
+
+}
+
+// @nova-cleanup(remove-conditional): replace .open-customization-button with the default .personalize-button styles
+.open-customization-button {
+  &.personalize-animate-exit-done {
+    visibility: hidden;
+  }
+
+  &::part(moz-button-label) {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: opacity 0.3s ease, max-width 0.3s ease;
+    }
+
+    @include wallpaper-contrast-fix;
+  }
+
+  &::part(button) {
+    min-width: var(--button-size-icon);
+    max-width: var(--button-size-icon);
+    height: var(--button-size-icon);
+    // centers the icon within the circular button when the label is hidden
+    padding-inline: 0 calc((var(--button-size-icon) - var(--icon-size-medium)) / 2);
+    overflow: hidden;
+    justify-content: flex-end;
+    gap: 0;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: max-width 0.3s ease, padding 0.3s ease, gap 0.3s ease;
+    }
+
+    @include wallpaper-contrast-fix;
+  }
+
+  &:hover,
+  &:focus-within,
+  &.activation-window-variant-a,
+  &.activation-window-variant-b {
+    &::part(moz-button-label) {
+      opacity: 1;
+      max-width: 30ch;
+    }
+
+    &::part(button) {
+      // wider than the label to account for icon + gap + padding
+      max-width: calc(30ch + var(--icon-size-medium) + var(--space-small) + var(--space-large) * 2);
+      padding: var(--space-small) var(--space-large);
+      gap: var(--space-small);
+    }
+  }
+}
+
+.personalize-button:hover,
+.personalize-button:focus-visible,
+.personalize-button:focus-within,
+.personalize-button.activation-window-variant-a,
+.personalize-button.activation-window-variant-b {
+  > label {
+    opacity: 1;
+    margin-inline-end: var(--space-medium);
+    // CSS animations can only transition between fixed values;
+    // 30ch is enough to accommodate longest localized string (Bulgarian: 15ch)
+    max-width: 30ch;
+  }
+}
+
+.customize-menu {
+  --customize-menu-bg: color-mix(in srgb, var(--newtab-background-color-secondary) 96%, transparent);
+
+  color: var(--newtab-text-primary-color);
+  background-color: var(--newtab-background-color-secondary);
+  width: 432px;
+  min-height: 100%;
+  position: fixed;
+  inset-block: 0;
+  inset-inline: auto 0;
+  z-index: 1001;
+  padding-block: 0 var(--space-large);
+  padding-inline: var(--space-large);
+  transform: translateX(435px);
+  visibility: hidden;
+  cursor: default;
+  overflow: auto;
+  border: none;
+  margin: 0;
+
+  // @nova-cleanup(remove-conditional): Remove &.nova-enabled and make these the default
+  &.nova-enabled {
+    background: var(--customize-menu-bg);
+    border-radius: var(--border-radius-large);
+    box-shadow: 0 0 14px 0 var(--box-shadow-color-accent-primary-primary);
+    width: 418px;
+    padding-inline: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: clip;
+    overflow-x: hidden;
+    min-height: calc(100% - var(--space-xsmall));
+    inset-block: var(--space-xxsmall);
+    inset-inline: auto var(--space-xxsmall);
+  }
+
+  &::backdrop {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    // We need customize-animate-enter and customize-animate-exit to fix bug 1868232
+    // These first 2 classes happen only while the element is animating.
+    &.customize-animate-enter,
+    &.customize-animate-exit,
+    // We only add these so the css is visible for inspecting while not animating.
+    // Otherwise it's difficult to see and inspect this css because the transition is so fast.
+    &.customize-animate-enter-done,
+    &.customize-animate-exit-done {
+      transition: transform 250ms $customize-menu-slide-bezier, visibility 250ms;
+    }
+  }
+
+  @media (forced-colors: active) {
+    border-inline-start: solid 1px;
+  }
+
+  &:dir(rtl) {
+    transform: translateX(-435px);
+  }
+
+  &.customize-animate-enter-done,
+  &.customize-animate-enter-active {
+    box-shadow: $shadow-large;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  &.customize-animate-exit-active {
+    box-shadow: $shadow-large;
+  }
+}
+
+.customize-menu-content {
+  height: 100%;
+  overflow: auto;
+
+  // @nova-cleanup(remove-conditional): Remove .nova-enabled & and make these the default
+  .nova-enabled & {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: unset;
+  }
+
+  &.subpanel-open {
+    overflow: clip;
+  }
+
+  .close-button-wrapper {
+    position: sticky;
+    inset-block-start: 0;
+    padding-block-start: var(--space-large);
+    background-color: var(--newtab-background-color-secondary);
+    z-index: 1;
+
+    // @nova-cleanup(remove-conditional): Remove .nova-enabled & and make background: transparent the default
+    .nova-enabled & {
+      background: transparent;
+    }
+
+    moz-button {
+      margin-inline-start: auto;
+      margin-inline-end: var(--space-large);
+      display: block;
+    }
+  }
+
+  *:focus-visible {
+    outline: var(--focus-outline);
+  }
+
+  .manage-settings-footer {
+    padding: var(--space-xlarge);
+    display: flex;
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    // Fade background to transparent over the inline-end edge so the
+    // management panel scrollbar remains visible.
+    background: linear-gradient(to right, var(--customize-menu-bg) calc(100% - var(--space-xxlarge)), transparent);
+
+    &:dir(rtl) {
+      background: linear-gradient(to left, var(--customize-menu-bg) calc(100% - var(--space-xxlarge)), transparent);
+    }
+
+    &::before {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      // calc() used here (instead of a literal 40px) to satisfy the Acorn token lint rule
+      // and to add a transparent-like gradient for the footer all while keeping it accessible
+      // --space-xlarge (1.5rem) + --space-large (1rem) = 2.5rem = 40px at default font size.
+      inset-block-start: calc((var(--space-xlarge) + var(--space-large)) * -1);
+      inset-inline: 0;
+      height: calc(var(--space-xlarge) + var(--space-large));
+      background: linear-gradient(to bottom, transparent, var(--customize-menu-bg));
+      mask-image: linear-gradient(to right, black calc(100% - var(--space-xxlarge)), transparent);
+    }
+
+    &:dir(rtl)::before {
+      mask-image: linear-gradient(to left, black calc(100% - var(--space-xxlarge)), transparent);
+    }
+  }
+}
+
+.grid-skip {
+  display: contents;
+}
+
+.home-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, auto);
+  grid-row-gap: var(--space-xxlarge);
+  padding-block: var(--space-xsmall) var(--space-large);
+  padding-inline: var(--space-large);
+
+  // @nova-cleanup(remove-conditional): Remove .nova-enabled & and make these the default
+  .nova-enabled & {
+    align-content: start;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-inline: var(--space-xlarge);
+  }
+
+  .wallpapers-section h2 {
+    font-size: inherit;
+  }
+
+  .widgets-section h2 {
+    font-size: inherit;
+    margin-block-start: 0;
+    font-weight: var(--font-weight-heading);
+  }
+
+  .settings-widgets,
+  .settings-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xlarge);
+  }
+
+  .settings-widgets {
+    gap: var(--space-large);
+
+    .divider {
+      margin-block-start: var(--space-large);
+    }
+  }
+
+  [slot='nested'] {
+    margin-block-start: 0;
+  }
+
+  .section {
+    .customize-menu-checkbox-label {
+      font-size: inherit;
+      margin-inline-start: var(--space-xsmall);
+    }
+
+    .check-wrapper {
+      position: relative;
+      display: flex;
+    }
+
+    .customize-menu-checkbox {
+      margin-inline-start: var(--space-xxsmall);
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      border: $customize-menu-border-tint;
+      box-sizing: border-box;
+      border-radius: var(--border-radius-small);
+      appearance: none;
+      background-color: var(--newtab-element-secondary-color);
+      flex-shrink: 0;
+
+      &:hover {
+        background-color: var(--newtab-element-secondary-hover-color);
+      }
+    }
+
+    .customize-menu-checkbox:checked {
+      -moz-context-properties: fill;
+      fill: var(--newtab-primary-element-text-color);
+      background: url('chrome://global/skin/icons/check.svg') center no-repeat;
+      background-color: var(--newtab-primary-action-background);
+
+      &:hover {
+        background-color: var(--newtab-primary-element-hover-color);
+      }
+
+      &:active {
+        background-color: var(--newtab-primary-element-active-color);
+      }
+
+      @media (forced-colors: active) {
+        fill: $black;
+      }
+    }
+
+    .customize-menu-checkbox:active + .checkmark {
+      fill: var(--newtab-element-secondary-color);
+    }
+
+    #shortcuts-toggle {
+      display: flex;
+      flex-direction: column;
+
+      #row-selector {
+        width: 138px;
+      }
+    }
+
+    .more-info-top-wrapper >
+    .more-information {
+      padding: var(--space-small);
+    }
+
+    .more-info-top-wrapper,
+    .more-info-pocket-wrapper,
+    .more-info-widgets-wrapper {
+      margin-inline-start: calc(var(--space-xxsmall) * -1);
+      overflow: hidden;
+
+      .more-information {
+        position: relative;
+        transition: margin-block-start 250ms $customize-menu-expand-bezier;
+      }
+    }
+
+    .more-info-pocket-wrapper,
+    .more-info-widgets-wrapper {
+      .more-information {
+        // Note: This is necessary so the management panels can
+        // be positioned absolutely across the entire Customize menu
+        position: static;
+      }
+    }
+
+    .more-info-pocket-wrapper {
+      .more-information {
+        padding-block: var(--space-medium);
+      }
+
+      .check-wrapper {
+        margin-block-end: var(--space-small);
+      }
+
+      // Prevent focus outline clipping by allowing overflow
+      &:has(moz-box-button:focus-within) {
+        overflow: visible;
+      }
+    }
+
+    .more-info-top-wrapper {
+      .check-wrapper {
+        margin-block-start: var(--space-large);
+      }
+    }
+  }
+
+  .sponsored-content-info {
+    display: flex;
+    gap: var(--space-small);
+    font-size: var(--font-size-small);
+    border-radius: var(--border-radius-medium);
+    background-color: var(--newtab-element-secondary-color);
+    padding: var(--space-small) var(--space-large);
+
+    .icon-help {
+      flex-shrink: 0;
+      color: var(--color-accent-primary);
+      height: 20px;
+    }
+
+    a {
+      color: var(--newtab-primary-action-background);
+    }
+  }
+
+  .divider {
+    border-block-start: 1px var(--border-color) solid;
+    margin: 0 calc(var(--space-large) * -1);
+  }
+
+}
+
+.external-link {
+  -moz-context-properties: fill;
+  background: url('chrome://global/skin/icons/settings.svg') left no-repeat;
+  background-size: 16px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-small);
+  color: var(--link-color);
+  cursor: pointer;
+  fill: var(--link-color);
+  font-size: var(--font-size-small);
+  padding-inline-start: var(--space-xlarge);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--link-color-hover);
+    text-decoration: none;
+  }
+
+  &:active {
+    color: var(--link-color-active);
+  }
+
+  @media (forced-colors: active) {
+    padding: var(--space-small) var(--space-medium);
+    padding-inline-start: var(--space-xlarge);
+  }
+
+  &:dir(rtl) {
+    background-position-x: right;
+  }
+}
+
+
+.external-link:focus-visible,
+.close-button:focus-visible {
+  border: 1px solid var(--newtab-primary-action-background);
+  outline: 0;
+  box-shadow: $shadow-focus;
+}
+
+// Make sure form elements under the "Shortcuts" subsection don't change position on focus
+// by always having a 2px box shadow around them - one that blends in with the background.
+.home-section .section {
+  .customize-menu-checkbox {
+    outline: 0;
+    box-shadow: 0 0 0 2px light-dark(var(--newtab-background-color), var(--newtab-background-color-dark));
+  }
+}
+
+// Move the Shortcuts dropdown slightly down so that the box shadow is not cut off at the top
+// in active & focus states.
+.home-section .section .selector {
+  margin-block-start: var(--space-xxsmall)
+}
+
+// Improve accessibility of shortcuts dropdown and sponsored shortcuts checkbox
+// by setting a bright 2px box shadow in active and focus states.
+.home-section .section
+{
+  .customize-menu-checkbox {
+    &:is(:focus-visible) {
+      box-shadow: 0 0 0 2px var(--color-accent-primary);
+      outline: var(--focus-outline); // For Windows high-contrast mode
+    }
+
+    &:is(:active) {
+      box-shadow: 0 0 0 2px var(--color-accent-primary-active);
+      outline: 0;
+    }
+  }
+}
+
+.sections-mgmt-panel,
+.widgets-mgmt-panel {
+  // Width of panel minus the margins
+  height: 100%;
+  inset-inline-start: var(--space-xlarge);
+  position: absolute;
+  inset-block-start: 0;
+  width: 380px;
+  z-index: 2;
+  transform: translateX(100%);
+  margin-block: var(--space-large) 0;
+  padding: 0;
+  background-color: var(--newtab-background-color-secondary);
+  overflow-y: auto;
+
+  // @nova-cleanup(remove-conditional): Remove .nova-enabled & and make these the default
+  .nova-enabled & {
+    height: 100vh;
+    inset-inline-start: 0;
+    position: fixed;
+    width: 100%;
+    margin-block: 0;
+  }
+
+  &:dir(rtl) {
+    transform: translateX(-100%);
+  }
+
+  h3 {
+    font-size: inherit;
+    margin-block: 0 var(--space-small);
+  }
+
+  // @nova-cleanup(remove-conditional): Remove button.arrow-button block once Nova ships
+  button.arrow-button {
+    background: url('chrome://global/skin/icons/arrow-left.svg') no-repeat left center;
+
+    &:dir(rtl) {
+      background: url('chrome://global/skin/icons/arrow-right.svg') no-repeat right center;
+    }
+
+    border: none;
+    cursor: pointer;
+    margin-block-end: var(--space-xlarge);
+    padding-inline-start: var(--space-xlarge);
+    -moz-context-properties: fill;
+    fill: currentColor;
+    min-height: var(--size-item-small);
+    margin-inline-start: var(--space-xsmall);
+    margin-block-start: var(--space-xsmall);
+
+    h1 {
+      font-size: var(--font-size-root);
+      margin-block: 0;
+      font-weight: var(--button-font-weight);
+    }
+  }
+
+  // @nova-cleanup(remove-conditional): Remove .nova-enabled & selector, keep .panel-content and .arrow-wrapper as default
+  .nova-enabled & {
+    .panel-content {
+      padding: var(--space-xlarge);
+    }
+
+    .arrow-wrapper {
+      display: flex;
+      align-items: center;
+      margin-block-end: var(--space-xlarge);
+
+      .arrow-button {
+        margin-inline-end: var(--space-small);
+      }
+
+      h2 {
+        font-size: var(--font-size-heading-medium);
+        margin-block: 0;
+        font-weight: var(--button-font-weight);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &.sections-mgmt-panel-enter,
+    &.sections-mgmt-panel-exit,
+    &.sections-mgmt-panel-enter-done,
+    &.sections-mgmt-panel-exit-done,
+    &.widgets-mgmt-panel-enter,
+    &.widgets-mgmt-panel-exit,
+    &.widgets-mgmt-panel-enter-done,
+    &.widgets-mgmt-panel-exit-done {
+      transition: transform 300ms;
+    }
+  }
+
+  &.sections-mgmt-panel-enter-done,
+  &.sections-mgmt-panel-enter-active,
+  &.widgets-mgmt-panel-enter-done,
+  &.widgets-mgmt-panel-enter-active {
+    transform: translateX(0);
+  }
+}
+
+.sections-mgmt-panel {
+  // List
+  .topic-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-small);
+    margin-block: 0 var(--space-xxlarge);
+    padding-inline: 0;
+    width: 100%;
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  .topic-list-empty-state {
+    display: block;
+    margin-block-end: var(--space-xxlarge);
+    color: var(--text-color-deemphasized);
+  }
+
+  // Follow / Unfollow and Block / Unblock Buttons
+  .section-block,
+  .section-follow {
+    .section-button-blocked-text,
+    .section-button-following-text {
+      display: none;
+    }
+
+    .section-button-unblock-text,
+    .section-button-unfollow-text {
+      display: none;
+    }
+
+    &.following {
+      .section-button-follow-text {
+        display: none;
+      }
+
+      .section-button-following-text {
+        display: block;
+      }
+    }
+
+    &.following:not(:hover) {
+      moz-button {
+        --button-background-color-destructive: var(--button-background-color);
+        --button-text-color-destructive: var(--button-text-color);
+        --button-border-color-destructive: var(--button-border-color);
+      }
+    }
+
+    &.following:hover {
+      .section-button-following-text {
+        display: none;
+      }
+
+      .section-button-unfollow-text {
+        display: block;
+      }
+    }
+
+    &.blocked {
+      .section-button-block-text {
+        display: none;
+      }
+
+      .section-button-blocked-text {
+        display: block;
+      }
+    }
+
+    &.blocked:hover {
+      .section-button-blocked-text {
+        display: none;
+      }
+
+      .section-button-unblock-text {
+        display: block;
+      }
+    }
+  }
+}
+
+.widgets-mgmt-panel {
+  .settings-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-large);
+  }
+}
+
+.widgets-mgmt-panel-container {
+  padding-block: var(--space-medium);
+}
+
+// @nova-cleanup(remove-conditional): Remove .nova-enabled selector, make default behavior for #shortcuts-section, #widgets-section and #row-selector
+.nova-enabled {
+  #wallpapers-section,
+  #shortcuts-section,
+  #widgets-section,
+  #pocket-section {
+    margin-block: var(--space-medium);
+  }
+
+  .section #shortcuts-toggle #row-selector {
+    width: 100%;
+  }
+
+  #wallpapers-toggle {
+    margin-block-end: var(--space-large);
+  }
+}
+

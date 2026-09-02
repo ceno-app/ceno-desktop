@@ -1,0 +1,353 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef FlowMarkers_h
+#define FlowMarkers_h
+
+#include "mozilla/BaseProfilerMarkers.h"
+#include "mozilla/ProfilerLabels.h"
+#include "mozilla/ProfilerMarkers.h"
+#include "nsString.h"
+#include "ETWTools.h"
+
+namespace geckoprofiler::markers {
+// These are convenience marker types for ad-hoc instrumentation.
+// It's better to not use them and use a meaningful name for the flow.
+class FlowMarker : public mozilla::BaseMarkerType<FlowMarker> {
+ public:
+  static constexpr const char* Name = "FlowMarker";
+
+  using MS = mozilla::MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {{
+      "flow",
+      MS::InputType::Flow,
+      "Flow",
+      MS::Format::Flow,
+  }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* AllLabels =
+      "{marker.name} (flow={marker.data.flow})";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+};
+
+class TerminatingFlowMarker
+    : public mozilla::BaseMarkerType<TerminatingFlowMarker> {
+ public:
+  static constexpr const char* Name = "TerminatingFlowMarker";
+
+  using MS = mozilla::MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {{
+      "terminatingFlow",
+      MS::InputType::Flow,
+      "Terminating Flow",
+      MS::Format::TerminatingFlow,
+  }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* AllLabels =
+      "{marker.name} (terminatingFlow={marker.data.terminatingFlow})";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+};
+
+class TerminatingFlowTextMarker
+    : public mozilla::BaseMarkerType<TerminatingFlowTextMarker> {
+ public:
+  static constexpr const char* Name = "TerminatingFlowTextMarker";
+  static constexpr const char* Description =
+      "Generic text marker with terminating flow";
+
+  using MS = mozilla::MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {
+          "name",
+          MS::InputType::CString,
+          "Details",
+          MS::Format::String,
+      },
+      {
+          "terminatingFlow",
+          MS::InputType::Flow,
+          "Terminating Flow",
+          MS::Format::TerminatingFlow,
+      }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* TableLabel =
+      ""
+      "{marker.data.name}(terminatingFlow={marker.data.terminatingFlow})";
+  static constexpr const char* ChartLabel = "{marker.name}";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+};
+
+}  // namespace geckoprofiler::markers
+namespace mozilla {
+class FlowStackMarker : public BaseMarkerType<FlowStackMarker> {
+ public:
+  static constexpr const char* Name = "FlowStackMarker";
+
+  using MS = MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {{
+      "flow",
+      MS::InputType::Flow,
+      "Flow",
+      MS::Format::Flow,
+  }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* AllLabels =
+      "{marker.name} (flow={marker.data.flow})";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+
+  static constexpr bool IsStackBased = true;
+};
+
+class TerminatingFlowStackMarker
+    : public BaseMarkerType<TerminatingFlowStackMarker> {
+ public:
+  static constexpr const char* Name = "TerminatingFlowStackMarker";
+
+  using MS = MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {{
+      "flow",
+      MS::InputType::Flow,
+      "Flow",
+      MS::Format::TerminatingFlow,
+  }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* AllLabels =
+      "{marker.name} (flow={marker.data.flow})";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+
+  static constexpr bool IsStackBased = true;
+};
+
+class FlowTextMarker : public BaseMarkerType<FlowTextMarker> {
+ public:
+  static constexpr const char* Name = "FlowTextMarker";
+
+  using MS = MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {
+          "name",
+          MS::InputType::CString,
+          "Details",
+          MS::Format::String,
+      },
+      {
+          "flow",
+          MS::InputType::Flow,
+          "Flow",
+          MS::Format::Flow,
+      }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* TableLabel =
+      "{marker.data.name}(flow={marker.data.flow})";
+  static constexpr const char* ChartLabel = "{marker.name}";
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+};
+
+class FlowStackTextMarker : public BaseMarkerType<FlowStackTextMarker> {
+ public:
+  static constexpr const char* Name = "FlowStackTextMarker";
+  static constexpr const char* Description = "";
+
+  using MS = MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {
+          "name",
+          MS::InputType::CString,
+          "Details",
+          MS::Format::String,
+      },
+      {
+          "flow",
+          MS::InputType::Flow,
+          "Flow",
+          MS::Format::Flow,
+      }};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* TableLabel =
+      "{marker.data.name}(flow={marker.data.flow})";
+  static constexpr const char* ChartLabel = "{marker.name}";
+
+  static constexpr bool IsStackBased = true;
+
+  static constexpr MS::ETWMarkerGroup Group = MS::ETWMarkerGroup::Generic;
+};
+
+class MOZ_RAII AutoProfilerFlowMarker {
+ public:
+  AutoProfilerFlowMarker(const char* aMarkerName,
+                         const mozilla::MarkerCategory& aCategory, Flow aFlow)
+      : mMarkerName(aMarkerName), mCategory(aCategory), mFlow(aFlow) {
+    MOZ_ASSERT(mOptions.Timing().EndTime().IsNull(),
+               "AutoProfilerTextMarker options shouldn't have an end time");
+    if (profiler_is_active_and_unpaused() &&
+        mOptions.Timing().StartTime().IsNull()) {
+      mOptions.Set(mozilla::MarkerTiming::InstantNow());
+    }
+  }
+
+  ~AutoProfilerFlowMarker() {
+    if (profiler_is_active_and_unpaused()) {
+      mOptions.TimingRef().SetIntervalEnd();
+      profiler_add_marker(
+          mozilla::ProfilerString8View::WrapNullTerminatedString(mMarkerName),
+          mCategory, std::move(mOptions), FlowStackMarker{}, mFlow);
+    }
+  }
+
+ public:
+  const char* mMarkerName;
+  mozilla::MarkerCategory mCategory;
+  mozilla::MarkerOptions mOptions;
+  Flow mFlow;
+};
+
+class MOZ_RAII AutoProfilerFlowTextMarker {
+ public:
+  AutoProfilerFlowTextMarker(const char* aMarkerName,
+                             const mozilla::MarkerCategory& aCategory,
+                             mozilla::MarkerOptions&& aOptions,
+                             ProfilerString8View aText, Flow aFlow)
+      : mMarkerName(aMarkerName),
+        mCategory(aCategory),
+        mOptions(std::move(aOptions)),
+        mText(std::move(aText)),
+        mFlow(aFlow) {
+    MOZ_ASSERT(mOptions.Timing().EndTime().IsNull(),
+               "AutoProfilerTextMarker options shouldn't have an end time");
+    if (profiler_is_active_and_unpaused() &&
+        mOptions.Timing().StartTime().IsNull()) {
+      mOptions.Set(mozilla::MarkerTiming::InstantNow());
+    }
+  }
+
+  ~AutoProfilerFlowTextMarker() {
+    if (profiler_is_active_and_unpaused()) {
+      mOptions.TimingRef().SetIntervalEnd();
+      profiler_add_marker(
+          mozilla::ProfilerString8View::WrapNullTerminatedString(mMarkerName),
+          mCategory, std::move(mOptions), FlowStackTextMarker{}, mText, mFlow);
+    }
+  }
+
+ public:
+  const char* mMarkerName;
+  mozilla::MarkerCategory mCategory;
+  mozilla::MarkerOptions mOptions;
+  const ProfilerString8View mText;
+  Flow mFlow;
+};
+
+class MOZ_RAII AutoProfilerTerminatingFlowMarker {
+ public:
+  AutoProfilerTerminatingFlowMarker(const char* aMarkerName,
+                                    const mozilla::MarkerCategory& aCategory,
+                                    Flow aFlow)
+      : mMarkerName(aMarkerName), mCategory(aCategory), mFlow(aFlow) {
+    MOZ_ASSERT(mOptions.Timing().EndTime().IsNull(),
+               "AutoProfilerTextMarker options shouldn't have an end time");
+    if (profiler_is_active_and_unpaused() &&
+        mOptions.Timing().StartTime().IsNull()) {
+      mOptions.Set(mozilla::MarkerTiming::InstantNow());
+    }
+  }
+
+  ~AutoProfilerTerminatingFlowMarker() {
+    if (profiler_is_active_and_unpaused()) {
+      mOptions.TimingRef().SetIntervalEnd();
+      profiler_add_marker(
+          mozilla::ProfilerString8View::WrapNullTerminatedString(mMarkerName),
+          mCategory, std::move(mOptions), TerminatingFlowStackMarker{}, mFlow);
+    }
+  }
+
+ public:
+  const char* mMarkerName;
+  mozilla::MarkerCategory mCategory;
+  mozilla::MarkerOptions mOptions;
+  Flow mFlow;
+};
+
+class MOZ_RAII AutoProfilerTerminatingFlowMarkerFlowOnly {
+ public:
+  AutoProfilerTerminatingFlowMarkerFlowOnly(
+      const char* aMarkerName, const mozilla::MarkerCategory& aCategory,
+      Flow aFlow)
+      : mMarkerName(aMarkerName), mCategory(aCategory), mFlow(aFlow) {
+    MOZ_ASSERT(mOptions.Timing().EndTime().IsNull(),
+               "AutoProfilerTextMarker options shouldn't have an end time");
+    if (profiler_is_active_and_unpaused() &&
+        profiler_feature_active(ProfilerFeature::Flows) &&
+        mOptions.Timing().StartTime().IsNull()) {
+      mOptions.Set(mozilla::MarkerTiming::InstantNow());
+    }
+  }
+
+  ~AutoProfilerTerminatingFlowMarkerFlowOnly() {
+    if (profiler_is_active_and_unpaused() &&
+        profiler_feature_active(ProfilerFeature::Flows)) {
+      mOptions.TimingRef().SetIntervalEnd();
+      profiler_add_marker(
+          mozilla::ProfilerString8View::WrapNullTerminatedString(mMarkerName),
+          mCategory, std::move(mOptions), TerminatingFlowStackMarker{}, mFlow);
+    }
+  }
+
+ public:
+  const char* mMarkerName;
+  mozilla::MarkerCategory mCategory;
+  mozilla::MarkerOptions mOptions;
+  Flow mFlow;
+};
+
+#define AUTO_PROFILER_FLOW_MARKER(markerName, categoryName, flow) \
+  ::mozilla::AutoProfilerFlowMarker PROFILER_RAII(                \
+      markerName, ::mozilla::baseprofiler::category::categoryName, flow)
+
+#define AUTO_PROFILER_FLOW_MARKER_TEXT(markerName, categoryName, options,   \
+                                       text, flow)                          \
+  AutoProfilerFlowTextMarker PROFILER_RAII(                                 \
+      markerName, ::mozilla::baseprofiler::category::categoryName, options, \
+      text, flow)
+
+#define AUTO_PROFILER_TERMINATING_FLOW_MARKER(markerName, categoryName, flow) \
+  ::mozilla::AutoProfilerTerminatingFlowMarker PROFILER_RAII(                 \
+      markerName, ::mozilla::baseprofiler::category::categoryName, flow)
+
+#define AUTO_PROFILER_TERMINATING_FLOW_MARKER_FLOW_ONLY(markerName,         \
+                                                        categoryName, flow) \
+  ::mozilla::AutoProfilerTerminatingFlowMarkerFlowOnly PROFILER_RAII(       \
+      markerName, ::mozilla::baseprofiler::category::categoryName, flow)
+
+#define PROFILER_MARKER_FLOW_ONLY(markerName, categoryName, options,           \
+                                  MarkerType, ...)                             \
+  do {                                                                         \
+    if (profiler_feature_active(ProfilerFeature::Flows)) {                     \
+      profiler_add_marker(markerName, ::geckoprofiler::category::categoryName, \
+                          options, ::geckoprofiler::markers::MarkerType{},     \
+                          ##__VA_ARGS__);                                      \
+    }                                                                          \
+  } while (false)
+
+}  // namespace mozilla
+#endif  // FlowMarkers_h

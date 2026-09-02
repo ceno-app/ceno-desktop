@@ -1,0 +1,206 @@
+<html>
+
+<head>
+  <title>ARIA state change event testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function testToggleAttribute(aID, aAttribute, aIncludeMixed) {
+      let toggleState =
+        aAttribute == "aria-pressed" ? STATE_PRESSED : STATE_CHECKED;
+
+      // bug 472142. Role changes here if aria-pressed is added,
+      // accessible should be recreated?
+      let stateChange = waitForStateChange(aID, toggleState, true);
+      getNode(aID).setAttribute(aAttribute, "true");
+      await stateChange;
+
+      stateChange = waitForStateChange(aID, toggleState, false);
+      getNode(aID).setAttribute(aAttribute, "false");
+      await stateChange;
+
+      if (aIncludeMixed) {
+        stateChange = waitForStateChange(aID, STATE_MIXED, true);
+        getNode(aID).setAttribute(aAttribute, "mixed");
+        await stateChange;
+
+        stateChange = waitForStateChange(aID, STATE_MIXED, false);
+        getNode(aID).setAttribute(aAttribute, "");
+        await stateChange;
+      }
+
+      stateChange = waitForStateChange(aID, toggleState, true);
+      getNode(aID).setAttribute(aAttribute, "true");
+      await stateChange;
+
+      if (aIncludeMixed) {
+        stateChange = Promise.all([
+          waitForStateChange(aID, STATE_MIXED, true),
+          waitForStateChange(aID, toggleState, false),
+        ]);
+        getNode(aID).setAttribute(aAttribute, "mixed");
+        await stateChange;
+
+        stateChange = Promise.all([
+          waitForStateChange(aID, STATE_MIXED, false),
+          waitForStateChange(aID, toggleState, true),
+        ]);
+        getNode(aID).setAttribute(aAttribute, "true");
+        await stateChange;
+      }
+
+      // bug 472142. Role changes here too if aria-pressed is removed,
+      // accessible should be recreated?
+      stateChange = waitForStateChange(aID, toggleState, false);
+      getNode(aID).removeAttribute(aAttribute);
+      await stateChange;
+    }
+
+    async function doTests() {
+      let stateChange = waitForStateChange("tab", STATE_EXPANDED, true);
+      getNode("tab").setAttribute("aria-expanded", "true");
+      await stateChange;
+
+      stateChange = waitForStateChange("tab", STATE_EXPANDED, false);
+      getNode("tab").setAttribute("aria-expanded", "false");
+      await stateChange;
+
+      stateChange = waitForStateChange("aria_doc", STATE_BUSY, true);
+      getNode("aria_doc").setAttribute("aria-busy", "true");
+      await stateChange;
+
+      stateChange = waitForStateChange("aria_doc", STATE_BUSY, false);
+      getNode("aria_doc").setAttribute("aria-busy", "false");
+      await stateChange;
+
+      stateChange = waitForStateChange(
+        "current_page_1",
+        EXT_STATE_CURRENT,
+        false,
+        true
+      );
+      getNode("current_page_1").setAttribute("aria-current", "false");
+      await stateChange;
+
+      stateChange = waitForStateChange(
+        "current_page_2",
+        EXT_STATE_CURRENT,
+        true,
+        true
+      );
+      getNode("current_page_2").setAttribute("aria-current", "page");
+      await stateChange;
+
+      stateChange = waitForStateChange(
+        "current_page_2",
+        EXT_STATE_CURRENT,
+        false,
+        true
+      );
+      getNode("current_page_2").setAttribute("aria-current", "false");
+      await stateChange;
+
+      stateChange = waitForStateChange(
+        "current_page_3",
+        EXT_STATE_CURRENT,
+        true,
+        true
+      );
+      getNode("current_page_3").setAttribute("aria-current", "true");
+      await stateChange;
+
+      stateChange = waitForStateChange(
+        "current_page_3",
+        EXT_STATE_CURRENT,
+        false,
+        true
+      );
+      getNode("current_page_3").setAttribute("aria-current", "");
+      await stateChange;
+
+      await testToggleAttribute("pressable", "aria-pressed", true);
+      await testToggleAttribute("pressable_native", "aria-pressed", true);
+      await testToggleAttribute("checkable", "aria-checked", true);
+      await testToggleAttribute("checkableBool", "aria-checked", false);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=551684"
+     title="No statechange event for aria-expanded on native HTML elements, is fired on ARIA widgets">
+    Mozilla Bug 551684
+  </a><br>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=648133"
+     title="fire state change event for aria-busy">
+    Mozilla Bug 648133
+  </a><br>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=467143"
+     title="mixed state change event is fired for focused accessible only">
+    Mozilla Bug 467143
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=989958"
+     title="Pressed state is not exposed on a button element with aria-pressed attribute">
+    Mozilla Bug 989958
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=1136563"
+     title="Support ARIA 1.1 switch role">
+    Mozilla Bug 1136563
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=1355921"
+     title="Elements with a defined, non-false value for aria-current should expose ATK_STATE_ACTIVE">
+    Mozilla Bug 1355921
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <!-- aria-expanded -->
+  <div id="tab" role="tab" aria-expanded="false">expandable tab</div>
+
+  <!-- aria-busy -->
+  <div id="aria_doc" role="document" tabindex="0">A document</div>
+
+  <!-- aria-pressed -->
+  <div id="pressable" role="button"></div>
+  <button id="pressable_native"></button>
+
+  <!-- aria-checked -->
+  <div id="checkable" role="checkbox"></div>
+  <div id="checkableBool" role="switch"></div>
+
+  <!-- aria-current -->
+  <div id="current_page_1" role="link" aria-current="page">1</div>
+  <div id="current_page_2" role="link" aria-current="false">2</div>
+  <div id="current_page_3" role="link">3</div>
+</body>
+</html>
