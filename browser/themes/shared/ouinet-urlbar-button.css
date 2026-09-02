@@ -1,0 +1,80 @@
+/* Adapted from tor-urlbar-button.css */
+
+.ouinet-urlbar-button:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  border-radius: var(--urlbar-icon-border-radius);
+  --ouinet-urlbar-button-inline-padding: 8px;
+  padding-inline: var(--ouinet-urlbar-button-inline-padding);
+  margin: 0;
+}
+
+.ouinet-urlbar-button > * {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.ouinet-urlbar-button:focus-visible {
+  /* This button lies within the urlbar, so if the outline extends beyond the
+   * button's boundary, it will be clipped by the urlbar.
+   * Most button's in the urlbar get around this by using --focus-outline-inset,
+   * but our button has a purple background, which does not contrast well with
+   * the focus outline.
+   * Therefore, we use an offset outline rather than an inset outline, and
+   * compensate by shrinking the button's width and height so that the outline
+   * fits within the non-focused button boundary. Essentially, this has a
+   * similar effect to using an inset outline that matches the color of the
+   * urlbar background, but we keep the rounded corners. */
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+  /* Calculate the difference between the button's border area and the outline
+   * area. */
+  --ouinet-urlbar-focus-outline-difference: calc(
+    var(--focus-outline-offset)
+    + var(--focus-outline-width)
+  );
+  /* For the inline direction, we shrink the padding by the difference, and
+   * increase the margin by the same amount so that the button text remains in
+   * the same position.
+   * For the block direction, the height of the button is flexibly sized with
+   * the urlbar height, so we should only need to increase the margin. */
+  padding-inline: calc(
+    var(--ouinet-urlbar-button-inline-padding)
+    - var(--ouinet-urlbar-focus-outline-difference)
+  );
+  margin: var(--ouinet-urlbar-focus-outline-difference);
+}
+
+.ouinet-urlbar-button:focus-visible > * {
+  /* Negate the margin that would be added on focus to ensure the button does
+   * not grow in height.
+   * Ideally, this should not change anything noticeable, otherwise the text
+   * could be clipped when focused. */
+  margin-block: calc(-1 * var(--ouinet-urlbar-focus-outline-difference));
+}
+
+#urlbar[usertyping] .ouinet-urlbar-button {
+  /* Hide whilst the user is typing in the url bar. */
+  display: none;
+}
+
+/* Make the button look plain like the identity #urlbar-label-box. */
+.ouinet-urlbar-button.ouinet-urlbar-button-plain {
+  background-color: var(--urlbar-box-bgcolor);
+  color: var(--urlbar-box-text-color);
+}
+
+.ouinet-urlbar-button.ouinet-urlbar-button-plain:focus-visible {
+  outline-color: var(--focus-outline-color);
+}
+
+.ouinet-urlbar-button.ouinet-urlbar-button-plain:hover {
+  background-color: var(--urlbar-box-hover-bgcolor);
+  color: var(--urlbar-box-hover-text-color);
+}
+
+.ouinet-urlbar-button.ouinet-urlbar-button-plain:hover:active {
+  background-color: var(--urlbar-box-active-bgcolor);
+  color: var(--urlbar-box-hover-text-color);
+}

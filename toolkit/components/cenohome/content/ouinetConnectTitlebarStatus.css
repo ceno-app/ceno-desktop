@@ -1,0 +1,27 @@
+#ouinet-connect-titlebar-status:not([hidden]) {
+  display: flex;
+  align-items: center;
+  /* Want same as #private-browsing-indicator-with-label */
+  margin-inline: 7px;
+}
+
+#ouinet-connect-titlebar-status-label {
+  margin-inline: 6px;
+  white-space: nowrap;
+}
+
+#ouinet-connect-titlebar-status img {
+  -moz-context-properties: fill, stroke;
+  fill: currentColor;
+  stroke: currentColor;
+  width: 16px;
+  height: 16px;
+  object-fit: none;
+}
+
+/*
+@TODO:
+#ouinet-connect-titlebar-status.ouinet-connect-status-connected {
+  color: var(--ceno-accent-color);
+}
+*/

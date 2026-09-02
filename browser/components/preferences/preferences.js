@@ -12,6 +12,7 @@
 /* import-globals-from findInPage.js */
 /* import-globals-from /browser/base/content/utilityOverlay.js */
 /* import-globals-from /toolkit/content/preferencesBindings.js */
+/* import-globals-from ../cenonetworkpreferences/content/connectionPane.js */
 
 /** @import MozButton from "chrome://global/content/elements/moz-button.mjs" */
 /** @import {SettingConfig, SettingEmitChange} from "chrome://global/content/preferences/Setting.mjs" */
@@ -608,6 +609,9 @@ function init_all() {
       register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
     }
   }
+
+  document.getElementById("category-connection").hidden = false;
+  register_module("paneConnection", gConnectionPane);
 
   gSearchResultsPane.init();
   gMainPane.preInit();

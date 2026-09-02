@@ -1,0 +1,5 @@
+[
+  ["ddg", "chrome://global/content/search/duckduckgo.ico"],
+  ["startpage", "chrome://global/content/search/startpage.png"],
+  ["wikipedia", "chrome://global/content/search/wikipedia.ico"]
+]

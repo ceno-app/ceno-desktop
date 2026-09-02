@@ -83,7 +83,7 @@ class nsSocketTransport final : public nsASocketHandler,
   nsresult InitWithConnectedSocket(PRFileDesc* aFD, const NetAddr* aAddr,
                                    nsIInterfaceRequestor* aCallbacks);
 
-#ifdef XP_UNIX
+// #ifdef XP_UNIX
   // This method instructs the socket transport to open a socket
   // connected to the given Unix domain address. We can only create
   // unlayered, simple, stream sockets.
@@ -95,7 +95,7 @@ class nsSocketTransport final : public nsASocketHandler,
   // name parameter has to be \0.
   // We can only create unlayered, simple, stream sockets.
   nsresult InitWithName(const char* name, size_t len);
-#endif
+// #endif
 
   // nsASocketHandler methods:
   void OnSocketReady(PRFileDesc*, int16_t outFlags) override;

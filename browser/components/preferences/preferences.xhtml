@@ -43,6 +43,8 @@
     href="chrome://browser/content/preferences/letterboxing.css"
   />
 
+  <link rel="stylesheet" href="chrome://browser/content/cenonetworkpreferences/cenoNetworkPreferences.css" />
+
   <link rel="localization" href="branding/brand.ftl"/>
   <link rel="localization" href="browser/browser.ftl"/>
     <!-- Used by fontbuilder.js -->
@@ -79,6 +81,7 @@
   <link rel="localization" href="toolkit/updates/history.ftl"/>
   <link rel="localization" href="toolkit/global/profileSelection.ftl"/>
   <link rel="localization" href="toolkit/global/base-browser.ftl"/>
+  <link rel="localization" href="toolkit/global/ceno-browser.ftl"/>
 
   <link rel="shortcut icon" href="chrome://global/skin/icons/settings.svg"/>
 
@@ -146,6 +149,9 @@
         iconsrc="chrome://browser/skin/preferences/category-privacy-security.svg"
         data-l10n-id="pane-privacy-title3">
       </html:moz-page-nav-button>
+
+      #include ../cenonetworkpreferences/content/connectionCategory.inc.xhtml
+
       <html:moz-page-nav-button id="category-passwords-autofill"
         view="panePasswordsAutofill"
         iconsrc="chrome://browser/skin/login.svg"
@@ -260,6 +266,7 @@
 #include privacy.inc.xhtml
 #include sync.inc.xhtml
 #include moreFromMozilla.inc.xhtml
+#include ../cenonetworkpreferences/content/connectionPane.inc.xhtml
         </vbox>
       </vbox>
     </vbox>

@@ -66,6 +66,24 @@ export let RemotePageAccessManager = {
       RPMAddMessageListener: ["ActivityStream:MainToContent"],
       RPMGetFormatURLPref: ["app.support.baseURL"],
     },
+    "about:cenohome": {
+      RPMAddMessageListener: [
+        "cenohome:state-change",
+        "cenohome:quickstart-change",
+      ],
+      RPMSendAsyncMessage: [
+        "cenohome:connect",
+        "cenohome:cancel",
+        "cenohome:set-quickstart",
+        "cenohome:openconnectionpreferences",
+        "cenohome:showlogfile",
+        "cenohome:enableloggingandreconnect",
+        "cenohome:allowfirewall",
+      ],
+      RPMSendQuery: [
+        "cenohome:get-init-args"
+      ],
+    },
     "about:httpsonlyerror": {
       RPMGetFormatURLPref: ["app.support.baseURL"],
       RPMGetIntPref: ["security.dialog_enable_delay"],
