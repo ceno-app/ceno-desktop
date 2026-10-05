@@ -43,8 +43,6 @@
     href="chrome://browser/content/preferences/letterboxing.css"
   />
 
-  <link rel="stylesheet" href="chrome://browser/content/cenonetworkpreferences/cenoNetworkPreferences.css" />
-
   <link rel="localization" href="branding/brand.ftl"/>
   <link rel="localization" href="browser/browser.ftl"/>
     <!-- Used by fontbuilder.js -->
@@ -150,7 +148,11 @@
         data-l10n-id="pane-privacy-title3">
       </html:moz-page-nav-button>
 
-      #include ../cenonetworkpreferences/content/connectionCategory.inc.xhtml
+      <html:moz-page-nav-button id="category-connection"
+        view="paneConnection"
+        iconsrc="chrome://browser/content/cenonetworkpreferences/ceno-icon.svg"
+        data-l10n-id="ceno-browser-ouinet-preferences-title">
+      </html:moz-page-nav-button>
 
       <html:moz-page-nav-button id="category-passwords-autofill"
         view="panePasswordsAutofill"
@@ -266,7 +268,6 @@
 #include privacy.inc.xhtml
 #include sync.inc.xhtml
 #include moreFromMozilla.inc.xhtml
-#include ../cenonetworkpreferences/content/connectionPane.inc.xhtml
         </vbox>
       </vbox>
     </vbox>

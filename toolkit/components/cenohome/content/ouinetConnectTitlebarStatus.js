@@ -18,36 +18,36 @@ const OuinetStages = Object.freeze({
   Error: "Error",
 });
 
-// Keep ouinetStageToL10n in sync with ouinetConnectTitlebarStatus.js
+// Keep ouinetStageToL10n in sync with cenonetworkpreferences/config/ceno-connection.mjs
 function ouinetStageToL10n(state, internetStatus) {
   switch (state) {
     case OuinetStages.Connected:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connected";
+      return "ceno-browser-ouinet-titlebar-status-connected";
 
     case OuinetStages.Degraded:
-      if (internetStatus === InternetStatus.Online)
-        return "ceno-browser-ouinet-preferences-ouinet-connection-status-degraded";
-      else
-        return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
+      if (internetStatus === InternetStatus.Online) {
+        return "ceno-browser-ouinet-titlebar-status-degraded";
+      }
+      return "ceno-browser-ouinet-titlebar-status-local-cache";
 
     case OuinetStages.StartingProcess:
     case OuinetStages.ConnectingToNetwork:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connecting";
+      return "ceno-browser-ouinet-titlebar-status-connecting";
 
     case OuinetStages.Error:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-error";
+      return "ceno-browser-ouinet-titlebar-status-error";
 
     case OuinetStages.Exiting:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-exiting";
+      return "ceno-browser-ouinet-titlebar-status-exiting";
     case OuinetStages.Restarting:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-restarting";
+      return "ceno-browser-ouinet-titlebar-status-restarting";
 
     case OuinetStages.Init:
     case OuinetStages.Exited:
     default:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
+      return "ceno-browser-ouinet-titlebar-status-not-connected";
   }
-};
+}
 
 /**
  * A OuinetConnect status shown in the application title bar.
