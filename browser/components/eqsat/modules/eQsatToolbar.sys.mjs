@@ -1,6 +1,6 @@
 const { eQsatExtractor } = ChromeUtils.importESModule("resource:///modules/eQsatExtractor.sys.mjs");
 const { getPendingFiles } = ChromeUtils.importESModule("resource:///modules/eQsatCommandLine.sys.mjs");
-const { CustomizableUI } = ChromeUtils.importESModule("resource:///modules/CustomizableUI.sys.mjs");
+const { CustomizableUI } = ChromeUtils.importESModule("moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs");
 
 let eqsatQuitObserverStrings = null;
 
