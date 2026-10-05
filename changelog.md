@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.7] - 2026-10-05
+### Changed
+- Updated Base Browser to 153.2.0esr-16.0-1-build2
+
 ## [0.1.7] - 2026-09-01
 ### Changed
 - Updated Base Browser to 140.15.0esr-15.0-1-build1
