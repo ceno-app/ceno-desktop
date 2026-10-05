@@ -13,79 +13,121 @@ ceno-browser-about-ceno-home-quickstart-toggle = Always connect automatically
 ceno-browser-about-ceno-home-cancel-button = Cancel
 ceno-browser-about-ceno-home-connect-button = Connect
 ceno-browser-about-ceno-home-disconnect-button = Disconnect
-
-ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
-ceno-browser-about-ceno-home-error-firewall-blocked = Error: Ceno Network Client is blocked by firewall.
 ceno-browser-about-ceno-home-allow-firewall = Add Firewall Rule
-
-ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile">Show logfile</a>.
-ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
 ceno-browser-about-ceno-home-enableloggingandreconnect-button = Enable Local Logging and Retry
 
-ceno-browser-about-ceno-home-error-udp-port-mismatch = Warning: Failed to acquire requested port <span data-l10n-name="requested">{ $requested }</span>, using port <span data-l10n-name="actual">{ $actual }</span>.
+ceno-browser-ouinet-preferences-connect-button =
+    .label = { ceno-browser-about-ceno-home-connect-button }
+ceno-browser-ouinet-preferences-cancel-button =
+    .label = { ceno-browser-about-ceno-home-cancel-button }
+ceno-browser-ouinet-preferences-disconnect-button =
+    .label = { ceno-browser-about-ceno-home-disconnect-button }
+ceno-browser-ouinet-preferences-allow-firewall-button =
+    .label = { ceno-browser-about-ceno-home-allow-firewall }
+ceno-browser-ouinet-preferences-enableloggingandreconnect-button =
+    .label = { ceno-browser-about-ceno-home-enableloggingandreconnect-button }
+
+ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach internet. Check internet connection.
+ceno-browser-ouinet-preferences-link-status-offline =
+    .message = { ceno-browser-about-ceno-home-link-status-offline }
+
+ceno-browser-about-ceno-home-error-firewall-blocked = Error: Ceno Network Client is blocked by firewall.
+ceno-browser-ouinet-preferences-error-firewall-blocked =
+    .message = { ceno-browser-about-ceno-home-error-firewall-blocked }
+
+ceno-browser-about-ceno-home-error-ouinet-failed-to-start-show-log = Error: Failed to start Ceno Network Client. <a data-l10n-name="showlogfile">Show logfile</a>.
+ceno-browser-ouinet-preferences-show-log-button =
+    .label = Show logfile
+
+ceno-browser-about-ceno-home-error-ouinet-failed-to-start = Error: Failed to start Ceno Network Client.
+ceno-browser-ouinet-preferences-error-failed-to-start =
+    .message = { ceno-browser-about-ceno-home-error-ouinet-failed-to-start }
+
+ceno-browser-about-ceno-home-error-udp-port-mismatch = Warning: Failed to acquire requested port { $requested }, using port { $actual }.
+ceno-browser-ouinet-preferences-error-udp-port-mismatch =
+    .message = { ceno-browser-about-ceno-home-error-udp-port-mismatch }
 
 ceno-browser-ouinet-titlebar-status-name = Ceno Network Connection
 ceno-browser-ouinet-titlebar-status-not-connected = Not connected to Ceno Network
+ceno-browser-ouinet-titlebar-status-connecting = Connecting
+ceno-browser-ouinet-titlebar-status-degraded = Connected (network connection degraded)
+ceno-browser-ouinet-titlebar-status-local-cache = Local Cache Only
+ceno-browser-ouinet-titlebar-status-connected = Connected
+ceno-browser-ouinet-titlebar-status-error = Error
+ceno-browser-ouinet-titlebar-status-exiting = Exiting
+ceno-browser-ouinet-titlebar-status-restarting = Restarting
+
+ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected =
+    .label = { ceno-browser-ouinet-titlebar-status-not-connected }
+ceno-browser-ouinet-preferences-ouinet-connection-status-connecting =
+    .label = { ceno-browser-ouinet-titlebar-status-connecting }
+ceno-browser-ouinet-preferences-ouinet-connection-status-degraded =
+    .label = { ceno-browser-ouinet-titlebar-status-degraded }
+ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache =
+    .label = { ceno-browser-ouinet-titlebar-status-local-cache }
+ceno-browser-ouinet-preferences-ouinet-connection-status-connected =
+    .label = { ceno-browser-ouinet-titlebar-status-connected }
+ceno-browser-ouinet-preferences-ouinet-connection-status-error =
+    .label = { ceno-browser-ouinet-titlebar-status-error }
+ceno-browser-ouinet-preferences-ouinet-connection-status-exiting =
+    .label = { ceno-browser-ouinet-titlebar-status-exiting }
+ceno-browser-ouinet-preferences-ouinet-connection-status-restarting =
+    .label = { ceno-browser-ouinet-titlebar-status-restarting }
 
 ceno-browser-ouinet-urlbar-connect-button = Connect to Ceno Network
 
-ceno-browser-ouinet-preferences-heading = Connection
-ceno-browser-ouinet-preferences-category =
-    .tooltiptext = { ceno-browser-ouinet-preferences-heading }
+ceno-browser-ouinet-preferences-heading =
+    .heading = Ceno Network Connection
+    .label = Ceno Network Connection
+ceno-browser-ouinet-preferences-title = Connection
+    .title = Ceno Network Connection
 
-ceno-browser-ouinet-preferences-internet-connection-status-label = Internet:
-ceno-browser-ouinet-preferences-internet-connection-status-online = Online
-ceno-browser-ouinet-preferences-internet-connection-status-offline = Offline
-ceno-browser-ouinet-preferences-internet-connection-status-unknown = Unknown
+ceno-browser-ouinet-preferences-client-preferences-heading =
+    .label = Ceno Network Client Preferences
 
-ceno-browser-ouinet-preferences-ouinet-connection-status-label = Ceno Network:
-ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected = Not Connected
-ceno-browser-ouinet-preferences-ouinet-connection-status-connecting = Connecting
-ceno-browser-ouinet-preferences-ouinet-connection-status-degraded = Connected (network connection degraded)
-ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache = Local Cache Only
-ceno-browser-ouinet-preferences-ouinet-connection-status-connected = Connected
-ceno-browser-ouinet-preferences-ouinet-connection-status-error = Error
-ceno-browser-ouinet-preferences-ouinet-connection-status-exiting = Exiting
-ceno-browser-ouinet-preferences-ouinet-connection-status-restarting = Restarting
+ceno-browser-ouinet-preferences-quickstart =
+    .label = Connect Automatically
+    .description = Automatically connect to the Ceno network at launch using your current connection settings.
 
-ceno-browser-ouinet-preferences-automatic-heading = Connect automatically
-ceno-browser-ouinet-preferences-automatic-description = Automatically connect to the Ceno network at launch using your current connection settings.
-ceno-browser-ouinet-preferences-quickstart-checkbox =
-    .label = Always connect automatically
+ceno-browser-ouinet-preferences-headless =
+    .label = Ceno Network Service
+    .description = Keep Ceno Network Client running in the system tray even after Ceno Browser is closed to provide functionality to the network.
 
-ceno-browser-ouinet-preferences-headless-heading = Ceno Network Service
-ceno-browser-ouinet-preferences-headless-description = Your Ceno application can act as a bridge for other Ceno users and also keep your distributed cache available.
-ceno-browser-ouinet-preferences-headless-checkbox =
-    .label = Keep Ceno Network Service running
+ceno-browser-ouinet-preferences-bridge =
+    .label = Bridge Mode
+    .description = Act as a network bridge to help other users connect to the Ceno Network. This will make your public IP address visible to other Ceno Network users.
 
-ceno-browser-ouinet-preferences-bridge-heading = Bridge Mode
-ceno-browser-ouinet-preferences-bridge-description = Note that this will make your public IP address visible to other Ceno users. Changing this setting requires reconnection to Ceno Network.
-ceno-browser-ouinet-preferences-bridge-checkbox =
-    .label = Enable bridge mode
+ceno-browser-ouinet-preferences-udp-mux-port =
+    .label = Incoming Connections Port
+    .description = Ceno Network Client listens for connections from other nodes on this UDP port.
+ceno-browser-ouinet-preferences-udp-mux-port-random =
+    .label = Use Random Port
 
-ceno-browser-ouinet-preferences-udp-mux-port-heading = Incoming Connections Port
-ceno-browser-ouinet-preferences-udp-mux-port-description = Ceno Network Client listens for connections from other nodes on this UDP port.
-ceno-browser-ouinet-preferences-udp-mux-port-random-checkbox =
-    .label = Assign random port
-ceno-browser-ouinet-preferences-udp-mux-port = Custom UDP port
-
-ceno-browser-ouinet-preferences-sources-heading = Content retrieval sources
+ceno-browser-ouinet-preferences-sources-heading =
+    .label = Content Retrieval Sources
 ceno-browser-ouinet-preferences-sources-origin-access =
-    .label = (Origin access) Direct from website
+    .label = Origin Access
+    .description = Direct from website
 ceno-browser-ouinet-preferences-sources-proxy-access =
-    .label = (Proxy access) Via the Ceno network (personal)
+    .label = Proxy Access
+    .description = Via the Ceno Network (personal)
 ceno-browser-ouinet-preferences-sources-injector-access =
-    .label = (Injector access) Via the Ceno network (public)
+    .label = Injector access
+    .description = Via the Ceno Network (public)
 ceno-browser-ouinet-preferences-sources-distributed-cache =
-    .label = (Distributed cache) From other Ceno users
+    .label = Distributed Cache
+    .description = From other Ceno users
 
-ceno-browser-ouinet-preferences-sources-personal-unreachable = ⚠ Personal browsing mode will fail with current settings. Enable origin access or proxy access.
-ceno-browser-ouinet-preferences-sources-public-unreachable = ⚠ Public browsing mode will fail with current settings. Enable origin access, injector access or distributed cache.
+ceno-browser-ouinet-preferences-sources-personal-unreachable =
+    .message = Personal browsing mode will fail with current settings. Enable origin access or proxy access.
+ceno-browser-ouinet-preferences-sources-public-unreachable =
+    .message = Public browsing mode will fail with current settings. Enable origin access, injector access or distributed cache.
 
-ceno-browser-ouinet-preferences-logging-heading = Logging
-ceno-browser-ouinet-preferences-logging-description = Local logging is used to debug Ceno Network Client
-ceno-browser-ouinet-preferences-logging-show-logfile = Show logfile
-ceno-browser-ouinet-preferences-logging-level = Logging Level
+ceno-browser-ouinet-preferences-logging-heading =
+    .label = Local Logging
+    .description = Local logging is used to debug Ceno Network Client
+ceno-browser-ouinet-preferences-logging-level =
+    .label = Logging Level
 logging-level-silly = Silly
     .label = Silly
 logging-level-debug = Debug
@@ -103,21 +145,25 @@ logging-level-abort = Abort
 logging-level-disabled = Logging Disabled
     .label = Logging Disabled
 
-ceno-browser-ouinet-preferences-network-heading = Network
-
-ceno-browser-ouinet-preferences-local-cache = Local Cache
+ceno-browser-ouinet-preferences-local-cache =
+    .label = Local Cache
 ceno-browser-ouinet-preferences-local-cache-size = Size: { $size }
-ceno-browser-ouinet-preferences-local-cache-size-unknown = Size unknown while offline
-ceno-browser-ouinet-preferences-local-cache-clear-button = Purge now
+ceno-browser-ouinet-preferences-local-cache-clear-button =
+    .label = Purge now
 
-ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints:
-ceno-browser-ouinet-preferences-external-udp = External UDP endpoints:
-ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints:
+ceno-browser-ouinet-preferences-upnp = UPnP: ${ value }
+ceno-browser-ouinet-preferences-upnp-undecided = UPnP: Undecided
 
-ceno-browser-ouinet-preferences-metrics-heading = Background metrics
-ceno-browser-ouinet-preferences-metrics-description = Submit anonymous, privacy respecting metrics to developers
+ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints: ${ value }
+ceno-browser-ouinet-preferences-local-udp-unknown = Local UDP endpoints: Unknown
+ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints: ${ value }
+ceno-browser-ouinet-preferences-public-udp-unknown = Public UDP endpoints: Unknown
+
+ceno-browser-ouinet-preferences-metrics-heading =
+    .label = Background Metrics
+    .description = Submit anonymous, privacy respecting metrics to developers
 ceno-browser-ouinet-preferences-metrics-checkbox =
-    .label = Enable Ceno metrics
+    .label = Enable Metrics for Ceno Network Client
 
 ceno-preferences-doh-setting-enabled =
   .label = Default Protection

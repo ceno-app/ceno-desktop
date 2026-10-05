@@ -12,7 +12,6 @@
 /* import-globals-from findInPage.js */
 /* import-globals-from /browser/base/content/utilityOverlay.js */
 /* import-globals-from /toolkit/content/preferencesBindings.js */
-/* import-globals-from ../cenonetworkpreferences/content/connectionPane.js */
 
 /** @import MozButton from "chrome://global/content/elements/moz-button.mjs" */
 /** @import {SettingConfig, SettingEmitChange} from "chrome://global/content/preferences/Setting.mjs" */
@@ -459,6 +458,20 @@ const CONFIG_PANES = Object.freeze({
     module: "chrome://browser/content/preferences/config/tabs-browsing.mjs",
     visible: () => srdSectionEnabled("tabsBrowsing"),
   },
+  connection: {
+    l10nId: "ceno-browser-ouinet-preferences-heading",
+    iconSrc: "chrome://browser/content/cenonetworkpreferences/ceno-icon.svg",
+    groupIds: [
+      "cenoStatus",
+      "cenoModes",
+      "cenoSources",
+      "cenoLocalCache",
+      "cenoLogging",
+      "cenoMetrics",
+    ],
+    module: "chrome://browser/content/cenonetworkpreferences/config/ceno-connection.mjs",
+    visible: () => true,
+  },
   translations: {
     skip: true, // Skip translations. tor-browser#44710.
     parent: srdSectionEnabled("languages") ? "languages" : "general",
@@ -609,9 +622,6 @@ function init_all() {
       register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
     }
   }
-
-  document.getElementById("category-connection").hidden = false;
-  register_module("paneConnection", gConnectionPane);
 
   gSearchResultsPane.init();
   gMainPane.preInit();

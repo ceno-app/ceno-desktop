@@ -60,16 +60,6 @@ export const InternetStatus = Object.freeze({
   Offline: 0,
   Online: 1,
 });
-export function internetStatusToL10n(status) {
-  switch (status) {
-    case InternetStatus.Online:
-      return "ceno-browser-ouinet-preferences-internet-connection-status-online";
-    case InternetStatus.Offline:
-      return "ceno-browser-ouinet-preferences-internet-connection-status-offline";
-    default:
-      return "ceno-browser-ouinet-preferences-internet-connection-status-unknown";
-  }
-};
 
 // Keep OuinetStages in sync with aboutCenoHome.js and ouinetConnectTitlebarStatus.js
 export const OuinetStages = Object.freeze({
@@ -83,37 +73,6 @@ export const OuinetStages = Object.freeze({
   Exited: "Exited",
   Error: "Error",
 });
-
-// Keep ouinetStageToL10n in sync with ouinetConnectTitlebarStatus.js
-export function ouinetStageToL10n(state, internetStatus) {
-  switch (state) {
-    case OuinetStages.Connected:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connected";
-
-    case OuinetStages.Degraded:
-      if (internetStatus === InternetStatus.Online)
-        return "ceno-browser-ouinet-preferences-ouinet-connection-status-degraded";
-      else
-        return "ceno-browser-ouinet-preferences-ouinet-connection-status-local-cache"
-
-    case OuinetStages.StartingProcess:
-    case OuinetStages.ConnectingToNetwork:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-connecting";
-
-    case OuinetStages.Error:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-error";
-
-    case OuinetStages.Exiting:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-exiting";
-    case OuinetStages.Restarting:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-restarting";
-
-    case OuinetStages.Init:
-    case OuinetStages.Exited:
-    default:
-      return "ceno-browser-ouinet-preferences-ouinet-connection-status-not-connected";
-  }
-};
 
 export const CenoNetworkTopics = Object.freeze({
   StateChange: "cenonetwork:state-change",
