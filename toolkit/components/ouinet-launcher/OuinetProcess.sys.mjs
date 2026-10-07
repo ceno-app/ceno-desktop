@@ -29,6 +29,7 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () => {
  * command line arguments.
  */
 export class OuinetProcess {
+  static #guiExeFile = lazy.OuinetLauncherUtil.getOuinetFile("gui_client", false);
   static #exeFile = lazy.OuinetLauncherUtil.getOuinetFile("client", false);
   static #dataDir = lazy.OuinetLauncherUtil.getOuinetFile("repo", true);
 
@@ -69,9 +70,11 @@ export class OuinetProcess {
 
     this.#makeArgs(credentials, config);
 
-    lazy.logger.debug(`Starting ${OuinetProcess.#exeFile.path}`, this.#args.join(' '));
+    const exeFile = Services.prefs.getBoolPref("ceno.network.ouinet_gui_client", true) ? OuinetProcess.#guiExeFile : OuinetProcess.#exeFile;
+
+    lazy.logger.debug(`Starting ${exeFile.path}`, this.#args.join(' '));
     const options = {
-      command: OuinetProcess.#exeFile.path,
+      command: exeFile.path,
       arguments: this.#args,
       stdin: 'devnull',
       stdout: 'devnull',
@@ -84,7 +87,7 @@ export class OuinetProcess {
         ldLibPath = ":" + ldLibPath;
       }
       options.environment = {
-        LD_LIBRARY_PATH: OuinetProcess.#exeFile.parent.path + ldLibPath,
+        LD_LIBRARY_PATH: exeFile.parent.path + ldLibPath,
       };
       options.environmentAppend = true;
     }
