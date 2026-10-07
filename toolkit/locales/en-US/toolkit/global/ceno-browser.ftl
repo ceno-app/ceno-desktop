@@ -155,12 +155,12 @@ ceno-browser-ouinet-preferences-local-cache-size = Size: { $size }
 ceno-browser-ouinet-preferences-local-cache-clear-button =
     .label = Purge now
 
-ceno-browser-ouinet-preferences-upnp = UPnP: ${ value }
+ceno-browser-ouinet-preferences-upnp = UPnP: { $value }
 ceno-browser-ouinet-preferences-upnp-undecided = UPnP: Undecided
 
-ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints: ${ value }
+ceno-browser-ouinet-preferences-local-udp = Local UDP endpoints: { $value }
 ceno-browser-ouinet-preferences-local-udp-unknown = Local UDP endpoints: Unknown
-ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints: ${ value }
+ceno-browser-ouinet-preferences-public-udp = Public UDP endpoints: { $value }
 ceno-browser-ouinet-preferences-public-udp-unknown = Public UDP endpoints: Unknown
 
 ceno-browser-ouinet-preferences-metrics-heading =
