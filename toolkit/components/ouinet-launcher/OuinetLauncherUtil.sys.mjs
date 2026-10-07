@@ -77,7 +77,15 @@ class OuinetFile {
     switch (this.fileType) {
       case "client":
         this.file = OuinetFile.ouinetDir;
-        this.file.append(OuinetLauncherUtil.isWindows ? "ceno-network-client.exe" : "client");
+        if (OuinetLauncherUtil.isWindows) {
+          if (Services.prefs.getBoolPref("ceno.network.ouinet_gui_client", true)) {
+            this.file.append("ceno-network-client.exe");
+          } else {
+            this.file.append("client.exe");
+          }
+        } else {
+          this.file.append("client");
+        }
         break;
       case "client-firewall-allow":
         if (!OuinetLauncherUtil.isWindows) {

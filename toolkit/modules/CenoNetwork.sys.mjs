@@ -35,6 +35,8 @@ export const OuinetPrefs = Object.freeze({
 
   udp_mux_port: "ceno.network.udp_mux_port",
   udp_mux_port_random: "ceno.network.udp_mux_port_random",
+
+  ouinet_gui_client: "ceno.network.ouinet_gui_client",
 });
 const OuinetPrefsBranch = Services.prefs.getBranch("ceno.network.");
 
@@ -843,6 +845,7 @@ class _CenoNetwork {
         OuinetPrefs.bridge,
         OuinetPrefs.udp_mux_port,
         OuinetPrefs.udp_mux_port_random,
+        OuinetPrefs.ouinet_gui_client,
       ];
       if (restartablePrefs.includes(fullPrefName)) {
         this.#restartIfRunning();
