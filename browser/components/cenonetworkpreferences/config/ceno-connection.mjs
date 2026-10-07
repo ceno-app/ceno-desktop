@@ -230,7 +230,7 @@ for (let [id, row] of Object.entries(STATUS_ROWS)) {
       const value = row.getValue();
       return value == null ?
         { ...config, l10nId: row.emptyL10n } :
-        { ...config, l10nId: row.valueL10n, l10nArgs: { value } };
+        { ...config, l10nId: row.valueL10n, l10nArgs: { value: value } };
     },
     visible: () => [OuinetStages.Connected, OuinetStages.Degraded].includes(state().ouinetStage),
   });
