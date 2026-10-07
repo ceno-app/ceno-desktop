@@ -56,3 +56,5 @@ pref("ceno.eqsat.add_www_subdomain", "bbc.com,iranwire.com,iranintl.com,radiofar
 pref("ceno.eqsat.append_slash", "tg.ceno.app");
 
 pref("network.captive-portal-service.enabled", false);
+
+pref("ceno.network.ouinet_gui_client", true);

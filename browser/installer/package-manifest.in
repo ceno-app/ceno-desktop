@@ -201,9 +201,8 @@
 @BINPATH@/Ouinet/ceno-network-client.exe
 @BINPATH@/Ouinet/ceno-network-client-terminator.exe
 @BINPATH@/Ouinet/ceno-network-client-firewall-allow.exe
-#else
-@BINPATH@/Ouinet/client@BIN_SUFFIX@
 #endif
+@BINPATH@/Ouinet/client@BIN_SUFFIX@
 @BINPATH@/browser/dot-ceno.ico
 
 ; [Components]

@@ -103,6 +103,10 @@ ceno-browser-ouinet-preferences-udp-mux-port =
 ceno-browser-ouinet-preferences-udp-mux-port-random =
     .label = Use Random Port
 
+ceno-browser-ouinet-preferences-ouinet_gui_client =
+    .label = Show Ceno Network Client in System Tray
+    .description = Disable to use Ouinet Network Client without GUI Integration
+
 ceno-browser-ouinet-preferences-sources-heading =
     .label = Content Retrieval Sources
 ceno-browser-ouinet-preferences-sources-origin-access =

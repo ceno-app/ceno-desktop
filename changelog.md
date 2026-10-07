@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.8] - 2026-10-05
+## [0.1.8] - 2026-10-07
 ### Changed
 - Updated Base Browser to 153.2.0esr-16.0-1-build2
 - Reimplemented Ceno preferences page
 - Update Ouinet client to 1.6.11
+- Added preference to use Ouinet's client.exe instead of ceno-network-client.exe. This allows using it without having an icon in the system tray.
 
 ## [0.1.7] - 2026-09-01
 ### Changed
