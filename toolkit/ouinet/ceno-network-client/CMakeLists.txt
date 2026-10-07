@@ -49,7 +49,7 @@ add_executable(ceno-network-client WIN32
 
 add_library(MinGWLibClient SHARED IMPORTED)
 
-SET(OUINET_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-mingw32/dist/bin/Ouinet/"
+SET(OUINET_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../obj-x86_64-w64-windows-msvc/dist/bin/Ouinet/"
     CACHE PATH "Path to Ouinet binaries")
 
 if(NOT EXISTS "${OUINET_DIR}")
