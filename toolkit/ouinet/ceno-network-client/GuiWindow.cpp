@@ -193,8 +193,10 @@ static bool createNotificationIcon(HWND hWnd) {
 }
 
 static void updateNotificationIcon(const int iconId) {
-    if (!Shell_NotifyIcon(NIM_MODIFY, &icons[iconId])) {
+    if (notificationShown) {
+      if (!Shell_NotifyIcon(NIM_MODIFY, &icons[iconId])) {
         ShowError(L"Failed to show system tray icon:", GetLastErrorAsWString());
+      }
     }
 }
 
@@ -341,10 +343,9 @@ static LRESULT CALLBACK windowProcedure(HWND hWnd, const UINT message, const WPA
         break;
     case WM_CREATE:
         windowHandleForCommunicatingFromOtherThreads = hWnd;
-        if (!loadIcons(hWnd))
-            return -1;
-        if (!createNotificationIcon(hWnd))
-            return -1;
+        if (loadIcons(hWnd)) {
+          createNotificationIcon(hWnd);
+        }
         {
             const auto now = std::chrono::steady_clock::now();
             if (EXIT_SUCCESS != ouinet_client_run(args->argc, args->argv.data(), onOuinetExit))
