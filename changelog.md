@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.9]
+### Changed
+- Allow Ceno Network Client to keep running even if the system tray icon creation failed
+### Removed
+- Removed previously introduced preference to allow using Ouinet's client.exe instead of ceno-network-client.exe.
+
 ## [0.1.8] - 2026-10-07
 ### Changed
 - Updated Base Browser to 153.2.0esr-16.0-1-build2

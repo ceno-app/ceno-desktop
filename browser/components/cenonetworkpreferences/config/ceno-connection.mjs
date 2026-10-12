@@ -77,7 +77,6 @@ Preferences.addAll([
 
   { id: OuinetPrefs.logging_level, type: "string" },
   { id: OuinetPrefs.metrics, type: "bool" },
-  { id: OuinetPrefs.ouinet_gui_client, type: "bool" },
 ]);
 
 Preferences.addSetting({
@@ -240,7 +239,6 @@ const TOGGLES = {
   cenoQuickstart: OuinetPrefs.quickstart,
   cenoHeadless: OuinetPrefs.headless,
   cenoBridge: OuinetPrefs.bridge,
-  ouinet_gui_client: OuinetPrefs.ouinet_gui_client,
   cenoOriginAccess: OuinetPrefs.origin_access,
   cenoProxyAccess: OuinetPrefs.proxy_access,
   cenoInjectorAccess: OuinetPrefs.injector_access,
@@ -335,7 +333,6 @@ SettingGroupManager.registerGroups({
       { id: "cenoBridge", l10nId: "ceno-browser-ouinet-preferences-bridge", control: "moz-toggle" },
       { id: "cenoUdpMuxPort", l10nId: "ceno-browser-ouinet-preferences-udp-mux-port", control: "moz-input-text", controlAttrs: { type: "number", min: 1, max: 65535 } },
       { id: "cenoUdpMuxPortRandom", l10nId: "ceno-browser-ouinet-preferences-udp-mux-port-random", control: "moz-toggle" },
-      { id: "ouinet_gui_client", l10nId: "ceno-browser-ouinet-preferences-ouinet_gui_client", control: "moz-toggle" },
     ],
   },
   cenoSources: {
