@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Updated CA Certificates to 2026-10-20
 - Allow Ceno Network Client to keep running even if the system tray icon creation failed
+- Updated uBlock Origin to 1.75.0
 ### Removed
 - Removed previously introduced preference to allow using Ouinet's client.exe instead of ceno-network-client.exe.
 
