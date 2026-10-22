@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Updated uBlock Origin to 1.75.0
 ### Removed
 - Removed previously introduced preference to allow using Ouinet's client.exe instead of ceno-network-client.exe.
+## Added
+- Added More from eQualitie preferences page
 
 ## [0.1.8] - 2026-10-07
 ### Changed

@@ -220,3 +220,73 @@ eqsat-experimental-3 = 2. Import base and update packages together.
 eqsat-experimental-4 = 3. Connect to Ceno Network.
 eqsat-experimental-5 = Importing update package is less reliable if connection to Ceno Network is made between import of base and import of update packages. If connection has already been made, disconnect and import base package again.
 eqsat-dismiss = Dismiss
+
+more-from-equalitie-censorship-resistance = Censorship Resistance
+more-from-equalitie-web-security = Web Security
+more-from-equalitie-capacity-building = Capacity Building
+
+more-from-equalitie-ceno-android =
+    .label = Ceno for Android
+more-from-equalitie-ceno-iOS =
+    .label = Ceno for iOS
+
+more-from-equalitie-android-google-play =
+    Scan the QR code with your phone, or <a data-l10n-name="download">get it on Google Play</a>.
+more-from-equalitie-android-paskoocheh =
+    Ceno for Android is also available on <a data-l10n-name="download">Paskoocheh</a>.
+more-from-equalitie-ios-app-store =
+    Scan the QR code with your phone, or <a data-l10n-name="download">download on the App Store</a>.
+more-from-equalitie-android-google-play-qr =
+    .alt = QR code for Ceno on Google Play
+more-from-equalitie-android-paskoocheh-qr =
+    .alt = QR code for Ceno on Paskoocheh
+more-from-equalitie-ios-app-store-qr =
+    .alt = QR code for Ceno on the App Store
+
+more-from-equalitie-dcomms-card =
+    .label = dComms
+    .description = dComms provides decentralized communication solutions in regions where infrastructure is restricted by repression, war, or climate disasters.
+more-from-equalitie-dcomms-box-link =
+    .label = Visit dComms
+
+more-from-equalitie-ouisync-card =
+    .label = Ouisync
+    .description = Ouisync lets you store, sync, and share files across devices anywhere on the internet using secure, open source, peer-to-peer file-sharing.
+more-from-equalitie-ouisync-box-link =
+    .label = Download Ouisync
+
+more-from-equalitie-eqsat-card =
+    .label = eQsat
+    .description = eQsat provides digital content via satellite, enabling access to information for communities facing limited access to the global internet.
+more-from-equalitie-eqsat-box-link =
+    .label = Visit eQsat
+
+more-from-equalitie-deflect-card =
+    .label = Deflect
+    .description = Deflect is a globally distributed network of edge servers designed to protect websites from DDoS and brute force attacks while improving performance and reducing infrastructure costs.
+more-from-equalitie-deflect-box-link =
+    .label = Visit Deflect
+
+more-from-equalitie-baskerville-card =
+    .label = Baskerville
+    .description = Baskerville provides state-of-the-art, AI-driven threat analysis, anomaly detection, DDoS mitigation and realtime zero trust network deployment.
+more-from-equalitie-baskerville-box-link =
+    .label = Visit Baskerville
+
+more-from-equalitie-deflect-labs-card =
+    .label = Deflect Labs
+    .description = Deflect Labs, the research and development arm of the Deflect project, focuses on mitigating malicious network traffic by combining human intelligence with AI to detect and counter anomalous behavior.
+more-from-equalitie-deflect-labs-box-link =
+    .label = Visit Deflect Labs
+
+more-from-equalitie-eqpress-card =
+    .label = eQPress
+    .description = eQPress is a secure hosting framework designed and managed by the Deflect team to enhance the protection of WordPress websites.
+more-from-equalitie-eqpress-box-link =
+    .label = Visit eQPress
+
+more-from-equalitie-eqtv-card =
+    .label = eQtv
+    .description = eQtv delivers educational content to internet users and TV audiences on essential topics like information security and cyber hygiene. Broadcasting in over 60 countries, its mission is to elevate digital security literacy and privacy awareness, empowering individuals to safeguard their online presence.
+more-from-equalitie-eqtv-box-link =
+    .label = Visit eQtv

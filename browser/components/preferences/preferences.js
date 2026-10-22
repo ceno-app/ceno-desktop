@@ -224,7 +224,7 @@ var scrollOffsets;
 const CONFIG_PANES = Object.freeze({
   about: {
     l10nId: "about-firefox-header",
-    iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
+    iconSrc: "chrome://browser/content/cenonetworkpreferences/ceno-icon.svg",
     groupIds: ["updates", "support"],
     module: "chrome://browser/content/preferences/config/about-firefox.mjs",
     visible: () => srdSectionPrefs.all,
@@ -436,6 +436,7 @@ const CONFIG_PANES = Object.freeze({
     module: "chrome://browser/content/preferences/config/account-sync.mjs",
     replaces: "sync",
   },
+  /*
   moreFromMozilla: {
     l10nId: "more-from-moz-page-header",
     iconSrc: "chrome://browser/skin/preferences/mozilla-16.svg",
@@ -443,6 +444,21 @@ const CONFIG_PANES = Object.freeze({
     module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
     visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
     replaces: "moreFromMozilla",
+  },
+  */
+  moreFrom_eQualitie: {
+    l10nId: "more-from-moz-page-header",
+    iconSrc: "chrome://browser/content/cenonetworkpreferences/eq.png",
+    groupIds: [
+      "moreFromeQualitie_CensorshipResistance",
+      "moreFromeQualitie_Ceno_Android",
+      "moreFromeQualitie_Ceno_iOS",
+      "moreFromeQualitie_CensorshipGrid",
+      "moreFromeQualitie_WebSecurity",
+      "moreFromeQualitie_CapacityBuilding",
+    ],
+    module: "chrome://browser/content/cenonetworkpreferences/config/more-from-eQualitie.mjs",
+    visible: () => true,
   },
   tabsBrowsing: {
     l10nId: "tabs-browsing-section",
