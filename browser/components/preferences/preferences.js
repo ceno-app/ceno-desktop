@@ -271,7 +271,7 @@ const CONFIG_PANES = Object.freeze({
     l10nId: "preferences-connection-header",
     groupIds: [
       "httpsOnly",
-      "networkProxy",
+      // "networkProxy",
       "privacyPanel",
       "browsingProtection",
       "protectionsFromThirdParty",
