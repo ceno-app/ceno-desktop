@@ -31,7 +31,7 @@ ceno-browser-about-ceno-home-link-status-offline = Error: Ceno cannot reach inte
 ceno-browser-ouinet-preferences-link-status-offline =
     .message = { ceno-browser-about-ceno-home-link-status-offline }
 
-ceno-browser-about-ceno-home-error-firewall-blocked = Error: Ceno Network Client is blocked by firewall.
+ceno-browser-about-ceno-home-error-firewall-blocked = Warning: Incoming connections to Ceno Network Client blocked by firewall. Websites can still be loaded. Distributed cache connectivity reduced.
 ceno-browser-ouinet-preferences-error-firewall-blocked =
     .message = { ceno-browser-about-ceno-home-error-firewall-blocked }
 
