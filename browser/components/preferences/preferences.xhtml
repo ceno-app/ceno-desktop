@@ -26,6 +26,10 @@
   />
   <link
     rel="stylesheet"
+    href="chrome://browser/content/cenonetworkpreferences/preferences.css"
+  />
+  <link
+    rel="stylesheet"
     href="chrome://browser/content/preferences/dialogs/handlers.css"
   />
   <link
@@ -207,13 +211,20 @@
       </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-about-firefox"
         view="paneAbout"
-        iconsrc="chrome://browser/skin/sidebar/firefox.svg"
+        iconsrc="chrome://browser/content/cenonetworkpreferences/ceno-icon.svg"
         data-l10n-id="pane-about-firefox-title">
       </html:moz-page-nav-button>
       <html:moz-page-nav-button id="category-more-from-mozilla"
         hidden="true"
         view="paneMoreFromMozilla"
         iconsrc="chrome://browser/skin/preferences/mozilla-16.svg"
+        data-l10n-id="more-from-moz-title2">
+      </html:moz-page-nav-button>
+
+      <html:moz-page-nav-button id="category-more-from-eQualitie"
+        hidden="true"
+        view="paneMoreFrom_eQualitie"
+        iconsrc="chrome://browser/content/cenonetworkpreferences/eq.png"
         data-l10n-id="more-from-moz-title2">
       </html:moz-page-nav-button>
 

@@ -1,3 +1,22 @@
 browser.jar:
     content/browser/cenonetworkpreferences/config/ceno-connection.mjs   (config/ceno-connection.mjs)
+    content/browser/cenonetworkpreferences/config/more-from-eQualitie.mjs (config/more-from-eQualitie.mjs)
+    content/browser/cenonetworkpreferences/preferences.css              (content/preferences.css)
+
     content/browser/cenonetworkpreferences/ceno-icon.svg                (content/ceno-icon.svg)
+    content/browser/cenonetworkpreferences/eq.png                       (content/eq.png)
+
+    content/browser/cenonetworkpreferences/qr-google-play.svg           (content/qr-google-play.svg)
+    content/browser/cenonetworkpreferences/qr-app-store.svg             (content/qr-app-store.svg)
+    content/browser/cenonetworkpreferences/qr-paskoocheh.svg            (content/qr-paskoocheh.svg)
+
+    content/browser/cenonetworkpreferences/dcomms.svg                   (content/dcomms.svg)
+    content/browser/cenonetworkpreferences/ouisync.svg                  (content/ouisync.svg)
+    content/browser/cenonetworkpreferences/eqsat.svg                    (content/eqsat.svg)
+
+    content/browser/cenonetworkpreferences/deflect.svg                  (content/deflect.svg)
+    content/browser/cenonetworkpreferences/baskerville.svg              (content/baskerville.svg)
+    content/browser/cenonetworkpreferences/deflect-labs.svg             (content/deflect-labs.svg)
+    content/browser/cenonetworkpreferences/eqpress.svg                  (content/eqpress.svg)
+
+    content/browser/cenonetworkpreferences/eqtv.png                     (content/eqtv.png)

@@ -1,0 +1,17 @@
+.ceno-dl-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 8px 0;
+    font-size: 13px;
+}
+
+a.ceno-dl-qr, a.ceno-dl-qr > img {
+    display: block;
+    width: 76px;
+    height: 76px;
+}
+
+.ceno-dl-row--no-qr > :first-child {
+    margin-left: 96px;
+}
