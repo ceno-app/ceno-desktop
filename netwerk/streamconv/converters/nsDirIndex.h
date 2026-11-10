@@ -1,0 +1,30 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsDirIndex_h_
+#define nsDirIndex_h_
+
+#include "nsIDirIndex.h"
+#include "nsString.h"
+
+class nsDirIndex final : public nsIDirIndex {
+ private:
+  ~nsDirIndex() = default;
+
+ public:
+  nsDirIndex() = default;
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIDIRINDEX
+
+ protected:
+  uint32_t mType{TYPE_UNKNOWN};
+  nsCString mContentType;
+  nsCString mLocation;
+  nsString mDescription;
+  int64_t mSize{INT64_MAX};
+  PRTime mLastModified{-1LL};
+};
+
+#endif

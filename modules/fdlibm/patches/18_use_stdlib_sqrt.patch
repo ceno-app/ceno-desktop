@@ -1,0 +1,147 @@
+diff --git a/e_acos.cpp b/e_acos.cpp
+--- a/e_acos.cpp
++++ b/e_acos.cpp
+@@ -34,16 +34,17 @@
+  * Special cases:
+  *	if x is NaN, return x itself;
+  *	if |x|>1, return NaN with invalid signal.
+  *
+  * Function needed: sqrt
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ 
+ #include "math_private.h"
+ 
+ static const double
+ one=  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
+ pi =  3.14159265358979311600e+00, /* 0x400921FB, 0x54442D18 */
+ pio2_hi =  1.57079632679489655800e+00; /* 0x3FF921FB, 0x54442D18 */
+ static volatile double
+diff --git a/e_acosh.cpp b/e_acosh.cpp
+--- a/e_acosh.cpp
++++ b/e_acosh.cpp
+@@ -25,16 +25,17 @@
+  *		acosh(x) := log1p(t+sqrt(2.0*t+t*t)); where t=x-1.
+  *
+  * Special cases:
+  *	acosh(x) is NaN with signal if x<1.
+  *	acosh(NaN) is NaN without signal.
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ 
+ #include "math_private.h"
+ 
+ static const double
+ one	= 1.0,
+ ln2	= 6.93147180559945286227e-01;  /* 0x3FE62E42, 0xFEFA39EF */
+ 
+ double
+diff --git a/e_asin.cpp b/e_asin.cpp
+--- a/e_asin.cpp
++++ b/e_asin.cpp
+@@ -40,16 +40,17 @@
+  *
+  * Special cases:
+  *	if x is NaN, return x itself;
+  *	if |x|>1, return NaN with invalid signal.
+  *
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ 
+ #include "math_private.h"
+ 
+ static const double
+ one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
+ huge =  1.000e+300,
+ pio2_hi =  1.57079632679489655800e+00, /* 0x3FF921FB, 0x54442D18 */
+ pio2_lo =  6.12323399573676603587e-17, /* 0x3C91A626, 0x33145C07 */
+diff --git a/e_hypot.cpp b/e_hypot.cpp
+--- a/e_hypot.cpp
++++ b/e_hypot.cpp
+@@ -42,16 +42,17 @@
+  *	hypot(x,y) is NAN if x or y is NAN.
+  *
+  * Accuracy:
+  * 	hypot(x,y) returns sqrt(x^2+y^2) with error less 
+  * 	than 1 ulps (units in the last place) 
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ 
+ #include "math_private.h"
+ 
+ double
+ __ieee754_hypot(double x, double y)
+ {
+ 	double a,b,t1,t2,y1,y2,w;
+ 	int32_t j,k,ha,hb;
+diff --git a/e_pow.cpp b/e_pow.cpp
+--- a/e_pow.cpp
++++ b/e_pow.cpp
+@@ -53,16 +53,17 @@
+  * Constants :
+  * The hexadecimal values are the intended ones for the following
+  * constants. The decimal values may be used, provided that the
+  * compiler will convert from decimal to binary accurately enough
+  * to produce the hexadecimal values shown.
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ #include "math_private.h"
+ 
+ static const double
+ bp[] = {1.0, 1.5,},
+ dp_h[] = { 0.0, 5.84962487220764160156e-01,}, /* 0x3FE2B803, 0x40000000 */
+ dp_l[] = { 0.0, 1.35003920212974897128e-08,}, /* 0x3E4CFDEB, 0x43CFD006 */
+ zero    =  0.0,
+ half    =  0.5,
+diff --git a/s_asinh.cpp b/s_asinh.cpp
+--- a/s_asinh.cpp
++++ b/s_asinh.cpp
+@@ -20,16 +20,17 @@
+  *	we have
+  *	asinh(x) := x  if  1+x*x=1,
+  *		 := sign(x)*(log(x)+ln2)) for large |x|, else
+  *		 := sign(x)*log(2|x|+1/(|x|+sqrt(x*x+1))) if|x|>2, else
+  *		 := sign(x)*log1p(|x| + x^2/(1 + sqrt(1+x^2)))
+  */
+ 
+ #include <float.h>
++#include <math.h>
+ 
+ #include "math_private.h"
+ 
+ static const double
+ one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
+ ln2 =  6.93147180559945286227e-01, /* 0x3FE62E42, 0xFEFA39EF */
+ huge=  1.00000000000000000000e+300;
+ 
+--- a/e_asinf.cpp	2022-12-13 14:45:17.953154257 -0500
++++ b/e_asinf.cpp	2022-12-13 14:45:03.425091710 -0500
+@@ -11,16 +11,18 @@
+  * software is freely granted, provided that this notice
+  * is preserved.
+  * ====================================================
+  */
+ 
+ //#include <sys/cdefs.h>
+ //__FBSDID("$FreeBSD$");
+ 
++#include <math.h>
++
+ #include "math_private.h"
+ 
+ static const float
+ one =  1.0000000000e+00, /* 0x3F800000 */
+ huge =  1.000e+30,
+ 	/* coefficient for R(x^2) */
+ pS0 =  1.6666586697e-01,
+ pS1 = -4.2743422091e-02,

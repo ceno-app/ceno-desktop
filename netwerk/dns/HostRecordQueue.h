@@ -1,0 +1,78 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef HostRecordQueue_h_
+#define HostRecordQueue_h_
+
+#include <functional>
+#include "mozilla/Mutex.h"
+#include "nsHostRecord.h"
+#include "nsRefPtrHashtable.h"
+
+namespace mozilla {
+namespace net {
+
+class HostRecordQueue final {
+ public:
+  HostRecordQueue() = default;
+  ~HostRecordQueue() = default;
+  HostRecordQueue(const HostRecordQueue& aCopy) = delete;
+  HostRecordQueue& operator=(const HostRecordQueue& aCopy) = delete;
+
+  uint32_t PendingCount() const { return mPendingCount; }
+  uint32_t EvictionQSize() const { return mEvictionQSize; }
+
+  // The lock protecting all queue state. Callers must hold this before calling
+  // any public method. When both mDBLock (from nsHostResolver) and mLock are
+  // needed, acquire mDBLock first.
+  mutable Mutex mLock{"nsHostResolver.mQueueLock"};
+
+  // Insert the record to mHighQ or mMediumQ or mLowQ based on the record's
+  // priority.
+  void InsertRecord(nsHostRecord* aRec, nsIDNSService::DNSFlags aFlags)
+      MOZ_REQUIRES(mLock);
+  // Insert the record to mEvictionQ. In theory, this function should be called
+  // when the record is not in any queue.
+  void AddToEvictionQ(
+      nsHostRecord* aRec, uint32_t aMaxCacheEntries,
+      nsRefPtrHashtable<nsGenericHashKey<nsHostKey>, nsHostRecord>& aDB)
+      MOZ_REQUIRES(mLock);
+
+  // Move aRec to the tail of mEvictionQ (the most-recently-used end).
+  void MoveToEvictionQueueTail(nsHostRecord* aRec) MOZ_REQUIRES(mLock);
+
+  // Called for removing the record from mEvictionQ. When this function is
+  // called, the record should be either in mEvictionQ or not in any queue.
+  void MaybeRenewHostRecord(nsHostRecord* aRec) MOZ_REQUIRES(mLock);
+  // Called for clearing mEvictionQ.
+  void FlushEvictionQ(
+      nsRefPtrHashtable<nsGenericHashKey<nsHostKey>, nsHostRecord>& aDB)
+      MOZ_REQUIRES(mLock);
+  // Remove the record from the queue that contains it.
+  void MaybeRemoveFromQ(nsHostRecord* aRec) MOZ_REQUIRES(mLock);
+  // When the record's priority changes, move the record between pending queues.
+  void MoveToAnotherPendingQ(nsHostRecord* aRec, nsIDNSService::DNSFlags aFlags)
+      MOZ_REQUIRES(mLock);
+  // Returning the first record from one of the pending queue. When |aHighQOnly|
+  // is true, returning the record from mHighQ only. When false, return the
+  // record from mMediumQ or mLowQ.
+  already_AddRefed<nsHostRecord> Dequeue(bool aHighQOnly) MOZ_REQUIRES(mLock);
+  // Clear all queues and is called only during shutdown. |aCallback| is invoked
+  // when a record is removed from a queue.
+  void ClearAll(const std::function<void(nsHostRecord*)>& aCallback)
+      MOZ_REQUIRES(mLock);
+
+ private:
+  Atomic<uint32_t> mPendingCount{0};
+  Atomic<uint32_t> mEvictionQSize{0};
+  LinkedList<RefPtr<nsHostRecord>> mHighQ;
+  LinkedList<RefPtr<nsHostRecord>> mMediumQ;
+  LinkedList<RefPtr<nsHostRecord>> mLowQ;
+  LinkedList<RefPtr<nsHostRecord>> mEvictionQ;
+};
+
+}  // namespace net
+}  // namespace mozilla
+
+#endif  // HostRecordQueue_h_

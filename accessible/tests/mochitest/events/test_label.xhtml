@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Tests: accessible XUL label/description events">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    async function doTest() {
+      // setValue("label", "shiroka strana", kRecreated)
+      let labelNode = getNode("label");
+      let events = waitForEvents([
+        [EVENT_HIDE, labelNode],
+        [EVENT_SHOW, labelNode],
+      ]);
+      labelNode.setAttribute("value", "shiroka strana");
+      await events;
+      testAccessibleTree("label", { LABEL: [{ STATICTEXT: [] }] });
+
+      // setValue("label", "?<>!+_", kTextChanged, "shiroka strana")
+      events = waitForEvents([
+        [
+          EVENT_TEXT_REMOVED,
+          e => {
+            let tc = e.QueryInterface(nsIAccessibleTextChangeEvent);
+            return (
+              e.accessible === getAccessible(labelNode) &&
+              tc.modifiedText === "shiroka strana"
+            );
+          },
+        ],
+        [
+          EVENT_TEXT_INSERTED,
+          e => {
+            let tc = e.QueryInterface(nsIAccessibleTextChangeEvent);
+            return (
+              e.accessible === getAccessible(labelNode) &&
+              tc.modifiedText === "?<>!+_"
+            );
+          },
+        ],
+      ]);
+      labelNode.setAttribute("value", "?<>!+_");
+      await events;
+      testAccessibleTree("label", { LABEL: [{ STATICTEXT: [] }] });
+
+      // setValue("label", "", kRecreated)
+      events = waitForEvents([
+        [EVENT_HIDE, labelNode],
+        [EVENT_SHOW, labelNode],
+      ]);
+      labelNode.setAttribute("value", "");
+      await events;
+      testAccessibleTree("label", { LABEL: [{ STATICTEXT: [] }] });
+
+      // setValue("label", kNoValue, kRecreated)
+      events = waitForEvents([
+        [EVENT_HIDE, labelNode],
+        [EVENT_SHOW, labelNode],
+      ]);
+      labelNode.removeAttribute("value");
+      await events;
+      testAccessibleTree("label", { LABEL: [] });
+
+      // setValue("descr", "hello world", kRecreated)
+      let descrNode = getNode("descr");
+      events = waitForEvents([
+        [EVENT_HIDE, descrNode],
+        [EVENT_SHOW, descrNode],
+      ]);
+      descrNode.setAttribute("value", "hello world");
+      await events;
+      testAccessibleTree("descr", { LABEL: [{ STATICTEXT: [] }] });
+
+      // setValue("descr", "si_ya", kTextChanged, "hello world")
+      events = waitForEvents([
+        [
+          EVENT_TEXT_REMOVED,
+          e => {
+            let tc = e.QueryInterface(nsIAccessibleTextChangeEvent);
+            return (
+              e.accessible === getAccessible(descrNode) &&
+              tc.modifiedText === "hello world"
+            );
+          },
+        ],
+        [
+          EVENT_TEXT_INSERTED,
+          e => {
+            let tc = e.QueryInterface(nsIAccessibleTextChangeEvent);
+            return (
+              e.accessible === getAccessible(descrNode) &&
+              tc.modifiedText === "si_ya"
+            );
+          },
+        ],
+      ]);
+      descrNode.setAttribute("value", "si_ya");
+      await events;
+      testAccessibleTree("descr", { LABEL: [{ STATICTEXT: [] }] });
+
+      // setValue("descr", "", kTextRemoved, "si_ya")
+      let removed = waitForEvent(EVENT_TEXT_REMOVED, e => {
+        let tc = e.QueryInterface(nsIAccessibleTextChangeEvent);
+        return (
+          e.accessible === getAccessible(descrNode) &&
+          tc.modifiedText === "si_ya"
+        );
+      });
+      descrNode.setAttribute("value", "");
+      await removed;
+      testAccessibleTree("descr", { LABEL: [] });
+
+      // setValue("descr", kNoValue, kRecreated)
+      events = waitForEvents([
+        [EVENT_HIDE, descrNode],
+        [EVENT_SHOW, descrNode],
+      ]);
+      descrNode.removeAttribute("value");
+      await events;
+      testAccessibleTree("descr", { LABEL: [] });
+
+      // setCrop("croplabel", "center")
+      let croplabelNode = getNode("croplabel");
+      let width = croplabelNode.getBoundingClientRect().width;
+      let charWidth = width / croplabelNode.value.length;
+      let cropEvents = waitForEvents([
+        [EVENT_HIDE, croplabelNode],
+        [EVENT_SHOW, croplabelNode],
+      ]);
+      if (!croplabelNode.hasAttribute("crop")) {
+        croplabelNode.style.width = Math.floor(width - 2 * charWidth) + "px";
+      }
+      croplabelNode.setAttribute("crop", "center");
+      await cropEvents;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=396166"
+         title="xul:label@value accessible should implement nsIAccessibleText">
+        Bug 396166
+      </a>
+      <br/>
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <label id="label"/>
+      <description id="descr"/>
+
+      <hbox>
+      <label id="croplabel" value="valuetocro"
+             style="font-family: monospace;"/>
+      </hbox>
+    </vbox>
+  </hbox>
+
+</window>

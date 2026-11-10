@@ -1,0 +1,246 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src chrome:; object-src 'none'"/>
+    <meta charset="utf-8">
+    <meta name="color-scheme" content="light dark">
+    <title data-l10n-id="about-glean-page-title2"></title>
+    <link rel="stylesheet" href="chrome://global/content/aboutGlean.css"/>
+
+    <script src="chrome://global/content/aboutGlean.js"></script>
+    <link rel="localization" href="branding/brand.ftl"/>
+    <link rel="localization" href="toolkit/about/aboutGlean.ftl"/>
+    <link rel="localization" href="toolkit/branding/brandings.ftl" />
+  </head>
+
+  <body>
+    <div id="categories" role="menu">
+      <div class="category" selected="true" id="category-about-glean" role="menuitem" tabindex="0">
+        <span class="category-name" data-l10n-id="about-glean-category-about-glean"></span>
+      </div>
+      <div class="category" id="category-manual-testing" role="menuitem" tabindex="0">
+        <span class="category-name" data-l10n-id="about-glean-category-manual-testing"></span>
+      </div>
+      <div class="category" id="category-adhoc-testing" role="menuitem" tabindex="0">
+        <span class="category-name" data-l10n-id="about-glean-category-adhoc-testing"></span>
+      </div>
+      <div class="category" id="category-profiler" role="menuitem" tabindex="0">
+        <span class="category-name" data-l10n-id="about-glean-category-profiler"></span>
+      </div>
+      <div class="category" id="category-about-data" role="menuitem" tabindex="0">
+        <span class="category-name" data-l10n-id="about-glean-category-about-data"></span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- about glean tab -->
+      <div id="about-glean" class="tab active">
+        <h2 data-l10n-id="about-glean-header"></h2>
+        <p data-l10n-id="about-glean-interface-description">
+          <a data-l10n-name="glean-sdk-doc-link" href="https://mozilla.github.io/glean/book/index.html"></a>
+          <a data-l10n-name="fog-link" href="https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/instrumentation_tests.html"></a>
+        </p>
+        <p id="upload-status" data-l10n-id="about-glean-upload-enabled"></p>
+        <p>
+          <span id="about-glean-prefs-and-defines" data-l10n-id="about-glean-prefs-and-defines">
+            <a data-l10n-name="fog-prefs-and-defines-doc-link" href="https://firefox-source-docs.mozilla.org/toolkit/components/glean/dev/preferences.html"></a>
+          </span>
+          <ul>
+            <li data-l10n-id="about-glean-data-upload" data-l10n-args='{"data-upload-pref-value": "unknown"}'></li>
+            <li data-l10n-id="about-glean-local-port" data-l10n-args='{"local-port-pref-value": "unknown"}'></li>
+            <li data-l10n-id="about-glean-glean-android" data-l10n-args='{"glean-android-define-value": "unknown"}'></li>
+            <li data-l10n-id="about-glean-moz-official" data-l10n-args='{"moz-official-define-value": "unknown"}'></li>
+          </ul>
+        </p>
+        <p data-l10n-id="about-glean-additional-links"></p>
+      </div>
+      <!-- manual testing tab -->
+      <div id="manual-testing" class="tab" hidden="true">
+        <h2 data-l10n-id="about-glean-category-manual-testing"></h2>
+        <p data-l10n-id="about-glean-manual-testing">
+          <a data-l10n-name="fog-instrumentation-test-doc-link" href="https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/instrumentation_tests.html"></a>
+          <a data-l10n-name="glean-sdk-doc-link" href="https://mozilla.github.io/glean/book/index.html"></a>
+        </p>
+        <ol>
+          <li>
+            <input type="text" name="tag-pings" id="tag-pings" pattern="[a-zA-Z0-9\-]{1,20}">
+            <label for="tag-pings" data-l10n-id="about-glean-label-for-tag-pings-with-requirements"></label>
+          </li>
+          <li>
+            <select name="ping-names" id="ping-names">
+              <optgroup id="builtin-pings" data-l10n-id="about-glean-ping-list-optgroup-built-in"></optgroup>
+              <optgroup id="custom-pings" data-l10n-id="about-glean-ping-list-optgroup-custom"></optgroup>
+            </select>
+            <label for="ping-names" data-l10n-id="about-glean-label-for-ping-names">
+              <a data-l10n-name="custom-ping-link" href="https://mozilla.github.io/glean/book/user/pings/custom.html"></a>
+            </label>
+          </li>
+          <li>
+            <input type="checkbox" name="log-pings" id="log-pings">
+            <label for="log-pings" data-l10n-id="about-glean-label-for-log-pings">
+              <a data-l10n-name="enable-logging-link" href="http://firefox-source-docs.mozilla.org/toolkit/components/glean/dev/testing.html#logging"></a>
+            </label>
+          </li>
+          <li>
+            <button id="controls-submit" data-l10n-id="controls-button-label-verbose"></button>
+            <label for="controls-submit" data-l10n-id="about-glean-label-for-controls-submit" data-l10n-args='{"debug-tag": "unknown"}'>
+              <span id="submit-tag-span"></span>
+            </label>
+          </li>
+          <li data-l10n-id="about-glean-li-for-visit-gdpv">
+            <a data-l10n-name="gdpv-tagged-pings-link" href="https://debug-ping-preview.firebaseapp.com/pings/"></a>
+          </li>
+        </ol>
+      </div>
+      <!-- ad hoc testing tab -->
+      <div id="adhoc-testing" class="tab" hidden="true">
+        <h2 data-l10n-id="about-glean-category-adhoc-testing"></h2>
+        <p data-l10n-id="about-glean-adhoc-explanation2"></p>
+        <p data-l10n-id="about-glean-adhoc-note"></p>
+      </div>
+      <!-- profiler tab -->
+      <div id="profiler" class="tab" hidden="true">
+        <h2 data-l10n-id="about-glean-category-profiler"></h2>
+        <p data-l10n-id="about-glean-profiler-explanation">
+          <a data-l10n-name="firefox-profiler-link" href="https://profiler.firefox.com/"></a>
+        </p>
+        <p data-l10n-id="about-glean-profiler-explanation-profiler"></p>
+      </div>
+      <!-- about data tab -->
+      <div id="about-data" class="tab" hidden="true">
+        <h2 data-l10n-id="about-glean-about-data-header"></h2>
+        <p data-l10n-id="about-glean-about-data-description"></p>
+        <p data-l10n-id="about-glean-about-data-description-list-intro"></p>
+        <ul>
+          <li data-l10n-id="about-glean-about-data-list-item-dictionary">
+            <a data-l10n-name="glean-dictionary-link" href="https://dictionary.telemetry.mozilla.org/"></a>
+          </li>
+          <li data-l10n-id="about-glean-about-data-list-item-about-telemetry">
+            <a data-l10n-name="about-telemetry-link" href="about:telemetry"></a>
+          </li>
+          <li data-l10n-id="about-glean-about-data-list-item-debug-ping-viewer">
+            <a data-l10n-name="glean-debug-ping-viewer" href="https://debug-ping-preview.firebaseapp.com/"></a>
+          </li>
+          <li data-l10n-id="about-glean-about-data-list-item-firefox-profiler">
+            <a data-l10n-name="about-glean-firefox-profiler" href="https://profiler.firefox.com/"></a>
+          </li>
+        </ul>
+      </div>
+      <div id="metrics-table" class="tab" hidden="true">
+        <div id="metrics-table-header">
+          <h2 data-l10n-id="about-glean-metrics-table-header"></h2>
+          <button name="metrics-table-settings-button" id="metrics-table-settings-button" data-l10n-id="about-glean-metrics-table-settings-button"></button>
+        </div>
+        <div id="metrics-table-settings" hidden="true">
+          <h2 data-l10n-id="about-glean-metrics-table-settings-title"></h2>
+          <div class="content">
+            <div>
+              <h3 data-l10n-id="about-glean-metrics-table-settings-category-general"></h3>
+              <input type="checkbox" name="settings-hide-empty-value-rows" id="settings-hide-empty-value-rows" data-form-control="hideEmptyValueRows"/>
+              <label for="settings-hide-empty-value-rows" data-l10n-id="about-glean-metrics-table-settings-hide-empty-value-rows"></label>
+            </div>
+            <div>
+              <h3 data-l10n-id="about-glean-metrics-table-settings-category-visualizations"></h3>
+              <div class="box" data-form-group="histograms">
+                <h4 data-l10n-id="about-glean-metrics-table-settings-category-visualizations-histogram"></h4>
+
+                <div class="vertical-flex">
+                  <div>
+                    <label for="settings-histograms-box-padding" data-l10n-id="about-glean-metrics-table-settings-histograms-box-padding"></label>
+                    <input name="settings-histograms-box-padding" id="settings-histograms-box-padding" type="number" data-form-control="boxPadding"/>
+                  </div>
+                  <div>
+                    <label for="settings-histograms-left-padding" data-l10n-id="about-glean-metrics-table-settings-histograms-left-padding"></label>
+                    <input name="settings-histograms-left-padding" id="settings-histograms-left-padding" type="number" data-form-control="leftPadding"/>
+                  </div>
+                  <div>
+                    <label for="settings-histograms-chart-padding" data-l10n-id="about-glean-metrics-table-settings-histograms-chart-padding"></label>
+                    <input name="settings-histograms-chart-padding" id="settings-histograms-chart-padding" type="number" data-form-control="chartPadding"/>
+                  </div>
+                  <div>
+                    <label for="settings-histograms-scaled-max" data-l10n-id="about-glean-metrics-table-settings-histograms-scaled-max"></label>
+                    <input name="settings-histograms-scaled-max" id="settings-histograms-scaled-max" type="number" data-form-control="scaledMax"/>
+                  </div>
+                  <div>
+                    <label for="settings-histograms-chart-max" data-l10n-id="about-glean-metrics-table-settings-histograms-chart-max"></label>
+                    <input name="settings-histograms-chart-max" id="settings-histograms-chart-max" type="number" data-form-control="chartMax"/>
+                  </div>
+                </div>
+
+                <h4 data-l10n-id="about-glean-metrics-table-settings-visualization-example"></h4>
+                <div id="metrics-table-settings-histogram-example" class="chart-display"></div>
+              </div>
+              <div class="box" data-form-group="timelines">
+                <h4 data-l10n-id="about-glean-metrics-table-settings-category-visualizations-timeline"></h4>
+
+                <div class="vertical-flex">
+                  <div>
+                    <label for="settings-timelines-height" data-l10n-id="about-glean-metrics-table-settings-timelines-height"></label>
+                    <input name="settings-timelines-height" id="settings-timelines-height" type="number" data-form-control="height"/>
+                  </div>
+                  <div>
+                    <label for="settings-timelines-width" data-l10n-id="about-glean-metrics-table-settings-timelines-width"></label>
+                    <input name="settings-timelines-width" id="settings-timelines-width" type="number" data-form-control="width"/>
+                  </div>
+                  <div>
+                    <label for="settings-timelines-chart-padding" data-l10n-id="about-glean-metrics-table-settings-timelines-chart-padding"></label>
+                    <input name="settings-timelines-chart-padding" id="settings-timelines-chart-padding" type="number" data-form-control="chartPadding"/>
+                  </div>
+                  <div>
+                    <label for="settings-timelines-circle-radius" data-l10n-id="about-glean-metrics-table-settings-timelines-circle-radius"></label>
+                    <input name="settings-timelines-circle-radius" id="settings-timelines-circle-radius" type="number" data-form-control="circleRadius"/>
+                  </div>
+                  <div>
+                    <label for="settings-timelines-vertical-line-x-offset" data-l10n-id="about-glean-metrics-table-settings-timelines-vertical-line-x-offset"></label>
+                    <input name="settings-timelines-vertical-line-x-offset" id="settings-timelines-vertical-line-x-offset" type="number" data-form-control="verticalLineXOffset"/>
+                  </div>
+                  <div>
+                    <label for="settings-timelines-vertical-line-y-offset" data-l10n-id="about-glean-metrics-table-settings-timelines-vertical-line-y-offset"></label>
+                    <input name="settings-timelines-vertical-line-y-offset" id="settings-timelines-vertical-line-y-offset" type="number" data-form-control="verticalLineYOffset"/>
+                  </div>
+                </div>
+
+                <h4 data-l10n-id="about-glean-metrics-table-settings-visualization-example"></h4>
+                <div id="metrics-table-settings-timeline-example" class="chart-display"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="metrics-table-controls">
+          <div class="input">
+            <label for="filter-metrics" data-l10n-id="about-glean-label-for-filter-metrics"></label>
+            <input type="text" name="filter-metrics" id="filter-metrics" pattern="[a-zA-Z0-9\-]*">
+            <small data-l10n-id="about-glean-description-for-filter-metrics"></small>
+          </div>
+          <div>
+            <button name="load-all" id="load-all" data-l10n-id="about-glean-button-load-all"></button>
+            <button name="export-data" id="export-data" data-l10n-id="about-glean-button-export-data"></button>
+          </div>
+        </div>
+        <hr>
+        <div id="metrics-table-instance" hidden="true">
+          <table>
+            <thead>
+              <tr>
+                <th data-d3-cell="actions" data-l10n-id="about-glean-metrics-table-header-actions"></th>
+                <th data-d3-cell="category" data-l10n-id="about-glean-metrics-table-header-category"></th>
+                <th data-d3-cell="name" data-l10n-id="about-glean-metrics-table-header-name"></th>
+                <th data-d3-cell="type" data-l10n-id="about-glean-metrics-table-header-type"></th>
+                <th data-d3-cell="value" data-l10n-id="about-glean-metrics-table-header-value"></th>
+              </tr>
+            </thead>
+            <tbody id="metrics-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <moz-message-bar type="success" id="feedback" data-l10n-id="about-glean-feedback-settings-only"></moz-message-bar>
+  </body>
+
+</html>

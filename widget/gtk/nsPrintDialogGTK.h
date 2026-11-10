@@ -1,0 +1,31 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsPrintDialog_h_
+#define nsPrintDialog_h_
+
+#include "nsIPrintDialogService.h"
+
+class nsIPrintSettings;
+
+// Copy the print pages enum here because not all versions
+// have SELECTION, which we will use
+typedef enum {
+  _GTK_PRINT_PAGES_ALL,
+  _GTK_PRINT_PAGES_CURRENT,
+  _GTK_PRINT_PAGES_RANGES,
+  _GTK_PRINT_PAGES_SELECTION
+} _GtkPrintPages;
+
+class nsPrintDialogServiceGTK final : public nsIPrintDialogService {
+  virtual ~nsPrintDialogServiceGTK();
+
+ public:
+  nsPrintDialogServiceGTK();
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIPRINTDIALOGSERVICE
+};
+
+#endif

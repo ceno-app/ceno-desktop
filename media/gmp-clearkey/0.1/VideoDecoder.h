@@ -1,0 +1,75 @@
+/*
+ * Copyright 2013, Mozilla Foundation and contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef VideoDecoder_h_
+#define VideoDecoder_h_
+
+// This include is required in order for content_decryption_module to work
+// on Unix systems.
+
+#include <queue>
+
+#include "content_decryption_module.h"
+#include "WMFH264Decoder.h"
+
+class VideoDecoder : public RefCounted {
+ public:
+  static VideoDecoder* Create(cdm::Host_11* aHost,
+                              const cdm::VideoDecoderConfig_2& aConfig);
+
+  cdm::Status Decode(const cdm::InputBuffer_2& aEncryptedBuffer,
+                     cdm::VideoFrame* aVideoFrame);
+
+  void Reset();
+
+  void DecodingComplete();
+
+  bool HasShutdown() { return mHasShutdown; }
+
+ private:
+  VideoDecoder(cdm::Host_11* aHost, wmf::WMFH264Decoder* aDecoder);
+  virtual ~VideoDecoder();
+
+  cdm::Status Drain(cdm::VideoFrame* aVideoFrame);
+
+  struct DecodeData {
+    std::vector<uint8_t> mBuffer;
+    uint64_t mTimestamp = 0;
+    CryptoMetaData mCrypto;
+  };
+
+  cdm::Status OutputFrame(cdm::VideoFrame* aVideoFrame);
+
+  HRESULT SampleToVideoFrame(IMFSample* aSample, int32_t aPictureWidth,
+                             int32_t aPictureHeight, int32_t aStride,
+                             int32_t aFrameHeight,
+                             cdm::VideoFrame* aVideoFrame);
+
+  cdm::Host_11* mHost;
+  wmf::AutoPtr<wmf::WMFH264Decoder> mDecoder;
+
+  struct OutputData {
+    wmf::CComPtr<IMFSample> mSample;
+    wmf::IntRect mPictureRegion;
+    int32_t mStride;
+    int32_t mFrameHeight;
+  };
+  std::queue<OutputData> mOutputQueue;
+
+  bool mHasShutdown = false;
+};
+
+#endif  // VideoDecoder_h_

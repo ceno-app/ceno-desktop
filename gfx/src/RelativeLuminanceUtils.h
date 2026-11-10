@@ -1,0 +1,86 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_RelativeLuminanceUtils_h
+#define mozilla_RelativeLuminanceUtils_h
+
+#include "nsColor.h"
+
+namespace mozilla {
+
+// Utilities for calculating relative luminance based on the algorithm
+// defined in https://www.w3.org/TR/WCAG20/#relativeluminancedef
+class RelativeLuminanceUtils {
+ public:
+  // Compute the relative luminance.
+  static float Compute(nscolor aColor) {
+    float r = ComputeComponent(NS_GET_R(aColor));
+    float g = ComputeComponent(NS_GET_G(aColor));
+    float b = ComputeComponent(NS_GET_B(aColor));
+    return ComputeFromComponents(r, g, b);
+  }
+
+  static float Compute(float aR, float aG, float aB) {
+    float r = ComputeComponent(aR);
+    float g = ComputeComponent(aG);
+    float b = ComputeComponent(aB);
+    return ComputeFromComponents(r, g, b);
+  }
+
+  // Adjust the relative luminance of the given color.
+  static nscolor Adjust(nscolor aColor, float aLuminance) {
+    float r = ComputeComponent(NS_GET_R(aColor));
+    float g = ComputeComponent(NS_GET_G(aColor));
+    float b = ComputeComponent(NS_GET_B(aColor));
+    float luminance = ComputeFromComponents(r, g, b);
+    float factor = (aLuminance + 0.05f) / (luminance + 0.05f);
+    uint8_t r1 =
+        DecomputeComponent(std::max(0.0f, (r + 0.05f) * factor - 0.05f));
+    uint8_t g1 =
+        DecomputeComponent(std::max(0.0f, (g + 0.05f) * factor - 0.05f));
+    uint8_t b1 =
+        DecomputeComponent(std::max(0.0f, (b + 0.05f) * factor - 0.05f));
+    return NS_RGBA(r1, g1, b1, NS_GET_A(aColor));
+  }
+
+  // https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
+  static float ContrastRatio(nscolor aColor1, nscolor aColor2) {
+    float l1 = Compute(aColor1);
+    float l2 = Compute(aColor2);
+    if (l1 < l2) {
+      std::swap(l1, l2);
+    }
+    return (l1 + 0.05f) / (l2 + 0.05f);
+  }
+
+ private:
+  static float ComputeComponent(float aComponent) {
+    if (aComponent <= 0.03928f) {
+      return aComponent / 12.92f;
+    }
+    return std::pow((aComponent + 0.055f) / 1.055f, 2.4f);
+  }
+
+  static float ComputeComponent(uint8_t aComponent) {
+    return ComputeComponent(float(aComponent) / 255.0f);
+  }
+
+  static constexpr float ComputeFromComponents(float aR, float aG, float aB) {
+    return 0.2126f * aR + 0.7152f * aG + 0.0722f * aB;
+  }
+
+  // Inverse function of ComputeComponent.
+  static uint8_t DecomputeComponent(float aComponent) {
+    if (aComponent <= 0.03928f / 12.92f) {
+      aComponent *= 12.92f;
+    } else {
+      aComponent = std::pow(aComponent, 1.0f / 2.4f) * 1.055f - 0.055f;
+    }
+    return ClampColor(aComponent * 255.0f);
+  }
+};
+
+}  // namespace mozilla
+
+#endif  // mozilla_RelativeLuminanceUtils_h

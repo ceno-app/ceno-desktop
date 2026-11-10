@@ -1,0 +1,177 @@
+/* Any copyright is dedicated to the Public Domain.
+   https://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+});
+
+registerCleanupFunction(async () => {
+  // Clean up SidebarPopupNotifications from all windows if it created before
+  for (const win of BrowserWindowTracker.orderedWindows) {
+    if (win.SidebarPopupNotifications) {
+      win.SidebarPopupNotifications._currentAnchorElement = null;
+      delete win.SidebarPopupNotifications;
+    }
+  }
+});
+
+add_task(async function test_adopt_from_window() {
+  const sidebar = document.querySelector("sidebar-main");
+  ok(sidebar, "Sidebar is shown.");
+  await sidebar.updateComplete;
+  await SidebarTestUtils.showPanel(window, "viewCustomizeSidebar");
+
+  // Set width
+  let sidebarBox = document.getElementById("sidebar-box");
+  Assert.ok(BrowserTestUtils.isVisible(sidebarBox), "Sidebar box is visible");
+
+  let originalSidebarWidth = sidebarBox.getBoundingClientRect().width;
+
+  async function run_test_adopt_from_window(width) {
+    let widthPx = `${width}px`;
+    sidebarBox.style.width = widthPx;
+    // Open a new window from the window containing the open sidebar
+    const newWin = lazy.BrowserWindowTracker.openWindow({
+      openerWindow: window,
+    });
+
+    // Check category of new window sidebar is that of opener window sidebar
+    await SidebarTestUtils.waitForInitialized(newWin);
+    let newSidebarBox = newWin.document.getElementById("sidebar-box");
+    Assert.ok(
+      BrowserTestUtils.isVisible(newSidebarBox),
+      "New sidebar box is visible"
+    );
+
+    Assert.notEqual(
+      newSidebarBox,
+      sidebarBox,
+      "sidebar box from the new window should be a different object"
+    );
+
+    await BrowserTestUtils.waitForCondition(
+      () => !!newSidebarBox.getAttribute("sidebarcommand"),
+      "Category has been set"
+    );
+    is(
+      newSidebarBox.getAttribute("sidebarcommand"),
+      "viewCustomizeSidebar",
+      "Customize side panel is open, as adopted from opener window sidebar"
+    );
+
+    // Check width of new window sidebar is that of opener window sidebar
+    await BrowserTestUtils.waitForCondition(
+      () => !!newSidebarBox.style.width,
+      "Width has been set"
+    );
+    is(
+      newSidebarBox.style.width,
+      widthPx,
+      "New window sidebar width is the same as opener window sidebar width"
+    );
+
+    // Check that private windows do adopt UI state from non-private sources.
+    const privateWin = await BrowserTestUtils.openNewBrowserWindow({
+      openerWindow: window,
+      private: true,
+    });
+    const privateSidebar = privateWin.SidebarController;
+    await SidebarTestUtils.waitForInitialized(privateWin);
+
+    Assert.equal(
+      privateSidebar.currentID,
+      SidebarController.currentID,
+      "Category was adopted from opener window sidebar."
+    );
+    Assert.equal(
+      privateSidebar._box.style.width,
+      SidebarController._box.style.width,
+      "Width was adopted from opener window sidebar."
+    );
+    await BrowserTestUtils.closeWindow(newWin);
+    await BrowserTestUtils.closeWindow(privateWin);
+  }
+
+  await run_test_adopt_from_window(100);
+  await run_test_adopt_from_window(originalSidebarWidth);
+});
+
+add_task(async function test_focus_history_from_adopted() {
+  const sidebar = document.querySelector("sidebar-main");
+  ok(sidebar, "Sidebar is shown.");
+  await sidebar.updateComplete;
+  await SidebarTestUtils.showPanel(window, "viewHistorySidebar");
+
+  const { contentDocument } = SidebarController.browser;
+  const historySidebar = contentDocument.querySelector("sidebar-history");
+
+  await BrowserTestUtils.waitForCondition(
+    () => !historySidebar.controller.isHistoryPending
+  );
+  await historySidebar.updateComplete;
+
+  Assert.equal(
+    historySidebar.shadowRoot.activeElement,
+    historySidebar.searchTextbox,
+    "Search box should be focused"
+  );
+
+  // Open a new window from the window containing the open sidebar
+  const newWin = lazy.BrowserWindowTracker.openWindow({
+    openerWindow: window,
+  });
+  await SidebarTestUtils.waitForInitialized(newWin);
+
+  let NewSidebarController = newWin.SidebarController;
+  let newWinHistorySidebar;
+  let newContentDocument;
+  await BrowserTestUtils.waitForCondition(() => {
+    newContentDocument = NewSidebarController.browser.contentDocument;
+    newWinHistorySidebar = newContentDocument?.querySelector("sidebar-history");
+    return (
+      newWinHistorySidebar?.controller &&
+      !newWinHistorySidebar.controller.isHistoryPending
+    );
+  }, "Make sure sidebar-history is present and history isn't pending");
+
+  await newWinHistorySidebar.updateComplete;
+
+  ok(newWinHistorySidebar.searchTextbox, "Search box should be present");
+  Assert.notEqual(
+    newWinHistorySidebar.shadowRoot.activeElement,
+    newWinHistorySidebar.searchTextbox,
+    "Search box should not be focused"
+  );
+  await BrowserTestUtils.closeWindow(newWin);
+});
+
+add_task(async function test_hide_tabs_and_sidebar_persists_in_new_window() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [VERTICAL_TABS_PREF, true],
+      [SIDEBAR_VISIBILITY_PREF, "hide-sidebar"],
+    ],
+  });
+  await SidebarTestUtils.waitForTabstripOrientation(window, "vertical");
+
+  await SidebarTestUtils.showPanel(window, "viewCustomizeSidebar");
+
+  // Collapse the launcher (simulates "Hide tabs and sidebar" being active)
+  SidebarController._state.launcherVisible = false;
+
+  const newWin = lazy.BrowserWindowTracker.openWindow({
+    openerWindow: window,
+  });
+  await SidebarTestUtils.waitForInitialized(newWin);
+  const newSidebar = newWin.document.getElementById("sidebar-container");
+  ok(
+    newSidebar.hidden,
+    "Sidebar launcher is hidden in new window when 'Hide tabs and sidebar' is set"
+  );
+  await BrowserTestUtils.closeWindow(newWin);
+  await SpecialPowers.popPrefEnv();
+});

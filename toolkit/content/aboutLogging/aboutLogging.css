@@ -1,0 +1,198 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/in-content/common.css");
+
+:host {
+  /* Local variables with fallbacks for mobile compatibility.
+   * Bug 1986645: We should ship these variables in Android and remove here. */
+  --aboutlogging-text-color-deemphasized: var(--text-color-deemphasized, color-mix(in srgb, currentColor 69%, transparent));
+  --aboutlogging-box-background: var(--background-color-box, light-dark(#fff, #23222b));
+  --aboutlogging-box-border-color: var(--border-color, color-mix(in srgb, currentColor 41%, transparent));
+  --aboutlogging-border-radius-small: var(--border-radius-small, 4px);
+}
+
+[hidden] {
+  /* This page uses the hidden attribute a lot, so let's make sure we don't
+   * override it by mistake. */
+  display: none !important;
+}
+
+.about-logging-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+#copy-as-url::part(button) {
+  background-image: url("chrome://global/skin/icons/edit-copy.svg");
+}
+
+#toast-copied {
+  visibility: hidden;
+  background-color: var(--background-color-success);
+  color: var(--text-color);
+  text-align: center;
+  /* Bug 1986645: Border radius tokens are not shipped in Android, so we use a variable with fallback */
+  /* stylelint-disable-next-line  stylelint-plugin-mozilla/use-design-tokens */
+  border-radius: var(--aboutlogging-border-radius-small);
+  padding: var(--space-medium);
+  opacity: 0;
+  transition:
+    opacity 0.5s,
+    visibility 0.5s;
+  margin-left: auto;
+  &.show {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+/** Content area **/
+.main-content {
+  width: min(90%, 1024px);
+  margin: auto;
+}
+
+.page-subsection {
+  margin-bottom: 2em;
+}
+
+.form-entry {
+  /* Center the labels with their checkboxes */
+  display: flex;
+  align-items: center;
+  margin: 0.3em 0;
+}
+
+:disabled + label {
+  opacity: 0.5;
+}
+
+#current-log-modules,
+#no-log-modules {
+  font-family: monospace;
+  margin-bottom: 1em;
+  word-break: break-word;
+}
+
+#current-log-file,
+#no-log-file {
+  font-family: monospace;
+}
+
+#profiler-configuration,
+#log-file-configuration {
+  /* 16px is the size of the radio button, 6px is its margin
+   * Then it's properly aligned with the text above. */
+  padding-inline-start: calc(16px + 6px);
+}
+
+label {
+  line-height: 1.8em;
+  & + input {
+    margin-inline-start: 1em;
+  }
+}
+
+input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  font-family: monospace;
+
+  /* This cancels the default margin applied to all inputs in common-shared.css. */
+  margin-inline: 0 !important;
+}
+
+.flex-and-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.button-row > button:first-of-type {
+  /* This cancels the default margin applied to all buttons in common-shared.css. */
+  margin-inline-start: 0;
+}
+
+.info-box {
+  padding: 1em;
+  border-radius: var(--border-radius-small);
+}
+
+.info-box-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+#error {
+  background-color: rgba(240, 40, 40, 0.5);
+  border: 1px solid rgba(240, 40, 40, 0.6);
+}
+
+#some-elements-unavailable {
+  background-color: var(--background-color-box-info);
+  border-color: var(--aboutlogging-box-border-color);
+}
+
+.button-with-icon {
+  display: flex;
+  gap: 0.5em;
+
+  /* Make sure that the icon changes color in dark mode. */
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+/* Uploaded Profiles section styles */
+#uploaded-profiles-section {
+  margin-bottom: 2em;
+}
+
+.uploaded-profile-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1em;
+  margin-bottom: 0.5em;
+  border: 1px solid var(--aboutlogging-box-border-color);
+  /* Bug 1986645: Border radius tokens are not shipped in Android, so we use a variable with fallback */
+  /* stylelint-disable-next-line  stylelint-plugin-mozilla/use-design-tokens */
+  border-radius: var(--aboutlogging-border-radius-small);
+  background-color: var(--aboutlogging-box-background);
+}
+
+.uploaded-profile-info {
+  flex: 1;
+}
+
+.uploaded-profile-name {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 0.25em;
+}
+
+.uploaded-profile-details {
+  display: flex;
+  gap: 1em;
+  font-size: 0.9em;
+  color: var(--aboutlogging-text-color-deemphasized);
+}
+
+.uploaded-profile-actions {
+  margin-inline-start: 1em;
+}
+
+.delete-profile-button {
+  /* moz-button doesn't have proper styles for Android and it doesn't appear
+   * clickable there. Making this look like a clickable element. This will be
+   * overwritten by moz-button on desktop. */
+  color: LinkText;
+}
+
+#no-uploaded-profiles {
+  color: var(--aboutlogging-text-color-deemphasized);
+  font-style: italic;
+  text-align: center;
+  padding: 2em;
+}

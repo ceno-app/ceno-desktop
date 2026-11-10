@@ -1,0 +1,45 @@
+.nova-enabled ~ .confirmation-dialog {
+  // @nova-cleanup(merge-styles): Merge into .confirmation-dialog
+  border-radius: var(--border-radius-large);
+}
+
+.confirmation-dialog {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  padding: 0;
+  width: 400px;
+  box-shadow: var(--popup-box-shadow);
+  background: var(--newtab-background-color-secondary);
+
+  &::backdrop {
+    background: var(--newtab-overlay-color);
+  }
+
+  section {
+    margin: 0;
+  }
+
+  .modal-message {
+    display: flex;
+    padding: var(--space-large);
+    padding-block-end: 0;
+
+    p {
+      margin: 0;
+      margin-block-end: var(--space-large);
+
+      &:first-child {
+        font-weight: var(--font-weight-semibold);
+      }
+    }
+  }
+
+  .button-group {
+    border: 0;
+    padding: var(--space-large);
+  }
+
+  .icon {
+    margin-inline-end: var(--space-large);
+  }
+}

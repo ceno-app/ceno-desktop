@@ -1,0 +1,96 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPCSHELL_TESTS_MANIFESTS += ["tests/unit/xpcshell.toml"]
+
+TESTING_JS_MODULES += [
+    "tests/LangPackMatcherTestUtils.sys.mjs",
+]
+
+toolkit = CONFIG["MOZ_WIDGET_TOOLKIT"]
+
+if toolkit == "windows":
+    DIRS += ["windows"]
+elif toolkit in ("cocoa", "uikit"):
+    DIRS += ["mac"]
+elif toolkit == "gtk":
+    DIRS += ["gtk"]
+elif toolkit == "android":
+    DIRS += ["android"]
+
+XPIDL_SOURCES += [
+    "mozILocaleService.idl",
+    "mozIOSPreferences.idl",
+]
+
+XPIDL_MODULE = "locale"
+
+EXPORTS += [
+    "nsLanguageAtomService.h",
+    "nsUConvPropertySearch.h",
+]
+
+EXPORTS.mozilla.intl += [
+    "AppCollator.h",
+    "AppDateTimeFormat.h",
+    "EncodingToLang.h",
+    "LocaleService.h",
+    "MozLocaleBindings.h",
+    "OSPreferences.h",
+    "Quotes.h",
+]
+
+UNIFIED_SOURCES += [
+    "AppCollator.cpp",
+    "AppDateTimeFormat.cpp",
+    "EncodingToLang.cpp",
+    "LocaleService.cpp",
+    "nsLanguageAtomService.cpp",
+    "nsUConvPropertySearch.cpp",
+    "OSPreferences.cpp",
+    "Quotes.cpp",
+]
+
+EXTRA_JS_MODULES += [
+    "LangPackMatcher.sys.mjs",
+]
+
+XPCOM_MANIFESTS += [
+    "components.conf",
+]
+
+FINAL_LIBRARY = "xul"
+
+LOCAL_INCLUDES += [
+    "/intl/uconv",
+]
+
+RESOURCE_FILES += [
+    "language.properties",
+]
+
+TEST_DIRS += ["tests/gtest"]
+
+if CONFIG["COMPILE_ENVIRONMENT"]:
+    CbindgenHeader(
+        "fluent_langneg_ffi_generated.h",
+        inputs=["/intl/locale/rust/fluent-langneg-ffi"],
+    )
+    CbindgenHeader(
+        "locale_service_glue_generated.h",
+        inputs=["/intl/locale/rust/locale_service_glue"],
+    )
+    CbindgenHeader(
+        "oxilangtag_ffi_generated.h", inputs=["/intl/locale/rust/oxilangtag-ffi"]
+    )
+    CbindgenHeader(
+        "unic_langid_ffi_generated.h", inputs=["/intl/locale/rust/unic-langid-ffi"]
+    )
+
+    EXPORTS.mozilla.intl += [
+        "!fluent_langneg_ffi_generated.h",
+        "!locale_service_glue_generated.h",
+        "!oxilangtag_ffi_generated.h",
+        "!unic_langid_ffi_generated.h",
+    ]

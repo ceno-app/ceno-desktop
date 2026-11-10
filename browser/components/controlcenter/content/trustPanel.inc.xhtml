@@ -1,0 +1,140 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<html:template id="template-trustpanel-popup">
+<panel id="trustpanel-popup"
+       class="panel-no-padding site-information-popup"
+       type="arrow"
+       role="alertdialog"
+       noautofocus="true"
+       orient="vertical">
+
+  <panelmultiview id="trustpanel-popup-multiView"
+                  mainViewId="trustpanel-popup-mainView">
+    <panelview id="trustpanel-popup-mainView"
+               class="PanelUI-subView"
+               role="document"
+               mainview-with-header="true"
+               has-custom-header="true">
+
+      <vbox id="trustpanel-header-section">
+        <hbox id="trustpanel-header-row">
+          <hbox id="trustpanel-popup-host-wrapper">
+            <image id="trustpanel-popup-icon"></image>
+            <label id="trustpanel-popup-host" crop="start"></label>
+          </hbox>
+          <toolbarbutton id="trustpanel-popup-connection" class="subviewbutton subviewbutton-nav">
+            <image id="trustpanel-connection-icon"></image>
+            <label id="trustpanel-connection-label"></label>
+          </toolbarbutton>
+        </hbox>
+
+        <html:script type="module" src="chrome://browser/content/controlcenter/components/breach-alert-panel.mjs"></html:script>
+        <html:breach-alert-panel id="trustpanel-breach-alert-section">
+        </html:breach-alert-panel>
+        <vbox id="trustpanel-graphic-section">
+          <hbox class="trustpanel-card-main">
+            <image id="trustpanel-graphic-image-legacy"></image>
+            <vbox id="trustpanel-graphic-section-text" class="trustpanel-card-content">
+              <label when-connection="secure secure-ev secure-etsi secure-cert-user-overridden chrome file extension net-error-page https-only-error-page"
+                     id="trustpanel-header"
+                     class="trustpanel-header"></label>
+              <label when-connection="not-secure cert-error-page"
+                     class="trustpanel-header"
+                     data-l10n-id="trustpanel-header-enabled-insecure"></label>
+              <label when-connection="secure secure-ev secure-etsi secure-cert-user-overridden chrome file extension net-error-page https-only-error-page"
+                     id="trustpanel-description"></label>
+              <label when-connection="not-secure cert-error-page"
+                     data-l10n-id="trustpanel-description-enabled-insecure"></label>
+            </vbox>
+            <image id="trustpanel-graphic-image"></image>
+          </hbox>
+          <vbox id="trustpanel-blocker-section" class="trustpanel-card-content trustpanel-card-divided trustpanel-graphic-inner">
+            <label data-l10n-id="trustpanel-blocker-section-header2" data-l10n-args='{"count":0}' id="trustpanel-blocker-section-header" class="trustpanel-header"></label>
+            <label data-l10n-id="trustpanel-blocker-description"></label>
+            <html:moz-button-group>
+              <html:moz-button id="trustpanel-blocker-see-all" data-l10n-id="trustpanel-blocker-see-all" default="true" type="primary"></html:moz-button>
+            </html:moz-button-group>
+          </vbox>
+          <vbox id="trustpanel-insecure-section" class="trustpanel-card-content trustpanel-card-divided trustpanel-graphic-inner" when-connection="not-secure">
+            <label data-l10n-id="trustpanel-insecure-section-header" class="trustpanel-header"></label>
+            <label data-l10n-id="trustpanel-insecure-description"></label>
+          </vbox>
+        </vbox>
+        <vbox id="trustpanel-toggle-section">
+          <hbox id="trustpanel-toggle-checkbox-container">
+            <label id="trustpanel-etp-label" class="trustpanel-header"></label>
+            <html:moz-toggle data-l10n-attrs="label, description" id="trustpanel-toggle"></html:moz-toggle>
+          </hbox>
+          <label id="trustpanel-etp-description"></label>
+        </vbox>
+
+        <toolbarseparator></toolbarseparator>
+        <toolbarbutton data-l10n-id="trustpanel-clear-cookies-button" id="trustpanel-clear-cookies-button" class="subviewbutton subviewbutton-nav"></toolbarbutton>
+
+        <toolbarseparator></toolbarseparator>
+        <toolbarbutton id="trustpanel-privacy-link" data-l10n-id="trustpanel-privacy-link" class="subviewbutton"></toolbarbutton>
+      </vbox>
+    </panelview>
+
+    <panelview id="trustpanel-securityInformationView"
+               class="PanelUI-subView"
+               role="document">
+#include securityInformation.inc.xhtml
+      <html:a id="trustpanel-siteinformation-morelink" data-l10n-id="trustpanel-siteinformation-morelink" role="link" class="trustpanel-section panel-subview-footer-button"></html:a>
+    </panelview>
+
+    <panelview id="trustpanel-blockerView"
+               class="PanelUI-subView"
+               role="document">
+      <toolbarseparator></toolbarseparator>
+      <html:moz-message-bar id="trustpanel-smartblock-section">
+        <div slot="message">
+          <vbox>
+            <description data-l10n-id="protections-panel-smartblock-desc-label"></description>
+            <vbox id="trustpanel-smartblock-toggle-container" class="trustpanel-smartblock-toggle-box"></vbox>
+          </vbox>
+        </div>
+      </html:moz-message-bar>
+      <vbox class="trustpanel-blocker-section" id="trustpanel-blocked">
+        <label class="trustpanel-header" id="trustpanel-blocked-header" data-l10n-id="trustpanel-blocked-header"></label>
+        <vbox class="trustpanel-blocker-buttons"></vbox>
+      </vbox>
+      <toolbarseparator></toolbarseparator>
+      <vbox class="trustpanel-blocker-section" id="trustpanel-detected">
+        <label class="trustpanel-header" id="trustpanel-tracking-header" data-l10n-id="trustpanel-tracking-header"></label>
+        <label id="trustpanel-tracking-description" data-l10n-id="trustpanel-tracking-description"></label>
+        <vbox class="trustpanel-blocker-buttons"></vbox>
+      </vbox>
+    </panelview>
+
+    <panelview id="trustpanel-blockerDetailsView"
+               class="PanelUI-subView"
+               role="document">
+      <toolbarseparator></toolbarseparator>
+      <vbox class="trustpanel-blocker-section">
+        <label id="trustpanel-blocker-details-header" class="trustpanel-header"></label>
+        <label id="trustpanel-blocker-details-content"></label>
+        <toolbarseparator></toolbarseparator>
+        <label id="trustpanel-blocker-details-list-header" class="trustpanel-header"></label>
+        <vbox class="trustpanel-blocker-section panel-subview-body" id="trustpanel-blocker-items"></vbox>
+      </vbox>
+    </panelview>
+
+    <panelview id="trustpanel-clearcookiesView"
+               class="PanelUI-subView"
+               role="document">
+      <toolbarseparator></toolbarseparator>
+      <vbox class="trustpanel-section">
+        <label data-l10n-id="trustpanel-clear-cookies-description"></label>
+        <html:moz-button-group>
+          <html:moz-button data-l10n-id="trustpanel-clear-cookies-subview-button-cancel" id="trustpanel-clear-cookie-cancel"></html:moz-button>
+          <html:moz-button type="primary" data-l10n-id="trustpanel-clear-cookies-subview-button-clear"  id="trustpanel-clear-cookie-clear"></html:moz-button>
+        </html:moz-button-group>
+      </vbox>
+    </panelview>
+
+  </panelmultiview>
+</panel>
+</html:template>

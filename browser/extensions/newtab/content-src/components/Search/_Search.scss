@@ -1,0 +1,295 @@
+$search-height: var(--size-item-xlarge);
+$search-height-new: 52px;
+$search-icon-size: 24px;
+$search-icon-padding: 16px;
+$search-icon-width: 2 * $search-icon-padding + $search-icon-size - 4px; // 52px
+$search-button-width: var(--size-item-xlarge);
+$glyph-forward: url('chrome://browser/skin/forward.svg');
+
+.search-wrapper {
+  // Compact layout defaults formerly under .thumbs-ui-compact
+  padding: 0;
+  margin-block: var(--space-xxlarge);
+  margin-block-start: 0;
+
+  .logo-and-wordmark {
+    margin-block-end: var(--space-xxlarge);
+  }
+
+  .logo-and-wordmark-wrapper {
+    margin-block-end: 0;
+  }
+
+  @media (height <=700px) {
+    padding: 0;
+    margin-block-start: 0;
+  }
+
+  @media (height > 700px) {
+    padding: 0;
+  }
+
+  // Edge case for users who have only search enabled
+  .only-search & {
+    // Bug 1967304 - Large number (40px)
+    padding-block-end: calc(var(--space-large) + var(--space-xlarge));
+  }
+
+  .search-inner-wrapper {
+    cursor: default;
+    display: flex;
+    height: $search-height-new;
+    margin: 0 auto;
+    position: relative;
+    width: 304px;
+
+    @media (min-width: $break-point-medium) {
+      width: $searchbar-width-medium;
+    }
+
+    @media (min-width: $break-point-large) {
+      width: 510px;
+    }
+
+    @media (min-width: $break-point-widest) {
+      width: 720px;
+    }
+  }
+
+  content-search-handoff-ui {
+    --content-search-handoff-ui-background-color: var(--newtab-background-color-secondary);
+    --content-search-handoff-ui-color: var(--newtab-text-primary-color);
+    --content-search-handoff-ui-fill: var(--newtab-text-secondary-color);
+    --content-search-handoff-ui-caret-color: var(--newtab-text-primary-color);
+    --content-search-handoff-ui-fakefocus-border-color: var(--newtab-primary-action-background);
+    --content-search-handoff-ui-fakefocus-box-shadow-inner: var(--newtab-primary-action-background-dimmed);
+    --content-search-handoff-ui-fakefocus-box-shadow-outer: transparent;
+  }
+
+  &.visible-logo {
+    .logo-and-wordmark {
+      .wordmark {
+        fill: var(--newtab-wordmark-color);
+      }
+    }
+  }
+}
+
+.has-recommended-stories {
+  .outer-wrapper:not(.fixed-search) .search-wrapper {
+    margin-block-start: var(--space-large);
+  }
+
+  .logo-and-wordmark {
+    position: absolute;
+    inset-inline-start: var(--space-xxlarge);
+    inset-block-start: var(--space-xxlarge);
+
+    @media (min-width: $break-point-layout-variant) {
+      inset-inline-start: var(--space-large);
+    }
+
+    @media (min-width: $break-point-large) {
+      inset-inline-start: var(--space-xxlarge);
+    }
+  }
+
+  &.no-search {
+    .body-wrapper {
+      margin-block-start: 0;
+
+      @media (min-width: $break-point-large) {
+        // This is to handle the gap left by search being removed.
+        // Bug 1967304 - Large number (96px)
+        margin-block-start: calc(var(--space-xlarge) * 4);
+      }
+
+      @media (min-width: $break-point-ultra-wide) {
+        margin-block-start: 0;
+      }
+    }
+  }
+
+  // Bug 1961633 - Keep shortcuts/feed below the logo/weather widget (var b layout)
+  &.no-search.has-sections-grid {
+    .body-wrapper {
+      // 96px is the margin necessary to maintain the same spacing with/without the search bar
+      // Bug 1967304 - Large number (96px)
+      margin-block-start: calc(var(--space-xlarge) * 4);
+    }
+
+    .logo-and-wordmark {
+      inset-inline-start: var(--space-large);
+
+      @media (min-width: $break-point-small) {
+        inset-inline-start: var(--space-xxlarge);
+      }
+
+      @media (min-width: $break-point-layout-variant) {
+        inset-inline-start: var(--space-large);
+      }
+
+      @media (min-width: $break-point-large) {
+        inset-inline-start: var(--space-xxlarge);
+      }
+    }
+
+  }
+
+  .search-inner-wrapper {
+    width: 200px;
+
+    @media (min-width: $break-point-small) {
+      width: 300px;
+    }
+
+    @media (min-width: $break-point-medium) {
+      width: 350px;
+    }
+
+    @media (min-width: $break-point-large) {
+      width: 410px;
+    }
+
+    @media (min-width: $break-point-widest) {
+      width: 584px;
+    }
+
+    @media (min-width: $break-point-weather) {
+      width: 720px;
+    }
+  }
+
+  // Bug 1960519 - Custom override for mobile icon next to weather
+  &.has-mobile-download-promo {
+    .search-inner-wrapper {
+      @media (min-width: $break-point-widest) {
+        // Set to smaller breakpoint to fit weather
+        width: 497px;
+      }
+
+      @media (min-width: $break-point-weather) {
+        // Reset back to default length
+        width: 720px;
+      }
+    }
+  }
+
+  .logo {
+    width: 52px;
+    height: 52px;
+    background-size: 52px;
+  }
+
+  .wordmark {
+    display: none;
+    height: 52px;
+
+    @media (min-width: $break-point-large) {
+      display: block;
+    }
+  }
+}
+
+// @nova-cleanup(remove-conditional): Remove this selector; make search-wrapper subgrid layout and search-inner-wrapper width styles the default, and remove the classic media-query widths in .search-wrapper .search-inner-wrapper.
+.nova-enabled {
+  .search-wrapper {
+    container-type: normal;
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+
+  .search-inner-wrapper {
+    grid-column: 1 / -1;
+    margin-inline: auto;
+    width: calc(4 * var(--col-width) + 3 * var(--space-medium));
+
+    @include at-content-cols(6) {
+      width: calc(6 * var(--col-width) + 5 * var(--space-medium));
+    }
+
+    @include at-content-cols(10) {
+      width: calc(10 * var(--col-width) + 9 * var(--space-medium));
+    }
+  }
+
+  // Sentinel observed by IntersectionObserver in Base.jsx — when it
+  // leaves the viewport the search-wrapper is stuck at the top.
+  .sticky-search-sentinel {
+    grid-column: 1 / -1;
+    block-size: 1px;
+    // Compensate for the 1px sentinel so it doesn't shift search-wrapper. We
+    // use a negative margin to do that, so that it's technically laid out,
+    // and can trigger an IntersectionObserver, but doesn't actually take space.
+    // stylelint-disable-next-line declaration-property-value-disallowed-list
+    margin-block-end: -1px;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  @media (height > 700px) {
+    .search-wrapper {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 3;
+      // Reserved always (not just when stuck) so the input's viewport-relative
+      // Y is identical pre- and post-sticky, eliminating the snap at activation.
+      padding-block: var(--space-xlarge);
+    }
+  }
+}
+
+@media (height > 700px) {
+  // Full-bleed backdrop drawn via pseudo-element on .nova-outer-wrapper
+  // (which has no containment) so position: fixed anchors to the viewport.
+  // Mounting the pseudo on .search-wrapper instead doesn't work because
+  // .content and .container set container-type: inline-size, which makes
+  // them the containing block for fixed-positioned descendants — the
+  // backdrop would then track the wrapper's off-center position in narrow
+  // viewports instead of spanning the full viewport width.
+  .nova-outer-wrapper.stuck-search::before {
+    content: '';
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: calc(#{$search-height-new} + 2 * var(--space-xlarge));
+    background-color: var(--newtab-overlay-color);
+    border-block-end: var(--border-width) solid var(--border-color);
+    // Above .weather (z-index 1) and any other absolutely-positioned page
+    // chrome, below the sticky search-wrapper (z-index 3) so the input
+    // still paints on top, and below .personalizeButtonWrapper (z-index 5).
+    z-index: 2;
+    pointer-events: none;
+  }
+}
+
+@media (height > 700px) {
+  .activity-stream .fixed-search {
+    .search-wrapper {
+      $search-height: $search-height-new;
+      $search-icon-size: 24px;
+      $search-icon-padding: 16px;
+      $search-header-bar-height: 95px;
+
+      border-block-end: solid 1px var(--border-color);
+      padding: var(--space-xlarge) 0;
+      background-color: var(--newtab-overlay-color);
+      min-height: $search-header-bar-height;
+      inset-inline-start: 0;
+      position: fixed;
+      inset-block-start: 0;
+      width: 100%;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+
+      .search-inner-wrapper {
+        min-height: $search-height;
+      }
+
+      .logo-and-wordmark {
+        display: none;
+      }
+    }
+  }
+}

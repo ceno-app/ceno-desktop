@@ -1,0 +1,104 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+.popup-notification-panel::part(content) {
+  /* To keep the rounded borders of the panel, we use overflow: hidden; from the
+   * panel-no-padding class to ensure the contents are clipped to the border box.
+   * That causes us to override the "display" property so that the height of the
+   * contents is computed correctly. */
+  display: flex;
+  /* Make multiple popupnotifications stack vertically. */
+  flex-direction: column;
+}
+
+.popup-notification-panel > popupnotification:not([hidden]) {
+  /* Since the anonymous parent (::part(content)) has display: flex, sizing
+   * computations work better with display: block; than with the XUL default
+   * display: flex;
+   * TODO(emilio): we can probably remove this. */
+  display: block;
+}
+
+popupnotification {
+  font: caption;
+}
+
+popupnotificationcontent {
+  margin-top: var(--space-small);
+}
+
+.popup-notification-header-container,
+.popup-notification-footer-container {
+  display: flex;
+  max-width: calc(2 * var(--panel-padding) + var(--icon-size) + var(--panel-border-radius) + var(--popup-notification-body-width));
+}
+
+.popup-notification-body-container {
+  padding: var(--panel-padding);
+}
+
+.popup-notification-icon {
+  height: var(--icon-size);
+  width: var(--icon-size);
+  margin-inline-end: var(--space-small);
+
+  &:not([hasicon]) {
+    display: none;
+  }
+}
+
+.popup-notification-body {
+  /* this variable here uses --panel-padding, a space token, as part of calculation */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  width: var(--popup-notification-body-width);
+  flex: 1 auto;
+}
+
+/*
+ * Ensure that host names in PopupNotifications wrap. This targets the "name"
+ * element in the description container which is the "name" property of the
+ * PopupNotification. Name is what gets substituted from the l10n string using
+ * the placeholder <>.
+ */
+.popup-notification-description-name {
+  word-break: break-all;
+}
+
+.popup-notification-closebutton {
+  margin-inline-end: calc(-1 * var(--space-small));
+  margin-top: calc(-1 * var(--space-small));
+}
+
+.popup-notification-origin {
+  margin-bottom: var(--space-xsmall) !important;
+
+  &:not([value]) {
+    display: none;
+  }
+}
+
+.popup-notification-hint-text {
+  margin-top: var(--space-small) !important;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.popup-notification-warning {
+  color: var(--text-color-error);
+}
+
+.popup-notification-checkbox > .checkbox-label-box > .checkbox-label {
+  opacity: var(--opacity-deemphasized);
+}
+
+.popup-notification-learnmore-link {
+  text-decoration: underline;
+  margin-block: var(--space-xsmall) 0;
+
+  &:not([href]) {
+    display: none;
+  }
+}

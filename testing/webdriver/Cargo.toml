@@ -1,0 +1,38 @@
+[package]
+edition = "2024"
+name = "webdriver"
+version = "0.54.0"
+authors = ["Mozilla"]
+include = ["/src"]
+description = "Library implementing the wire protocol for the W3C WebDriver specification."
+documentation = "https://docs.rs/webdriver"
+readme = "README.md"
+keywords = [
+    "automation",
+    "browser",
+    "protocol",
+    "w3c",
+    "webdriver",
+]
+license = "MPL-2.0"
+repository = "https://hg.mozilla.org/mozilla-central/file/tip/testing/webdriver"
+
+[features]
+default = ["server"]
+server = ["tokio", "warp"]
+
+[dependencies]
+base64 = "0.22"
+bytes = "1.0"
+cookie = { version = "0.16", default-features = false }
+http = "1.4"
+icu_segmenter = { version = "2.0", default-features = false, features = ["auto", "compiled_data"] }
+log = "0.4"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+time = "0.3"
+tokio = { version = "1.0", features = ["macros", "net", "rt", "signal", "sync"], optional = true}
+url = "2.4"
+thiserror = "1"
+warp = { version = "0.4.2", default-features = false, features = ["server"], optional = true }

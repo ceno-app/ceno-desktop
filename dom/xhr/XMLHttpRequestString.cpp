@@ -1,0 +1,158 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "XMLHttpRequestString.h"
+
+#include "js/String.h"
+#include "mozilla/dom/DOMString.h"
+#include "nsISupportsImpl.h"
+
+namespace mozilla::dom {
+
+class XMLHttpRequestStringBuffer final {
+  friend class XMLHttpRequestStringSnapshot;
+  friend class XMLHttpRequestStringWriterHelper;
+
+ public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(XMLHttpRequestStringBuffer)
+  NS_DECL_OWNINGTHREAD
+
+  XMLHttpRequestStringBuffer() : mMutex("XMLHttpRequestStringBuffer::mMutex") {}
+
+  uint32_t Length() {
+    MutexAutoLock lock(mMutex);
+    return mData.Length();
+  }
+
+  uint32_t UnsafeLength() const MOZ_NO_THREAD_SAFETY_ANALYSIS {
+    return mData.Length();
+  }
+
+  mozilla::Result<mozilla::BulkWriteHandle<char16_t>, nsresult> UnsafeBulkWrite(
+      uint32_t aCapacity) MOZ_NO_THREAD_SAFETY_ANALYSIS {
+    return mData.BulkWrite(aCapacity, UnsafeLength(), false);
+  }
+
+  void Append(const nsAString& aString) {
+    NS_ASSERT_OWNINGTHREAD(XMLHttpRequestStringBuffer);
+
+    MutexAutoLock lock(mMutex);
+    mData.Append(aString);
+  }
+
+  [[nodiscard]] bool GetAsString(nsAString& aString) {
+    MutexAutoLock lock(mMutex);
+    return aString.Assign(mData, fallible);
+  }
+
+  size_t SizeOfThis(MallocSizeOf aMallocSizeOf) {
+    MutexAutoLock lock(mMutex);
+    return mData.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
+  }
+
+  void CreateSnapshot(XMLHttpRequestStringSnapshot& aSnapshot) {
+    MutexAutoLock lock(mMutex);
+    aSnapshot.Set(this);
+  }
+
+ private:
+  ~XMLHttpRequestStringBuffer() = default;
+
+  Mutex mMutex;
+
+  // The following member variable is protected by mutex.
+  nsString mData MOZ_GUARDED_BY(mMutex);
+};
+
+// ---------------------------------------------------------------------------
+// XMLHttpRequestString
+
+XMLHttpRequestString::XMLHttpRequestString()
+    : mBuffer(new XMLHttpRequestStringBuffer()) {}
+
+XMLHttpRequestString::~XMLHttpRequestString() = default;
+
+void XMLHttpRequestString::Truncate() {
+  mBuffer = new XMLHttpRequestStringBuffer();
+}
+
+uint32_t XMLHttpRequestString::Length() const { return mBuffer->Length(); }
+
+void XMLHttpRequestString::Append(const nsAString& aString) {
+  mBuffer->Append(aString);
+}
+
+bool XMLHttpRequestString::GetAsString(nsAString& aString) const {
+  return mBuffer->GetAsString(aString);
+}
+
+size_t XMLHttpRequestString::SizeOfThis(MallocSizeOf aMallocSizeOf) const {
+  return mBuffer->SizeOfThis(aMallocSizeOf);
+}
+
+bool XMLHttpRequestString::IsEmpty() const { return !mBuffer->Length(); }
+
+void XMLHttpRequestString::CreateSnapshot(
+    XMLHttpRequestStringSnapshot& aSnapshot) {
+  mBuffer->CreateSnapshot(aSnapshot);
+}
+
+// ---------------------------------------------------------------------------
+// XMLHttpRequestStringSnapshot
+
+XMLHttpRequestStringSnapshot::XMLHttpRequestStringSnapshot() : mVoid(false) {}
+
+XMLHttpRequestStringSnapshot::~XMLHttpRequestStringSnapshot() = default;
+
+void XMLHttpRequestStringSnapshot::ResetInternal(bool aIsVoid) {
+  mBuffer = nullptr;
+  mVoid = aIsVoid;
+}
+
+void XMLHttpRequestStringSnapshot::Set(XMLHttpRequestStringBuffer* aBuffer) {
+  MOZ_ASSERT(aBuffer);
+
+  mBuffer = aBuffer;
+  mVoid = false;
+}
+
+bool XMLHttpRequestStringSnapshot::GetAsString(DOMString& aString) const {
+  if (mBuffer) {
+    MOZ_ASSERT(!mVoid);
+    return mBuffer->GetAsString(aString);
+  }
+
+  if (mVoid) {
+    aString.SetNull();
+  }
+
+  return true;
+}
+
+JSString* XMLHttpRequestStringSnapshot::GetAsJSStringCopy(
+    JSContext* aCx) const {
+  MutexAutoLock lock(mBuffer->mMutex);
+  return JS_NewUCStringCopyN(aCx, mBuffer->mData.BeginReading(),
+                             mBuffer->mData.Length());
+}
+
+// ---------------------------------------------------------------------------
+// XMLHttpRequestStringWriterHelper
+
+XMLHttpRequestStringWriterHelper::XMLHttpRequestStringWriterHelper(
+    XMLHttpRequestString& aString)
+    : mBuffer(aString.mBuffer), mLock(aString.mBuffer->mMutex) {}
+
+XMLHttpRequestStringWriterHelper::~XMLHttpRequestStringWriterHelper() = default;
+
+uint32_t XMLHttpRequestStringWriterHelper::Length() const {
+  return mBuffer->UnsafeLength();
+}
+
+mozilla::Result<mozilla::BulkWriteHandle<char16_t>, nsresult>
+XMLHttpRequestStringWriterHelper::BulkWrite(uint32_t aCapacity) {
+  return mBuffer->UnsafeBulkWrite(aCapacity);
+}
+
+}  // namespace mozilla::dom

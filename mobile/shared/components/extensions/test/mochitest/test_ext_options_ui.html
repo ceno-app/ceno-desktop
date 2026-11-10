@@ -1,0 +1,193 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>options_ui Test</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/ExtensionTestUtils.js"></script>
+  <script type="text/javascript" src="head.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+
+<script type="text/javascript">
+"use strict";
+var gMonitorExtension;
+
+// Helper to get the foreground tab's URL.
+async function querySelectedTabURL() {
+  gMonitorExtension.sendMessage("querySelectedTabURL");
+  return gMonitorExtension.awaitMessage("querySelectedTabURL:result");
+}
+
+async function awaitTabsOnActivatedIfNotAlreadyFired() {
+  info("Ensuring that tabs.onActivated was fired...");
+  // Note: awaitMessage internally takes care of queueing or awaiting depending
+  // on whether the message was already sent.
+  await gMonitorExtension.awaitMessage("onActivated");
+}
+
+add_setup(async () => {
+  gMonitorExtension = ExtensionTestUtils.loadExtension({
+    manifest: { permissions: ["tabs"] },
+    background() {
+      // We cannot just rely on tabs.query({ active: true }) because closing
+      // a tab is asynchronous, with a brief period between the tab being
+      // closed and the new tab marked as active:
+      // Test implementation: https://searchfox.org/firefox-main/rev/50abc35bf42ac7aede2b0a18f3cd10c266cc41d5/mobile/android/test_runner/src/main/java/org/mozilla/geckoview/test_runner/TestRunnerActivity.java#190,193
+      // Non-test implementation also has similar setTabActive() call ordering.
+      browser.tabs.onActivated.addListener(() => {
+        browser.test.sendMessage("onActivated");
+      });
+      browser.test.onMessage.addListener(async msg => {
+        browser.test.assertEq(msg, "querySelectedTabURL", "Querying tabs");
+        // Not expecting multiple windows, so should have only one.
+        let tabs = await browser.tabs.query({ active: true });
+        browser.test.assertEq(tabs.length, 1, "Found one active tab");
+        browser.test.sendMessage("querySelectedTabURL:result", tabs[0].url);
+      });
+    },
+  });
+  await gMonitorExtension.startup();
+  SimpleTest.registerCleanupFunction(async () => gMonitorExtension.unload());
+});
+
+add_task(async function test_options_ui_open_in_tab() {
+  const addonID = "test-options-ui@mozilla.org";
+
+  async function background() {
+    browser.test.onMessage.addListener(msg => {
+      if (msg === "runtime.openOptionsPage") {
+        browser.runtime.openOptionsPage().then(() => {
+          browser.test.sendMessage("openOptionsPage:resolved");
+        });
+      }
+    });
+  }
+
+  function optionsScript() {
+    browser.test.sendMessage("options-page-loaded", window.location.href);
+  }
+
+  const extension = ExtensionTestUtils.loadExtension({
+    useAddonManager: "temporary",
+    background,
+    manifest: {
+      browser_specific_settings: {
+        gecko: {id: addonID},
+      },
+      name: "Options UI open_in_tab Extension",
+      description: "Longer addon description",
+      options_ui: {
+        page: "options.html",
+        open_in_tab: true,
+      },
+    },
+    files: {
+      "options.js": optionsScript,
+      "options.html": `<!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+          </head>
+          <body>
+            <h1>Options page</h1>
+            <script src="options.js"><\/script>
+          </body>
+        </html>
+      `,
+    },
+  });
+
+  const initialURL = await querySelectedTabURL();
+
+  await extension.startup();
+
+  info("Call runtime.openOptionsPage");
+  extension.sendMessage("runtime.openOptionsPage");
+  await extension.awaitMessage("openOptionsPage:resolved");
+
+  info("Wait runtime.openOptionsPage to open the options in a new tab");
+  const optionsURL = await extension.awaitMessage("options-page-loaded");
+  await awaitTabsOnActivatedIfNotAlreadyFired();
+  is(await querySelectedTabURL(), optionsURL,
+     "runtime.openOptionsPage has opened the expected extension page");
+
+  await extension.unload();
+
+  // Note: Awaiting onActivated ensures that the tab is really closed and
+  // switched to a different tab. Works around bug 1644040.
+  await awaitTabsOnActivatedIfNotAlreadyFired();
+
+  is(await querySelectedTabURL(), initialURL,
+     "After extension unload, options page in new tab closes automatically");
+});
+
+// Tests behavior when open_in_tab is not specified (false). Note that the
+// implementation of openOptionsPage for this case is dependent on the app
+// that embeds GeckoView, via TabDelegate::onOpenOptionsPage, with the
+// expectation of it opening the Extensions Manager (add-on manager) with the
+// options page embedded.
+// TestRunnerActivity does not override TabDelegate::onOpenOptionsPage, so
+// the default implementation is a no-op.
+// In theory we could override the implementation and open a regular tab,
+// but that would not translate to meaningful test coverage in practice, so
+// this test just exercises the API call, and confirms that the behavior
+// differs from the open_in_tab=true case.
+add_task(async function test_options_ui_open_in_tab_false() {
+  async function background() {
+    // TestRunnerActivity does not override TabDelegate::onOpenOptionsPage, but
+    // we won't get "runtime.openOptionsPage is not supported" either because
+    // a TabDelegate is registered (with the default no-op onOpenOptionsPage):
+    // https://searchfox.org/firefox-main/rev/8b3456fa29ad35f58da4cc0a1d182e039124ba5d/mobile/android/test_runner/src/main/java/org/mozilla/geckoview/test_runner/TestRunnerActivity.java#229
+    try {
+      await browser.runtime.openOptionsPage();
+    } catch (e) {
+      browser.test.fail(`Unexpected error: ${e}`);
+    }
+    browser.test.sendMessage("ready");
+  }
+
+  function optionsScript() {
+    browser.test.sendMessage("options-page-loaded", window.location.href);
+  }
+  const extension = ExtensionTestUtils.loadExtension({
+    useAddonManager: "temporary",
+    background,
+    manifest: {
+      name: "Options UI open_in_tab=false Extension",
+      options_ui: {
+        page: "options.html",
+        // "open_in_tab: false," is the default
+      },
+    },
+    files: {
+      "options.js": optionsScript,
+      "options.html": `<!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+          </head>
+          <body>
+            <h1>Options page</h1>
+            <script src="options.js"><\/script>
+          </body>
+        </html>
+      `,
+    },
+  });
+
+  const initialURL = await querySelectedTabURL();
+
+  await extension.startup();
+  await extension.awaitMessage("ready");
+
+  is(await querySelectedTabURL(), initialURL, "Tab not changed");
+
+  await extension.unload();
+});
+
+</script>
+
+</body>
+</html>

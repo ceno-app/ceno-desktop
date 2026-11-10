@@ -1,0 +1,5 @@
+#foo {
+  /* Duplicate property: */
+  text-transform: uppercase;
+  text-transform: uppercase;
+}

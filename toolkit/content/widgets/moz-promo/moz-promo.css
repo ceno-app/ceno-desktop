@@ -1,0 +1,154 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/design-system/text-and-typography.css");
+@import url("chrome://global/content/elements/moz-promo.tokens.css");
+
+/*
+ Bug 1972702: Remove the following TODOs
+  TODO: need dark mode theming for the following:
+    * color-violet-80 (message-text-color)
+    * color-violet-0 (background-color)
+    * color-violet-30 (border-color)
+  TODO: need HCM styles
+*/
+
+:host([hidden]) {
+  display: none !important;
+}
+
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+/* MozPromo layout */
+
+:host([type="vibrant"]) {
+  --promo-message-text-color: var(--promo-message-text-color-vibrant);
+  --promo-heading-text-color: var(--promo-heading-text-color-vibrant);
+  --promo-background-color: var(--promo-background-color-vibrant);
+  --promo-border-color: var(--promo-border-color-vibrant);
+}
+
+.container {
+  background-color: var(--promo-background-color);
+  border: var(--promo-border);
+  border-radius: var(--promo-border-radius);
+  color: var(--promo-message-text-color);
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-medium);
+  align-items: center;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.text-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-small);
+}
+
+.image-container {
+  width: var(--promo-image-size);
+  flex-shrink: 0;
+  align-self: stretch;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 100%;
+    height: auto;
+  }
+}
+
+:host([imagedisplay="cover"]) {
+  .image-container {
+    align-items: stretch;
+  }
+
+  .text-container {
+    padding: var(--promo-padding);
+  }
+
+  img {
+    object-fit: cover;
+    object-position: var(--promo-image-position, bottom right);
+
+    :host([imagealignment="end"]) & {
+      object-position: var(--promo-image-position, bottom left);
+    }
+    :host([imagealignment="center"]) & {
+      object-position: var(--promo-image-position, top center);
+    }
+  }
+}
+
+:host([imagedisplay="padded"]) {
+  .text-container {
+    padding: 0;
+  }
+
+  .container {
+    padding: var(--promo-padding);
+  }
+}
+
+:host([imagealignment="center"]) {
+  .container {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .image-container {
+    align-self: center;
+  }
+}
+
+:host([imagealignment="center"][imagedisplay="cover"]) {
+  .image-container {
+    width: 100%;
+    height: var(--promo-image-size);
+  }
+}
+
+:host([imagewidth="large"]) {
+  --promo-image-size: var(--promo-image-size-large);
+}
+
+/* MozPromo heading style */
+
+.heading {
+  color: var(--promo-heading-text-color);
+  margin-block: 0;
+}
+
+/* MozPromo message styles */
+
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  word-break: break-word;
+  margin: 0;
+  align-items: center;
+
+  &:has(slot:has-slotted) {
+    gap: var(--space-small);
+  }
+}
+
+/* MozPromo slot styles */
+
+.actions-and-support-link-wrapper {
+  display: none;
+  gap: var(--space-small);
+  align-items: baseline;
+}
+
+.actions-and-support-link-wrapper.active {
+  display: flex;
+}

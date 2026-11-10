@@ -1,0 +1,35 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+
+  A package of routines shared by the XUL content code.
+
+ */
+
+#ifndef nsXULContentUtils_h_
+#define nsXULContentUtils_h_
+
+#include "nsISupports.h"
+
+class nsAtom;
+class nsIContent;
+
+namespace mozilla::dom {
+class Element;
+}
+
+class nsXULContentUtils {
+ protected:
+  static bool gDisableXULCache;
+
+  static int DisableXULCacheChangedCallback(const char* aPrefName,
+                                            void* aClosure);
+
+ public:
+  static nsresult FindChildByTag(nsIContent* aElement, int32_t aNameSpaceID,
+                                 nsAtom* aTag, mozilla::dom::Element** aResult);
+};
+
+#endif  // nsXULContentUtils_h_

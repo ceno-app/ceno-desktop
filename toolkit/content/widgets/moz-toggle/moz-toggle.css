@@ -1,0 +1,134 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/content/elements/moz-toggle.tokens.css");
+
+:host {
+  --input-width: var(--toggle-width);
+}
+
+.toggle-button {
+  appearance: none;
+  padding: 0;
+  border: var(--toggle-border-width) solid var(--toggle-border-color);
+  height: var(--toggle-height);
+  width: var(--toggle-width);
+  border-radius: var(--toggle-border-radius);
+  background-color: var(--toggle-background-color);
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  &:enabled:hover {
+    background-color: var(--toggle-background-color-hover);
+    border-color: var(--toggle-border-color);
+  }
+
+  &:enabled:hover:active {
+    background-color: var(--toggle-background-color-active);
+    border-color: var(--toggle-border-color);
+  }
+
+  &::before {
+    display: block;
+    content: "";
+    background-color: var(--toggle-dot-background-color);
+    height: var(--toggle-dot-height);
+    width: var(--toggle-dot-width);
+    margin: var(--toggle-dot-margin);
+    border-radius: var(--toggle-border-radius);
+    translate: 0;
+  }
+}
+
+.toggle-button[aria-pressed="true"] {
+  background-color: var(--toggle-background-color-pressed);
+  border-color: transparent;
+
+  &:enabled:hover {
+    background-color: var(--toggle-background-color-pressed-hover);
+    border-color: transparent;
+  }
+
+  &:enabled:hover:active {
+    background-color: var(--toggle-background-color-pressed-active);
+    border-color: transparent;
+  }
+
+  &::before {
+    translate: var(--toggle-dot-transform-x);
+    background-color: var(--toggle-dot-background-color-on-pressed);
+  }
+
+  &:enabled:hover::before,
+  &:enabled:hover:active::before {
+    background-color: var(--toggle-dot-background-color-on-pressed);
+  }
+
+  &:-moz-locale-dir(rtl)::before,
+  &:dir(rtl)::before {
+    translate: calc(-1 * var(--toggle-dot-transform-x));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toggle-button::before {
+    transition: translate 100ms;
+  }
+}
+
+@media (prefers-contrast) {
+  .toggle-button:enabled:hover {
+    border-color: var(--toggle-border-color-hover);
+  }
+
+  .toggle-button:enabled:hover:active {
+    border-color: var(--toggle-border-color-active);
+  }
+
+  .toggle-button[aria-pressed="true"]:enabled {
+    border-color: var(--toggle-border-color);
+    position: relative;
+
+    &:hover {
+      border-color: var(--toggle-border-color-hover);
+
+      &:active {
+        background-color: var(--toggle-dot-background-color-active);
+        border-color: var(--toggle-border-color);
+      }
+    }
+  }
+
+  .toggle-button:enabled:hover::before,
+  .toggle-button:enabled:hover:active::before {
+    background-color: var(--toggle-dot-background-color-hover);
+  }
+}
+
+@media (forced-colors) {
+  .toggle-button[aria-pressed="true"]:enabled::after {
+    --toggle-track-border-color: var(--toggle-background-color);
+
+    border: var(--border-width) solid var(--toggle-track-border-color);
+    content: "";
+    position: absolute;
+    height: var(--toggle-height);
+    width: var(--toggle-width);
+    display: block;
+    border-radius: var(--toggle-border-radius);
+    inset: var(--toggle-inset);
+  }
+
+  .toggle-button[aria-pressed="true"]:enabled:hover:active::after {
+    border-color: var(--toggle-border-color-active);
+  }
+}
+
+:host(:state(disabled)) .toggle-button {
+  opacity: var(--toggle-opacity-disabled);
+}

@@ -1,0 +1,48 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#ifndef mozilla_intl_WordBreaker_h_
+#define mozilla_intl_WordBreaker_h_
+
+#include "nsStringFwd.h"
+#include <cstdint>
+
+#define NS_WORDBREAKER_NEED_MORE_TEXT -1
+
+namespace mozilla {
+namespace intl {
+
+struct WordRange {
+  uint32_t mBegin;
+  uint32_t mEnd;
+};
+
+class WordBreaker final {
+ public:
+  // WordBreaker is a utility class with only static methods. No need to
+  // instantiate it.
+  WordBreaker() = delete;
+  ~WordBreaker() = delete;
+
+  // Find the word boundary by scanning forward and backward from aPos.
+  //
+  // @return WordRange where mBegin equals to the offset to first character in
+  // the word and mEnd equals to the offset to the last character plus 1. mEnd
+  // can be aText.Lengh() if the desired word is at the end of aText.
+  //
+  // If aPos is already at the end of aText or beyond, both mBegin and mEnd
+  // equals to aText.Length().
+  //
+  // If setting StopAtPunctuation, even if using UAX#29 word segmenter rule,
+  // there will be break opportunities on characters with punctuation class.
+  enum class FindWordOptions { None, StopAtPunctuation };
+
+  static WordRange FindWord(
+      const nsAString& aText, uint32_t aPos,
+      const FindWordOptions aOptions = FindWordOptions::None);
+};
+
+}  // namespace intl
+}  // namespace mozilla
+
+#endif /* mozilla_intl_WordBreaker_h_ */

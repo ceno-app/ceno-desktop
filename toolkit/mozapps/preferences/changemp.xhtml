@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<?csp default-src chrome:; style-src chrome: 'unsafe-inline'; ?>
+
+<window
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  style="min-width: 40em"
+  data-l10n-id="primary-password-dialog"
+>
+  <dialog id="changemp">
+    <script src="chrome://mozapps/content/preferences/changemp.js" />
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-input-password.mjs"
+    />
+
+    <linkset>
+      <html:link rel="stylesheet" href="chrome://global/skin/global.css" />
+      <html:link
+        rel="stylesheet"
+        href="chrome://mozapps/content/preferences/changemp.css"
+      />
+
+      <html:link rel="localization" href="branding/brand.ftl" />
+      <html:link
+        rel="localization"
+        href="toolkit/preferences/preferences.ftl"
+      />
+    </linkset>
+
+    <description
+      id="admin"
+      class="header"
+      data-l10n-id="primary-password-required-by-policy"
+      hidden="true"
+    ></description>
+    <description
+      control="pw1"
+      data-l10n-id="primary-password-description"
+    ></description>
+
+    <html:div id="oldpw-container" class="container">
+      <html:moz-input-password
+        id="oldpw"
+        data-l10n-id="set-password-old"
+      ></html:moz-input-password>
+      <!-- This textbox is inserted as a workaround to the fact that making the 'type'
+            & 'disabled' property of the 'oldpw' textbox toggle between ['password' &
+            'false'] and ['text' & 'true'] - as would be necessary if the menu has more
+            than one tokens, some initialized and some not - does not work properly. So,
+            either the textbox 'oldpw' or the textbox 'message' would be displayed,
+            depending on the state of the token selected
+      -->
+      <html:moz-input-text
+        id="message"
+        disabled=""
+        data-l10n-id="set-password-not-set"
+      ></html:moz-input-text>
+    </html:div>
+    <html:div id="pw1-container" class="container">
+      <html:moz-input-password
+        id="pw1"
+        data-l10n-id="set-password-new"
+      ></html:moz-input-password>
+    </html:div>
+    <html:div id="pw2-container" class="container">
+      <html:moz-input-password
+        id="pw2"
+        data-l10n-id="set-password-reenter"
+      ></html:moz-input-password>
+    </html:div>
+
+    <html:label
+      for="pwmeter"
+      style="display: flex"
+      data-l10n-id="set-password-meter"
+    ></html:label>
+    <html:progress id="pwmeter" value="0" max="100" />
+
+    <description
+      control="pw2"
+      id="pw-warning"
+      class="header"
+      data-l10n-id="primary-password-warning"
+    ></description>
+  </dialog>
+</window>

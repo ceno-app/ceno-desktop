@@ -1,0 +1,29 @@
+[DEFAULT]
+tags = "inc-origin-init"
+skip-if = [
+  "buildapp != 'browser'",
+]
+support-files = [
+  "head.js",
+  "browser_forgetThisSiteAdd.html",
+  "browser_forgetThisSiteGet.html",
+  "browserHelpers.js",
+  "bug839193.js",
+  "bug839193.xhtml",
+  "page_private_idb.html",
+]
+
+["browser_bug839193.js"]
+
+["browser_forgetThisSite.js"]
+skip-if = [
+  "verify-standalone",
+]
+
+["browser_private_idb.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # Bug 1456325
+  "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # Bug 1456325
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 1456325
+  "os == 'win' && debug", # Bug 1456325
+]

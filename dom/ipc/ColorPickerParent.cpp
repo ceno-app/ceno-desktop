@@ -1,0 +1,68 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "ColorPickerParent.h"
+
+#include "mozilla/dom/BrowserParent.h"
+#include "mozilla/dom/Document.h"
+#include "mozilla/dom/Element.h"
+#include "nsComponentManagerUtils.h"
+
+using namespace mozilla::dom;
+
+NS_IMPL_ISUPPORTS(ColorPickerParent::ColorPickerShownCallback,
+                  nsIColorPickerShownCallback);
+
+NS_IMETHODIMP
+ColorPickerParent::ColorPickerShownCallback::Update(const nsAString& aColor) {
+  if (mColorPickerParent) {
+    (void)mColorPickerParent->SendUpdate(aColor);
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ColorPickerParent::ColorPickerShownCallback::Done(const nsAString& aColor) {
+  if (mColorPickerParent) {
+    (void)ColorPickerParent::Send__delete__(mColorPickerParent, aColor);
+  }
+  return NS_OK;
+}
+
+void ColorPickerParent::ColorPickerShownCallback::Destroy() {
+  mColorPickerParent = nullptr;
+}
+
+bool ColorPickerParent::CreateColorPicker() {
+  if (!mBrowsingContext) {
+    return false;
+  }
+
+  mPicker = do_CreateInstance("@mozilla.org/colorpicker;1");
+  if (!mPicker) {
+    return false;
+  }
+
+  return NS_SUCCEEDED(
+      mPicker->Init(mBrowsingContext, mTitle, mInitialColor, mDefaultColors));
+}
+
+mozilla::ipc::IPCResult ColorPickerParent::RecvOpen() {
+  if (!CreateColorPicker()) {
+    (void)Send__delete__(this, mInitialColor);
+    return IPC_OK();
+  }
+
+  MOZ_ASSERT(!mCallback);
+  mCallback = new ColorPickerShownCallback(this);
+
+  mPicker->Open(mCallback);
+  return IPC_OK();
+};
+
+void ColorPickerParent::ActorDestroy(ActorDestroyReason aWhy) {
+  if (mCallback) {
+    mCallback->Destroy();
+  }
+}

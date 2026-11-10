@@ -1,0 +1,183 @@
+ifdef out unused functions from base/time to prevent dependencies.
+
+diff --git a/base/time/time.cc b/base/time/time.cc
+--- a/base/time/time.cc
++++ b/base/time/time.cc
+@@ -37,18 +37,20 @@ std::atomic<TimeNowFunction> g_time_now_
+ 
+ std::atomic<TimeTicksNowFunction> g_time_ticks_now_function{
+     &subtle::TimeTicksNowIgnoringOverride};
+ 
+ std::atomic<TimeTicksLowResolutionNowFunction>
+     g_time_ticks_low_resolution_now_function{
+         &subtle::TimeTicksLowResolutionNowIgnoringOverride};
+ 
++#if !defined(MOZ_SANDBOX)
+ std::atomic<LiveTicksNowFunction> g_live_ticks_now_function{
+     &subtle::LiveTicksNowIgnoringOverride};
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ std::atomic<ThreadTicksNowFunction> g_thread_ticks_now_function{
+     &subtle::ThreadTicksNowIgnoringOverride};
+ 
+ }  // namespace internal
+ 
+ // TimeDelta ------------------------------------------------------------------
+ 
+@@ -101,16 +103,17 @@ Time Time::Now() {
+ 
+ // static
+ Time Time::NowFromSystemTime() {
+   // Just use g_time_now_function because it returns the system time.
+   return internal::g_time_now_from_system_time_function.load(
+       std::memory_order_relaxed)();
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ Time Time::Midnight(bool is_local) const {
+   Exploded exploded;
+   Explode(is_local, &exploded);
+   exploded.hour = 0;
+   exploded.minute = 0;
+   exploded.second = 0;
+   exploded.millisecond = 0;
+   Time out_time;
+@@ -153,16 +156,17 @@ bool Time::FromStringInternal(const char
+       time_string, is_local ? PR_FALSE : PR_TRUE, &result_time);
+   if (result != PR_SUCCESS) {
+     return false;
+   }
+ 
+   *parsed_time = UnixEpoch() + Microseconds(result_time);
+   return true;
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // static
+ bool Time::ExplodedMostlyEquals(const Exploded& lhs, const Exploded& rhs) {
+   return std::tie(lhs.year, lhs.month, lhs.day_of_month, lhs.hour, lhs.minute,
+                   lhs.second, lhs.millisecond) ==
+          std::tie(rhs.year, rhs.month, rhs.day_of_month, rhs.hour, rhs.minute,
+                   rhs.second, rhs.millisecond);
+ }
+@@ -191,32 +195,34 @@ int64_t Time::ToRoundedDownMillisecondsS
+   // If |us_| is negative and includes fractions of a millisecond, subtract one
+   // more to effect the round towards -infinity. C-style integer truncation
+   // takes care of all other cases.
+   const int64_t millis = us_ / kMicrosecondsPerMillisecond;
+   const int64_t submillis = us_ % kMicrosecondsPerMillisecond;
+   return millis - kEpochOffsetMillis - (submillis < 0);
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ std::ostream& operator<<(std::ostream& os, Time time) {
+   Time::Exploded exploded;
+   time.UTCExplode(&exploded);
+   // Can't call `UnlocalizedTimeFormatWithPattern()`/`TimeFormatAsIso8601()`
+   // since `//base` can't depend on `//base:i18n`.
+   //
+   // TODO(pkasting): Consider whether `operator<<()` should move to
+   // `base/i18n/time_formatting.h` -- would let us implement in terms of
+   // existing time formatting, but might be confusing.
+   return os << StringPrintf("%04d-%02d-%02d %02d:%02d:%02d.%06" PRId64 " UTC",
+                             exploded.year, exploded.month,
+                             exploded.day_of_month, exploded.hour,
+                             exploded.minute, exploded.second,
+                             time.ToDeltaSinceWindowsEpoch().InMicroseconds() %
+                                 Time::kMicrosecondsPerSecond);
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // TimeTicks ------------------------------------------------------------------
+ 
+ // static
+ TimeTicks TimeTicks::Now() {
+   return internal::g_time_ticks_now_function.load(std::memory_order_relaxed)();
+ }
+ 
+@@ -276,20 +282,22 @@ std::ostream& operator<<(std::ostream& o
+   // real microseconds, the only real guarantee is that the number never goes
+   // down during a single run.
+   const TimeDelta as_time_delta = time_ticks - TimeTicks();
+   return os << as_time_delta.InMicroseconds() << " bogo-microseconds";
+ }
+ 
+ // LiveTicks ------------------------------------------------------------------
+ 
++#if !defined(MOZ_SANDBOX)
+ // static
+ LiveTicks LiveTicks::Now() {
+   return internal::g_live_ticks_now_function.load(std::memory_order_relaxed)();
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ #if !BUILDFLAG(IS_WIN)
+ namespace subtle {
+ LiveTicks LiveTicksNowIgnoringOverride() {
+   // On non-windows platforms LiveTicks is equivalent to TimeTicks already.
+   // Subtract the empty `TimeTicks` from `TimeTicks::Now()` to get a `TimeDelta`
+   // that can be added to the empty `LiveTicks`.
+   return LiveTicks() + (TimeTicks::Now() - TimeTicks());
+diff --git a/base/time/time_win.cc b/base/time/time_win.cc
+--- a/base/time/time_win.cc
++++ b/base/time/time_win.cc
+@@ -612,6 +612,7 @@ void InitializeNowFunctionPointer() {
+     // field trial, try enabling the high-res, QPC-based implementation of
+     // TimeTicks on 50% of such devices.
+     bool force_high_res_time_ticks = false;
++#if !defined(MOZ_SANDBOX)
+     // There is an explicit check for
+     // `base::CommandLine::InitializedForCurrentProcess()` not being null here,
+     // because some targets (like `generate_colors_info`) use `TimeTicks` during
+@@ -643,6 +644,7 @@ void InitializeNowFunctionPointer() {
+     } else {
+       opted_out_because_no_command_line = true;
+     }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+     eligible_for_high_res_time_ticks =
+         cpu.has_non_stop_time_stamp_counter() || force_high_res_time_ticks;
+@@ -796,25 +798,27 @@ bool TimeTicks::IsConsistentAcrossProces
+ // static
+ TimeTicks::Clock TimeTicks::GetClock() {
+   return IsHighResolution() ? Clock::WIN_QPC
+                             : Clock::WIN_ROLLOVER_PROTECTED_TIME_GET_TIME;
+ }
+ 
+ // LiveTicks ------------------------------------------------------------------
+ 
++#if !defined(MOZ_SANDBOX)
+ namespace subtle {
+ LiveTicks LiveTicksNowIgnoringOverride() {
+   ULONGLONG unbiased_interrupt_time;
+   QueryUnbiasedInterruptTimePrecise(&unbiased_interrupt_time);
+   // QueryUnbiasedInterruptTimePrecise gets the interrupt time in system time
+   // units of 100 nanoseconds.
+   return LiveTicks() + Nanoseconds(unbiased_interrupt_time * 100);
+ }
+ }  // namespace subtle
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // ThreadTicks ----------------------------------------------------------------
+ 
+ namespace subtle {
+ ThreadTicks ThreadTicksNowIgnoringOverride() {
+   return ThreadTicks::GetForThread(PlatformThread::CurrentHandle());
+ }
+ }  // namespace subtle
+@@ -910,6 +914,7 @@ bool TimeTicks::GetHighResolutionTimeTicksFieldTrial(std::string* trial_name,
+   return true;
+ }
+ 
++#if !defined(MOZ_SANDBOX)
+ // static
+ void TimeTicks::MaybeAddHighResolutionTimeTicksSwitch(
+     base::CommandLine* command_line) {
+@@ -938,6 +943,7 @@ void TimeTicks::MaybeAddHighResolutionTimeTicksSwitch(
+       break;
+   }
+ }
++#endif  // !defined(MOZ_SANDBOX)
+ 
+ // TimeDelta ------------------------------------------------------------------
+ 

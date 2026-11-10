@@ -1,0 +1,21 @@
+diff --git a/ssl/test/runner/runner.go b/ssl/test/runner/runner.go
+index 14c6c8d46..af10745a9 100644
+--- a/ssl/test/runner/runner.go
++++ b/ssl/test/runner/runner.go
+@@ -73,6 +73,7 @@ var (
+ 	deterministic      = flag.Bool("deterministic", false, "If true, uses a deterministic PRNG in the runner.")
+ 	allowUnimplemented = flag.Bool("allow-unimplemented", false, "If true, report pass even if some tests are unimplemented.")
+ 	looseErrors        = flag.Bool("loose-errors", false, "If true, allow shims to report an untranslated error code.")
++	looseLocalErrors   = flag.Bool("loose-local-errors", false, "If true, allow shims to report an untranslated local error code.")
+ 	shimConfigFile     = flag.String("shim-config", "", "A config file to use to configure the tests for this shim.")
+ 	includeDisabled    = flag.Bool("include-disabled", false, "If true, also runs disabled tests.")
+ 	repeatUntilFailure = flag.Bool("repeat-until-failure", false, "If true, the first selected test will be run repeatedly until failure.")
+@@ -1930,7 +1931,7 @@ func runTest(dispatcher *shimDispatcher, statusChan chan statusMsg, test *testCa
+ 	if localErr != nil {
+ 		localErrString = localErr.Error()
+ 	}
+-	if test.expectedLocalError != "" {
++	if !*looseLocalErrors && test.expectedLocalError != "" {
+ 		correctFailure = correctFailure && strings.Contains(localErrString, test.expectedLocalError)
+ 	}
+ 

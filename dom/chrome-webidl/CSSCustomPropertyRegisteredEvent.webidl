@@ -1,0 +1,16 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+[ChromeOnly, Exposed=Window]
+interface CSSCustomPropertyRegisteredEvent : Event {
+  constructor(DOMString type,
+              optional CSSCustomPropertyRegisteredEventInit eventInitDict = {});
+
+  [Constant, Cached] readonly attribute InspectorCSSPropertyDefinition propertyDefinition;
+};
+
+dictionary CSSCustomPropertyRegisteredEventInit : EventInit {
+  required InspectorCSSPropertyDefinition propertyDefinition;
+};

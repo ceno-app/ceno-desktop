@@ -1,0 +1,17 @@
+# ICO tests
+
+include ico-bmp-1bpp/reftest.list
+include ico-bmp-4bpp/reftest.list
+include ico-bmp-8bpp/reftest.list
+include ico-bmp-24bpp/reftest.list
+include ico-bmp-32bpp/reftest.list
+include ico-bmp-corrupted/reftest.list
+include ico-png/reftest.list
+include ico-mixed/reftest.list
+include cur/reftest.list
+
+# When we are doing a probe of the resources because we don't trust the dir
+# entries and that metadata decode fails then we should still be able to use
+# other valid resources in the file.
+== skip-unreadable-bmp.ico red-16x16.png
+== skip-unreadable-png.ico red-16x16.png

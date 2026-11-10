@@ -1,0 +1,33 @@
+commit 32a07682ac69aa3ef2a2e119335b9a7d4d9e2cd0
+Author: Christian Holler <choller@mozilla.com>
+Date:   Thu Jul 30 18:27:28 2020 +0200
+
+    [libFuzzer] Change libFuzzer callback contract to allow positive return values
+
+diff --git a/FuzzerLoop.cpp b/FuzzerLoop.cpp
+index a93cd16b8793..4339cf2e0dbb 100644
+--- a/FuzzerLoop.cpp
++++ b/FuzzerLoop.cpp
+@@ -619,7 +619,6 @@ ATTRIBUTE_NOINLINE bool Fuzzer::ExecuteCallback(const uint8_t *Data,
+     CBRes = CB(DataCopy, Size);
+     RunningUserCallback = false;
+     UnitStopTime = system_clock::now();
+-    assert(CBRes == 0 || CBRes == -1);
+     HasMoreMallocsThanFrees = AllocTracer.Stop();
+   }
+   if (!LooseMemeq(DataCopy, Data, Size))
+diff --git a/FuzzerMerge.cpp b/FuzzerMerge.cpp
+index 8c8806e8aafd..69e71135a3e4 100644
+--- a/FuzzerMerge.cpp
++++ b/FuzzerMerge.cpp
+@@ -236,7 +236,9 @@ void Fuzzer::CrashResistantMergeInternalStep(const std::string &CFPath,
+     OF.flush();  // Flush is important since Command::Execute may crash.
+     // Run.
+     TPC.ResetMaps();
+-    ExecuteCallback(U.data(), U.size());
++    if (!ExecuteCallback(U.data(), U.size())) {
++      continue;
++    }
+     // Collect coverage. We are iterating over the files in this order:
+     // * First, files in the initial corpus ordered by size, smallest first.
+     // * Then, all other files, smallest first.

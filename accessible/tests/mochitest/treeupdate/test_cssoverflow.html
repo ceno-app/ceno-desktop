@@ -1,0 +1,100 @@
+<html>
+
+<head>
+  <title>Testing HTML scrollable frames (css overflow style)</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+    // //////////////////////////////////////////////////////////////////////////
+
+    async function doTests() {
+      let containerNode = getNode("container");
+      let container = getAccessible(containerNode);
+      let scrollAreaNode = getNode("scrollarea");
+
+      let reordered = waitForEvent(EVENT_REORDER, container);
+      scrollAreaNode.style.width = "20px";
+      containerNode.appendChild(document.createElement("input"));
+      await reordered;
+
+      let accTree =
+        { SECTION: [ // container
+          { SECTION: [ // scroll area
+            { ENTRY: [] }, // child content
+          ] },
+          { ENTRY: [] }, // inserted input
+        ] };
+      testAccessibleTree(container, accTree);
+
+      let container2 = getAccessible("container2");
+      let scrollAreaNode2 = getNode("container2").firstChild;
+
+      accTree =
+        { SECTION: [ // container
+          { PARAGRAPH: [ // paragraph
+            { TEXT_LEAF: [] },
+          ] },
+        ] };
+      testAccessibleTree(container2, accTree);
+
+      let p = waitForEvents([
+        [EVENT_SHOW, e => e.DOMNode == scrollAreaNode2],
+        [EVENT_REORDER, container2],
+      ]);
+      scrollAreaNode2.style.overflow = "auto";
+      await p;
+
+      accTree =
+        { SECTION: [ // container
+          { role: ROLE_SECTION,  // focusable scroll area
+            states: STATE_FOCUSABLE,
+            children: [
+              { PARAGRAPH: [ // paragraph
+                { TEXT_LEAF: [] }, // text leaf
+              ] },
+            ],
+          }, // focusable scroll area
+        ] };
+      testAccessibleTree(container2, accTree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=677154"
+     title="Detached document accessibility tree">
+    Mozilla Bug 677154</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <div id="container"><div id="scrollarea" style="overflow:auto;"><input></div></div>
+  <div id="container2"><div style="height: 1px;"><p>foo</p></div></div>
+</body>
+</html>

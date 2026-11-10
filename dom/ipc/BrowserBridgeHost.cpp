@@ -1,0 +1,84 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "mozilla/dom/BrowserBridgeHost.h"
+
+#include "mozilla/dom/Element.h"
+#include "nsFrameLoader.h"
+
+namespace mozilla::dom {
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(BrowserBridgeHost)
+  NS_INTERFACE_MAP_ENTRY(nsISupports)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_CYCLE_COLLECTION(BrowserBridgeHost)
+
+NS_IMPL_CYCLE_COLLECTING_ADDREF(BrowserBridgeHost)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(BrowserBridgeHost)
+
+BrowserBridgeHost::BrowserBridgeHost(BrowserBridgeChild* aChild)
+    : mBridge(aChild) {}
+
+TabId BrowserBridgeHost::GetTabId() const { return mBridge->GetTabId(); }
+
+mozilla::layers::LayersId BrowserBridgeHost::GetLayersId() const {
+  return mBridge->GetLayersId();
+}
+
+BrowsingContext* BrowserBridgeHost::GetBrowsingContext() const {
+  return mBridge->GetBrowsingContext();
+}
+
+bool BrowserBridgeHost::CanSend() const {
+  return mBridge && mBridge->CanSend();
+}
+
+void BrowserBridgeHost::LoadURL(nsDocShellLoadState* aLoadState) {
+  MOZ_ASSERT(aLoadState);
+  (void)mBridge->SendLoadURL(WrapNotNull(aLoadState));
+}
+
+void BrowserBridgeHost::ResumeLoad(uint64_t aPendingSwitchId) {
+  (void)mBridge->SendResumeLoad(aPendingSwitchId);
+}
+
+void BrowserBridgeHost::DestroyStart() {
+  // We don't clear the bridge until BrowserBridgeChild::ActorDestroy is called,
+  // which will end up calling DestroyComplete().
+  if (mBridge) {
+    (void)mBridge->SendBeginDestroy();
+  }
+}
+
+void BrowserBridgeHost::DestroyComplete() { mBridge = nullptr; }
+
+bool BrowserBridgeHost::Show(const OwnerShowInfo& aShowInfo) {
+  (void)mBridge->SendShow(aShowInfo);
+  return true;
+}
+
+void BrowserBridgeHost::UpdateDimensions(const LayoutDeviceIntRect& aRect,
+                                         const LayoutDeviceIntSize& aSize) {
+  (void)mBridge->SendUpdateDimensions(aRect, aSize);
+}
+
+void BrowserBridgeHost::UpdateEffects(EffectsInfo aEffects) {
+  if (!mBridge || mEffectsInfo == aEffects) {
+    return;
+  }
+  mEffectsInfo = aEffects;
+  (void)mBridge->SendUpdateEffects(mEffectsInfo);
+}
+
+already_AddRefed<nsIWidget> BrowserBridgeHost::GetWidget() const {
+  RefPtr<Element> owner = mBridge->GetFrameLoader()->GetOwnerContent();
+  nsCOMPtr<nsIWidget> widget = nsContentUtils::WidgetForContent(owner);
+  if (!widget) {
+    widget = nsContentUtils::WidgetForDocument(owner->OwnerDoc());
+  }
+  return widget.forget();
+}
+
+}  // namespace mozilla::dom

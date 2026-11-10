@@ -1,0 +1,17 @@
+# Tests for WebGPU behavior when disabled.
+#
+# For these tests we set `dom.webgpu.enabled=false` and check expected
+# behavior when WebGPU is disabled.
+
+[DEFAULT]
+subsuite = "webgpu"
+dupe-manifest = true # duplicates mochitest-no-pref.toml
+
+prefs = ["dom.webgpu.enabled=false"]
+
+# Even if the pref were enabled, WebGPU is only available in secure contexts.
+#
+# See spec WebIDL, like this: https://www.w3.org/TR/webgpu/#navigatorgpu
+scheme = "https"
+
+["test_gpu_disabled.html"]

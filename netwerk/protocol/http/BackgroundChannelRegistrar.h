@@ -1,0 +1,60 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_net_BackgroundChannelRegistrar_h_
+#define mozilla_net_BackgroundChannelRegistrar_h_
+
+#include "nsIBackgroundChannelRegistrar.h"
+#include "nsRefPtrHashtable.h"
+#include "mozilla/AlreadyAddRefed.h"
+
+namespace mozilla {
+namespace net {
+
+class HttpBackgroundChannelParent;
+class HttpChannelParent;
+
+class BackgroundChannelRegistrar final : public nsIBackgroundChannelRegistrar {
+  using ChannelHashtable =
+      nsRefPtrHashtable<nsUint64HashKey, HttpChannelParent>;
+  using BackgroundChannelHashtable =
+      nsRefPtrHashtable<nsUint64HashKey, HttpBackgroundChannelParent>;
+
+ public:
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIBACKGROUNDCHANNELREGISTRAR
+
+  explicit BackgroundChannelRegistrar();
+
+  // Singleton accessors
+  static already_AddRefed<BackgroundChannelRegistrar> GetOrCreate();
+
+ private:
+  virtual ~BackgroundChannelRegistrar();
+
+  // Like DeleteChannel, but only removes the mChannels entry if it matches
+  // aExpected. Use this in preference to DeleteChannel when the caller knows
+  // which HttpChannelParent it registered, to avoid accidentally removing an
+  // entry belonging to a different object that shares the same channel Id.
+  void DeleteChannelIfMatches(uint64_t aKey, HttpChannelParent* aExpected);
+  friend class HttpChannelParent;
+
+  // A helper function for BackgroundChannelRegistrar itself to callback
+  // HttpChannelParent and HttpBackgroundChannelParent when both objects are
+  // ready. aChannelParent and aBgParent is the pair of HttpChannelParent and
+  // HttpBackgroundChannelParent that should be linked together.
+  void NotifyChannelLinked(HttpChannelParent* aChannelParent,
+                           HttpBackgroundChannelParent* aBgParent);
+
+  // Store unlinked HttpChannelParent objects.
+  ChannelHashtable mChannels;
+
+  // Store unlinked HttpBackgroundChannelParent objects.
+  BackgroundChannelHashtable mBgChannels;
+};
+
+}  // namespace net
+}  // namespace mozilla
+
+#endif  // mozilla_net_BackgroundChannelRegistrar_h_

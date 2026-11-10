@@ -1,0 +1,25 @@
+From: Andreas Pehrson <apehrson@mozilla.com>
+Date: Fri, 5 Dec 2025 11:12:00 +0000
+Subject: Bug 1931210 - Log SCK startCaptureWithCompletionHandler error code.
+ r=jib
+
+Differential Revision: https://phabricator.services.mozilla.com/D268351
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/330a55d5a7ff5e7c694772810697fde59f0c742b
+---
+ modules/desktop_capture/mac/screen_capturer_sck.mm | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/modules/desktop_capture/mac/screen_capturer_sck.mm b/modules/desktop_capture/mac/screen_capturer_sck.mm
+index 0691aba3e4..e429f2c635 100644
+--- a/modules/desktop_capture/mac/screen_capturer_sck.mm
++++ b/modules/desktop_capture/mac/screen_capturer_sck.mm
+@@ -588,7 +588,8 @@ void ScreenCapturerSck::StartWithFilter(SCContentFilter* __strong filter) {
+         // this handler.
+         permanent_error_ = true;
+         RTC_LOG(LS_ERROR) << "ScreenCapturerSck " << this
+-                          << " Starting failed.";
++                          << " Starting failed with error code " << error.code
++                          << ".";
+       } else {
+         RTC_LOG(LS_INFO) << "ScreenCapturerSck " << this << " Capture started.";
+       }

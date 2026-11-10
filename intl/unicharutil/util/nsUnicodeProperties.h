@@ -1,0 +1,242 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef NS_UNICODEPROPERTIES_H
+#define NS_UNICODEPROPERTIES_H
+
+#include "mozilla/intl/UnicodeProperties.h"
+
+#include "mozilla/Assertions.h"
+#include "mozilla/Span.h"
+#include "nsBidiUtils.h"
+#include "nsUGenCategory.h"
+#include "harfbuzz/hb.h"
+
+namespace mozilla {
+
+namespace unicode {
+
+extern const nsUGenCategory sDetailedToGeneralCategory[];
+
+/* This values must match the values by UVerticalOrientation by ICU */
+enum VerticalOrientation {
+  VERTICAL_ORIENTATION_R = 0,
+  VERTICAL_ORIENTATION_Tr = 1,
+  VERTICAL_ORIENTATION_Tu = 2,
+  VERTICAL_ORIENTATION_U = 3,
+};
+
+/* This MUST match the values assigned by genUnicodePropertyData.pl! */
+enum PairedBracketType {
+  PAIRED_BRACKET_TYPE_NONE = 0,
+  PAIRED_BRACKET_TYPE_OPEN = 1,
+  PAIRED_BRACKET_TYPE_CLOSE = 2
+};
+
+/* This values must match the values by UIdentifierStatus by ICU */
+enum IdentifierType {
+  IDTYPE_RESTRICTED = 0,
+  IDTYPE_ALLOWED = 1,
+};
+
+enum EmojiPresentation { TextOnly = 0, TextDefault = 1, EmojiDefault = 2 };
+
+const uint32_t kVariationSelector15 = 0xFE0E;  // text presentation
+const uint32_t kVariationSelector16 = 0xFE0F;  // emoji presentation
+static inline bool IsEmojiPresentationSelector(uint32_t aCh) {
+  return aCh >= kVariationSelector15 && aCh <= kVariationSelector16;
+}
+
+// Unicode values for EMOJI MODIFIER FITZPATRICK TYPE-*
+const uint32_t kEmojiSkinToneFirst = 0x1f3fb;
+const uint32_t kEmojiSkinToneLast = 0x1f3ff;
+static inline bool IsEmojiSkinToneModifier(uint32_t aCh) {
+  return aCh >= kEmojiSkinToneFirst && aCh <= kEmojiSkinToneLast;
+}
+
+extern const hb_unicode_general_category_t sICUtoHBcategory[];
+
+// NOTE: This returns values matching harfbuzz HB_UNICODE_GENERAL_CATEGORY_*
+// constants, NOT the mozilla::intl::GeneralCategory enum.
+// For the GeneralCategory enum, use intl::UnicodeProperties::CharType itself.
+inline uint8_t GetGeneralCategory(uint32_t aCh) {
+  return sICUtoHBcategory[unsigned(intl::UnicodeProperties::CharType(aCh))];
+}
+
+inline int8_t GetNumericValue(uint32_t aCh) {
+  return intl::UnicodeProperties::GetNumericValue(aCh);
+}
+
+inline uint8_t GetLineBreakClass(uint32_t aCh) {
+  return intl::UnicodeProperties::GetIntPropertyValue(
+      aCh, intl::UnicodeProperties::IntProperty::LineBreak);
+}
+
+inline uint32_t GetScriptTagForCode(intl::Script aScriptCode) {
+  const char* tag = intl::UnicodeProperties::GetScriptShortName(aScriptCode);
+  if (tag) {
+    return HB_TAG(tag[0], tag[1], tag[2], tag[3]);
+  }
+  // return UNKNOWN script tag (running with older ICU?)
+  return HB_SCRIPT_UNKNOWN;
+}
+
+inline PairedBracketType GetPairedBracketType(uint32_t aCh) {
+  return PairedBracketType(intl::UnicodeProperties::GetIntPropertyValue(
+      aCh, intl::UnicodeProperties::IntProperty::BidiPairedBracketType));
+}
+
+inline uint32_t GetTitlecaseForLower(
+    uint32_t aCh)  // maps LC to titlecase, UC unchanged
+{
+  return intl::UnicodeProperties::IsLowercase(aCh)
+             ? intl::UnicodeProperties::ToTitle(aCh)
+             : aCh;
+}
+
+inline uint32_t GetTitlecaseForAll(
+    uint32_t aCh)  // maps both UC and LC to titlecase
+{
+  return intl::UnicodeProperties::ToTitle(aCh);
+}
+
+inline uint32_t GetFoldedcase(uint32_t aCh) {
+  // Handle dotted capital I and dotless small i specially because we want to
+  // use a combination of ordinary case-folding rules and Turkish case-folding
+  // rules.
+  if (aCh == 0x0130 || aCh == 0x0131) {
+    return 'i';
+  }
+  return intl::UnicodeProperties::FoldCase(aCh);
+}
+
+inline bool IsDefaultIgnorable(uint32_t aCh) {
+  return intl::UnicodeProperties::HasBinaryProperty(
+      aCh, intl::UnicodeProperties::BinaryProperty::DefaultIgnorableCodePoint);
+}
+
+namespace detail {
+static inline bool Is8BitPotentialEmojiCodepoint(uint32_t aCh) {
+  return aCh - '0' <= '9' - '0' || aCh == '#' || aCh == '*' || aCh == 0x00A9 ||
+         aCh == 0x00AE;
+}
+}  // namespace detail
+
+inline EmojiPresentation GetEmojiPresentation(uint32_t aCh) {
+  // The only characters below U+2000 with any emoji properties:
+  // 0023          ; Emoji                # E0.0   [1] hash sign
+  // 002A          ; Emoji                # E0.0   [1] asterisk
+  // 0030..0039    ; Emoji                # E0.0  [10] digit zero..digit nine
+  // 00A9          ; Emoji                # E0.6   [1] copyright
+  // 00AE          ; Emoji                # E0.6   [1] registered
+  if (detail::Is8BitPotentialEmojiCodepoint(aCh)) {
+    MOZ_ASSERT(intl::UnicodeProperties::HasBinaryProperty(
+        aCh, intl::UnicodeProperties::BinaryProperty::Emoji));
+    MOZ_ASSERT(!intl::UnicodeProperties::HasBinaryProperty(
+        aCh, intl::UnicodeProperties::BinaryProperty::EmojiPresentation));
+    return TextDefault;
+  }
+
+  if (aCh < 0x2000) {
+    return TextOnly;
+  }
+
+  // There are no characters with emoji properties from the CJK Compatibility
+  // block at U+3300 until the Mah-Jong tiles at U+1F000.
+  if (aCh - 0x3300 < 0x1F000 - 0x3300) {
+    MOZ_ASSERT(!intl::UnicodeProperties::HasBinaryProperty(
+        aCh, intl::UnicodeProperties::BinaryProperty::Emoji));
+    return TextOnly;
+  }
+
+  if (!intl::UnicodeProperties::HasBinaryProperty(
+          aCh, intl::UnicodeProperties::BinaryProperty::Emoji)) {
+    return TextOnly;
+  }
+
+  if (intl::UnicodeProperties::HasBinaryProperty(
+          aCh, intl::UnicodeProperties::BinaryProperty::EmojiPresentation)) {
+    return EmojiDefault;
+  }
+  return TextDefault;
+}
+
+// For 16-bit callers who don't care about decoding surrogates first.
+inline EmojiPresentation GetEmojiPresentation(char16_t aCh) {
+  return IS_SURROGATE(aCh) ? TextOnly : GetEmojiPresentation((uint32_t)aCh);
+}
+
+// Reduced version of GetEmojiPresentation that handles only 8-bit character
+// codes, for use by 8-bit gfxFontGroup::ComputeRanges fast-path.
+inline EmojiPresentation GetEmojiPresentation(uint8_t aCh) {
+  return detail::Is8BitPotentialEmojiCodepoint(aCh) ? TextDefault : TextOnly;
+}
+
+// returns the simplified Gen Category as defined in nsUGenCategory
+inline nsUGenCategory GetGenCategory(uint32_t aCh) {
+  return sDetailedToGeneralCategory[GetGeneralCategory(aCh)];
+}
+
+inline VerticalOrientation GetVerticalOrientation(uint32_t aCh) {
+  return VerticalOrientation(intl::UnicodeProperties::GetIntPropertyValue(
+      aCh, intl::UnicodeProperties::IntProperty::VerticalOrientation));
+}
+
+inline IdentifierType GetIdentifierType(uint32_t aCh) {
+  return IdentifierType(intl::UnicodeProperties::GetIntPropertyValue(
+      aCh, intl::UnicodeProperties::IntProperty::IdentifierStatus));
+}
+
+uint32_t GetFullWidth(uint32_t aCh);
+// This is the reverse function of GetFullWidth which guarantees that
+// for every codepoint c, GetFullWidthInverse(GetFullWidth(c)) == c.
+// Note that, this function does not guarantee to convert all wide
+// form characters to their possible narrow form.
+uint32_t GetFullWidthInverse(uint32_t aCh);
+
+bool IsClusterExtender(uint32_t aCh, uint8_t aCategory);
+
+inline bool IsClusterExtender(uint32_t aCh) {
+  // There are no cluster-extender characters before the first combining-
+  // character block at U+03xx, so we short-circuit here to avoid the cost
+  // of calling GetGeneralCategory for Latin-1 letters etc.
+  return aCh >= 0x0300 && IsClusterExtender(aCh, GetGeneralCategory(aCh));
+}
+
+bool IsClusterExtenderExcludingJoiners(uint32_t aCh, uint8_t aCategory);
+
+inline bool IsClusterExtenderExcludingJoiners(uint32_t aCh) {
+  return aCh >= 0x0300 &&
+         IsClusterExtenderExcludingJoiners(aCh, GetGeneralCategory(aCh));
+}
+
+// Count the number of grapheme clusters in the given string
+uint32_t CountGraphemeClusters(Span<const char16_t> aText);
+
+// Determine whether a character is a "combining diacritic" for the purpose
+// of diacritic-insensitive text search. Examples of such characters include
+// European accents and Hebrew niqqud, but not Hangul components or Thaana
+// vowels, even though Thaana vowels are combining nonspacing marks that could
+// be considered diacritics.
+// As an exception to strictly following Unicode properties, we exclude the
+// Japanese kana voicing marks
+//   3099;COMBINING KATAKANA-HIRAGANA VOICED SOUND MARK;Mn;8;NSM
+//   309A;COMBINING KATAKANA-HIRAGANA SEMI-VOICED SOUND MARK;Mn;8;NSM
+// which users report should not be ignored (bug 1624244).
+// See is_combining_diacritic in base_chars.py and is_combining_diacritic.py.
+//
+// TODO: once ICU4X is integrated (replacing ICU4C) as the source of Unicode
+// properties, re-evaluate whether building the static bitset is worthwhile
+// or if we can revert to simply getting the combining class and comparing
+// to the values we care about at runtime.
+bool IsCombiningDiacritic(uint32_t aCh);
+
+// Remove diacritics from a character
+uint32_t GetNaked(uint32_t aCh);
+
+}  // end namespace unicode
+
+}  // end namespace mozilla
+
+#endif /* NS_UNICODEPROPERTIES_H */

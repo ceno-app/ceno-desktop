@@ -1,0 +1,66 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright by contributors to this project.
+// SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+use mls_rs_codec::{MlsDecode, MlsEncode, MlsSize};
+use mls_rs_core::group::Member;
+
+use super::{
+    confirmation_tag::ConfirmationTag, member_from_leaf_node, proposal::ReInitProposal,
+    transcript_hash::InterimTranscriptHash,
+};
+use crate::{
+    group::{GroupContext, TreeKemPublic},
+    tree_kem::node::LeafIndex,
+};
+
+#[derive(Clone, Debug, PartialEq, MlsSize, MlsEncode, MlsDecode)]
+#[non_exhaustive]
+pub struct GroupState {
+    #[cfg(feature = "by_ref_proposal")]
+    pub(crate) proposals: crate::group::ProposalCache,
+    pub context: GroupContext,
+    pub(crate) public_tree: TreeKemPublic,
+    pub(crate) interim_transcript_hash: InterimTranscriptHash,
+    pub(crate) pending_reinit: Option<ReInitProposal>,
+    pub(crate) confirmation_tag: ConfirmationTag,
+}
+
+impl GroupState {
+    pub fn context(&self) -> &GroupContext {
+        &self.context
+    }
+}
+
+impl GroupState {
+    pub fn member_at_index(&self, index: u32) -> Option<Member> {
+        let Ok(leaf_index) = LeafIndex::try_from(index) else {
+            return None;
+        };
+
+        self.public_tree
+            .get_leaf_node(leaf_index)
+            .ok()
+            .map(|ln| member_from_leaf_node(ln, leaf_index))
+    }
+
+    pub(crate) fn new(
+        context: GroupContext,
+        current_tree: TreeKemPublic,
+        interim_transcript_hash: InterimTranscriptHash,
+        confirmation_tag: ConfirmationTag,
+    ) -> Self {
+        Self {
+            #[cfg(feature = "by_ref_proposal")]
+            proposals: crate::group::ProposalCache::new(
+                context.protocol_version,
+                context.group_id.clone(),
+            ),
+            context,
+            public_tree: current_tree,
+            interim_transcript_hash,
+            pending_reinit: None,
+            confirmation_tag,
+        }
+    }
+}

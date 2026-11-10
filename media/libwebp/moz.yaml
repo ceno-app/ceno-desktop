@@ -1,0 +1,69 @@
+schema: 1
+
+bugzilla:
+  product: "Core"
+  component: "Graphics: ImageLib"
+
+origin:
+  name: "libwebp"
+  description: "WebP codec library"
+
+  url: "https://chromium.googlesource.com/webm/libwebp"
+  license: BSD-3-Clause
+
+  # Tip of the 1.6 branch.
+  release: 991170bbab3e6afc74666d124f3f1dc7be942cd0 (2025-08-07T21:01:35Z).
+
+  revision: 991170bbab3e6afc74666d124f3f1dc7be942cd0
+
+  license-file: COPYING
+
+updatebot:
+  maintainer-phab: tnikkel
+  maintainer-bz: tnikkel@gmail.com
+  tasks:
+    - type: vendoring
+      enabled: True
+      frequency: release
+    # Update this branch name when vendoring a new release.
+    - type: commit-alert
+      enabled: true
+      frequency: every
+      branch: 1.6.0
+
+vendoring:
+  url: https://github.com/webmproject/libwebp
+  source-hosting: github
+  tracking: tag
+
+  exclude:
+    - "**"
+
+  include:
+    - AUTHORS
+    - COPYING
+    - NEWS
+    - PATENTS
+    - README.md
+    - sharpyuv/*.h
+    - sharpyuv/*.c
+    - src/webp/*.h
+    - src/dec/*.h
+    - src/dec/*.c
+    - src/demux/demux.c
+    - src/dsp/*.h
+    - src/dsp/*.c
+    - src/enc/*.h
+    - src/enc/*.c
+    - src/utils/*.h
+    - src/utils/*.c
+
+  keep:
+    - MOZCHANGES
+    - src/moz
+
+  update-actions:
+    - action: delete-path
+      path: src/dsp/cpu.c
+    - action: delete-path
+      path: sharpyuv/sharpyuv_cpu.c

@@ -1,0 +1,229 @@
+Minor changes and #if guards to allow for base toolchain builds.
+
+* __STDCPP_DEFAULT_NEW_ALIGNMENT__ not available on some GCC - remove its use.
+* span.h uses <ranges> which the sixgill GCC 10 plugin cannot handle - implement
+  using memcpy for GCC
+* lock_impl_posix.cc: #pragma clang diagnostic not understood by GCC - guard
+  with #if defined(__clang__)
+* utf_string_conversions.h: static_assert(false) in templates is ill-formed
+  pre-C++23 in GCC - make condition depend on N
+* callback.h: Same static_assert(false) issue in template methods - depend on
+  Signature
+* time.h: Defaulted operator<=> fails because ClampedNumeric has no <=> -
+  explicit implementation using .RawValue()
+* bpf_dsl.cc: GCC doesn't treat [[noreturn]] on a destructor as sufficient to
+  suppress the missing-return warning - add return 0
+* string_util_impl_helpers.h: StringOrStringView concept with default template
+  param breaks in GCC return-type constraints - inline std::remove_cvref_t<T>
+  directly
+
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_forward.h b/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_forward.h
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_forward.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_forward.h
+@@ -29,19 +29,23 @@ namespace internal {
+ // Alignment has two constraints:
+ // - Alignment requirement for scalar types: alignof(std::max_align_t)
+ // - Alignment requirement for operator new().
+ //
+ // The two are separate on Windows 64 bits, where the first one is 8 bytes, and
+ // the second one 16. We could technically return something different for
+ // malloc() and operator new(), but this would complicate things, and most of
+ // our allocations are presumably coming from operator new() anyway.
++#if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
+ constexpr inline size_t kAlignment =
+     std::max(alignof(max_align_t),
+              static_cast<size_t>(__STDCPP_DEFAULT_NEW_ALIGNMENT__));
++#else
++constexpr inline size_t kAlignment = alignof(max_align_t);
++#endif
+ static_assert(base::bits::HasSingleBit(kAlignment),
+               "Alignment must be power of two.");
+ static_assert(kAlignment <= 16,
+               "PartitionAlloc doesn't support a fundamental alignment larger "
+               "than 16 bytes.");
+
+ constexpr inline size_t kAlignmentIndex = base::bits::CountrZero(kAlignment);
+ static_assert(kAlignment == (1 << kAlignmentIndex));
+diff --git a/base/check_op.cc b/base/check_op.cc
+--- a/base/check_op.cc
++++ b/base/check_op.cc
+@@ -11,7 +11,11 @@
+ #include <sstream>
+ 
+ #include "base/compiler_specific.h"
++#if defined(__clang__)
++// span.h uses <ranges> which the sixgill GCC 10 plugin (used for hazard
++// analysis) cannot handle; guard the span-heavy implementation below.
+ #include "base/containers/span.h"
++#endif
+ #include "base/logging.h"
+ #include "base/strings/cstring_view.h"
+ 
+@@ -73,11 +77,18 @@ char* CheckOpValueStr(std::string_view v) {
+   // overloads. The API contract is that the caller uses free() to release the
+   // pointer returned here.
+   char* ret = static_cast<char*>(malloc(v.size() + 1u));
++#if defined(__clang__)
+   auto [val, nul] =
+       // SAFETY: We allocated `ret` as `v.size() + 1` bytes above.
+       UNSAFE_BUFFERS(base::span<char>(ret, v.size() + 1u)).split_at(v.size());
+   val.copy_from(v);
+   nul.copy_from(base::span_from_ref('\0'));
++#else
++  if (ret) {
++    std::copy(v.begin(), v.end(), ret);
++    ret[v.size()] = 0;
++  }
++#endif
+   return ret;
+ }
+ 
+diff --git a/base/functional/callback.h b/base/functional/callback.h
+index 2dd28d05db00..93681b39e34f 100644
+--- a/base/functional/callback.h
++++ b/base/functional/callback.h
+@@ -254,7 +254,7 @@ class TRIVIAL_ABI OnceCallback<R(Args...)> {
+   // NOLINTNEXTLINE(google-explicit-constructor)
+   operator FunctionRef<Signature>() & {
+     static_assert(
+-        false,
++        !std::is_same_v<Signature, Signature>,
+         "need to convert a base::OnceCallback to base::FunctionRef? "
+         "Please bring up this use case on #cxx (Slack) or cxx@chromium.org.");
+   }
+@@ -263,7 +263,7 @@ class TRIVIAL_ABI OnceCallback<R(Args...)> {
+   // NOLINTNEXTLINE(google-explicit-constructor)
+   operator FunctionRef<Signature>() && {
+     static_assert(
+-        false,
++        !std::is_same_v<Signature, Signature>,
+         "using base::BindOnce() is not necessary with base::FunctionRef; is it "
+         "possible to use a capturing lambda directly? If not, please bring up "
+         "this use case on #cxx (Slack) or cxx@chromium.org.");
+@@ -462,7 +462,7 @@ class TRIVIAL_ABI RepeatingCallback<R(Args...)> {
+   // NOLINTNEXTLINE(google-explicit-constructor)
+   operator FunctionRef<Signature>() & {
+     static_assert(
+-        false,
++        !std::is_same_v<Signature, Signature>,
+         "need to convert a base::RepeatingCallback to base::FunctionRef? "
+         "Please bring up this use case on #cxx (Slack) or cxx@chromium.org.");
+   }
+@@ -471,7 +471,7 @@ class TRIVIAL_ABI RepeatingCallback<R(Args...)> {
+   // NOLINTNEXTLINE(google-explicit-constructor)
+   operator FunctionRef<Signature>() && {
+     static_assert(
+-        false,
++        !std::is_same_v<Signature, Signature>,
+         "using base::BindRepeating() is not necessary with base::FunctionRef; "
+         "is it possible to use a capturing lambda directly? If not, please "
+         "bring up this use case on #cxx (Slack) or cxx@chromium.org.");
+diff --git a/base/strings/string_util_impl_helpers.h b/base/strings/string_util_impl_helpers.h
+index 7bdfd173c73d..2af8e0912af6 100644
+--- a/base/strings/string_util_impl_helpers.h
++++ b/base/strings/string_util_impl_helpers.h
+@@ -515,10 +515,10 @@ static std::basic_string<CharT> JoinStringT(list_type parts, T sep) {
+ // StringViewLike will match both std::basic_string_view<Char> and
+ // std::basic_string<Char>. It ensures that the type satisfies the requirements
+ // to be passed to std::basic_string::append().
+-template <typename T, typename CharT, typename TBaseT = std::remove_cvref_t<T>>
++template <typename T, typename CharT>
+ concept StringOrStringView =
+-    std::same_as<TBaseT, std::basic_string<CharT>> ||
+-    std::same_as<TBaseT, std::basic_string_view<CharT>>;
++    std::same_as<std::remove_cvref_t<T>, std::basic_string<CharT>> ||
++    std::same_as<std::remove_cvref_t<T>, std::basic_string_view<CharT>>;
+ 
+ // Replaces placeholders in `format_string` with values from `subst`.
+ // * `placeholder_prefix`: Allows using a specific character as the placeholder
+diff --git a/base/strings/utf_string_conversions.h b/base/strings/utf_string_conversions.h
+index 3430b571db9f..ad0349bf87fc 100644
+--- a/base/strings/utf_string_conversions.h
++++ b/base/strings/utf_string_conversions.h
+@@ -72,19 +72,19 @@ BASE_EXPORT bool UTF16ToUTF8(const char16_t* src,
+ // time.
+ template <size_t N>
+ [[noreturn]] std::u16string WideToUTF16(const wchar_t (&str)[N]) {
+-  static_assert(false,
++  static_assert(N && !N,
+                 "Error: Use u\"...\" to create a std::u16string literal.");
+ }
+ 
+ template <size_t N>
+ [[noreturn]] std::u16string UTF8ToUTF16(const char (&str)[N]) {
+-  static_assert(false,
++  static_assert(N && !N,
+                 "Error: Use u\"...\" to create a std::u16string literal.");
+ }
+ 
+ template <size_t N>
+ [[noreturn]] std::u16string ASCIIToUTF16(const char (&str)[N]) {
+-  static_assert(false,
++  static_assert(N && !N,
+                 "Error: Use u\"...\" to create a std::u16string literal.");
+ }
+ 
+diff --git a/base/synchronization/lock_impl_posix.cc b/base/synchronization/lock_impl_posix.cc
+index 20a2582f4ae5..cb1cabead364 100644
+--- a/base/synchronization/lock_impl_posix.cc
++++ b/base/synchronization/lock_impl_posix.cc
+@@ -104,10 +104,14 @@ LockImpl::LockImpl() {
+   DCHECK_EQ(rv, 0) << ". " << SystemErrorCodeToString(rv);
+ #if PRIORITY_INHERITANCE_LOCKS_POSSIBLE()
+   if (PriorityInheritanceAvailable()) {
++#if defined(__clang__)
+ #pragma clang diagnostic push  // Can be removed once our min-sdk is >= 28.
+ #pragma clang diagnostic ignored "-Wunguarded-availability"
++#endif
+     rv = pthread_mutexattr_setprotocol(&mta, PTHREAD_PRIO_INHERIT);
++#if defined(__clang__)
+ #pragma clang diagnostic pop
++#endif
+     DCHECK_EQ(rv, 0) << ". " << SystemErrorCodeToString(rv);
+   }
+ #endif
+diff --git a/base/time/time.h b/base/time/time.h
+index 82b2480918cd..8a4906c99dda 100644
+--- a/base/time/time.h
++++ b/base/time/time.h
+@@ -327,8 +327,10 @@ class BASE_EXPORT TimeDelta {
+ 
+   // Comparison operators.
+   friend constexpr bool operator==(TimeDelta, TimeDelta) = default;
+-  friend constexpr std::strong_ordering operator<=>(TimeDelta,
+-                                                    TimeDelta) = default;
++  friend constexpr std::strong_ordering operator<=>(TimeDelta lhs,
++                                                    TimeDelta rhs) {
++    return lhs.delta_.RawValue() <=> rhs.delta_.RawValue();
++  }
+ 
+   // Returns this delta, ceiled/floored/rounded-away-from-zero to the nearest
+   // multiple of |interval|.
+@@ -483,8 +485,10 @@ class TimeBase {
+ 
+   // Comparison operators
+   friend constexpr bool operator==(const TimeBase&, const TimeBase&) = default;
+-  friend constexpr std::strong_ordering operator<=>(const TimeBase&,
+-                                                    const TimeBase&) = default;
++  friend constexpr std::strong_ordering operator<=>(const TimeBase& lhs,
++                                                    const TimeBase& rhs) {
++    return lhs.us_.RawValue() <=> rhs.us_.RawValue();
++  }
+ 
+  protected:
+   constexpr explicit TimeBase(int64_t us) : us_(us) {}
+diff --git a/sandbox/linux/bpf_dsl/bpf_dsl.cc b/sandbox/linux/bpf_dsl/bpf_dsl.cc
+index 4708f7a00571..96e4bcf7f8b7 100644
+--- a/sandbox/linux/bpf_dsl/bpf_dsl.cc
++++ b/sandbox/linux/bpf_dsl/bpf_dsl.cc
+@@ -235,6 +235,9 @@ uint64_t DefaultMask(size_t size) {
+       return std::numeric_limits<uint64_t>::max();
+     default:
+       NOTREACHED() << "Unimplemented DefaultMask case";
++#if !defined(__clang__)
++      return 0;
++#endif
+   }
+ }
+ 

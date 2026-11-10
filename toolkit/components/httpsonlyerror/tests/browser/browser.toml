@@ -1,0 +1,18 @@
+[DEFAULT]
+support-files = ["head.js"]
+
+["browser_errorpage.js"]
+
+["browser_errorpage_no_timeout.js"]
+support-files = ["file_errorpage_no_timeout_server.sjs", "file_https_telemetry_hsts.sjs"]
+
+["browser_errorpage_timeout.js"]
+support-files = ["file_errorpage_timeout_server.sjs"]
+
+["browser_errorpage_www_suggestion.js"]
+support-files = ["file_errorpage_www_suggestion.html"]
+
+["browser_exception.js"]
+support-files = ["file_upgrade_insecure_server.sjs"]
+
+["browser_fpi_nested_uri.js"]

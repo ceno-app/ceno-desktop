@@ -1,0 +1,85 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIHelperAppLauncher;
+interface nsIFile;
+interface nsIInterfaceRequestor;
+
+/**
+ * This interface is used to display a confirmation dialog before
+ * launching a "helper app" to handle content not handled by
+ * Mozilla.
+ *
+ * Usage:  Clients (of which there is one: the nsIExternalHelperAppService
+ * implementation in mozilla/uriloader/exthandler) create an instance of
+ * this interface (using the contract ID) and then call the show() method.
+ *
+ * The dialog is shown non-modally.  The implementation of the dialog
+ * will access methods of the nsIHelperAppLauncher passed in to show()
+ * in order to cause a "save to disk" or "open using" action.
+ */
+[scriptable, uuid(bfc739f3-8d75-4034-a6f8-1039a5996bad)]
+interface nsIHelperAppLauncherDialog : nsISupports {
+  /**
+   * Reason for showing the helper app dialog.
+   * CANTHANDLE: Gecko can not handle content of this type.
+   * SERVERREQUEST: The server requested external handling.
+   * TYPESNIFFED: Gecko detected the type sent by the server does
+   *              not match the actual type.
+   */
+    cenum reason : 8 {
+      REASON_CANTHANDLE    = 0,
+      REASON_SERVERREQUEST = 1,
+      REASON_TYPESNIFFED   = 2
+    };
+
+  /**
+   * Show confirmation dialog for launching application (or "save to
+   * disk") for content specified by aLauncher.
+   *
+   * @param aLauncher
+   *        A nsIHelperAppLauncher to be invoked when a file is selected.
+   * @param aWindowContext
+   *        Window associated with action.
+   * @param aReason
+   *        One of the constants from above. It indicates why the dialog is
+   *        shown. Implementors should treat unknown reasons like
+   *        REASON_CANTHANDLE.
+   */
+  void show(in nsIHelperAppLauncher aLauncher,
+            in nsIInterfaceRequestor aWindowContext,
+            in nsIHelperAppLauncherDialog_reason aReason);
+
+  /**
+   * Async invoke a save-to-file dialog instead of the full fledged helper app
+   * dialog. When the file is chosen (or the dialog is closed), the callback
+   * in aLauncher (aLauncher.saveDestinationAvailable) is called with the
+   * selected file.
+   *
+   * @param aLauncher
+   *        A nsIHelperAppLauncher to be invoked when a file is selected.
+   * @param aWindowContext
+   *        Window associated with action.
+   * @param aDefaultFileName
+   *        Default file name to provide (can be null)
+   * @param aSuggestedFileExtension
+   *        Sugested file extension
+   * @param aForcePrompt
+   *        Set to true to force prompting the user for thet file
+   *        name/location, otherwise perferences may control if the user is
+   *        prompted.
+   */
+  void promptForSaveToFileAsync(in nsIHelperAppLauncher aLauncher,
+                                in nsIInterfaceRequestor aWindowContext,
+                                in wstring aDefaultFileName,
+                                in wstring aSuggestedFileExtension,
+                                in boolean aForcePrompt);
+};
+
+
+%{C++
+#define NS_HELPERAPPLAUNCHERDLG_CONTRACTID    "@mozilla.org/helperapplauncherdialog;1"
+%}

@@ -1,0 +1,44 @@
+[DEFAULT]
+support-files = [
+  "crash-dump-diff1.json",
+  "crash-dump-diff2.json",
+  "crash-dump-good.json",
+  "fiss-diff1.json",
+  "fiss-diff2.json",
+  "memory-reports-bad.json",
+  "memory-reports-diff1.json",
+  "memory-reports-diff2.json",
+  "memory-reports-good.json",
+  "remote.xhtml",
+]
+
+["test_aboutmemory.xhtml"]
+
+["test_aboutmemory2.xhtml"]
+
+["test_aboutmemory3.xhtml"]
+
+["test_aboutmemory4.xhtml"]
+
+["test_aboutmemory5.xhtml"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 2034604
+]
+
+["test_aboutmemory6.xhtml"]
+
+["test_aboutmemory7.xhtml"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 2034604
+]
+
+["test_dumpGCAndCCLogsToFile.xhtml"]
+
+["test_memoryReporters.xhtml"]
+
+["test_memoryReporters2.xhtml"]
+skip-if = [
+  "standalone", # Bug 2026600
+]
+
+["test_sqliteMultiReporter.xhtml"]

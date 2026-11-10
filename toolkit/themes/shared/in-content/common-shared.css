@@ -1,0 +1,1106 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://global/skin/design-system/tokens-brand.css");
+@import url("chrome://global/skin/design-system/text-and-typography.css");
+
+@namespace html "http://www.w3.org/1999/xhtml";
+@namespace xul "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+:host(.anonymous-content-host),
+:root {
+  /* Keep these in sync with:
+   *
+   *  * nsXPLookAndFeel::GenericDarkColor
+   *  * The default value of browser.display.foreground_color.dark and
+   *    browser.display.background_color.dark
+   */
+
+  --categories-width: var(--size-sidebar);
+  --dialog-warning-text-color: var(--text-color-error);
+  --message-bar-button-background-color: oklch(from var(--color-gray-100) l c h / 10%);
+  --message-bar-button-background-color-hover: oklch(from var(--color-gray-100) l c h / 20%);
+  --message-bar-button-background-color-active: oklch(from var(--color-gray-100) l c h / 30%);
+  --message-bar-background-color-warning: var(--color-yellow-20);
+  --message-bar-text-color-warning: var(--color-yellow-100);
+  --input-border-color-warning: var(--color-yellow-30);
+  --input-box-shadow-color-warning: oklch(from var(--color-yellow-30) l c h / 30%);
+  --card-padding: var(--space-large);
+
+  -moz-theme: non-native;
+  color-scheme: light dark;
+  @media not (forced-colors) {
+    accent-color: var(--color-accent-primary);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (not (forced-colors)) {
+  /* For dialogs, use a different background colour. We don't do
+   * this in forced colors mode, as we should be using system colours then.
+   */
+  :root[dialogroot] {
+    --background-color-canvas: var(--color-gray-80);
+  }
+}
+
+@media (forced-colors) {
+  :host(.anonymous-content-host),
+  :root {
+    --dialog-warning-text-color: -moz-FieldText;
+  }
+}
+
+:root {
+  appearance: none;
+  background-color: var(--background-color-canvas);
+  color: var(--text-color);
+}
+
+:root:not(.system-font-size) {
+  font-size: var(--font-size-root);
+}
+
+html|body {
+  margin: 0;
+}
+
+html|hr {
+  border-style: solid none none none;
+  border-color: var(--border-color);
+}
+
+.main-content {
+  padding: var(--space-xxlarge);
+  overflow: auto;
+}
+
+/* tabpanels and tabs */
+
+xul|tabpanels {
+  border: none;
+  padding: 0;
+}
+
+xul|tabs {
+  margin-block-end: var(--space-small);
+  border-bottom: var(--button-border);
+}
+
+xul|tab {
+  padding: var(--space-xxsmall) var(--space-xlarge) 0;
+  min-height: var(--size-item-xlarge);
+  border-bottom: 2px solid transparent;
+  transition: background-color 50ms ease 0s;
+
+  &:where(:hover) {
+    background-color: var(--button-background-color-hover);
+    color: var(--button-text-color-hover);
+    border-bottom-color: var(--border-color);
+
+    @media (forced-colors) {
+      border-bottom-color: currentColor;
+    }
+  }
+
+  &:where(:hover:active) {
+    background-color: var(--button-background-color-active);
+    color: var(--button-text-color-active);
+  }
+
+  &[selected] {
+    color: var(--button-background-color-primary);
+    border-bottom-color: currentColor;
+  }
+}
+
+.tabs-left {
+  flex: 0;
+}
+
+.tabs-right {
+  flex: 1;
+}
+
+/* html buttons */
+
+html|button {
+  font: inherit;
+}
+
+/* xul buttons and menulists */
+
+button,
+html|select,
+html|input[type="color"],
+xul|menulist {
+  appearance: none;
+  min-height: var(--button-min-height, 32px);
+  color: var(--button-text-color);
+  border: var(--button-border);
+  border-radius: var(--button-border-radius);
+  background-color: var(--button-background-color);
+  font-weight: normal;
+  padding: var(--button-padding);
+  text-decoration: none;
+  margin: var(--space-xsmall) var(--space-small);
+  /* Ensure font-size isn't overridden by widget styling (e.g. in forms.css) */
+  font-size: 1em;
+}
+
+button {
+  font-weight: var(--button-font-weight);
+}
+
+button.small-button {
+  font-size: var(--font-size-small);
+}
+
+/* Remove margin added by button.css */
+xul|button > .button-box > .button-text {
+  margin: 0;
+}
+
+button {
+  /* Use the same margin of other elements for the alignment */
+  margin-inline: var(--space-xsmall);
+}
+
+button:focus-visible,
+html|select:focus-visible,
+html|input:where([type="color"]):focus-visible,
+xul|menulist:focus-visible,
+xul|tab:focus-visible > .tab-middle > .tab-text {
+  box-shadow: none;
+  /* Don't set `var(--focus-outline)` here to allow more complicated UIs
+     to use a different color when needed */
+  outline: var(--focus-outline-width) solid var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+
+html|select:not([size], [multiple]) {
+  /* The following padding matches how a menulist is internally spaced.
+   * 15px is the menulist's standard padding-inline, 3px is for
+   * the internal label margin, 12px is the dropmarker's width
+   * and 4px is the dropmarker's margin-inline-end.
+   *
+   * [------|---|---label---|dropmarker|----|------]
+   *   15px  3px                12px    4px   15px
+   * start-padding          background- end-padding
+   *                        image-width
+   *
+   * Users of this element can change the variable --logical-padding. Other
+   * variables should adjust automatically.
+   */
+  --logical-padding: 15px;
+  --start-padding: calc(var(--logical-padding) + 3px);
+  --end-padding: calc(var(--logical-padding) + 4px);
+  --background-image-width: 12px;
+  background-image: url("chrome://global/skin/icons/arrow-down-12.svg");
+  background-position: right var(--end-padding) center;
+  background-repeat: no-repeat;
+  background-size: auto var(--background-image-width);
+  -moz-context-properties: fill;
+  fill: currentColor;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+
+  /* See above for some explanation about these values. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  padding-inline-start: var(--start-padding);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  padding-inline-end: calc(var(--background-image-width) + var(--end-padding));
+  text-overflow: ellipsis;
+}
+
+html|select:not([size], [multiple]):dir(rtl) {
+  background-position-x: left var(--end-padding);
+}
+
+html|select:not([size], [multiple]) > html|option {
+  background-color: var(--background-color-box);
+  color: var(--text-color);
+}
+
+html|button:enabled:hover,
+html|select:not([size], [multiple]):enabled:hover,
+html|input[type="color"]:hover,
+xul|button:not([disabled]):hover,
+xul|menulist:not([disabled]):hover {
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+  border-color: var(--button-border-color-hover);
+}
+
+html|button:enabled:hover:active,
+html|select:not([size], [multiple]):enabled:hover:active,
+html|input[type="color"]:enabled:hover:active,
+xul|button:not([disabled]):hover:active,
+xul|button[open],
+xul|button[open]:hover,
+xul|menulist[open="true"]:not([disabled]) {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+  border-color: var(--button-border-color-active);
+}
+
+html|button:disabled,
+html|select:disabled,
+html|input[type="color"]:disabled,
+xul|button[disabled],
+xul|menulist[disabled] {
+  background-color: var(--button-background-color-disabled);
+  border-color: var(--button-border-color-disabled);
+  color: var(--button-text-color-disabled);
+  opacity: var(--button-opacity-disabled);
+}
+
+html|button[autofocus],
+html|button[type="submit"],
+xul|button[default],
+button.primary {
+  background-color: var(--button-background-color-primary);
+  color: var(--button-text-color-primary);
+  border-color: var(--button-border-color-primary);
+}
+
+html|button[autofocus]:disabled,
+html|button[type="submit"]:disabled,
+xul|button[default]:disabled,
+button.primary:disabled {
+  background-color: var(--button-background-color-primary-disabled);
+  border-color: var(--button-border-color-primary-disabled);
+  color: var(--button-text-color-primary-disabled);
+}
+
+html|button[autofocus]:enabled:hover,
+html|button[type="submit"]:enabled:hover,
+html|button.primary:enabled:hover,
+xul|button[default]:not([disabled]):hover,
+xul|button.primary:not([disabled]):hover {
+  background-color: var(--button-background-color-primary-hover);
+  color: var(--button-text-color-primary-hover);
+  border-color: var(--button-border-color-primary-hover);
+}
+
+html|button[autofocus]:enabled:hover:active,
+html|button[type="submit"]:enabled:hover:active,
+html|button.primary:enabled:hover:active,
+xul|button[default]:not([disabled]):hover:active,
+xul|button.primary:not([disabled]):hover:active {
+  background-color: var(--button-background-color-primary-active);
+  color: var(--button-text-color-primary-active);
+  border-color: var(--button-border-color-primary-active);
+}
+
+@media not (forced-colors) {
+  html|button.semi-transparent:not(.ghost-button, .primary):enabled {
+    background-color: color-mix(in srgb, currentColor 10%, transparent);
+  }
+
+  html|button.semi-transparent:not(.primary):enabled:hover {
+    background-color: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  html|button.semi-transparent:not(.primary):enabled:hover:active {
+    background-color: color-mix(in srgb, currentColor 30%, transparent);
+  }
+}
+
+.danger-button {
+  --button-background-color-primary: var(--button-background-color-destructive);
+  --button-background-color-primary-hover: var(--button-background-color-destructive-hover);
+  --button-background-color-primary-active: var(--button-background-color-destructive-active);
+}
+
+@media not (forced-colors) {
+  html|button.ghost-button {
+    background-color: transparent;
+  }
+}
+
+html|button.ghost-button:not(.semi-transparent):enabled:hover {
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+}
+
+html|button.ghost-button:not(.semi-transparent):enabled:hover:active {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+}
+
+html|button.ghost-button.icon-button {
+  height: var(--icon-size);
+  width: var(--icon-size);
+  min-width: auto;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-position: center;
+  fill: currentColor;
+  -moz-context-properties: fill;
+}
+
+html|input[type="color"] {
+  padding: var(--space-small);
+  width: var(--size-item-xlarge);
+}
+
+xul|menulist[image]::part(icon) {
+  margin-inline-end: var(--space-xsmall);
+}
+
+xul|menulist > xul|menupopup {
+  appearance: none;
+
+  /* Reset native styles on Windows and macOS */
+  border: none;
+  background-color: transparent;
+
+  --panel-background-color: var(--background-color-box);
+  --panel-border-color: var(--border-color);
+  --panel-border-radius: 2px;
+  --panel-text-color: var(--text-color);
+  --panel-padding: 0;
+}
+
+xul|menulist > xul|menupopup xul|menu,
+xul|menulist > xul|menupopup xul|menuitem {
+  appearance: none;
+  font-size: 1em;
+  padding-block: var(--space-xsmall);
+  padding-inline: var(--space-small) var(--space-xxlarge);
+}
+
+xul|menulist > xul|menupopup > xul|menu:not([disabled])[_moz-menuactive="true"],
+xul|menulist > xul|menupopup > xul|menuitem:not([disabled])[_moz-menuactive="true"] {
+  color: var(--text-color-list-item-hover);
+  background-color: var(--background-color-list-item-hover);
+}
+
+xul|menulist > xul|menupopup > xul|menu:not([disabled])[selected],
+xul|menulist > xul|menupopup > xul|menuitem:not([disabled])[selected] {
+  color: var(--text-color-accent-primary-selected);
+  background-color: var(--color-accent-primary-selected);
+}
+
+xul|menulist > xul|menupopup xul|menuseparator {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: none;
+}
+
+/* textboxes */
+
+html|input:where([type="email"], [type="tel"], [type="text"], [type="password"], [type="url"], [type="number"]),
+html|textarea {
+  appearance: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-medium);
+  color: inherit;
+  background-color: var(--background-color-box);
+}
+
+html|input:where([type="email"], [type="tel"], [type="text"], [type="password"], [type="url"], [type="number"]),
+html|textarea {
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  padding: var(--space-small);
+  margin: var(--space-xxsmall) var(--space-xsmall);
+  min-height: var(--input-text-min-height);
+}
+
+html|textarea {
+  min-height: auto;
+}
+
+html|input:where([type="email"], [type="tel"], [type="text"], [type="password"], [type="url"], [type="number"]):focus,
+html|textarea:focus,
+xul|tree:focus-visible,
+xul|richlistbox:focus-visible {
+  border-color: transparent;
+  outline: var(--focus-outline);
+  outline-offset: -1px; /* Prevents antialising around the corners */
+}
+
+html|input:where([type="email"], [type="tel"], [type="text"], [type="password"], [type="url"], [type="number"]):user-invalid,
+html|textarea:user-invalid {
+  border-color: transparent;
+  outline: 2px solid var(--border-color-error);
+  outline-offset: -1px; /* Prevents antialising around the corners */
+}
+
+html|input:where([type="email"], [type="tel"], [type="text"], [type="password"], [type="url"], [type="number"]):disabled,
+html|textarea:disabled {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens -- to be addressed in Bug 2033872 */
+  opacity: 0.4;
+}
+
+/* Links */
+
+html|a,
+.text-link,
+::part(support-link) {
+  cursor: pointer;
+  color: var(--link-color);
+}
+
+html|a:visited,
+::part(support-link):visited {
+  color: var(--link-color-visited);
+}
+
+html|a:hover,
+.text-link:hover,
+button.text-link:is(:not([disabled]), :enabled):hover,
+::part(support-link):hover {
+  color: var(--link-color-hover);
+}
+
+html|a:hover:active,
+.text-link:hover:active,
+button.text-link:is(:not([disabled]), :enabled):hover:active,
+::part(support-link):hover:active {
+  color: var(--link-color-active);
+  text-decoration: none;
+}
+
+html|a:focus-visible,
+.text-link:focus-visible,
+::part(support-link):focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--link-focus-outline-offset);
+  border-radius: var(--border-radius-small);
+}
+
+button.text-link {
+  background-color: transparent !important; /* override hover related background changes */
+  padding: 0;
+  border: 0;
+  font-weight: normal;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Checkboxes and radio buttons */
+
+/* Add invisible vertical click-target */
+xul|*.radio-check,
+xul|*.checkbox-check,
+html|input:where([type="checkbox"], [type="radio"]) {
+  height: var(--checkbox-size);
+  width: var(--checkbox-size);
+  padding: 0;
+  margin-block: var(--space-xxsmall);
+  margin-inline: 0 var(--checkbox-margin-inline);
+  flex-shrink: 0; /* avoid shrinking inside flex container */
+}
+
+xul|richlistitem > xul|*.checkbox-check {
+  margin: var(--space-xsmall) var(--checkbox-margin-inline);
+}
+
+html|*.radio-container-with-text,
+html|*.toggle-container-with-text {
+  display: flex;
+  align-items: center;
+}
+
+xul|radio {
+  margin-inline-start: 0;
+  appearance: none;
+}
+
+xul|*.radio-label-box {
+  margin-inline: 0 var(--space-small);
+  padding-inline-start: 0;
+}
+
+/* Disabled checkboxes, radios and labels */
+
+xul|checkbox[disabled],
+xul|radio[disabled],
+xul|label[disabled] {
+  color: inherit;
+}
+
+xul|checkbox[disabled] > .checkbox-label-box,
+xul|radio[disabled] > .radio-label-box,
+xul|label[disabled] {
+  color: var(--text-color-disabled);
+}
+
+/* Category List */
+
+#categories:not(moz-page-nav) {
+  appearance: none;
+  background-color: initial; /* override the background-color set on all richlistboxes in common.inc.css */
+  /* This spacing matches the height of sections with search bars. Ideally this would be calculated from
+   * input height and spacing from those sections. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  margin: 70px 0 0;
+  border-width: 0;
+  width: var(--categories-width);
+  outline: none;
+}
+
+@media print {
+  #categories:not(moz-page-nav) {
+    display: none;
+  }
+}
+
+html|*#categories:not(moz-page-nav) {
+  box-sizing: border-box;
+  padding: 1px;
+}
+
+#categories > .category {
+  border: var(--button-border);
+  border-color: var(--button-border-color-primary);
+  border-radius: var(--border-radius-small);
+  min-height: var(--size-item-xlarge);
+  appearance: none;
+  color: inherit;
+  margin-inline-start: var(--space-xxlarge);
+  padding-inline: var(--space-small);
+  transition: background-color 150ms;
+}
+
+html|*#categories > html|*.category {
+  border: var(--button-border);
+  border-color: var(--button-border-color-primary);
+  background-color: initial;
+  background-size: 24px;
+  background-repeat: no-repeat;
+  background-position-x: 10px;
+  background-position-y: 12px;
+  margin-inline-end: 0;
+  min-width: auto;
+  padding-inline-start: var(--space-xxlarge);
+  text-align: start;
+  -moz-context-properties: fill, fill-opacity;
+  fill: currentColor;
+}
+
+html|*#categories > html|*.category:dir(rtl) {
+  background-position-x: right 10px;
+}
+
+#categories > .category:hover {
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+  border-color: var(--button-border-color-hover);
+}
+
+#categories > .category:hover:active {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+  border-color: var(--button-border-color-active);
+}
+
+@media not (forced-colors) {
+  #categories > .category[selected],
+  #categories > .category.selected {
+    color: var(--color-accent-primary);
+  }
+
+  #categories > .category[selected]:not(:hover) {
+    /* override richlistitem selected style while letting hover style above apply */
+    background-color: transparent;
+  }
+
+  #categories > .category[selected]:hover:active,
+  #categories > .category.selected:hover:active {
+    color: var(--color-accent-primary-active);
+  }
+}
+
+@media (forced-colors) {
+  #categories > .category {
+    /* The transition causes issues with the text getting a background while
+     * transitioning and it looks weird. */
+    transition: none;
+    /* We need a true transparent but in HCM this would compute to an actual color,
+     * so select the page's background color instead: */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    border-color: var(--background-color-canvas);
+  }
+
+  #categories > .category[selected],
+  #categories > .category.selected {
+    background-color: var(--button-background-color-hover);
+    color: var(--button-text-color-hover);
+    border-color: var(--button-border-color-hover);
+  }
+}
+
+#categories[keyboard-navigation="true"]:focus-visible > .category[current],
+#categories > .category:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-inset);
+}
+
+html|*#categories[last-input-type="mouse"] > html|button.category:focus-visible {
+  outline: none;
+}
+
+.category-name {
+  font-size: var(--font-size-large);
+  line-height: 1.4em;
+  padding-inline-start: var(--space-small);
+  margin: 0;
+  user-select: none;
+}
+
+.category-icon {
+  width: var(--icon-size-large);
+  height: var(--icon-size-large);
+  margin-inline: auto;
+  -moz-context-properties: fill, fill-opacity;
+  fill: currentColor;
+}
+
+.category[selected] > .category-icon,
+.category.selected > .category-icon {
+  fill-opacity: 1;
+}
+
+@media (max-width: 830px) {
+  :root {
+    --categories-width: var(--size-sidebar-narrow);
+  }
+
+  html|*.category:not(.category-no-icon) > html|*.category-name,
+  .category-icon + .category-name {
+    display: none;
+  }
+
+  #categories > .category {
+    margin-inline-end: var(--space-xxlarge);
+  }
+
+  html|*#categories > html|*.category {
+    width: var(--size-item-xlarge);
+    min-width: auto;
+    box-sizing: border-box;
+  }
+
+  html|*#categories > html|*.category,
+  /* We need to override the full-width RTL rule, so explicitly specify RTL. */
+  html|*#categories > html|*.category:dir(rtl) {
+    background-position: center;
+  }
+
+  .main-content {
+    padding-inline: 0;
+  }
+
+  .pane-container {
+    margin-inline-end: var(--space-small);
+  }
+}
+
+/* header */
+
+.header {
+  margin-inline-end: var(--space-xsmall); /* add the same end-margin as other elements */
+  margin-block-end: var(--space-large);
+  padding-block-end: var(--space-large);
+  align-items: baseline;
+}
+
+.header-name {
+  margin: 0;
+}
+
+/* List boxes */
+
+html|select[size][multiple],
+xul|listheader,
+xul|richlistbox {
+  appearance: none;
+  margin-inline: 0;
+  background-color: var(--background-color-box);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  color: var(--text-color);
+}
+
+xul|listheader {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  overflow: clip; /* Clip border-radius */
+}
+
+xul|listheader + xul|richlistbox {
+  margin-top: 0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+html|select[size][multiple] > html|option,
+xul|treechildren::-moz-tree-row {
+  padding: var(--space-xsmall);
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background-image: none;
+}
+
+xul|treechildren::-moz-tree-row(multicol, odd) {
+  background-color: var(--table-row-background-color-alternate);
+}
+
+html|select[size][multiple] > html|option:hover,
+xul|treechildren::-moz-tree-row(hover) {
+  background-color: var(--background-color-list-item-hover);
+  color: var(--text-color-list-item-hover);
+}
+
+xul|richlistbox > xul|richlistitem[selected],
+xul|treechildren::-moz-tree-row(selected) {
+  background-color: var(--color-accent-primary-selected);
+  color: var(--text-color-accent-primary-selected);
+}
+
+@media not (forced-colors) {
+  xul|richlistbox:not(#categories) > xul|richlistitem[selected] {
+    /* Ensure buttons/menulists inside richlistitems (containers, applications) look OK */
+    --button-background-color: color-mix(in srgb, currentColor 15%, transparent);
+    --button-background-color-hover: color-mix(in srgb, currentColor 30%, transparent);
+    --button-background-color-active: color-mix(in srgb, currentColor 45%, transparent);
+    --button-text-color: var(--text-color-accent-primary-selected);
+    --button-text-color-hover: var(--text-color-accent-primary-selected);
+    --button-text-color-active: var(--button-text-color-hover);
+    --focus-outline-color: var(--text-color-accent-primary-selected);
+  }
+}
+
+xul|richlistitem[selected] xul|menulist:focus-visible {
+  outline-offset: var(--focus-outline-inset);
+}
+
+/* Use a 2px border so that selected row highlight is still visible behind
+    an existing forced colors border that uses the background color */
+@media (forced-colors) {
+  xul|treechildren::-moz-tree-row(selected) {
+    border: 2px solid currentColor;
+    border-radius: var(--border-radius-small);
+  }
+}
+
+xul|panel[type="autocomplete-richlistbox"] {
+  background-color: var(--background-color-box);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+/* Trees */
+
+xul|tree {
+  appearance: none;
+  font-size: 1em;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  background-color: var(--background-color-box);
+  color: inherit;
+  margin: 0;
+}
+
+xul|treecols {
+  appearance: none;
+  border: none;
+  border-top-left-radius: var(--border-radius-small);
+  border-top-right-radius: var(--border-radius-small);
+  border-bottom: var(--button-border);
+  overflow: clip; /* Clip border-radius */
+  padding: 0;
+}
+
+xul|treecol:not([hideheader="true"]),
+.tree-columnpicker-button {
+  appearance: none;
+  border: none;
+  border-radius: unset;
+  background-color: var(--button-background-color);
+  color: var(--button-text-color, inherit);
+  padding: var(--space-small);
+}
+
+xul|treecol:not([hideheader="true"], [sortable="false"]):hover,
+.tree-columnpicker-button:hover {
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+}
+
+xul|treecol:not([hideheader="true"], [sortable="false"]):hover:active,
+.tree-columnpicker-button:hover:active {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+}
+
+xul|treecol:not([hideheader="true"], :first-child),
+.tree-columnpicker-button {
+  border-inline-start-width: 1px;
+  border-inline-start-style: solid;
+  border-image: linear-gradient(transparent 0%, transparent 20%, var(--border-color) 20%, var(--border-color) 80%, transparent 80%, transparent 100%) 1 1;
+}
+
+@media (forced-colors) {
+  xul|treecol:not([hideheader="true"], :first-child),
+  xul|treecolpicker {
+    --border-color: var(--button-border-color);
+  }
+}
+
+xul|treecol[sortDirection]:not([hideheader="true"]) > xul|*.treecol-sortdirection {
+  list-style-image: url("chrome://global/skin/icons/sort-arrow.svg");
+  -moz-context-properties: fill;
+  fill: currentColor;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+xul|treecol[sortDirection="ascending"]:not([hideheader="true"]) > xul|*.treecol-sortdirection {
+  transform: scaleY(-1);
+}
+
+/* This is the only way to increase the height of a tree row unfortunately */
+xul|treechildren::-moz-tree-row {
+  min-height: 2em;
+}
+
+xul|treechildren::-moz-tree-cell-text(hover),
+xul|treechildren::-moz-tree-twisty(hover),
+xul|treechildren::-moz-tree-image(hover) {
+  color: var(--text-color-list-item-hover);
+}
+
+xul|treechildren::-moz-tree-cell-text(selected),
+xul|treechildren::-moz-tree-twisty(selected),
+xul|treechildren::-moz-tree-image(selected) {
+  color: var(--text-color-accent-primary-selected);
+}
+
+/* Message bars */
+.message-bar {
+  background-color: var(--background-color-box-info);
+  border-radius: var(--border-radius-small);
+  min-height: var(--size-item-large);
+  align-items: center;
+  padding: var(--space-xsmall);
+}
+
+.message-bar-description {
+  margin: var(--space-xxsmall) 0;
+  line-height: 1.25;
+}
+
+.message-bar-description.rtl-locale {
+  direction: rtl;
+  text-align: match-parent;
+}
+
+/* The message-bar-button styles have extra specificity to override
+ * the defaults for buttons. */
+.message-bar-content > .message-bar-button {
+  background-color: var(--message-bar-button-background-color);
+  border: none;
+  border-radius: var(--border-radius-xsmall);
+  height: var(--size-item-medium);
+  margin-inline-start: var(--space-small);
+  padding: 0 var(--space-small);
+}
+
+.message-bar-content > .message-bar-button:hover {
+  background-color: var(--message-bar-button-background-color-hover);
+}
+
+.message-bar-content > .message-bar-button:hover:active {
+  background-color: var(--message-bar-button-background-color-active);
+}
+
+.message-bar-icon {
+  content: url("chrome://global/skin/icons/info.svg");
+  width: var(--icon-size-large);
+  height: var(--icon-size-large);
+  padding: var(--space-xsmall);
+  margin-inline-end: var(--space-xsmall);
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+/* Warning styles */
+.message-bar-warning {
+  background-color: var(--message-bar-background-color-warning);
+  color: var(--message-bar-text-color-warning);
+}
+
+.message-bar-warning > .message-bar-icon {
+  content: url("chrome://global/skin/icons/warning.svg");
+}
+
+input[type="text"][warning]:enabled:not(:focus) {
+  border-color: var(--input-border-color-warning);
+  /* Custom box shadow for the warning outline. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  box-shadow:
+    0 0 0 1px var(--input-border-color-warning),
+    0 0 0 4px var(--input-box-shadow-color-warning);
+}
+
+/* Cards */
+
+.card {
+  background: var(--background-color-box);
+  /* Needed for high-contrast where the border will appear. */
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-box-shadow);
+  margin: 0 0 var(--space-small);
+  /* Remove the border from the overall padding. */
+  padding: calc(var(--card-padding) - 1px);
+  transition: box-shadow 150ms;
+}
+
+.card:not(.card-no-hover):hover {
+  box-shadow: var(--card-box-shadow-hover);
+}
+
+.card-heading-image {
+  border-top-left-radius: var(--border-radius-small);
+  border-top-right-radius: var(--border-radius-small);
+  margin-block: calc(var(--card-padding) * -1) var(--card-padding);
+  margin-inline: calc(var(--card-padding) * -1);
+}
+
+.card-heading-image:dir(rtl) {
+  transform: scaleX(-1);
+}
+
+/* Sidebar footer links */
+
+.sidebar-footer-list {
+  list-style-type: none;
+  margin-block-end: var(--space-xxlarge);
+  margin-inline-start: var(--space-xxlarge);
+  padding: 0;
+}
+
+.sidebar-footer-link {
+  padding-block: var(--space-xsmall);
+  cursor: default;
+  border: var(--button-border);
+  border-radius: var(--border-radius-small);
+  display: flex;
+  align-items: center;
+}
+
+@media (forced-colors) {
+  .sidebar-footer-link {
+    /* We need a true transparent but in HCM this would compute to an actual color,
+     * so select the page's background color instead: */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    border-color: var(--background-color-canvas);
+  }
+}
+
+.sidebar-footer-link,
+.sidebar-footer-link:visited {
+  /* Override link style for :hover and :hover:active states */
+  text-decoration: none !important;
+  color: inherit;
+}
+
+xul|*.sidebar-footer-link {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-footer-link:hover {
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+  border-color: var(--button-border-color-hover);
+}
+
+.sidebar-footer-link:hover:active:not([disabled]) {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+  border-color: var(--button-border-color-active);
+}
+
+.sidebar-footer-link:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-inset);
+}
+
+.sidebar-footer-icon {
+  -moz-context-properties: fill, fill-opacity;
+  fill: currentColor;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin: var(--space-small);
+  margin-inline-start: var(--space-medium);
+}
+
+.sidebar-footer-label {
+  font-size: var(--font-size-small);
+  margin: 0 var(--space-xsmall);
+  user-select: none;
+}
+
+@media (max-width: 830px) {
+  .sidebar-footer-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-inline: auto;
+  }
+
+  .sidebar-footer-link {
+    width: var(--size-item-large);
+    height: var(--size-item-large);
+    padding-inline-start: 0;
+  }
+
+  .sidebar-footer-icon {
+    margin-inline: auto;
+  }
+
+  .sidebar-footer-label {
+    display: none;
+  }
+}
+
+/* Icon helper classes */
+
+xul|*.help-icon {
+  list-style-image: url("chrome://global/skin/icons/help.svg");
+}
+
+xul|*.addons-icon {
+  list-style-image: url("chrome://mozapps/skin/extensions/extension.svg");
+}
+
+/* Back button */
+
+.back-button {
+  -moz-context-properties: fill;
+  fill: currentColor;
+  background-image: url("chrome://global/skin/icons/arrow-left.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  min-width: auto;
+  width: var(--icon-size-xlarge);
+  margin-block: 0;
+  margin-inline-start: 0;
+}
+
+.back-button:-moz-locale-dir(rtl),
+.back-button:dir(rtl) {
+  transform: scaleX(-1);
+}

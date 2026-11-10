@@ -1,0 +1,24 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+#ifndef RelativeTimeline_h_
+#define RelativeTimeline_h_
+
+#include <cstdint>
+
+namespace mozilla {
+
+class RelativeTimeline {
+ public:
+  RelativeTimeline() : mRandomTimelineSeed(0) {}
+
+  int64_t GetRandomTimelineSeed();
+
+ private:
+  uint64_t mRandomTimelineSeed;
+};
+
+}  // namespace mozilla
+
+#endif /* RelativeTimeline_h_ */

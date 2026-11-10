@@ -1,0 +1,29 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+DIRS += [
+    "interface",
+    # Include the libfuzzer directory to all fuzzing builds so that
+    # FuzzedDataProvider is accessible to AFL++ builds
+    "libfuzzer",
+    "registry",
+]
+
+if not CONFIG["JS_STANDALONE"]:
+    DIRS += [
+        "common",
+        "messagemanager",
+        "shmem",
+    ]
+
+    if CONFIG["FUZZING_SNAPSHOT"]:
+        DIRS += [
+            "ipc",
+            "nyx",
+        ]
+
+    if CONFIG["FUZZING_INTERFACES"]:
+        DIRS += [
+            "rust",
+        ]

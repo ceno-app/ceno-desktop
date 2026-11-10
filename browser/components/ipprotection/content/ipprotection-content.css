@@ -1,0 +1,231 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+@import "chrome://global/skin/global.css";
+
+hr {
+  border-style: solid none none none;
+  border-color: var(--panel-separator-color);
+  margin: var(--panel-separator-margin);
+}
+
+#ipprotection-content-wrapper {
+  --panel-subview-body-padding-inline: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vpn-top-content {
+  margin-block-start: var(--space-small);
+}
+
+.vpn-bottom-content {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: var(--space-small);
+  moz-button {
+    --button-alignment: start;
+    --button-border-radius: var(--border-radius-small);
+    --button-font-weight: var(--font-weight);
+    --button-padding: var(--space-small);
+    --focus-outline-offset: calc(-1 * var(--focus-outline-width));
+    width: 100%;
+  }
+}
+
+.vpn-title {
+  /* Intentionally using a larger font size for clearer visual hierarchy
+ * stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 1.4em;
+  font-weight: var(--font-weight-semibold);
+  padding-top: var(--space-large);
+  padding-bottom: var(--space-xsmall);
+  margin-block: 0;
+}
+
+.vpn-subtitle {
+  margin: 0;
+}
+
+.vpn-description {
+  /* Intentionally using a larger font size for clearer visual hierarchy
+/* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 1.23em;
+
+  ul {
+    padding-inline-start: var(--space-large);
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-small);
+    padding-block-start: var(--space-medium);
+
+    > span {
+      flex: 1;
+    }
+
+    &:last-of-type {
+      padding-block-end: var(--space-xlarge);
+    }
+
+    &.with-icon::before {
+      content: "";
+      display: inline-block;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      flex-shrink: 0;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+  }
+}
+
+.vpn-button {
+  /* Intentionally using a larger font size for clearer visual hierarchy
+/* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 1.2em;
+  display: block;
+  padding-top: var(--space-medium);
+}
+
+#unauthenticated-vpn-title {
+  /* Intentionally using a larger font size for clearer visual hierarchy
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 1.9em;
+}
+
+#unauthenticated-vpn-content {
+  display: flex;
+  flex-direction: column;
+  padding-block-start: 0;
+  padding-block-end: var(--space-small);
+  padding-inline-start: var(--space-large);
+  padding-inline-end: var(--space-large);
+  @media not -moz-pref("browser.nova.enabled") {
+    color: var(--text-color);
+  }
+}
+
+#unauthenticated-vpn-img {
+  width: max-content;
+  align-self: center;
+  margin-block-start: var(--space-large);
+  margin-block-end: var(--space-large);
+}
+
+#unauthenticated-vpn-message {
+  margin: 0;
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+#upgrade-vpn-description {
+  color: var(--text-color-deemphasized);
+}
+
+#unauthenticated-private-location::before {
+  background-image: url("chrome://browser/skin/notification-icons/geo.svg");
+}
+
+#unauthenticated-choose-location::before {
+  background-image: url("chrome://global/skin/icons/defaultFavicon.svg");
+}
+
+#unauthenticated-get-started {
+  --button-padding: var(--space-medium);
+  margin: 0 auto;
+  width: var(--size-layout-small);
+
+  @media not -moz-pref("browser.nova.enabled") {
+    width: 100%;
+  }
+}
+
+#unauthenticated-footer {
+  margin-block-start: var(--space-medium);
+  margin-block-end: var(--space-medium);
+  color: var(--text-color-deemphasized);
+}
+
+ipprotection-message-bar.vpn-top-content {
+  margin-block-start: 0;
+  margin-block-end: var(--space-small);
+}
+
+#enrolling-container {
+  background-color: var(--background-color-box-info);
+  border-radius: var(--border-radius-medium);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-large);
+  padding: var(--space-medium);
+}
+
+#enrolling-header {
+  display: flex;
+  justify-content: space-between;
+
+  > span {
+    gap: var(--space-medium);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  img {
+    height: var(--size-image-small);
+    width: var(--size-image-small);
+    -moz-context-properties: fill;
+    fill: var(--icon-color);
+  }
+}
+
+.skeleton {
+  background-color: var(--card-border-color);
+}
+
+.skeleton-title {
+  height: 1lh;
+  width: var(--size-layout-xsmall);
+  border-radius: var(--space-xxsmall);
+  margin-block: var(--space-medium) var(--space-small);
+}
+
+.skeleton-line {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 0.625rem;
+  height: 1lh;
+  width: var(--size-layout-small);
+  border-radius: var(--space-xxsmall);
+}
+
+.skeleton-line-thick {
+  height: var(--button-min-height);
+  width: 100%;
+  border-radius: var(--border-radius-small);
+
+  &:first-of-type {
+    margin-block-start: var(--space-xxlarge);
+  }
+}
+
+#site-exclusion-control {
+  display: flex;
+
+  margin-block-start: var(--space-medium);
+  padding: var(--space-medium);
+}
+
+#site-exclusion-toggle {
+  flex: 1;
+
+  > [slot="description"] {
+    padding-inline-start: var(--space-xxlarge);
+  }
+}

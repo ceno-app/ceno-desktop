@@ -1,0 +1,40 @@
+From: Jan Grulich <jgrulich@redhat.com>
+Date: Thu, 20 Aug 2026 18:34:07 +0000
+Subject: Bug 2055703 - WebRTC backport: Screen capture: reject negative
+ videocrop position values a=RyanVM DONTBUILD
+
+Validate that SPA_META_VideoCrop position coordinates are
+non-negative before using them as offsets into the frame buffer.
+
+This is a simple backport of an WebRTC upstream change.
+
+Upstream commit: f93c4fefee56b60876629d03df1ad01e203cc8c3
+
+Original Revision: https://phabricator.services.mozilla.com/D319398
+
+Differential Revision: https://phabricator.services.mozilla.com/D319474
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/cf30df85dfdb
+---
+ .../desktop_capture/linux/wayland/shared_screencast_stream.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 9a322d1df7..6f1c69be3e 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -916,13 +916,13 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
+   // that the position doesn't exceed the size of the stream itself.
+   // NOTE: Currently it looks there is no implementation using this.
+   uint32_t y_offset =
+-      videocrop_metadata_use &&
++      videocrop_metadata_use && videocrop_metadata->region.position.y >= 0 &&
+               (videocrop_metadata->region.position.y + frame_size_.height() <=
+                stream_size_.height())
+           ? videocrop_metadata->region.position.y
+           : 0;
+   uint32_t x_offset =
+-      videocrop_metadata_use &&
++      videocrop_metadata_use && videocrop_metadata->region.position.x >= 0 &&
+               (videocrop_metadata->region.position.x + frame_size_.width() <=
+                stream_size_.width())
+           ? videocrop_metadata->region.position.x

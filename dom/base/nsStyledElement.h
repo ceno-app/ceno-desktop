@@ -1,0 +1,92 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/**
+ * nsStyledElement is the base for elements supporting styling via the
+ * id/class/style attributes; it is a common base for their support in HTML,
+ * SVG and MathML.
+ */
+
+#ifndef NS_STYLEDELEMENT_H_
+#define NS_STYLEDELEMENT_H_
+
+#include "mozilla/dom/Element.h"
+#include "nsString.h"
+
+namespace mozilla::dom {
+class StylePropertyMap;
+}  // namespace mozilla::dom
+
+// IID for nsStyledElement interface
+#define NS_STYLED_ELEMENT_IID \
+  {0xacbd9ea6, 0x15aa, 0x4f37, {0x8c, 0xe0, 0x35, 0x1e, 0xd7, 0x21, 0xca, 0xe9}}
+
+using nsStyledElementBase = mozilla::dom::Element;
+
+class nsStyledElement : public nsStyledElementBase {
+ protected:
+  inline explicit nsStyledElement(
+      already_AddRefed<mozilla::dom::NodeInfo> aNodeInfo)
+      : nsStyledElementBase(std::move(aNodeInfo)) {}
+
+ public:
+  // We don't want to implement AddRef/Release because that would add an extra
+  // function call for those on pretty much all elements.  But we do need QI, so
+  // we can QI to nsStyledElement.
+  NS_IMETHOD QueryInterface(REFNSIID aIID, void** aInstancePtr) override;
+
+  // Element interface methods
+  virtual void InlineStyleDeclarationWillChange(
+      mozilla::MutationClosureData& aData) override;
+  virtual nsresult SetInlineStyleDeclaration(
+      mozilla::StyleLockedDeclarationBlock&,
+      mozilla::MutationClosureData& aData) override;
+  virtual nsresult BindToTree(BindContext& aContext, nsINode& aParent) override;
+
+  nsDOMCSSDeclaration* Style();
+
+  mozilla::dom::StylePropertyMap* AttributeStyleMap();
+
+  NS_INLINE_DECL_STATIC_IID(NS_STYLED_ELEMENT_IID)
+  NS_IMPL_FROMNODE_HELPER(nsStyledElement, IsStyledElement());
+
+  bool IsStyledElement() const final { return true; }
+
+ protected:
+  nsDOMCSSDeclaration* GetExistingStyle();
+
+  /**
+   * Parse a style attr value into a CSS rulestruct (or, if there is no
+   * document, leave it as a string) and return as nsAttrValue.
+   *
+   * @param aValue the value to parse
+   * @param aMaybeScriptedPrincipal if available, the scripted principal
+   *        responsible for this attribute value, as passed to
+   *        Element::ParseAttribute.
+   * @param aResult the resulting HTMLValue [OUT]
+   */
+  void ParseStyleAttribute(const nsAString& aValue,
+                           nsIPrincipal* aMaybeScriptedPrincipal,
+                           nsAttrValue& aResult, bool aForceInDataDoc);
+
+  bool ParseAttribute(int32_t aNamespaceID, nsAtom* aAttribute,
+                      const nsAString& aValue,
+                      nsIPrincipal* aMaybeScriptedPrincipal,
+                      nsAttrValue& aResult) override;
+
+  friend class mozilla::dom::Element;
+
+  /**
+   * Create the style struct from the style attr.  Used when an element is
+   * first put into a document.  Only has an effect if the old value is a
+   * string.  If aForceInDataDoc is true, will reparse even if we're in a data
+   * document.
+   */
+  nsresult ReparseStyleAttribute(bool aForceInDataDoc);
+
+  void BeforeSetAttr(int32_t aNamespaceID, nsAtom* aName,
+                     const nsAttrValue* aValue, bool aNotify) override;
+};
+
+#endif  // NS_STYLEDELEMENT_H_

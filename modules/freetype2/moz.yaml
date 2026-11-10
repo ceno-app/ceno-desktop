@@ -1,0 +1,47 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: "Graphics: Text"
+
+origin:
+  name: freetype2
+  description: Freely available software library to render fonts.
+
+  url: https://gitlab.freedesktop.org/freetype/freetype
+
+  release: d1f916a65eb13d5cd44b711cfd24cf8d5949b2d2 (2026-10-03T09:41:48.000+02:00).
+  revision: d1f916a65eb13d5cd44b711cfd24cf8d5949b2d2
+
+  license: FTL
+  license-file: LICENSE.TXT
+
+vendoring:
+  url: https://gitlab.freedesktop.org/freetype/freetype
+  source-hosting: gitlab
+  tracking: tag
+
+  exclude:
+    - ".**"
+    - autogen.sh
+    - builds
+    - CMakeLists.txt
+    - configure
+    - devel
+    - docs
+    - Makefile
+    - meson.build
+    - meson_options.txt
+    - mkfile
+    - MSBuild.rsp
+    - MSBuild.sln
+    - objs
+    - subprojects
+    - tests
+    - vms_make.com
+
+  keep:
+    - moz.build
+
+  patches:
+    - patches/0001-Bug-2032039-colr-blend-layer-mono-source.patch

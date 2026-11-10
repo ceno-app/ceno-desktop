@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8>
+  <title>Test for euc-kr encoded form submission</title>
+  <script type="text/javascript" src="/resources/testharness.js"></script>
+  <script type="text/javascript" src="/resources/testharnessreport.js"></script>
+</head>
+<body>
+<div id="log"></div>
+<iframe name="ifr"></iframe>
+<form accept-charset="euc-kr" action="abc" target="ifr">
+<input type="hidden" name="a" value="&#xAC02;">
+</form>
+<script>
+
+async_test((t) => {
+  const form = document.forms[0];
+  const iframe = document.querySelector('iframe');
+
+  // note: listener must be on the iframe, not the window that will be replaced
+  iframe.onload = t.step_func_done(() =>
+    assert_equals("".split.call(iframe.contentWindow.location, "?")[1], "a=%81A")
+  );
+
+  form.submit();
+}, "Test for euc-kr encoded form submission");
+
+</script>
+</body>
+</html>

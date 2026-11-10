@@ -1,0 +1,32 @@
+commit bde6e34b41ab68663a1c07a555432ecbd7358a55
+Author: Christian Holler <choller@mozilla.com>
+Date:   Thu Jul 30 18:32:48 2020 +0200
+
+    [libFuzzer] Allow custom mutators to fail
+
+diff --git a/FuzzerLoop.cpp b/FuzzerLoop.cpp
+index 4339cf2e0dbb..263140c99f57 100644
+--- a/FuzzerLoop.cpp
++++ b/FuzzerLoop.cpp
+@@ -754,6 +754,10 @@ void Fuzzer::MutateAndTestOne() {
+     // If MutateWithMask either failed or wasn't called, call default Mutate.
+     if (!NewSize)
+       NewSize = MD.Mutate(CurrentUnitData, Size, CurrentMaxMutationLen);
++
++    if (!NewSize)
++      continue;
++
+     assert(NewSize > 0 && "Mutator returned empty unit");
+     assert(NewSize <= CurrentMaxMutationLen && "Mutator return oversized unit");
+     Size = NewSize;
+@@ -923,7 +927,9 @@ void Fuzzer::MinimizeCrashLoop(const Unit &U) {
+     memcpy(CurrentUnitData, U.data(), U.size());
+     for (int i = 0; i < Options.MutateDepth; i++) {
+       size_t NewSize = MD.Mutate(CurrentUnitData, U.size(), MaxMutationLen);
+-      assert(NewSize > 0 && NewSize <= MaxMutationLen);
++      assert(NewSize <= MaxMutationLen);
++      if (!NewSize)
++        continue;
+       ExecuteCallback(CurrentUnitData, NewSize);
+       PrintPulseAndReportSlowInput(CurrentUnitData, NewSize);
+       TryDetectingAMemoryLeak(CurrentUnitData, NewSize,

@@ -1,0 +1,12 @@
+[
+  {
+    "firefox_version": 153,
+    "upstream_sha": "5f28ddf5ed",
+    "comment": "firefox does not build the pc directory"
+  },
+  {
+    "firefox_version": 153,
+    "upstream_sha": "1f975dfd76",
+    "comment": "firefox does not enable the CCFB experiment"
+  }
+]

@@ -1,0 +1,27 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsNetAddr_h_
+#define nsNetAddr_h_
+
+#include "nsINetAddr.h"
+#include "mozilla/net/DNS.h"
+
+class nsNetAddr final : public nsINetAddr {
+  ~nsNetAddr() = default;
+
+ public:
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSINETADDR
+
+  explicit nsNetAddr(const mozilla::net::NetAddr* addr) : mAddr(*addr) {}
+
+ private:
+  mozilla::net::NetAddr mAddr;
+
+ protected:
+  /* additional members */
+};
+
+#endif  // !nsNetAddr_h_

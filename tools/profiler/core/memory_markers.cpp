@@ -1,0 +1,106 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "memory_markers.h"
+
+#include "mozmemory.h"
+#include "mozjemalloc_profiling.h"
+#include "mozilla/RefPtr.h"
+#include "mozilla/ProfilerMarkers.h"
+
+namespace geckoprofiler::markers {
+struct PurgeArenaMarker : mozilla::BaseMarkerType<PurgeArenaMarker> {
+  static constexpr const char* Name = "PurgeArena";
+
+  static constexpr const char* Description =
+      "Purge dirtied pages from the resident memory set";
+
+  using MS = mozilla::MarkerSchema;
+  using String8View = mozilla::ProfilerString8View;
+
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {"id", MS::InputType::Uint32, "Arena Id", MS::Format::Integer},
+      {"label", MS::InputType::CString, "Arena", MS::Format::String},
+      {"caller", MS::InputType::CString, "Caller", MS::Format::String},
+      {"pages_dirty", MS::InputType::Uint32, "Number of dirty pages cleaned",
+       MS::Format::Integer},
+      {"pages_clean", MS::InputType::Uint32,
+       "Number of clean pages amoung dirty pages cleaned", MS::Format::Integer},
+      {"pages_unpurgable", MS::InputType::Uint32,
+       "Number of dirty pages skipped due to alignment", MS::Format::Integer},
+      {"syscalls", MS::InputType::Uint32, "Number of system calls",
+       MS::Format::Integer},
+      {"chunks", MS::InputType::Uint32, "Number of chunks processed",
+       MS::Format::Integer},
+      {"result", MS::InputType::CString, "Result", MS::Format::String}};
+
+  static void StreamJSONMarkerData(
+      mozilla::baseprofiler::SpliceableJSONWriter& aWriter, uint32_t aId,
+      const String8View& aLabel, const String8View& aCaller,
+      uint32_t aPagesDirty, uint32_t aPagesTotal, uint32_t aPagesUnpurgable,
+      uint32_t aSyscalls, uint32_t aChunks, const String8View& aResult) {
+    aWriter.IntProperty("id", aId);
+    aWriter.StringProperty("label", aLabel);
+    aWriter.StringProperty("caller", aCaller);
+    aWriter.IntProperty("pages_dirty", aPagesDirty);
+    uint32_t pages_clean = aPagesTotal - aPagesDirty;
+    if (pages_clean) {
+      aWriter.IntProperty("pages_clean", aPagesTotal - aPagesDirty);
+    }
+    if (aPagesUnpurgable) {
+      aWriter.IntProperty("pages_unpurgable", aPagesUnpurgable);
+    }
+    aWriter.IntProperty("syscalls", aSyscalls);
+    aWriter.IntProperty("chunks", aChunks);
+    aWriter.StringProperty("result", aResult);
+  }
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+};
+}  // namespace geckoprofiler::markers
+
+namespace mozilla {
+namespace profiler {
+
+class GeckoProfilerMallocCallbacks : public MallocProfilerCallbacks {
+ public:
+  virtual void OnPurge(TimeStamp aStart, TimeStamp aEnd,
+                       const PurgeStats& aStats,
+                       ArenaPurgeResult aResult) override {
+    const char* result = nullptr;
+    switch (aResult) {
+      case ReachedThresholdOrBusy:
+        result = "Can't find enough dirty memory to purge";
+        break;
+      case NotDone:
+        result = "Purge exited early (eg caller set a time budget)";
+        break;
+      case Dying:
+        result = "Arena is being destroyed";
+        break;
+    }
+
+    PROFILER_MARKER(
+        "PurgeArena", GCCC, MarkerTiming::Interval(aStart, aEnd),
+        PurgeArenaMarker, aStats.arena_id,
+        ProfilerString8View::WrapNullTerminatedString(aStats.arena_label),
+        ProfilerString8View::WrapNullTerminatedString(aStats.caller),
+        aStats.pages_dirty, aStats.pages_total, aStats.pages_unpurgable,
+        aStats.system_calls, aStats.chunks,
+        ProfilerString8View::WrapNullTerminatedString(result));
+  }
+};
+}  // namespace profiler
+
+void register_profiler_memory_callbacks() {
+  auto val = MakeRefPtr<profiler::GeckoProfilerMallocCallbacks>();
+  jemalloc_set_profiler_callbacks(val);
+}
+
+void unregister_profiler_memory_callbacks() {
+  jemalloc_set_profiler_callbacks(nullptr);
+}
+
+}  // namespace mozilla

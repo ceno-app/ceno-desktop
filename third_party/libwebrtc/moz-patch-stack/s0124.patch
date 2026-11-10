@@ -1,0 +1,31 @@
+From: Michael Froman <mfroman@mozilla.com>
+Date: Mon, 29 Dec 2025 13:18:00 -0600
+Subject: Bug 2006933 - (fix-932f274e86) don't include rtc_error.h, forward
+ declare RTCError
+
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/fb61f91d422c3d77545d0d10778314eb958fc8c6
+---
+ api/rtp_parameters.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/api/rtp_parameters.h b/api/rtp_parameters.h
+index 99fff6c673..cd210945c9 100644
+--- a/api/rtp_parameters.h
++++ b/api/rtp_parameters.h
+@@ -34,7 +34,6 @@
+ #include "absl/strings/string_view.h"
+ #include "api/media_types.h"
+ #include "api/priority.h"
+-#include "api/rtc_error.h"
+ #include "api/rtp_header_extension_id.h"
+ #include "api/rtp_transceiver_direction.h"
+ #include "api/video/resolution.h"
+@@ -44,7 +43,7 @@
+ #include "rtc_base/system/rtc_export.h"
+ 
+ namespace webrtc {
+-
++class RTCError;
+ class StringBuilder;
+ 
+ using CodecParameterMap = std::map<std::string, std::string>;

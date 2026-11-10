@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>nsIAccessibleText getText related function tests for tree mutations</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../text.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    async function doTest() {
+      // insertTextBefore("c1", "ho", "ha")
+      {
+        let c1Node = getNode("c1");
+        testText("c1", 0, -1, "ho");
+        let p = waitForEvent(EVENT_REORDER, "c1");
+        let el = document.createTextNode("ha");
+        c1Node.insertBefore(el, c1Node.firstChild);
+        await p;
+        testText("c1", 0, -1, "haho");
+      }
+
+      // insertImgBefore("c1", "haho")
+      {
+        let c1Node = getNode("c1");
+        testText("c1", 0, -1, "haho");
+        let p = waitForEvent(EVENT_REORDER, "c1");
+        let el = document.createElement("img");
+        el.setAttribute("src", "../moz.png");
+        el.setAttribute("alt", "mozilla");
+        c1Node.insertBefore(el, c1Node.firstChild);
+        await p;
+        testText("c1", 0, -1, kEmbedChar + "haho");
+      }
+
+      // insertImgBefore("c2", kEmbedChar)
+      {
+        let c2Node = getNode("c2");
+        testText("c2", 0, -1, kEmbedChar);
+        let p = waitForEvent(EVENT_REORDER, "c2");
+        let el = document.createElement("img");
+        el.setAttribute("src", "../moz.png");
+        el.setAttribute("alt", "mozilla");
+        c2Node.insertBefore(el, c2Node.firstChild);
+        await p;
+        testText("c2", 0, -1, kEmbedChar + kEmbedChar);
+      }
+
+      // insertTextBefore2("c3"): inserts "hehe" before, text "ho" stays at offset 4
+      {
+        let c3Node = getNode("c3");
+        testText("c3", 0, -1, "ho");
+        let p = waitForEvent(EVENT_REORDER, "c3");
+        let el = document.createTextNode("hehe");
+        c3Node.insertBefore(el, c3Node.firstChild);
+        await p;
+        testText("c3", 4, -1, "ho");
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+</head>
+<body>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="c1">ho</div>
+  <div id="c2"><img src="../moz.png" alt="mozilla"></div>
+  <div id="c3">ho</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+[DEFAULT]
+subsuite = "a11y"
+support-files = [
+  "head.js",
+  "!/accessible/tests/browser/shared-head.js",
+  "!/accessible/tests/mochitest/*.js",
+  "!/accessible/tests/mochitest/letters.gif",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+]
+prefs = [
+  # Required for the eval in invokeContentTask in shared-head.js
+  "security.allow_eval_with_system_principal=true"
+]
+
+["browser_test_APZ.js"]
+
+["browser_test_browser.js"]
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && opt && verify-standalone",
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && opt && verify-standalone",
+]
+
+["browser_test_general.js"]
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && debug", # Bug 1781926
+  "os == 'mac' && os_version == '14.70' && arch == 'aarch64' && debug", # Bug 1781926
+]
+
+["browser_test_scroll_hittest.js"]
+
+["browser_test_shadowroot.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1968558
+]
+
+["browser_test_text.js"]
+
+["browser_test_zoom.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && opt && verify-standalone",
+]
+
+["browser_test_zoom_text.js"]

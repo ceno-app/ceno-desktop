@@ -1,0 +1,61 @@
+{
+  "policies": {
+    "DisablePrivateBrowsing": true,
+    "DisplayBookmarksToolbar": true,
+    "ManagedBookmarks": [
+      {
+        "toplevel_name": "Folder 1"
+      },
+      {
+        "name": "Bookmark 1",
+        "url": "https://example.com/"
+      },
+      {
+        "name": "Bookmark 2",
+        "url": "https://bookmark2.example.com/"
+      },
+      {
+        "children": [
+          {
+            "name": "Bookmark 3",
+            "url": "https://bookmark3.example.com/"
+          },
+          {
+            "name": "Bookmark 4",
+            "url": "https://bookmark4.example.com/"
+          }
+        ],
+        "name": "Folder 2"
+      },
+      {
+        "children": [
+          {
+            "name": "Bookmark 5",
+            "url": "https://bookmark5.example.com/"
+          },
+          {
+            "name": "Bookmark 6",
+            "url": "https://bookmark6.example.com/"
+          }
+        ]
+      },
+      {
+        "name": "Bookmark 7",
+        "url": "https://bookmark7.example.com/",
+        "favicon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQAABjE+ibYAAAAASUVORK5CYII="
+      },
+      {
+        "name": "Bookmarklet",
+        "url": "javascript:document.title='bookmarklet ran';void(0)"
+      },
+      {
+        "name": "Schemeless",
+        "url": "schemeless.example.com"
+      },
+      {
+        "name": "Invalid",
+        "url": "not a url"
+      }
+    ]
+  }
+}

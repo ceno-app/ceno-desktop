@@ -1,0 +1,673 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "Location.h"
+
+#include "ReferrerInfo.h"
+#include "mozilla/BasePrincipal.h"
+#include "mozilla/Components.h"
+#include "mozilla/Likely.h"
+#include "mozilla/NullPrincipal.h"
+#include "mozilla/ServoStyleConsts.h"
+#include "mozilla/StaticPrefs_dom.h"
+#include "mozilla/dom/Document.h"
+#include "mozilla/dom/DocumentInlines.h"
+#include "mozilla/dom/FragmentDirective.h"
+#include "mozilla/dom/LocationBinding.h"
+#include "mozilla/dom/ScriptSettings.h"
+#include "nsCOMPtr.h"
+#include "nsContentUtils.h"
+#include "nsCycleCollectionParticipant.h"
+#include "nsDocShell.h"
+#include "nsDocShellLoadState.h"
+#include "nsError.h"
+#include "nsEscape.h"
+#include "nsGlobalWindowOuter.h"
+#include "nsIJARURI.h"
+#include "nsIOService.h"
+#include "nsIScriptContext.h"
+#include "nsIScriptObjectPrincipal.h"
+#include "nsIURIMutator.h"
+#include "nsIWebNavigation.h"
+#include "nsJSUtils.h"
+#include "nsNetUtil.h"
+#include "nsPIDOMWindowInlines.h"
+#include "nsPresContext.h"
+#include "nsReadableUtils.h"
+
+namespace mozilla::dom {
+
+nsTArray<nsString> ProduceAncestorOriginsList(
+    const nsTArray<nsCOMPtr<nsIPrincipal>>& aPrincipals) {
+  nsTArray<nsString> result;
+
+  for (const auto& principal : aPrincipals) {
+    nsString origin;
+    if (principal == nullptr) {
+      origin.AssignLiteral(u"null");
+    } else {
+      nsAutoCString originNoSuffix;
+      if (NS_WARN_IF(NS_FAILED(principal->GetOriginNoSuffix(originNoSuffix)))) {
+        origin.AssignLiteral(u"null");
+      } else {
+        CopyUTF8toUTF16(originNoSuffix, origin);
+      }
+    }
+    result.AppendElement(std::move(origin));
+  }
+
+  return result;
+}
+
+Location::Location(nsPIDOMWindowInner* aWindow)
+    : mCachedHash(VoidCString()), mInnerWindow(aWindow) {
+  BrowsingContext* bc = GetBrowsingContext();
+  if (bc) {
+    bc->LocationCreated(this);
+  }
+}
+
+Location::~Location() {
+  if (isInList()) {
+    remove();
+  }
+}
+
+// QueryInterface implementation for Location
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(Location)
+  NS_WRAPPERCACHE_INTERFACE_MAP_ENTRY
+  NS_INTERFACE_MAP_ENTRY(nsISupports)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(Location, mInnerWindow,
+                                      mRelevantDocNullAncestorOriginsList)
+
+NS_IMPL_CYCLE_COLLECTING_ADDREF(Location)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(Location)
+
+BrowsingContext* Location::GetBrowsingContext() {
+  return mInnerWindow ? mInnerWindow->GetBrowsingContext() : nullptr;
+}
+
+nsIDocShell* Location::GetDocShell() {
+  if (BrowsingContext* bc = GetBrowsingContext()) {
+    return bc->GetDocShell();
+  }
+  return nullptr;
+}
+
+nsresult Location::GetURI(nsIURI** aURI, bool aGetInnermostURI) {
+  *aURI = nullptr;
+
+  nsIDocShell* docShell = GetDocShell();
+  if (!docShell) {
+    return NS_OK;
+  }
+
+  nsIWebNavigation* webNav = nsDocShell::Cast(docShell);
+
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = webNav->GetCurrentURI(getter_AddRefs(uri));
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // It is valid for docshell to return a null URI. Don't try to fixup
+  // if this happens.
+  if (!uri) {
+    return NS_OK;
+  }
+
+  if (aGetInnermostURI) {
+    nsCOMPtr<nsIJARURI> jarURI(do_QueryInterface(uri));
+    while (jarURI) {
+      jarURI->GetJARFile(getter_AddRefs(uri));
+      jarURI = do_QueryInterface(uri);
+    }
+  }
+
+  NS_ASSERTION(uri, "nsJARURI screwed up?");
+
+  // Remove the fragment directive from the url hash.
+  FragmentDirective::ParseAndRemoveFragmentDirectiveFromFragment(uri);
+  nsCOMPtr<nsIURI> exposableURI = net::nsIOService::CreateExposableURI(uri);
+  exposableURI.forget(aURI);
+  return NS_OK;
+}
+
+void Location::GetHash(nsACString& aHash, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  if (!mCachedHash.IsVoid()) {
+    aHash = mCachedHash;
+    return;
+  }
+
+  aHash.SetLength(0);
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  nsAutoCString ref;
+
+  aRv = uri->GetRef(ref);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  if (!ref.IsEmpty()) {
+    aHash.SetCapacity(ref.Length() + 1);
+    aHash.Assign('#');
+    aHash.Append(ref);
+  }
+
+  mCachedHash = aHash;
+}
+
+void Location::SetHash(const nsACString& aHash, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  nsAutoCString currentHash;
+  aRv = uri->GetRef(currentHash);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  if (aHash.IsEmpty() || aHash.First() != '#') {
+    aRv = NS_MutateURI(uri).SetRef("#"_ns + aHash).Finalize(uri);
+  } else {
+    aRv = NS_MutateURI(uri).SetRef(aHash).Finalize(uri);
+  }
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  // If the new hash is the same as the current hash, then return without
+  // navigating to the anchor again. This bailout is necessary for
+  // compatibility with deployed content, which redundantly sets
+  // location.hash on scroll. https://github.com/whatwg/html/issues/7386
+  nsAutoCString newHash;
+  aRv = uri->GetRef(newHash);
+  if (NS_WARN_IF(aRv.Failed()) || newHash == currentHash) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+// https://html.spec.whatwg.org/#dom-location-ancestororigins
+RefPtr<DOMStringList> Location::GetAncestorOrigins(
+    nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  Document* doc = mInnerWindow->GetExtantDoc();
+  // Step 1. If this's relevant Document is null, then return an empty list.
+  if (!doc || !doc->IsActive()) {
+    if (!mRelevantDocNullAncestorOriginsList) {
+      mRelevantDocNullAncestorOriginsList =
+          MakeRefPtr<DOMStringList>(mInnerWindow);
+    }
+    return mRelevantDocNullAncestorOriginsList;
+  }
+
+  // Step 2. If this's relevant Document's origin is not same origin-domain with
+  // the entry settings object's origin, then throw a "SecurityError"
+  // DOMException.
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return nullptr;
+  }
+
+  // Step 3. Otherwise, return this's ancestor origins list.
+  return doc->AncestorOrigins();
+}
+
+void Location::GetHost(nsACString& aHost, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aHost.Truncate();
+
+  nsCOMPtr<nsIURI> uri;
+  (void)GetURI(getter_AddRefs(uri), true);
+
+  if (uri) {
+    (void)uri->GetHostPort(aHost);
+  }
+}
+
+void Location::SetHost(const nsACString& aHost, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  aRv = NS_MutateURI(uri).SetHostPort(aHost).Finalize(uri);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+void Location::GetHostname(nsACString& aHostname,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aHostname.Truncate();
+
+  nsCOMPtr<nsIURI> uri;
+  GetURI(getter_AddRefs(uri), true);
+  if (uri) {
+    nsContentUtils::GetHostOrIPv6WithBrackets(uri, aHostname);
+  }
+}
+
+void Location::SetHostname(const nsACString& aHostname,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  aRv = NS_MutateURI(uri).SetHost(aHostname).Finalize(uri);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+nsresult Location::GetHref(nsACString& aHref) {
+  aHref.Truncate();
+
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(NS_FAILED(rv)) || !uri) {
+    return rv;
+  }
+
+  rv = uri->GetSpec(aHref);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  return NS_OK;
+}
+
+void Location::GetOrigin(nsACString& aOrigin, nsIPrincipal& aSubjectPrincipal,
+                         ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aOrigin.Truncate();
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri), true);
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  aRv = nsContentUtils::GetWebExposedOriginSerialization(uri, aOrigin);
+  if (NS_WARN_IF(aRv.Failed())) {
+    aOrigin.Truncate();
+    return;
+  }
+}
+
+void Location::GetPathname(nsACString& aPathname,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aPathname.Truncate();
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  aRv = uri->GetFilePath(aPathname);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+}
+
+void Location::SetPathname(const nsACString& aPathname,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  nsresult rv = NS_MutateURI(uri).SetFilePath(aPathname).Finalize(uri);
+  if (NS_FAILED(rv)) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+void Location::GetPort(nsACString& aPort, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aPort.SetLength(0);
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri), true);
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  int32_t port;
+  nsresult result = uri->GetPort(&port);
+
+  // Don't propagate this exception to caller
+  if (NS_SUCCEEDED(result) && -1 != port) {
+    aPort.AppendInt(port);
+  }
+}
+
+void Location::SetPort(const nsACString& aPort, nsIPrincipal& aSubjectPrincipal,
+                       ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed() || !uri)) {
+    return;
+  }
+
+  // perhaps use nsReadingIterators at some point?
+  nsAutoCString portStr(aPort);
+  const char* buf = portStr.get();
+  int32_t port = -1;
+
+  if (!portStr.IsEmpty() && buf) {
+    // Sadly, ToInteger() on nsACString does not have the right semantics.
+    if (*buf == ':') {
+      port = atol(buf + 1);
+    } else {
+      port = atol(buf);
+    }
+  }
+
+  aRv = NS_MutateURI(uri).SetPort(port).Finalize(uri);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+void Location::GetProtocol(nsACString& aProtocol,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aProtocol.SetLength(0);
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  aRv = uri->GetScheme(aProtocol);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  aProtocol.Append(':');
+}
+
+void Location::SetProtocol(const nsACString& aProtocol,
+                           nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  nsACString::const_iterator start, end;
+  aProtocol.BeginReading(start);
+  aProtocol.EndReading(end);
+  nsACString::const_iterator iter(start);
+  (void)FindCharInReadable(':', iter, end);
+
+  nsresult rv =
+      NS_MutateURI(uri).SetScheme(Substring(start, iter)).Finalize(uri);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    // Oh, I wish nsStandardURL returned NS_ERROR_MALFORMED_URI for _all_ the
+    // malformed cases, not just some of them!
+    aRv.Throw(NS_ERROR_DOM_SYNTAX_ERR);
+    return;
+  }
+
+  nsAutoCString newSpec;
+  aRv = uri->GetSpec(newSpec);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+  // We may want a new URI class for the new URI, so recreate it:
+  rv = NS_NewURI(getter_AddRefs(uri), newSpec);
+  if (NS_FAILED(rv)) {
+    if (rv == NS_ERROR_MALFORMED_URI) {
+      rv = NS_ERROR_DOM_SYNTAX_ERR;
+    }
+
+    aRv.Throw(rv);
+    return;
+  }
+
+  if (!net::SchemeIsHttpOrHttps(uri)) {
+    // No-op, per spec.
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+void Location::GetSearch(nsACString& aSearch, nsIPrincipal& aSubjectPrincipal,
+                         ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  aSearch.SetLength(0);
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed()) || !uri) {
+    return;
+  }
+
+  nsAutoCString search;
+  aRv = uri->GetQuery(search);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  if (!search.IsEmpty()) {
+    aSearch.SetCapacity(search.Length() + 1);
+    aSearch.Assign('?');
+    aSearch.Append(search);
+  }
+}
+
+void Location::SetSearch(const nsACString& aSearch,
+                         nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  aRv = GetURI(getter_AddRefs(uri));
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  aRv = NS_MutateURI(uri).SetQuery(aSearch).Finalize(uri);
+  if (NS_WARN_IF(aRv.Failed())) {
+    return;
+  }
+
+  Navigate(uri, aSubjectPrincipal, aRv);
+}
+
+void Location::Reload(JSContext* aCx, bool aForceget,
+                      nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  RefPtr<nsDocShell> docShell(nsDocShell::Cast(GetDocShell()));
+  if (!docShell) {
+    return aRv.Throw(NS_ERROR_FAILURE);
+  }
+
+  RefPtr<BrowsingContext> bc = GetBrowsingContext();
+  if (!bc || bc->IsDiscarded()) {
+    return;
+  }
+
+  CallerType callerType = aSubjectPrincipal.IsSystemPrincipal()
+                              ? CallerType::System
+                              : CallerType::NonSystem;
+
+  nsresult rv = bc->CheckNavigationRateLimit(callerType);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return;
+  }
+
+  uint32_t reloadFlags = nsIWebNavigation::LOAD_FLAGS_NONE;
+
+  if (aForceget) {
+    reloadFlags = nsIWebNavigation::LOAD_FLAGS_BYPASS_CACHE |
+                  nsIWebNavigation::LOAD_FLAGS_BYPASS_PROXY;
+  }
+
+  UserNavigationInvolvement userInvolvement =
+      callerType == CallerType::System ? UserNavigationInvolvement::BrowserUI
+                                       : UserNavigationInvolvement::None;
+
+  rv = docShell->ReloadNavigable(Some(WrapNotNull(aCx)), reloadFlags, nullptr,
+                                 userInvolvement);
+  if (NS_FAILED(rv) && rv != NS_BINDING_ABORTED) {
+    // NS_BINDING_ABORTED is returned when we attempt to reload a POST result
+    // and the user says no at the "do you want to reload?" prompt.  Don't
+    // propagate this one back to callers.
+    return aRv.Throw(rv);
+  }
+}
+
+void Location::Assign(const nsACString& aUrl, nsIPrincipal& aSubjectPrincipal,
+                      ErrorResult& aRv) {
+  if (!CallerSubsumes(&aSubjectPrincipal)) {
+    aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
+  DoSetHref(aUrl, aSubjectPrincipal, false, aRv);
+}
+
+bool Location::CallerSubsumes(nsIPrincipal* aSubjectPrincipal) {
+  MOZ_ASSERT(aSubjectPrincipal);
+
+  BrowsingContext* bc = GetBrowsingContext();
+  if (MOZ_UNLIKELY(!bc) || MOZ_UNLIKELY(bc->IsDiscarded())) {
+    // Per spec, operations on a Location object with a discarded BC are no-ops,
+    // not security errors, so we need to return true from the access check and
+    // let the caller do its own discarded docShell check.
+    return true;
+  }
+  if (MOZ_UNLIKELY(!bc->IsInProcess())) {
+    return false;
+  }
+
+  // Get the principal associated with the location object.  Note that this is
+  // the principal of the page which will actually be navigated, not the
+  // principal of the Location object itself.  This is why we need this check
+  // even though we only allow limited cross-origin access to Location objects
+  // in general.
+  nsPIDOMWindowOuter* outer = bc->GetDOMWindow();
+  MOZ_DIAGNOSTIC_ASSERT(outer);
+  if (MOZ_UNLIKELY(!outer)) return false;
+
+  nsIScriptObjectPrincipal* sop = nsGlobalWindowOuter::Cast(outer);
+  bool subsumes = false;
+  nsresult rv = aSubjectPrincipal->SubsumesConsideringDomain(
+      sop->GetPrincipal(), &subsumes);
+  NS_ENSURE_SUCCESS(rv, false);
+  return subsumes;
+}
+
+JSObject* Location::WrapObject(JSContext* aCx,
+                               JS::Handle<JSObject*> aGivenProto) {
+  return Location_Binding::Wrap(aCx, this, aGivenProto);
+}
+
+void Location::ClearCachedValues() { mCachedHash = VoidCString(); }
+
+}  // namespace mozilla::dom

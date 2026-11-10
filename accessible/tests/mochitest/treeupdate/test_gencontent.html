@@ -1,0 +1,127 @@
+<html>
+
+<head>
+  <title>Elements with CSS generated content</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <style>
+    .gentext:before {
+      content: "START"
+    }
+    .gentext:after {
+      content: "END"
+    }
+  </style>
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+    // //////////////////////////////////////////////////////////////////////////
+
+    async function doTests() {
+      // insertNodeHavingGenContent("container1")
+      {
+        let containerNode = getNode("container1");
+        let container = getAccessible(containerNode);
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible && e.accessible == container.firstChild],
+          [EVENT_REORDER, container],
+        ]);
+        const node = document.createElement("div");
+        node.textContent = "text";
+        node.setAttribute("class", "gentext");
+        containerNode.appendChild(node);
+        await p;
+        const accTree =
+          { SECTION: [ // container
+            { SECTION: [ // inserted node
+              { STATICTEXT: [] }, // :before
+              { TEXT_LEAF: [] }, // primary text
+              { STATICTEXT: [] }, // :after
+            ] },
+          ] };
+        testAccessibleTree(container, accTree);
+      }
+
+      // addGenContent("container2", "container2_child")
+      {
+        let container = getAccessible("container2");
+        let nodeAcc = getAccessible("container2_child");
+        let p = waitForEvents([
+          [EVENT_SHOW, e => e.accessible && e.accessible == nodeAcc.firstChild],
+          [EVENT_SHOW, e => e.accessible && e.accessible == nodeAcc.lastChild],
+          [EVENT_REORDER, nodeAcc],
+        ]);
+        getNode("container2_child").classList.add("gentext");
+        await p;
+        const accTree =
+          { SECTION: [ // container
+            { SECTION: [ // inserted node
+              { STATICTEXT: [] }, // :before
+              { TEXT_LEAF: [] }, // primary text
+              { STATICTEXT: [] }, // :after
+            ] },
+          ] };
+        testAccessibleTree(container, accTree);
+      }
+
+      // removeGenContent("container3", "container3_child")
+      {
+        let container = getAccessible("container3");
+        let nodeAcc = getAccessible("container3_child");
+        let firstChild = nodeAcc.firstChild;
+        let lastChild = nodeAcc.lastChild;
+        let p = waitForEvents([
+          [EVENT_HIDE, firstChild],
+          [EVENT_HIDE, lastChild],
+          [EVENT_REORDER, nodeAcc],
+        ]);
+        getNode("container3_child").classList.remove("gentext");
+        await p;
+        const accTree =
+          { SECTION: [ // container
+            { SECTION: [ // inserted node
+              { TEXT_LEAF: [] }, // primary text
+            ] },
+          ] };
+        testAccessibleTree(container, accTree);
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=646350"
+     title="Add a test for dynamic chnages of CSS generated content">
+    Mozilla Bug 646350</a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+  <div id="eventdump"></div>
+
+  <div id="container1"></div>
+  <div id="container2"><div id="container2_child">text</div></div>
+  <div id="container3"><div id="container3_child" class="gentext">text</div></div>
+</body>
+</html>

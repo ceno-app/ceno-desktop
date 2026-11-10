@@ -1,0 +1,35 @@
+From: Jan Grulich <jgrulich@redhat.com>
+Date: Thu, 20 Aug 2026 18:34:23 +0000
+Subject: Bug 2058627 - WebRTC backport: Screen capture: check n_datas before
+ accessing buffer data planes a=RyanVM
+
+Return early from ProcessBuffer when spa_buffer->n_datas is zero
+to avoid out-of-bounds access on metadata-only buffers that carry
+no data planes.
+
+This is a simple backport of an WebRTC upstream change.
+
+Upstream commit: 3ce78cdbd865ad8837d1ffae21553791e8ec491d
+
+Original Revision: https://phabricator.services.mozilla.com/D319390
+
+Differential Revision: https://phabricator.services.mozilla.com/D319471
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/383baef9a207
+---
+ .../desktop_capture/linux/wayland/shared_screencast_stream.cc  | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 6f1c69be3e..2b109a07bf 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -839,7 +839,8 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
+     }
+   }
+ 
+-  if (spa_buffer->datas[0].chunk->flags & SPA_CHUNK_FLAG_CORRUPTED) {
++  if (spa_buffer->n_datas == 0 ||
++      spa_buffer->datas[0].chunk->flags & SPA_CHUNK_FLAG_CORRUPTED) {
+     RTC_LOG(LS_INFO) << "Dropping buffer with corrupted or missing data";
+     if (observer_) {
+       observer_->OnBufferCorruptedData();

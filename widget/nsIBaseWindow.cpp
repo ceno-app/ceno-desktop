@@ -1,0 +1,18 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsIBaseWindow.h"
+#include "nsDeviceContext.h"
+#include "mozilla/LookAndFeel.h"
+
+using namespace mozilla;
+
+CSSToLayoutDeviceScale nsIBaseWindow::UnscaledDevicePixelsPerCSSPixel() {
+  CSSToLayoutDeviceScale widgetScale(GetWidgetCSSToDeviceScale());
+  int32_t apd =
+      nsDeviceContext::ComputeAppUnitsPerDevPixelForWidgetScale(widgetScale);
+  apd = nsDeviceContext::ApplyFullZoomToAPD(
+      apd, LookAndFeel::SystemZoomSettings().mFullZoom);
+  return CSSToLayoutDeviceScale(double(AppUnitsPerCSSPixel()) / double(apd));
+}

@@ -1,0 +1,19 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsNativeThemeUIKit_h
+#define nsNativeThemeUIKit_h
+
+#include "nsITheme.h"
+#include "Theme.h"
+
+class nsNativeThemeUIKit final : public mozilla::widget::Theme {
+ public:
+  nsNativeThemeUIKit();
+
+ protected:
+  virtual ~nsNativeThemeUIKit() = default;
+};
+
+#endif  // nsNativeThemeUIKit_h

@@ -1,0 +1,8 @@
+[DEFAULT]
+support-files = ["head.js"]
+
+["browser_show_statuspanel_idn.js"]
+
+["browser_show_statuspanel_splitview.js"]
+
+["browser_show_statuspanel_twice.js"]

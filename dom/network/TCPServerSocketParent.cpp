@@ -1,0 +1,100 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "TCPServerSocketParent.h"
+
+#include "TCPServerSocket.h"
+#include "TCPSocket.h"
+#include "TCPSocketParent.h"
+#include "mozilla/dom/BrowserParent.h"
+#include "mozilla/dom/TCPServerSocketEvent.h"
+#include "nsJSUtils.h"
+
+namespace mozilla::dom {
+
+NS_IMPL_CYCLE_COLLECTION(TCPServerSocketParent, mServerSocket)
+NS_IMPL_CYCLE_COLLECTING_ADDREF(TCPServerSocketParent)
+NS_IMPL_CYCLE_COLLECTING_RELEASE(TCPServerSocketParent)
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(TCPServerSocketParent)
+  NS_INTERFACE_MAP_ENTRY(nsISupports)
+NS_INTERFACE_MAP_END
+
+TCPServerSocketParent::TCPServerSocketParent(PNeckoParent* neckoParent,
+                                             uint16_t aLocalPort,
+                                             uint16_t aBacklog,
+                                             bool aUseArrayBuffers)
+    : mNeckoParent(neckoParent) {
+  mServerSocket =
+      new TCPServerSocket(nullptr, aLocalPort, aUseArrayBuffers, aBacklog);
+  mServerSocket->SetServerBridgeParent(this);
+}
+
+TCPServerSocketParent::~TCPServerSocketParent() = default;
+
+void TCPServerSocketParent::Init() {
+  NS_ENSURE_SUCCESS_VOID(mServerSocket->Init());
+}
+
+nsresult TCPServerSocketParent::SendCallbackAccept(TCPSocketParent* socket) {
+  nsresult rv;
+
+  nsString host;
+  rv = socket->GetHost(host);
+  if (NS_FAILED(rv)) {
+    NS_ERROR("Failed to get host from nsITCPSocketParent");
+    return NS_ERROR_FAILURE;
+  }
+
+  uint16_t port;
+  rv = socket->GetPort(&port);
+  if (NS_FAILED(rv)) {
+    NS_ERROR("Failed to get port from nsITCPSocketParent");
+    return NS_ERROR_FAILURE;
+  }
+
+  if (mNeckoParent) {
+    if (mNeckoParent->SendPTCPSocketConstructor(socket, host, port)) {
+      (void)PTCPServerSocketParent::SendCallbackAccept(WrapNotNull(socket));
+    } else {
+      NS_ERROR("Sending data from PTCPSocketParent was failed.");
+    }
+  } else {
+    NS_ERROR("The member value for NeckoParent is wrong.");
+  }
+  return NS_OK;
+}
+
+mozilla::ipc::IPCResult TCPServerSocketParent::RecvClose() {
+  NS_ENSURE_TRUE(mServerSocket, IPC_OK());
+  mServerSocket->Close();
+  return IPC_OK();
+}
+
+void TCPServerSocketParent::ActorDestroy(ActorDestroyReason why) {
+  if (mServerSocket) {
+    mServerSocket->Close();
+    mServerSocket = nullptr;
+  }
+  mNeckoParent = nullptr;
+}
+
+mozilla::ipc::IPCResult TCPServerSocketParent::RecvRequestDelete() {
+  (void)Send__delete__(this);
+  return IPC_OK();
+}
+
+void TCPServerSocketParent::OnConnect(TCPServerSocketEvent* event) {
+  RefPtr<TCPSocket> socket = event->Socket();
+
+  RefPtr<TCPSocketParent> socketParent = new TCPSocketParent();
+  socketParent->AddIPDLReference();
+  socketParent->SetSocket(socket);
+
+  socket->SetSocketBridgeParent(socketParent);
+
+  SendCallbackAccept(socketParent);
+}
+
+}  // namespace mozilla::dom

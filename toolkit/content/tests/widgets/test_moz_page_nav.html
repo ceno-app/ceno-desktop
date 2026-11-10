@@ -1,0 +1,646 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MozPageNav Tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-page-nav.mjs"
+    ></script>
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-input-search.mjs"
+    ></script>
+  </head>
+  <style>
+    body {
+      display: flex;
+    }
+    #navigation {
+      width: var(--page-nav-width);
+    }
+  </style>
+  <body>
+    <p id="display"></p>
+    <div id="content">
+      <div id="navigation">
+        <moz-page-nav heading="Heading">
+          <moz-page-nav-button
+            view="view-one"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+          >
+            <span class="view-name">View 1</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-two"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+          >
+            <span class="view-name">View 2</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-three"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+          >
+            <span class="view-name">View 3</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-four"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+          >
+            <span class="view-name">View 4</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-hidden"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            hidden="true"
+          >
+            <span class="view-name">Hidden View</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-five"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+          >
+            <span class="view-name">View 5</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-display-none"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            style="display: none"
+          >
+            <span class="view-name">Display None View</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-visibility-hidden"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            style="visibility: hidden"
+          >
+            <span class="view-name">Visibility Hidden View</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            view="view-opacity-zero"
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            style="opacity: 0"
+          >
+            <span class="view-name">Opacity Zero View</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            support-page="test"
+            slot="secondary-nav"
+          >
+            <span class="view-name">Support Link</span>
+          </moz-page-nav-button>
+          <moz-page-nav-button
+            iconSrc="chrome://mozapps/skin/extensions/category-extensions.svg"
+            href="https://www.example.com"
+            slot="secondary-nav"
+          >
+            <span class="view-name">External Link</span>
+          </moz-page-nav-button>
+        </moz-page-nav>
+      </div>
+    </div>
+    <pre id="test"></pre>
+    <script>
+      Services.scriptloader.loadSubScript(
+        "chrome://browser/content/utilityOverlay.js",
+        this
+      );
+      const { BrowserTestUtils } = ChromeUtils.importESModule(
+        "resource://testing-common/BrowserTestUtils.sys.mjs"
+      );
+
+      const mozPageNav = document.querySelector("moz-page-nav");
+
+      const keyNav = async (key, opts) => {
+        info(`${key}${opts?.shiftKey ? " + Shift" : ""}`);
+        synthesizeKey(key, opts);
+        await new Promise(r => requestAnimationFrame(r));
+      };
+      const tab = shiftKey => keyNav("KEY_Tab", { shiftKey });
+      const arrowDown = () => keyNav("KEY_ArrowDown", {});
+      const arrowUp = () => keyNav("KEY_ArrowUp", {});
+      const arrowLeft = () => keyNav("KEY_ArrowLeft", {});
+      const arrowRight = () => keyNav("KEY_ArrowRight", {});
+
+      function isActiveElement(expectedActiveEl) {
+        return expectedActiveEl.getRootNode().activeElement == expectedActiveEl;
+      }
+
+      /**
+       * Tests that the first page nav button is selected by default
+       */
+      add_task(async function test_first_item_selected_by_default() {
+        is(
+          mozPageNav.visiblePageNavButtons.length,
+          5,
+          "Five page nav buttons are in the navigation"
+        );
+
+        ok(
+          mozPageNav.visiblePageNavButtons[0].view === mozPageNav.currentView,
+          "The first page nav button is selected by default"
+        );
+      });
+
+      /**
+       * Tests that views are selected when clicked
+       */
+      add_task(async function test_select_view() {
+        let gBrowser = BrowserWindowTracker.getTopWindow().top.gBrowser;
+        let secondViewButton = mozPageNav.pageNavButtons[1];
+        let viewChanged = BrowserTestUtils.waitForEvent(
+          gBrowser,
+          "change-view"
+        );
+
+        secondViewButton.buttonEl.click();
+        await viewChanged;
+
+        ok(
+          secondViewButton.view === mozPageNav.currentView,
+          "The second page nav button is selected"
+        );
+
+        let thirdPageNavButton = mozPageNav.pageNavButtons[2];
+        viewChanged = BrowserTestUtils.waitForEvent(gBrowser, "change-view");
+
+        thirdPageNavButton.buttonEl.click();
+        await viewChanged;
+
+        ok(
+          thirdPageNavButton.view === mozPageNav.currentView,
+          "The third page nav button is selected"
+        );
+
+        let firstPageNavButton = mozPageNav.pageNavButtons[0];
+        viewChanged = BrowserTestUtils.waitForEvent(gBrowser, "change-view");
+
+        firstPageNavButton.buttonEl.click();
+        await viewChanged;
+
+        ok(
+          firstPageNavButton.view === mozPageNav.currentView,
+          "The first page nav button is selected"
+        );
+      });
+
+      /**
+       * Tests that footer support links have the expected attributes
+       */
+      add_task(async function test_support_link() {
+        const supportLinkRootPath = "https://support.mozilla.org/";
+        let supportLink = mozPageNav.secondaryNavButtons[0];
+        ok(
+          supportLink.linkEl,
+          "The secondary nav button contains the link element."
+        );
+        ok(
+          supportLink.linkEl.hasAttribute("is") &&
+            supportLink.linkEl.getAttribute("is") === "moz-support-link",
+          "The support link has the is=moz-support-link attribute."
+        );
+        ok(
+          supportLink.linkEl.hasAttribute("href") &&
+            supportLink.linkEl.getAttribute("href") ===
+              `${supportLinkRootPath}test`,
+          "The support link has the expected href atrribute."
+        );
+      });
+
+      /**
+       * Tests that footer external links have the expected attributes
+       */
+      add_task(async function test_external_link() {
+        const externalLinkPath = "https://www.example.com";
+        let externalLink = mozPageNav.secondaryNavButtons[1];
+        ok(
+          externalLink.linkEl,
+          "The secondary nav button contains the link element."
+        );
+        ok(
+          !externalLink.linkEl.hasAttribute("is"),
+          "The external link doesn't have the is=moz-support-link attribute."
+        );
+        ok(
+          externalLink.linkEl.hasAttribute("href") &&
+            externalLink.linkEl.getAttribute("href") === externalLinkPath,
+          "The external link has the expected href atrribute."
+        );
+      });
+
+      /**
+       * Tests that categories are keyboard-navigable
+       */
+      add_task(async function test_keyboard_navigation() {
+        let firstPageNavButton = mozPageNav.pageNavButtons[0];
+        let secondPageNavButton = mozPageNav.pageNavButtons[1];
+        let thirdPageNavButton = mozPageNav.pageNavButtons[2];
+        let fourthPageNavButton = mozPageNav.pageNavButtons[3];
+        // Hidden button here.
+        let fifthPageNavButton = mozPageNav.pageNavButtons[5];
+        let supportLink = mozPageNav.secondaryNavButtons[0];
+        let externalLink = mozPageNav.secondaryNavButtons[1];
+
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is selected"
+        );
+        firstPageNavButton.buttonEl.focus();
+        await arrowDown();
+        ok(
+          isActiveElement(secondPageNavButton),
+          "The second page nav button is the active element after first arrow down"
+        );
+        is(
+          secondPageNavButton.view,
+          mozPageNav.currentView,
+          "The second page nav button is selected"
+        );
+        await arrowDown();
+        is(
+          thirdPageNavButton.view,
+          mozPageNav.currentView,
+          "The third page nav button is selected"
+        );
+        await arrowDown();
+        is(
+          fourthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fourth page nav button is selected"
+        );
+        await arrowDown();
+        is(
+          fifthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fifth page nav button is selected"
+        );
+        await arrowDown();
+        is(
+          fifthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fifth page nav button is still selected"
+        );
+        await tab();
+        ok(isActiveElement(supportLink.linkEl), "The support link is selected");
+        await tab();
+        ok(
+          isActiveElement(externalLink.linkEl),
+          "The external link is selected"
+        );
+        await tab(true);
+        await tab(true);
+        is(
+          fifthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fifth page nav button is selected"
+        );
+        await arrowUp();
+        is(
+          fourthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fourth page nav button is selected"
+        );
+        await arrowUp();
+        is(
+          thirdPageNavButton.view,
+          mozPageNav.currentView,
+          "The third page nav button is selected"
+        );
+        await arrowUp();
+        is(
+          secondPageNavButton.view,
+          mozPageNav.currentView,
+          "The second page nav button is selected"
+        );
+        await arrowUp();
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is selected"
+        );
+        await arrowUp();
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is still selected"
+        );
+
+        // Test navigation with arrow left/right keys
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is selected"
+        );
+        firstPageNavButton.buttonEl.focus();
+        await arrowRight();
+        ok(
+          isActiveElement(secondPageNavButton),
+          "The second page nav button is the active element after first arrow right"
+        );
+        is(
+          secondPageNavButton.view,
+          mozPageNav.currentView,
+          "The second page nav button is selected"
+        );
+        await arrowRight();
+        is(
+          thirdPageNavButton.view,
+          mozPageNav.currentView,
+          "The third page nav button is selected"
+        );
+        await arrowRight();
+        is(
+          fourthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fourth page nav button is selected"
+        );
+        await arrowRight();
+        is(
+          fifthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fifth page nav button is selected"
+        );
+        await arrowRight();
+        is(
+          fifthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fifth page nav button is still selected"
+        );
+        await arrowLeft();
+        is(
+          fourthPageNavButton.view,
+          mozPageNav.currentView,
+          "The fourth page nav button is selected"
+        );
+        await arrowLeft();
+        is(
+          thirdPageNavButton.view,
+          mozPageNav.currentView,
+          "The third page nav button is selected"
+        );
+        await arrowLeft();
+        is(
+          secondPageNavButton.view,
+          mozPageNav.currentView,
+          "The second page nav button is selected"
+        );
+        await arrowLeft();
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is selected"
+        );
+        await arrowLeft();
+        is(
+          firstPageNavButton.view,
+          mozPageNav.currentView,
+          "The first page nav button is still selected"
+        );
+      });
+
+      add_task(async function test_visibility_change_keyboard_navigation() {
+        const buttonIsSelected = button => {
+          let { view } = button;
+          is(
+            mozPageNav.currentView,
+            view,
+            `The ${view} page nav button is selected`
+          );
+          is(
+            button,
+            document.activeElement,
+            `The ${view} page nav button is focused`
+          );
+        };
+
+        let hiddenButton = mozPageNav.querySelector(
+          "moz-page-nav-button[hidden]"
+        );
+        let beforeButton = hiddenButton.previousElementSibling;
+        ok(!hiddenButton.checkVisibility(), "The button is hidden");
+
+        beforeButton.activate();
+        await mozPageNav.updateComplete;
+        buttonIsSelected(beforeButton);
+        await arrowDown();
+        isnot(
+          beforeButton,
+          document.activeElement,
+          "Focus moved away from beforeButton"
+        );
+        isnot(
+          hiddenButton,
+          document.activeElement,
+          "Focus did not move to hiddenButton"
+        );
+
+        try {
+          hiddenButton.hidden = false;
+          ok(hiddenButton.checkVisibility(), "The button is now shown");
+          await arrowUp();
+          buttonIsSelected(hiddenButton);
+          await arrowUp();
+          buttonIsSelected(beforeButton);
+          await arrowDown();
+          buttonIsSelected(hiddenButton);
+        } finally {
+          hiddenButton.hidden = true;
+          ok(!hiddenButton.checkVisibility(), "The button is now hidden");
+
+          // Visibility change isn't detected, but requestUpdate fixes it.
+          mozPageNav.requestUpdate();
+          await mozPageNav.updatComplete;
+          buttonIsSelected(mozPageNav.pageNavButtons[0]);
+        }
+      });
+
+      add_task(async function test_supports_subheading_slot() {
+        let searchInput = document.createElement("moz-input-search");
+        searchInput.placeholder = "This goes in the slot";
+        searchInput.ariaLabel = "Some label";
+        searchInput.slot = "subheading";
+        mozPageNav.append(searchInput);
+
+        let slot = mozPageNav.shadowRoot.querySelector(
+          "slot[name='subheading']"
+        );
+        ok(slot, "The nav contains a subheading slot.");
+        is(
+          slot.assignedNodes()[0],
+          searchInput,
+          "The search input is in the subheading slot."
+        );
+      });
+
+      /**
+       * Tests that the right button is selected when the children change
+       */
+      add_task(async function test_children_change() {
+        const container = document.createElement("div");
+        container.classList.add("container");
+        document.body.append(container);
+
+        const mozPageNav = document.createElement("moz-page-nav");
+        container.append(mozPageNav);
+        await mozPageNav.updateComplete;
+
+        // Now add children to moz-page-nav
+        const firstPageNavButton = document.createElement(
+          "moz-page-nav-button"
+        );
+        firstPageNavButton.setAttribute("view", "view-one");
+        firstPageNavButton.setAttribute(
+          "iconSrc",
+          "chrome://mozapps/skin/extensions/category-extensions.svg"
+        );
+        firstPageNavButton.innerHTML = `<span class="view-name">View 1</span>`;
+
+        const secondPageNavButton = document.createElement(
+          "moz-page-nav-button"
+        );
+        secondPageNavButton.setAttribute("view", "view-two");
+        secondPageNavButton.setAttribute(
+          "iconSrc",
+          "chrome://mozapps/skin/extensions/category-extensions.svg"
+        );
+        secondPageNavButton.innerHTML = `<span class="view-name">View 2</span>`;
+
+        mozPageNav.append(firstPageNavButton, secondPageNavButton);
+        await mozPageNav.updateComplete;
+
+        is(
+          mozPageNav.currentView,
+          firstPageNavButton.view,
+          "The first page nav button is selected"
+        );
+
+        container.remove();
+      });
+
+      /**
+       * Tests that setting the title property maps it to the wrapped element
+       * for all three variants (tab button, support link, external link).
+       */
+      add_task(async function test_title_attribute() {
+        const tabButton = mozPageNav.pageNavButtons[0];
+        const supportLink = mozPageNav.secondaryNavButtons[0];
+        const externalLink = mozPageNav.secondaryNavButtons[1];
+
+        // Tab button — title mapped to the wrapped <button>.
+        const EXPECTED_TAB_BUTTON_TITLE = "Tab button title";
+        tabButton.title = EXPECTED_TAB_BUTTON_TITLE;
+        await tabButton.updateComplete;
+        is(
+          tabButton.buttonEl.getAttribute("title"),
+          EXPECTED_TAB_BUTTON_TITLE,
+          "Tab button wrapped button has the expected title attribute"
+        );
+        tabButton.title = undefined;
+        await tabButton.updateComplete;
+        ok(
+          !tabButton.buttonEl.hasAttribute("title"),
+          "Tab button wrapped button has no title attribute when title is unset"
+        );
+
+        // Support link — title mapped to the wrapped <a>.
+        const EXPECTED_SUPPORT_LINK_TITLE = "Support link title";
+        supportLink.title = EXPECTED_SUPPORT_LINK_TITLE;
+        await supportLink.updateComplete;
+        is(
+          supportLink.linkEl.getAttribute("title"),
+          EXPECTED_SUPPORT_LINK_TITLE,
+          "Support link wrapped link has the expected title attribute"
+        );
+        supportLink.title = undefined;
+        await supportLink.updateComplete;
+        ok(
+          !supportLink.linkEl.hasAttribute("title"),
+          "Support link wrapped link has no title attribute when title is unset"
+        );
+
+        // External link — title mapped to the inner <a>.
+        const EXPECTED_EXTERNAL_LINK_TITLE = "External link title";
+        externalLink.title = EXPECTED_EXTERNAL_LINK_TITLE;
+        await externalLink.updateComplete;
+        is(
+          externalLink.linkEl.getAttribute("title"),
+          EXPECTED_EXTERNAL_LINK_TITLE,
+          "External link wrapped link has the expected title attribute"
+        );
+        externalLink.title = undefined;
+        await externalLink.updateComplete;
+        ok(
+          !externalLink.linkEl.hasAttribute("title"),
+          "External link wrapped link has no title attribute when title is unset"
+        );
+      });
+
+      /**
+       * Tests that allowNoSelection prevents auto-selecting the first button
+       * when currentView doesn't match any button.
+       */
+      add_task(async function test_allow_no_selection() {
+        const container = document.createElement("div");
+        document.body.append(container);
+
+        const nav = document.createElement("moz-page-nav");
+        nav.allowNoSelection = true;
+        container.append(nav);
+
+        const btn1 = document.createElement("moz-page-nav-button");
+        btn1.setAttribute("view", "view-one");
+        const btn2 = document.createElement("moz-page-nav-button");
+        btn2.setAttribute("view", "view-two");
+        nav.append(btn1, btn2);
+        await nav.updateComplete;
+
+        // With allowNoSelection, the first button should still be
+        // auto-selected on initial render (currentView is unset).
+        is(
+          nav.currentView,
+          "view-one",
+          "First button is auto-selected when currentView is initially unset"
+        );
+
+        // Set currentView to a non-matching value — should NOT auto-select.
+        nav.currentView = "non-existent-view";
+        await nav.updateComplete;
+
+        is(
+          nav.currentView,
+          "non-existent-view",
+          "Non-matching currentView persists when allowNoSelection is true"
+        );
+        ok(
+          nav.pageNavButtons.every(b => !b.selected),
+          "No button is selected when currentView doesn't match any view"
+        );
+
+        // Disable allowNoSelection — should auto-select the first button.
+        // Needs two awaits: the first render calls activate() which sets
+        // currentView, scheduling a second render that sets selected.
+        nav.allowNoSelection = false;
+        await nav.updateComplete;
+        await nav.updateComplete;
+
+        is(
+          nav.currentView,
+          "view-one",
+          "First button is auto-selected after allowNoSelection is turned off"
+        );
+        ok(nav.pageNavButtons[0].selected, "First button has selected=true");
+
+        container.remove();
+      });
+    </script>
+  </body>
+</html>

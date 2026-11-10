@@ -1,0 +1,11 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g fill="context-fill white">
+    <path d="M4 2H5L3 10H2Z"/>
+    <path d="M5 2H6V10H5Z"/>
+    <path d="M8 2H9L7 10H6Z"/>
+    <path d="M9 2H10V10H9Z"/>
+  </g>
+</svg>

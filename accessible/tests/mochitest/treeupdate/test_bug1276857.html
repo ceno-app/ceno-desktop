@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>DOM mutations test</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    // enableLogging("tree");
+
+    async function doTest() {
+      let iframe = document.getElementById("iframe");
+
+      // children change will recreate the table
+      let reordered = waitForEvent(EVENT_REORDER, "c1");
+
+      let tree = {
+        SECTION: [ // c1
+          { TEXT_LEAF: [] }, // Some text
+          { TEXT_CONTAINER: [
+            { TEXT_LEAF: [] }, // something with ..
+          ] },
+          { TEXT_LEAF: [] }, // More text
+        ],
+      };
+      testAccessibleTree(iframe.contentDocument.getElementById("c1"), tree);
+
+      iframe.contentDocument.getElementById("c1_t").querySelector("span").remove();
+      await reordered;
+
+      tree = {
+        SECTION: [ // c1
+          { TEXT_LEAF: [] }, // Some text
+          { TEXT_LEAF: [] }, // More text
+        ],
+      };
+      testAccessibleTree(iframe.contentDocument.getElementById("c1"), tree);
+
+
+
+      tree = {
+        SECTION: [ // c2
+          { TEXT_LEAF: [] }, // Some text
+          { TEXT_CONTAINER: [
+            { TEXT_LEAF: [] }, // something with ..
+          ] },
+          { TEXT_LEAF: [] }, // More text
+        ],
+      };
+      iframe = document.getElementById("iframe");
+      testAccessibleTree(iframe.contentDocument.getElementById("c2"), tree);
+
+      reordered = waitForEvent(EVENT_REORDER, "c2");
+      const shadowRoot = iframe.contentDocument.getElementById("c2_c").shadowRoot;
+      shadowRoot.firstElementChild.querySelector("span").remove();
+      shadowRoot.firstElementChild.offsetTop;
+      shadowRoot.appendChild(document.createElement("button"));
+      await reordered;
+
+      tree = {
+        SECTION: [ // c2
+          { TEXT_LEAF: [] }, // Some text
+          { TEXT_LEAF: [] }, // More text
+          { PUSHBUTTON: [] }, // The button we appended.
+        ],
+      };
+      iframe = document.getElementById("iframe");
+      testAccessibleTree(iframe.contentDocument.getElementById("c2"), tree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+
+    window.onload = async () => {
+      let onLoad = waitForEvent(EVENT_DOCUMENT_LOAD_COMPLETE, e => {
+        let docAcc = e.accessible.QueryInterface(Ci.nsIAccessibleDocument);
+        return docAcc.URL.endsWith("test_bug1276857_subframe.html");
+      });
+      let iframe = document.createElement("iframe");
+      iframe.id = "iframe";
+      iframe.src = "test_bug1276857_subframe.html";
+      document.body.appendChild(iframe);
+      await onLoad;
+      doTest();
+    };
+  </script>
+
+</head>
+<body>
+</body>
+</html>

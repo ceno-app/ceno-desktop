@@ -1,0 +1,6 @@
+[DEFAULT]
+
+["test_ml_guess_request.js"]
+skip-if = [
+  "os == 'android'", # PdfjsParent.sys.mjs isn't packaged on Android (see jar.mn)
+]

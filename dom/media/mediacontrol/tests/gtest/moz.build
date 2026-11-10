@@ -1,0 +1,24 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+UNIFIED_SOURCES += [
+    "TestAudioFocusManager.cpp",
+    "TestAudioSessionManager.cpp",
+    "TestContentMediaController.cpp",
+    "TestMediaController.cpp",
+    "TestMediaControlService.cpp",
+    "TestMediaKeysEvent.cpp",
+    "TestMediaPlaybackStatus.cpp",
+]
+
+if CONFIG["MOZ_APPLEMEDIA"] and CONFIG["TARGET_OS"] == "OSX":
+    UNIFIED_SOURCES += ["TestMediaKeysEventMac.mm", "TestMediaKeysEventMediaCenter.mm"]
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+LOCAL_INCLUDES += [
+    "/dom/media/mediacontrol",
+]
+
+FINAL_LIBRARY = "xul-gtest"

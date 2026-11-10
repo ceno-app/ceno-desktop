@@ -1,0 +1,174 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+kind-dependencies:
+    - toolchain
+    - fetch
+
+transforms:
+    - gecko_taskgraph.transforms.openh264:transforms
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+task-defaults:
+    run-on-repo-type: [hg]
+    description: Build OpenH264 plugin
+    treeherder:
+        kind: build
+        symbol: OpenH264(B)
+        tier: 2
+    run-on-projects: []
+    worker-type: b-linux-docker-amd
+    worker:
+        docker-image: {in-tree: deb12-toolchain-build}
+        chain-of-trust: true
+        max-run-time: 1800
+        artifacts:
+            - name: private/openh264
+              path: /builds/worker/artifacts/private/
+              type: directory
+            - name: public/build
+              path: /builds/worker/artifacts/public/
+              type: directory
+    run:
+        using: run-task
+        checkout: true
+        command: "$GECKO_PATH/taskcluster/scripts/openh264/build.sh"
+    fetches:
+        fetch:
+            - openh264-source
+            - gmp-api
+
+tasks:
+    linux32/opt:
+        attributes:
+            build_platform: linux32
+            build_type: opt
+        treeherder:
+            platform: linux32/opt
+        worker:
+            env:
+                TARGET: i686-unknown-linux-gnu
+        fetches:
+            toolchain:
+                - linux64-binutils
+                - linux64-clang
+                - linux64-dump_syms
+                - linux64-nasm
+                - sysroot-i686-linux-gnu
+
+    linux64/opt:
+        attributes:
+            build_platform: linux64
+            build_type: opt
+        treeherder:
+            platform: linux64/opt
+        worker:
+            env:
+                TARGET: x86_64-unknown-linux-gnu
+        fetches:
+            toolchain:
+                - linux64-binutils
+                - linux64-clang
+                - linux64-dump_syms
+                - linux64-nasm
+                - sysroot-x86_64-linux-gnu
+
+    linux64-aarch64/opt:
+        attributes:
+            build_platform: linux64-aarch64
+            build_type: opt
+        treeherder:
+            platform: linux64-aarch64/opt
+        worker:
+            env:
+                TARGET: aarch64-unknown-linux-gnu
+        fetches:
+            toolchain:
+                - linux64-binutils
+                - linux64-clang
+                - linux64-dump_syms
+                - sysroot-aarch64-linux-gnu
+
+    macosx64/opt:
+        attributes:
+            build_platform: macosx64
+            build_type: opt
+        treeherder:
+            platform: macosx64/opt
+        worker:
+            env:
+                TARGET: x86_64-apple-darwin
+        fetches:
+            toolchain:
+                - linux64-cctools-port
+                - linux64-clang
+                - linux64-dump_syms
+                - linux64-nasm
+                - macosx64-sdk-toolchain
+
+    macosx64-aarch64/opt:
+        attributes:
+            build_platform: macosx64-aarch64
+            build_type: opt
+        treeherder:
+            platform: macosx64-aarch64/opt
+        worker:
+            env:
+                TARGET: aarch64-apple-darwin
+        fetches:
+            toolchain:
+                - linux64-cctools-port
+                - linux64-clang
+                - linux64-dump_syms
+                - macosx64-sdk-toolchain
+
+    win32/opt:
+        attributes:
+            build_platform: win32
+            build_type: opt
+        treeherder:
+            platform: win32/opt
+        worker:
+            env:
+                TARGET: i686-pc-windows-msvc
+        fetches:
+            toolchain:
+                - linux64-clang
+                - linux64-dump_syms
+                - linux64-nasm
+                - vs-toolchain
+
+    win64/opt:
+        attributes:
+            build_platform: win64
+            build_type: opt
+        treeherder:
+            platform: win64/opt
+        worker:
+            env:
+                TARGET: x86_64-pc-windows-msvc
+        fetches:
+            toolchain:
+                - linux64-clang
+                - linux64-dump_syms
+                - linux64-nasm
+                - vs-toolchain
+
+    win64-aarch64/opt:
+        attributes:
+            build_platform: win64-aarch64
+            build_type: opt
+        treeherder:
+            platform: win64-aarch64/opt
+        worker:
+            env:
+                TARGET: aarch64-pc-windows-msvc
+        fetches:
+            toolchain:
+                - linux64-clang
+                - linux64-dump_syms
+                - vs-toolchain

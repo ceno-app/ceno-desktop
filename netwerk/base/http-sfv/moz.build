@@ -1,0 +1,31 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPIDL_SOURCES += [
+    "nsIStructuredFieldValues.idl",
+]
+
+XPIDL_MODULE = "http-sfv"
+
+EXPORTS.mozilla.net += [
+    "SFV.h",
+    "SFVService.h",
+]
+
+SOURCES += [
+    "SFV.cpp",
+    "SFVService.cpp",
+]
+
+if CONFIG["COMPILE_ENVIRONMENT"]:
+    CbindgenHeader(
+        "http_sfv_ffi_generated.h",
+        inputs=["/netwerk/base/http-sfv"],
+    )
+
+    EXPORTS.mozilla.net += [
+        "!http_sfv_ffi_generated.h",
+    ]
+
+FINAL_LIBRARY = "xul"

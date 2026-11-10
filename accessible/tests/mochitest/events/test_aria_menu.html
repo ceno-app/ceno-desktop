@@ -1,0 +1,243 @@
+<html>
+
+<head>
+  <title>ARIA menu events testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+    const kViaDisplayStyle = 0;
+    const kViaVisibilityStyle = 1;
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+    // enableLogging("tree,events,verbose");
+
+    async function doTests() {
+      let evts = waitForEvents([
+        [EVENT_MENU_START, getNode("menubar2")],
+        [EVENT_FOCUS, getNode("menu-help")],
+      ]);
+      getNode("menu-help").focus();
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_MENU_END, getNode("menubar2")],
+        [EVENT_MENU_START, getNode("menubar")],
+        [EVENT_FOCUS, getNode("menu-file")],
+      ]);
+      getNode("menu-file").focus();
+      await evts;
+
+      // Because of aria-owns processing we may have menupopup start fired before
+      // related show event.
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode("menupopup-file")],
+        [EVENT_REORDER, getNode("menu-file")],
+        [EVENT_MENUPOPUP_START, getNode("menupopup-file")],
+      ]);
+      getNode("menupopup-file").style.display = "block";
+      await evts;
+
+      let menuAcc = getAccessible(getNode("menupopup-file"));
+      evts = waitForEvents([
+        [EVENT_MENUPOPUP_END, menuAcc],
+        [EVENT_HIDE, menuAcc],
+        [EVENT_REORDER, getNode("menu-file")],
+      ]);
+      getNode("menupopup-file").style.display = "none";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode("menupopup-edit")],
+        [EVENT_REORDER, getNode("menu-edit")],
+        [EVENT_MENUPOPUP_START, getNode("menupopup-edit")],
+      ]);
+      getNode("menupopup-edit").style.visibility = "visible";
+      await evts;
+
+      menuAcc = getAccessible(getNode("menupopup-edit"));
+      evts = waitForEvents([
+        [EVENT_MENUPOPUP_END, menuAcc],
+        [EVENT_HIDE, menuAcc],
+        [EVENT_REORDER, getNode("menu-edit")],
+      ]);
+      getNode("menupopup-edit").style.visibility = "hidden";
+      await evts;
+
+      evts = waitForEvents({
+        expected: [[EVENT_FOCUS, getNode("menu-edit")]],
+        unexpected: [[EVENT_MENU_END, getNode("menubar")]]
+      });
+      getNode("menu-edit").focus();
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_MENU_END, getNode("menubar")],
+        [EVENT_FOCUS, getNode("outsidemenu")],
+      ]);
+      getNode("outsidemenu").scrollIntoView(true);
+      synthesizeMouse(getNode("outsidemenu"), 1, 1, {});
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_MENU_START, getNode("menubar3")],
+        [EVENT_FOCUS, getNode("mb3-mi-outside")],
+      ]);
+      getNode("mb3-mi-outside").focus();
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_SHOW, getNode("mb4-menu")],
+        [EVENT_REORDER, document],
+        [EVENT_MENUPOPUP_START, getNode("mb4-menu")],
+      ]);
+      getNode("mb4-menu").style.display = "block";
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_MENU_START, getNode("menubar4")],
+        [EVENT_FOCUS, getNode("mb4-item1")],
+      ]);
+      getNode("mb4-item1").focus();
+      await evts;
+
+      evts = waitForEvents([
+        [EVENT_MENU_START, getNode("menubar5")],
+        [EVENT_FOCUS, getNode("mb5-mi")],
+      ]);
+      getNode("mb5-mi").focus();
+      await evts;
+
+      // synthFocus("mi6")
+      let focused = waitForEvent(EVENT_FOCUS, "mi6");
+      if (getNode("mi6").editor) {
+        getNode("mi6").selectionStart = getNode("mi6").selectionEnd =
+          getNode("mi6").value.length;
+      }
+      getNode("mi6").focus();
+      await focused;
+      testStates(getAccessible("mi6"), STATE_FOCUSED);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=606207"
+     title="Dojo dropdown buttons are broken">
+    Bug 606207
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=614829"
+     title="Menupopup end event isn't fired for ARIA menus">
+    Bug 614829
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=615189"
+     title="Clean up FireAccessibleFocusEvent">
+    Bug 615189
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=673958"
+     title="Rework accessible focus handling">
+    Bug 673958
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=933322"
+     title="menustart/end events are missing when aria-owns makes a menu hierarchy">
+    Bug 933322
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=934460"
+     title="menustart/end events may be missed when top level menuitem is focused">
+    Bug 934460
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=970005"
+     title="infinite long loop in a11y:FocusManager::ProcessFocusEvent">
+    Bug 970005
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="menubar" role="menubar">
+    <div id="menu-file" role="menuitem" tabindex="0">
+      File
+      <div id="menupopup-file" role="menu" style="display: none;">
+        <div id="menuitem-newtab" role="menuitem" tabindex="0">New Tab</div>
+        <div id="menuitem-newwindow" role="menuitem" tabindex="0">New Window</div>
+      </div>
+    </div>
+    <div id="menu-edit" role="menuitem" tabindex="0">
+      Edit
+      <div id="menupopup-edit" role="menu" style="visibility: hidden;">
+        <div id="menuitem-undo" role="menuitem" tabindex="0">Undo</div>
+        <div id="menuitem-redo" role="menuitem" tabindex="0">Redo</div>
+      </div>
+    </div>
+  </div>
+  <div id="menubar2" role="menubar">
+    <div id="menu-help" role="menuitem" tabindex="0">
+      Help
+      <div id="menupopup-help" role="menu" style="display: none;">
+        <div id="menuitem-about" role="menuitem" tabindex="0">About</div>
+      </div>
+    </div>
+  </div>
+  <div tabindex="0" id="outsidemenu">outsidemenu</div>
+
+  <!-- aria-owns relations -->
+  <div id="menubar3" role="menubar" aria-owns="mb3-mi-outside"></div>
+  <div id="mb3-mi-outside" role="menuitem" tabindex="0">Outside</div>
+
+  <div id="menubar4" role="menubar">
+    <div id="mb4_topitem" role="menuitem" aria-haspopup="true"
+         aria-owns="mb4-menu">Item</div>
+  </div>
+  <div id="mb4-menu" role="menu" style="display:none;">
+    <div role="menuitem" id="mb4-item1" tabindex="0">Item 1.1</div>
+    <div role="menuitem" tabindex="0">Item 1.2</div>
+  </div>
+
+  <!-- focus top-level menu item having haspopup -->
+  <div id="menubar5" role="menubar">
+    <div role="menuitem" aria-haspopup="true" id="mb5-mi" tabindex="0">
+      Item
+      <div role="menu" style="display:none;">
+        <div role="menuitem" tabindex="0">Item 1.1</div>
+        <div role="menuitem" tabindex="0">Item 1.2</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- other aria-owns relations -->
+  <div id="mi6" tabindex="0" role="menuitem">aria-owned item</div>
+  <div aria-owns="mi6">Obla</div>
+
+  <div id="eventdump"></div>
+
+</body>
+</html>

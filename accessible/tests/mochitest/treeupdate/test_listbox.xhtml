@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Accessible XUL listbox hierarchy tests">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    ////////////////////////////////////////////////////////////////////////////
+    // Test
+
+    async function doTest() {
+      let tree =
+        { LISTBOX: [
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item2",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item3",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item4",
+          },
+        ] };
+      testAccessibleTree("listbox", tree);
+
+      // insertListitem
+      let listboxNode = getNode("listbox");
+      let listitemNode = document.createXULElement("richlistitem");
+      const label = document.createXULElement("label");
+      label.setAttribute("value", "item1");
+      listitemNode.appendChild(label);
+
+      let shown = waitForEvent(EVENT_SHOW, listitemNode);
+      let reordered = waitForEvent(EVENT_REORDER, listboxNode);
+      listboxNode.insertBefore(listitemNode, listboxNode.firstChild);
+      await shown;
+      await reordered;
+
+      const insertTree =
+        { LISTBOX: [
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item1",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item2",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item3",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item4",
+          },
+        ] };
+      testAccessibleTree(listboxNode, insertTree);
+
+      // removeListitem
+      let removeNode = listboxNode.firstChild;
+
+      reordered = waitForEvent(EVENT_REORDER, listboxNode);
+      listboxNode.removeChild(removeNode);
+      await reordered;
+
+      const removeTree =
+        { LISTBOX: [
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item2",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item3",
+          },
+          {
+            role: ROLE_RICH_OPTION,
+            name: "item4",
+          },
+        ] };
+      testAccessibleTree(listboxNode, removeTree);
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=656225"
+         title="XUL listbox accessible tree doesn't get updated">
+        Mozilla Bug 656225
+      </a>
+      <br/>
+      <p id="display"></p>
+      <div id="content" style="display: none">
+      </div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <richlistbox id="listbox">
+        <richlistitem><label value="item2"/></richlistitem>
+        <richlistitem><label value="item3"/></richlistitem>
+        <richlistitem><label value="item4"/></richlistitem>
+      </richlistbox>
+    </vbox>
+  </hbox>
+
+</window>
+

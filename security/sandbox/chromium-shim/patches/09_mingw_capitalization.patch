@@ -1,0 +1,87 @@
+# HG changeset patch
+Remove incorrectly capitalized headers inside the chromium code so MinGW can compile
+
+diff --git a/base/base_paths_win.cc b/base/base_paths_win.cc
+--- a/base/base_paths_win.cc
++++ b/base/base_paths_win.cc
+@@ -1,17 +1,17 @@
+ // Copyright 2012 The Chromium Authors
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ #include "base/base_paths.h"
+ 
+ #include <windows.h>
+ 
+-#include <KnownFolders.h>
++#include <knownfolders.h>
+ #include <shlobj.h>
+ 
+ #include "base/environment.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+ #include "base/path_service.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+diff --git a/sandbox/win/src/handle_closer_agent.cc b/sandbox/win/src/handle_closer_agent.cc
+--- a/sandbox/win/src/handle_closer_agent.cc
++++ b/sandbox/win/src/handle_closer_agent.cc
+@@ -1,15 +1,15 @@
+ // Copyright 2012 The Chromium Authors
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ #include "sandbox/win/src/handle_closer_agent.h"
+ 
+-#include <Windows.h>
++#include <windows.h>
+ 
+ #include <stddef.h>
+ #include <winnls.h>
+ 
+ #include "base/check.h"
+ #include "base/containers/heap_array.h"
+ #include "base/containers/span.h"
+ #include "base/logging.h"
+diff --git a/sandbox/win/src/startup_information_helper.cc b/sandbox/win/src/startup_information_helper.cc
+--- a/sandbox/win/src/startup_information_helper.cc
++++ b/sandbox/win/src/startup_information_helper.cc
+@@ -1,16 +1,16 @@
+ // Copyright 2020 The Chromium Authors
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ 
+ #include "sandbox/win/src/startup_information_helper.h"
+ 
+-#include <Windows.h>
++#include <windows.h>
+ 
+ #include <algorithm>
+ #include <vector>
+ 
+ #include "base/check.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/win/startup_information.h"
+ #include "base/win/windows_handle_util.h"
+diff --git a/sandbox/win/src/startup_information_helper.h b/sandbox/win/src/startup_information_helper.h
+--- a/sandbox/win/src/startup_information_helper.h
++++ b/sandbox/win/src/startup_information_helper.h
+@@ -1,16 +1,16 @@
+ // Copyright 2020 The Chromium Authors
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ #ifndef SANDBOX_WIN_SRC_STARTUP_INFORMATION_HELPER_H_
+ #define SANDBOX_WIN_SRC_STARTUP_INFORMATION_HELPER_H_
+ 
+-#include <Windows.h>
++#include <windows.h>
+ 
+ #include <vector>
+ 
+ #include "base/memory/scoped_refptr.h"
+ #include "base/win/startup_information.h"
+ #include "sandbox/win/src/app_container_base.h"
+ #include "sandbox/win/src/process_mitigations.h"
+ #include "sandbox/win/src/security_capabilities.h"

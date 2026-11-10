@@ -1,0 +1,237 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "RemoteLazyInputStreamStorage.h"
+
+#include "RemoteLazyInputStreamParent.h"
+#include "mozilla/SlicedInputStream.h"
+#include "mozilla/StaticMutex.h"
+#include "mozilla/StaticPtr.h"
+#include "mozilla/dom/ContentParent.h"
+#include "nsIPropertyBag2.h"
+#include "nsStreamUtils.h"
+
+namespace mozilla {
+
+using namespace hal;
+
+extern mozilla::LazyLogModule gRemoteLazyStreamLog;
+
+namespace {
+StaticMutex gMutex;
+StaticRefPtr<RemoteLazyInputStreamStorage> gStorage;
+}  // namespace
+
+NS_INTERFACE_MAP_BEGIN(RemoteLazyInputStreamStorage)
+  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIObserver)
+  NS_INTERFACE_MAP_ENTRY(nsIObserver)
+NS_INTERFACE_MAP_END
+
+NS_IMPL_ADDREF(RemoteLazyInputStreamStorage)
+NS_IMPL_RELEASE(RemoteLazyInputStreamStorage)
+
+/* static */
+Result<RefPtr<RemoteLazyInputStreamStorage>, nsresult>
+RemoteLazyInputStreamStorage::Get() {
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  if (gStorage) {
+    RefPtr<RemoteLazyInputStreamStorage> storage = gStorage;
+    return storage;
+  }
+
+  return Err(NS_ERROR_NOT_INITIALIZED);
+}
+
+/* static */
+void RemoteLazyInputStreamStorage::Initialize() {
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  MOZ_ASSERT(!gStorage);
+
+  gStorage = new RemoteLazyInputStreamStorage();
+
+  MOZ_ALWAYS_SUCCEEDS(NS_CreateBackgroundTaskQueue(
+      "RemoteLazyInputStreamStorage", getter_AddRefs(gStorage->mTaskQueue)));
+
+  nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+  if (obs) {
+    obs->AddObserver(gStorage, "xpcom-shutdown", false);
+  }
+}
+
+NS_IMETHODIMP
+RemoteLazyInputStreamStorage::Observe(nsISupports* aSubject, const char* aTopic,
+                                      const char16_t* aData) {
+  MOZ_ASSERT(!strcmp(aTopic, "xpcom-shutdown"));
+
+  nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
+  if (obs) {
+    obs->RemoveObserver(this, "xpcom-shutdown");
+  }
+
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  gStorage = nullptr;
+  return NS_OK;
+}
+
+void RemoteLazyInputStreamStorage::AddStream(nsIInputStream* aInputStream,
+                                             const nsID& aID) {
+  MOZ_ASSERT(aInputStream);
+
+  MOZ_LOG(
+      gRemoteLazyStreamLog, LogLevel::Verbose,
+      ("Storage::AddStream(%s) = %p", nsIDToCString(aID).get(), aInputStream));
+
+  // Pass a replacement out-param so non-cloneable streams are replaced.
+  // We can ignore the replacement return value because, in that case,
+  // `cloneable` refers to the replacement stream.
+  nsCOMPtr<nsIInputStream> replacement;
+  nsCOMPtr<nsICloneableInputStream> cloneable;
+  nsresult rv = NS_EnsureInputStreamIsCloneable(
+      aInputStream, getter_AddRefs(cloneable), getter_AddRefs(replacement));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return;
+  }
+
+  MOZ_ASSERT(cloneable->GetCloneable(), "NS_EnsureInputStreamIsCloneable lied");
+
+  UniquePtr<StreamData> data = MakeUnique<StreamData>();
+  data->mInputStream = cloneable.forget();
+
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  mStorage.InsertOrUpdate(aID, std::move(data));
+}
+
+nsCOMPtr<nsIInputStream> RemoteLazyInputStreamStorage::ForgetStream(
+    const nsID& aID) {
+  MOZ_LOG(gRemoteLazyStreamLog, LogLevel::Verbose,
+          ("Storage::ForgetStream(%s)", nsIDToCString(aID).get()));
+
+  UniquePtr<StreamData> entry;
+
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  mStorage.Remove(aID, &entry);
+
+  if (!entry) {
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIInputStream> stream = do_QueryInterface(entry->mInputStream);
+  return stream;
+}
+
+bool RemoteLazyInputStreamStorage::HasStream(const nsID& aID) {
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  StreamData* data = mStorage.Get(aID);
+  return !!data;
+}
+
+void RemoteLazyInputStreamStorage::GetStream(const nsID& aID, uint64_t aStart,
+                                             uint64_t aLength,
+                                             nsIInputStream** aInputStream) {
+  *aInputStream = nullptr;
+
+  MOZ_LOG(gRemoteLazyStreamLog, LogLevel::Verbose,
+          ("Storage::GetStream(%s, %" PRIu64 " %" PRIu64 ")",
+           nsIDToCString(aID).get(), aStart, aLength));
+
+  nsCOMPtr<nsICloneableInputStream> inputStream;
+
+  {
+    mozilla::StaticMutexAutoLock lock(gMutex);
+    StreamData* data = mStorage.Get(aID);
+    if (!data) {
+      return;
+    }
+
+    inputStream = data->mInputStream;
+  }
+
+  MOZ_ASSERT(inputStream && inputStream->GetCloneable());
+
+  nsCOMPtr<nsIInputStream> clonedStream;
+
+  nsresult rv = inputStream->Clone(getter_AddRefs(clonedStream));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return;
+  }
+
+  // Now it's the right time to apply a slice if needed.
+  if (aStart > 0 || aLength < UINT64_MAX) {
+    clonedStream =
+        new SlicedInputStream(clonedStream.forget(), aStart, aLength);
+  }
+
+  clonedStream.forget(aInputStream);
+}
+
+void RemoteLazyInputStreamStorage::StoreCallback(
+    const nsID& aID, RemoteLazyInputStreamParentCallback* aCallback) {
+  MOZ_ASSERT(aCallback);
+
+  MOZ_LOG(
+      gRemoteLazyStreamLog, LogLevel::Verbose,
+      ("Storage::StoreCallback(%s, %p)", nsIDToCString(aID).get(), aCallback));
+
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  StreamData* data = mStorage.Get(aID);
+  if (data) {
+    MOZ_ASSERT(!data->mCallback);
+    data->mCallback = aCallback;
+  }
+}
+
+already_AddRefed<RemoteLazyInputStreamParentCallback>
+RemoteLazyInputStreamStorage::TakeCallback(const nsID& aID) {
+  MOZ_LOG(gRemoteLazyStreamLog, LogLevel::Verbose,
+          ("Storage::TakeCallback(%s)", nsIDToCString(aID).get()));
+
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  StreamData* data = mStorage.Get(aID);
+  if (!data) {
+    return nullptr;
+  }
+
+  RefPtr<RemoteLazyInputStreamParentCallback> callback;
+  data->mCallback.swap(callback);
+  return callback.forget();
+}
+
+void RemoteLazyInputStreamStorage::ActorCreated(const nsID& aID) {
+  mozilla::StaticMutexAutoLock lock(gMutex);
+  StreamData* data = mStorage.Get(aID);
+  if (!data) {
+    return;
+  }
+
+  size_t count = ++data->mActorCount;
+
+  MOZ_LOG(gRemoteLazyStreamLog, LogLevel::Verbose,
+          ("Storage::ActorCreated(%s) = %zu", nsIDToCString(aID).get(), count));
+}
+
+void RemoteLazyInputStreamStorage::ActorDestroyed(const nsID& aID) {
+  UniquePtr<StreamData> entry;
+  {
+    mozilla::StaticMutexAutoLock lock(gMutex);
+    StreamData* data = mStorage.Get(aID);
+    if (!data) {
+      return;
+    }
+
+    auto newCount = --data->mActorCount;
+    MOZ_LOG(gRemoteLazyStreamLog, LogLevel::Verbose,
+            ("Storage::ActorDestroyed(%s) = %zu (cb=%p)",
+             nsIDToCString(aID).get(), newCount, data->mCallback.get()));
+
+    if (newCount == 0) {
+      mStorage.Remove(aID, &entry);
+    }
+  }
+
+  if (entry && entry->mCallback) {
+    entry->mCallback->ActorDestroyed(aID);
+  }
+}
+
+}  // namespace mozilla

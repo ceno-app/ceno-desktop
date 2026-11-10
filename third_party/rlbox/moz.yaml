@@ -1,0 +1,47 @@
+schema: 1
+
+bugzilla:
+  product: "Core"
+  component: "Security: RLBox"
+
+origin:
+  name: rlbox
+  description: sandboxing framework
+
+  url: https://github.com/PLSysSec/rlbox
+
+  release: b0157dc84f86ffbe4549e32ed5cbdfad79c17f43 (2026-07-04T05:28:44Z).
+  revision: b0157dc84f86ffbe4549e32ed5cbdfad79c17f43
+
+  license: MIT
+
+vendoring:
+  url: https://github.com/PLSysSec/rlbox
+  source-hosting: github
+  tracking: commit
+
+  exclude:
+    - "**"
+
+  include:
+    - "code/include"
+    - "LICENSE"
+
+  patches:
+    - rlbox-updates.patch
+
+  update-actions:
+    - action: move-dir
+      from: '{vendor_dir}/code/include'
+      to: '{vendor_dir}/include'
+
+  patches:
+    - fix-includes.patch
+
+updatebot:
+  maintainer-phab: shravanrn
+  maintainer-bz: shravanrn@gmail.com
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: release

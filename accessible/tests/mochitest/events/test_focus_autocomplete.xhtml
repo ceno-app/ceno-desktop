@@ -1,0 +1,425 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css"
+                 type="text/css"?>
+
+<!-- SeaMonkey searchbar -->
+<?xml-stylesheet href="chrome://navigator/content/navigator.css"
+                 type="text/css"?>
+
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="Accessible focus event testing">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js" />
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+
+  <script type="application/javascript"
+          src="../common.js" />
+  <script type="application/javascript"
+          src="../role.js" />
+  <script type="application/javascript"
+          src="../states.js" />
+  <script type="application/javascript"
+          src="../events.js" />
+
+  <script type="application/javascript"
+          src="../autocomplete.js" />
+
+  <script type="application/javascript">
+  <![CDATA[
+    ////////////////////////////////////////////////////////////////////////////
+    // Target getters
+
+    function getItem(aItemObj) {
+      const autocompleteNode = aItemObj.autocompleteNode;
+
+      // XUL searchbar
+      if (autocompleteNode.localName == "searchbar") {
+        let popupNode = autocompleteNode._popup;
+        if (popupNode) {
+          let list = getAccessible(popupNode);
+          return list.getChildAt(aItemObj.index);
+        }
+      }
+
+      // XUL autocomplete
+      let popupNode = autocompleteNode.popup;
+      if (!popupNode) {
+        // HTML form autocomplete
+        const controller = Cc["@mozilla.org/autocomplete/controller;1"].
+          getService(Ci.nsIAutoCompleteController);
+        popupNode = controller.input.popup;
+      }
+
+      if (popupNode) {
+        if ("richlistbox" in popupNode) {
+          let list = getAccessible(popupNode.richlistbox);
+          return list.getChildAt(aItemObj.index);
+        }
+
+        let list = getAccessible(popupNode.tree);
+        return list.getChildAt(aItemObj.index + 1);
+      }
+      return null;
+    }
+
+    function getTextEntry(aID) {
+      // For form autocompletes the autocomplete widget and text entry widget
+      // is the same widget, for XUL autocompletes the text entry is a first
+      // child.
+      const localName = getNode(aID).localName;
+
+      // HTML form autocomplete
+      if (localName == "input")
+        return getAccessible(aID);
+
+      // XUL searchbar
+      if (localName == "searchbar")
+        return getAccessible(getNode(aID).textbox);
+
+      return null;
+    }
+
+    function itemObj(aID, aIdx) {
+      this.autocompleteNode = getNode(aID);
+
+      this.autocomplete = this.autocompleteNode.localName == "searchbar" ?
+        getAccessible(this.autocompleteNode.textbox) :
+        getAccessible(this.autocompleteNode);
+
+      this.index = aIdx;
+    }
+
+    function getIFrameDOMDoc(aIFrameID) {
+      return getNode(aIFrameID).contentDocument;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Action helpers
+
+    async function focusOnMouseOver(aIDFunc, aIDFuncArg) {
+      const target = aIDFunc(aIDFuncArg);
+      const id = target;
+      const node = target && target.DOMNode ? target.DOMNode : getNode(id);
+      const win = node.ownerGlobal;
+
+      let x = 1, y = 1;
+      if (node.localName == "tree") {
+        const tree = getAccessible(node);
+        const accessible = getAccessible(id);
+        if (tree != accessible) {
+          const itemX = {}, itemY = {}, treeX = {}, treeY = {};
+          accessible.getBounds(itemX, itemY, {}, {});
+          tree.getBounds(treeX, treeY, {}, {});
+          x = itemX.value - treeX.value;
+          y = itemY.value - treeY.value;
+        }
+      }
+
+      const focused = waitForEvent(EVENT_FOCUS, target);
+      let flooding = true;
+      function flood() {
+        synthesizeMouse(node, x + 1, y + 1, { type: "mousemove" }, win);
+        if (flooding) {
+          win.setTimeout(flood, 0);
+        }
+      }
+      synthesizeMouse(node, x, y, { type: "mousemove" });
+      flood();
+      await focused;
+      flooding = false;
+    }
+
+    async function selectByClick(
+      aIDFunc,
+      aIDFuncArg,
+      aFocusTargetFunc,
+      aFocusTargetFuncArg
+    ) {
+      const id = aIDFunc(aIDFuncArg);
+      const node = id && id.DOMNode ? id.DOMNode : getNode(id);
+      const targetWindow = node.ownerGlobal;
+      let focused;
+
+      if (node.localName == "tree") {
+        const tree = getAccessible(node);
+        const accessible = getAccessible(id);
+        if (tree != accessible) {
+          const itemX = {}, itemY = {}, treeX = {}, treeY = {};
+          accessible.getBounds(itemX, itemY, {}, {});
+          tree.getBounds(treeX, treeY, {}, {});
+          const x = itemX.value - treeX.value;
+          const y = itemY.value - treeY.value;
+          focused = waitForEvent(
+            EVENT_FOCUS,
+            aFocusTargetFunc(aFocusTargetFuncArg)
+          );
+          synthesizeMouse(node, x, y, {}, targetWindow);
+          await focused;
+          return;
+        }
+      }
+
+      focused = waitForEvent(
+        EVENT_FOCUS,
+        aFocusTargetFunc(aFocusTargetFuncArg)
+      );
+      synthesizeMouseAtCenter(node, {}, targetWindow);
+      await focused;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Test helpers
+
+    async function doAutoCompleteTests(aID) {
+      // focus autocomplete text entry
+      let focused = waitForEvent(EVENT_FOCUS, getTextEntry(aID));
+      const node = getNode(aID);
+      if (node.editor) {
+        node.selectionStart = node.selectionEnd = node.value.length;
+      }
+      node.focus();
+      await focused;
+
+      // open autocomplete popup
+      synthesizeKey("KEY_ArrowDown", {});
+
+      // select second option ('hi' option), focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj(aID, 1)));
+      synthesizeKey("KEY_ArrowUp", {});
+      await focused;
+
+      // choose selected option, focus on text entry
+      focused = waitForEvent(EVENT_FOCUS, getTextEntry(aID));
+      synthesizeKey("KEY_Enter", {});
+      await focused;
+
+      // remove char, autocomplete popup appears
+      synthesizeKey("KEY_ArrowLeft", { shiftKey: true });
+      synthesizeKey("KEY_Delete");
+
+      // select first option ('hello' option), focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj(aID, 0)));
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+
+      // mouse move on second option ('hi' option), focus on it
+      await focusOnMouseOver(getItem, new itemObj(aID, 1));
+
+      // autocomplete popup updated (no selected item), focus on textentry
+      focused = waitForEvent(EVENT_FOCUS, getTextEntry(aID));
+      synthesizeKey("e", {});
+      await focused;
+
+      // select first option ('hello' option), focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj(aID, 0)));
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+
+      // popup gets hidden, focus on textentry
+      focused = waitForEvent(EVENT_FOCUS, getTextEntry(aID));
+      synthesizeKey("KEY_ArrowRight", {});
+      await focused;
+
+      // popup gets open, no focus
+      synthesizeKey("KEY_ArrowDown", { altKey: true });
+
+      // select first option again ('hello' option), focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj(aID, 0)));
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+
+      // no option is selected, focus on text entry
+      focused = waitForEvent(EVENT_FOCUS, getTextEntry(aID));
+      synthesizeKey("KEY_ArrowUp", {});
+      await focused;
+
+      // close popup, no focus
+      synthesizeKey("KEY_Escape", {});
+
+      // autocomplete popup appears (no selected item), focus stays on textentry
+      getNode(aID).select();
+      sendString("h");
+
+      // mouse move on first option ('hello' option), focus on it
+      await focusOnMouseOver(getItem, new itemObj(aID, 0));
+
+      // click first option ('hello' option), popup closes, focus on text entry
+      await selectByClick(getItem, new itemObj(aID, 0), getTextEntry, aID);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Tests
+
+    async function initTests() {
+      if (SEAMONKEY || MAC) {
+        todo(false, "Skipping this test on SeaMonkey ftb. (Bug 718237), and on Mac (bug 746177)");
+        shutdownAutoComplete();
+        SimpleTest.finish();
+        return;
+      }
+
+      // loadFormAutoComplete("iframe")
+      let iframe = getAccessible("iframe");
+      let reordered = waitForEvent(EVENT_REORDER, iframe);
+      const formURL = "data:text/html,<html><body><form id='form'>" +
+        "<input id='input' name='a11ytest-formautocomplete'>" +
+        "</form></body></html>";
+      getNode("iframe").setAttribute("src", formURL);
+      await reordered;
+
+      // initFormAutoCompleteBy("iframe", "hello")
+      iframe = getAccessible("iframe");
+      reordered = waitForEvent(EVENT_REORDER, iframe);
+      let iframeDOMDoc = getNode("iframe").contentDocument;
+      iframeDOMDoc.getElementById("input").value = "hello";
+      iframeDOMDoc.getElementById("form").submit();
+      await reordered;
+
+      // initFormAutoCompleteBy("iframe", "hi")
+      iframe = getAccessible("iframe");
+      reordered = waitForEvent(EVENT_REORDER, iframe);
+      iframeDOMDoc = getNode("iframe").contentDocument;
+      iframeDOMDoc.getElementById("input").value = "hi";
+      iframeDOMDoc.getElementById("form").submit();
+      await reordered;
+
+      // loadHTML5ListAutoComplete("iframe2")
+      const iframe2 = getAccessible("iframe2");
+      reordered = waitForEvent(EVENT_REORDER, iframe2);
+      const html5URL = "data:text/html,<html><body>" +
+        "<datalist id='cities'><option>hello</option><option>hi</option></datalist>" +
+        "<input id='input' list='cities'>" +
+        "</body></html>";
+      getNode("iframe2").setAttribute("src", html5URL);
+      await reordered;
+
+      await doTests();
+    }
+
+    async function doTests() {
+      ////////////////////////////////////////////////////////////////////////////
+      // tree popup autocomplete tests
+      await doAutoCompleteTests("autocomplete");
+
+      ////////////////////////////////////////////////////////////////////////////
+      // richlistbox popup autocomplete tests
+      await doAutoCompleteTests("richautocomplete");
+
+      ////////////////////////////////////////////////////////////////////////////
+      // HTML form autocomplete tests
+      await doAutoCompleteTests(
+        getIFrameDOMDoc("iframe").getElementById("input")
+      );
+
+      ////////////////////////////////////////////////////////////////////////////
+      // HTML5 list autocomplete tests
+      await doAutoCompleteTests(
+        getIFrameDOMDoc("iframe2").getElementById("input")
+      );
+
+      ////////////////////////////////////////////////////////////////////////////
+      // searchbar tests
+
+      // focus searchbar, focus on text entry
+      let focused = waitForEvent(EVENT_FOCUS, getTextEntry("searchbar"));
+      getNode("searchbar").focus();
+      await focused;
+
+      // open search engine popup, no focus
+      synthesizeKey("KEY_ArrowDown", { altKey: true });
+
+      // select first item, focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj("searchbar", 0)));
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+
+      // mouse over on second item, focus on it
+      await focusOnMouseOver(getItem, new itemObj("searchbar", 1));
+
+      // press enter key, focus on text entry
+      focused = waitForEvent(EVENT_FOCUS, getTextEntry("searchbar"));
+      synthesizeKey("KEY_Enter", {});
+      await focused;
+
+      // click on search button, open popup, focus goes to document
+      focused = waitForEvent(EVENT_FOCUS, document);
+      const searchBtn = getAccessible(getNode("searchbar").searchButton);
+      synthesizeMouse(searchBtn.DOMNode, 1, 1, {});
+      await focused;
+
+      // select first item, focus on it
+      focused = waitForEvent(EVENT_FOCUS, getItem(new itemObj("searchbar", 0)));
+      synthesizeKey("KEY_ArrowDown", {});
+      await focused;
+
+      // close popup, focus goes on document
+      focused = waitForEvent(EVENT_FOCUS, document);
+      synthesizeKey("KEY_Escape", {});
+      await focused;
+
+      // unregister 'test-a11y-search' autocomplete search
+      shutdownAutoComplete();
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+
+    // Register 'test-a11y-search' autocomplete search.
+    // XPFE AutoComplete needs to register early.
+    initAutoComplete(
+      ["hello", "hi"],
+      ["Beep beep'm beep beep yeah", "Baby you can drive my car"]
+    );
+
+    addA11yLoadEvent(initTests);
+  ]]>
+  </script>
+
+  <hbox flex="1" style="overflow: auto;">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=383759"
+         title="Focus event inconsistent for search box autocomplete">
+        Mozilla Bug 383759
+      </a>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=673958"
+         title="Rework accessible focus handling">
+        Mozilla Bug 673958
+      </a>
+      <a target="_blank"
+         href="https://bugzilla.mozilla.org/show_bug.cgi?id=559766"
+         title="Add accessibility support for @list on HTML input and for HTML datalist">
+        Mozilla Bug 559766
+      </a>
+      <p id="display"></p>
+      <div id="content" style="display: none"></div>
+      <pre id="test">
+      </pre>
+    </body>
+
+    <vbox flex="1">
+      <html:input is="autocomplete-input"
+                  id="autocomplete"
+                  autocompletesearch="test-a11y-search"/>
+
+      <html:input is="autocomplete-input"
+                  id="richautocomplete"
+                  autocompletesearch="test-a11y-search"
+                  autocompletepopup="richpopup"/>
+      <panel is="autocomplete-richlistbox-popup"
+             id="richpopup"
+             type="autocomplete-richlistbox"
+             noautofocus="true"/>
+
+      <iframe id="iframe"/>
+
+      <iframe id="iframe2"/>
+
+      <searchbar id="searchbar"/>
+    </vbox>
+  </hbox>
+</window>

@@ -1,0 +1,570 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+const PERMISSION_SAVE_LOGINS = "login-saving";
+const MAX_DATE_MS = 8640000000000000;
+
+import { LoginManagerStorage } from "resource://passwordmgr/passwordstorage.sys.mjs";
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
+  AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
+});
+
+ChromeUtils.defineLazyGetter(lazy, "log", () => {
+  let logger = lazy.LoginHelper.createLogger("LoginManager");
+  return logger;
+});
+
+if (Services.appinfo.processType !== Services.appinfo.PROCESS_TYPE_DEFAULT) {
+  throw new Error("LoginManager.sys.mjs should only run in the parent process");
+}
+
+export function LoginManager() {
+  this.init();
+}
+
+LoginManager.prototype = {
+  classID: Components.ID("{cb9e0de8-3598-4ed7-857b-827f011ad5d8}"),
+  QueryInterface: ChromeUtils.generateQI([
+    "nsILoginManager",
+    "nsISupportsWeakReference",
+    "nsIInterfaceRequestor",
+  ]),
+  getInterface(aIID) {
+    if (aIID.equals(Ci.mozIStorageConnection) && this._storage) {
+      let ir = this._storage.QueryInterface(Ci.nsIInterfaceRequestor);
+      return ir.getInterface(aIID);
+    }
+
+    if (aIID.equals(Ci.nsIVariant)) {
+      // Allows unwrapping the JavaScript object for regression tests.
+      return this;
+    }
+
+    throw new Components.Exception(
+      "Interface not available",
+      Cr.NS_ERROR_NO_INTERFACE
+    );
+  },
+
+  /* ---------- private members ---------- */
+
+  _storage: null, // Storage component which contains the saved logins
+
+  /**
+   * Initialize the Login Manager. Automatically called when service
+   * is created.
+   *
+   * Note: Service created in BrowserGlue#_scheduleStartupIdleTasks()
+   */
+  init() {
+    // Cache references to current |this| in utility objects
+    this._observer._pwmgr = this;
+
+    this._shutdownBlocker = async () => {
+      return this.uninit();
+    };
+    lazy.AsyncShutdown.profileChangeTeardown.addBlocker(
+      "LoginManager",
+      this._shutdownBlocker
+    );
+    this._observer._init();
+
+    // Initialize storage so that asynchronous data loading can start.
+    this._initStorage();
+    this._initialized = true;
+  },
+
+  async uninit() {
+    if (this._shutdownBlocker) {
+      lazy.AsyncShutdown.profileChangeTeardown.removeBlocker(
+        this._shutdownBlocker
+      );
+      delete this._shutdownBlocker;
+    }
+
+    // Note that this._storage has its own shutdown observer, so we do not
+    // need to finalize it here but can unlink it.
+    this._storage = null;
+    this._observer._uninit();
+    this._observer._pwmgr = null;
+    this._initialized = false;
+  },
+
+  _initStorage() {
+    this.initializationPromise = new Promise(resolve => {
+      this._storage = LoginManagerStorage.create(() => {
+        resolve();
+
+        lazy.log.debug(
+          "initializationPromise is resolved, updating isPrimaryPasswordSet in sharedData"
+        );
+        Services.ppmm.sharedData.set(
+          "isPrimaryPasswordSet",
+          lazy.LoginHelper.isPrimaryPasswordSet()
+        );
+      });
+    });
+  },
+
+  /* ---------- Utility objects ---------- */
+
+  /**
+   * Internal utility object, implements the nsIObserver interface.
+   * Used to receive notification for: form submission, preference changes.
+   */
+  _observer: {
+    _pwmgr: null,
+    _initialized: false,
+
+    _init() {
+      if (this._initialized) {
+        return;
+      }
+      Services.obs.addObserver(this, "passwordmgr-storage-replace");
+      this._initialized = true;
+    },
+
+    _uninit() {
+      if (!this._initialized) {
+        return;
+      }
+      Services.obs.removeObserver(this, "passwordmgr-storage-replace");
+      this._initialized = false;
+    },
+
+    QueryInterface: ChromeUtils.generateQI([
+      "nsIObserver",
+      "nsISupportsWeakReference",
+    ]),
+
+    // nsIObserver
+    observe(subject, topic, _data) {
+      if (topic == "passwordmgr-storage-replace") {
+        // This notification is only issued via LoginTestUtils.reloadData().
+        (async () => {
+          await this._pwmgr._storage.testSaveForReplace();
+          this._pwmgr._initStorage();
+          await this._pwmgr.initializationPromise;
+          Services.obs.notifyObservers(
+            null,
+            "passwordmgr-storage-replace-complete"
+          );
+        })();
+      } else {
+        lazy.log.debug(`Unexpected notification: ${topic}.`);
+      }
+    },
+  },
+
+  /**
+   * Ensures that a login isn't missing any necessary fields.
+   *
+   * @param login
+   *        The login to check.
+   */
+  _checkLogin(login) {
+    // Sanity check the login
+    if (login.origin == null || !login.origin.length) {
+      throw new Error("Can't add a login with a null or empty origin.");
+    }
+
+    // For logins w/o a username, set to "", not null.
+    if (login.username == null) {
+      throw new Error("Can't add a login with a null username.");
+    }
+
+    if (login.password == null || !login.password.length) {
+      throw new Error("Can't add a login with a null or empty password.");
+    }
+
+    // Duplicated from toolkit/components/passwordmgr/LoginHelper.sys.jms
+    // TODO: move all validations into this function.
+    //
+    // In theory these nulls should just be rolled up into the encrypted
+    // values, but nsISecretDecoderRing doesn't use nsStrings, so the
+    // nulls cause truncation. Check for them here just to avoid
+    // unexpected round-trip surprises.
+    if (login.username.includes("\0") || login.password.includes("\0")) {
+      throw new Error("login values can't contain nulls");
+    }
+
+    if (login.formActionOrigin || login.formActionOrigin == "") {
+      // We have a form submit URL. Can't have a HTTP realm.
+      if (login.httpRealm != null) {
+        throw new Error(
+          "Can't add a login with both a httpRealm and formActionOrigin."
+        );
+      }
+    } else if (login.httpRealm || login.httpRealm == "") {
+      // We have a HTTP realm. Can't have a form submit URL.
+      if (login.formActionOrigin != null) {
+        throw new Error(
+          "Can't add a login with both a httpRealm and formActionOrigin."
+        );
+      }
+    } else {
+      // Need one or the other!
+      throw new Error(
+        "Can't add a login without a httpRealm or formActionOrigin."
+      );
+    }
+
+    login.QueryInterface(Ci.nsILoginMetaInfo);
+    for (let pname of ["timeCreated", "timeLastUsed", "timePasswordChanged"]) {
+      // Invalid dates
+      if (login[pname] > MAX_DATE_MS) {
+        throw new Error("Can't add a login with invalid date properties.");
+      }
+    }
+
+    lazy.LoginHelper.checkLoginValues(login);
+  },
+
+  /* ---------- Primary Public interfaces ---------- */
+
+  /**
+   * @type Promise
+   * This promise is resolved when initialization is complete, and is rejected
+   * in case the asynchronous part of initialization failed.
+   */
+  initializationPromise: null,
+
+  /**
+   * Add a new login to login storage.
+   */
+  async addLoginAsync(login) {
+    this._checkLogin(login);
+
+    lazy.log.debug("Adding login");
+    const [resultLogin] = await this._storage.addLoginsAsync([login]);
+    return resultLogin;
+  },
+
+  /**
+   * Add multiple logins to login storage.
+   * TODO: rename to `addLoginsAsync` https://bugzilla.mozilla.org/show_bug.cgi?id=1832757
+   */
+  async addLogins(logins) {
+    if (logins.length === 0) {
+      return logins;
+    }
+
+    const validLogins = logins.filter(login => {
+      try {
+        this._checkLogin(login);
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
+    });
+    lazy.log.debug("Adding logins");
+    return this._storage.addLoginsAsync(validLogins, true);
+  },
+
+  /**
+   * Remove the specified login from the stored logins.
+   */
+  async removeLoginAsync(login) {
+    lazy.log.debug(
+      "Removing login",
+      login.QueryInterface(Ci.nsILoginMetaInfo).guid
+    );
+    return this._storage.removeLoginAsync(login);
+  },
+
+  /**
+   * Async: Change the specified login to match the new login or new properties.
+   */
+  async modifyLoginAsync(oldLogin, newLogin) {
+    lazy.log.debug(
+      "Modifying login",
+      oldLogin.QueryInterface(Ci.nsILoginMetaInfo).guid
+    );
+    await this._storage.modifyLoginAsync(oldLogin, newLogin);
+  },
+
+  async recordPasswordUseAsync(
+    login,
+    privateContextWithoutExplicitConsent,
+    loginType,
+    filled
+  ) {
+    lazy.log.debug(
+      "Recording password use",
+      loginType,
+      login.QueryInterface(Ci.nsILoginMetaInfo).guid
+    );
+    if (!privateContextWithoutExplicitConsent) {
+      // don't record non-interactive use in private browsing
+      await this._storage.recordPasswordUseAsync(login);
+    }
+
+    Glean.pwmgr["savedLoginUsed" + loginType].record({ filled });
+  },
+
+  /**
+   * Get a dump of all stored logins asynchronously. Used by the login manager UI.
+   *
+   * @return {nsILoginInfo[]} - If there are no logins, the array is empty.
+   */
+  async getAllLogins() {
+    lazy.log.debug("Getting a list of all logins asynchronously.");
+    return this._storage.getAllLogins();
+  },
+
+  /**
+   * Get a dump of all stored logins asynchronously. Used by the login detection service.
+   */
+  getAllLoginsWithCallback(aCallback) {
+    lazy.log.debug("Searching a list of all logins asynchronously.");
+    this._storage.getAllLogins().then(logins => {
+      aCallback.onSearchComplete(logins);
+    });
+  },
+
+  /**
+   * Remove all user facing stored logins.
+   *
+   * This will not remove the FxA Sync key, which is stored with the rest of a user's logins.
+   */
+  async removeAllUserFacingLoginsAsync() {
+    lazy.log.debug("Removing all user facing logins.");
+    await this._storage.removeAllUserFacingLoginsAsync();
+  },
+
+  /**
+   * Remove all logins from data store, including the FxA Sync key.
+   *
+   * NOTE: You probably want `removeAllUserFacingLoginsAsync()` instead of this function.
+   * This function will remove the FxA Sync key, which will break syncing of saved user data
+   * e.g. bookmarks, history, open tabs, logins and passwords, add-ons, and options
+   */
+  async removeAllLoginsAsync() {
+    lazy.log.debug("Removing all logins from local store, including FxA key.");
+    await this._storage.removeAllLoginsAsync();
+  },
+
+  /**
+   * Get a list of all origins for which logins are disabled.
+   *
+   * @param {number} count - only needed for XPCOM.
+   *
+   * @return {string[]} of disabled origins. If there are no disabled origins,
+   *                    the array is empty.
+   */
+  getAllDisabledHosts() {
+    lazy.log.debug("Getting a list of all disabled origins.");
+
+    let disabledHosts = [];
+    for (let perm of Services.perms.all) {
+      if (
+        perm.type == PERMISSION_SAVE_LOGINS &&
+        perm.capability == Services.perms.DENY_ACTION
+      ) {
+        disabledHosts.push(perm.principal.URI.displayPrePath);
+      }
+    }
+
+    lazy.log.debug(`Returning ${disabledHosts.length} disabled hosts.`);
+    return disabledHosts;
+  },
+
+  /**
+   * Search for the known logins for entries matching the specified criteria.
+   */
+  findLogins() {
+    throw new Components.Exception(
+      "LoginManager.findLogins() was removed. Use searchLoginsAsync() instead.",
+      Cr.NS_ERROR_NOT_IMPLEMENTED
+    );
+  },
+
+  async searchLoginsAsync(matchData) {
+    lazy.log.debug(
+      `Searching for matching logins for origin: ${matchData.origin}`
+    );
+
+    if (!matchData.guid && !matchData.origin) {
+      lazy.log.warn(
+        "A `guid` or `origin` field is recommended for searchLoginsAsync matchData."
+      );
+    }
+
+    return this._storage.searchLoginsAsync(matchData);
+  },
+
+  async countLoginsAsync(origin, formActionOrigin, httpRealm) {
+    const loginsCount = await this._storage.countLoginsAsync(
+      origin,
+      formActionOrigin,
+      httpRealm
+    );
+
+    lazy.log.debug(
+      `Found ${loginsCount} matching origin: ${origin}, formActionOrigin: ${formActionOrigin} and realm: ${httpRealm}`
+    );
+
+    return loginsCount;
+  },
+
+  /* Sync metadata functions */
+  async getSyncID() {
+    return this._storage.getSyncID();
+  },
+
+  async setSyncID(id) {
+    await this._storage.setSyncID(id);
+  },
+
+  async getLastSync() {
+    return this._storage.getLastSync();
+  },
+
+  async setLastSync(timestamp) {
+    await this._storage.setLastSync(timestamp);
+  },
+
+  async ensureCurrentSyncID(newSyncID) {
+    let existingSyncID = await this.getSyncID();
+    if (existingSyncID == newSyncID) {
+      return existingSyncID;
+    }
+    lazy.log.debug(
+      `ensureCurrentSyncID: newSyncID: ${newSyncID} existingSyncID: ${existingSyncID}`
+    );
+
+    await this.setSyncID(newSyncID);
+    await this.setLastSync(0);
+    return newSyncID;
+  },
+
+  async addPotentiallyVulnerablePassword(login) {
+    return this._storage.addPotentiallyVulnerablePassword(login);
+  },
+
+  async isPotentiallyVulnerablePassword(login) {
+    return this._storage.isPotentiallyVulnerablePassword(login);
+  },
+
+  async recordBreachAlertDismissal(loginGUID) {
+    return this._storage.recordBreachAlertDismissal(loginGUID);
+  },
+
+  async getBreachAlertDismissalsByLoginGUID() {
+    return this._storage.getBreachAlertDismissalsByLoginGUID();
+  },
+
+  async arePotentiallyVulnerablePasswords(logins) {
+    return this._storage.arePotentiallyVulnerablePasswords(logins);
+  },
+
+  async clearAllPotentiallyVulnerablePasswords() {
+    return this._storage.clearAllPotentiallyVulnerablePasswords();
+  },
+
+  get uiBusy() {
+    return this._storage.uiBusy;
+  },
+
+  get isLoggedIn() {
+    return this._storage.isLoggedIn;
+  },
+
+  /**
+   * Check to see if user has disabled saving logins for the origin.
+   */
+  getLoginSavingEnabled(origin) {
+    lazy.log.debug(`Checking if logins to ${origin} can be saved.`);
+    if (!lazy.LoginHelper.enabled) {
+      return false;
+    }
+
+    try {
+      let uri = Services.io.newURI(origin);
+      let principal = Services.scriptSecurityManager.createContentPrincipal(
+        uri,
+        {}
+      );
+      return (
+        Services.perms.testPermissionFromPrincipal(
+          principal,
+          PERMISSION_SAVE_LOGINS
+        ) != Services.perms.DENY_ACTION
+      );
+    } catch (ex) {
+      if (!origin.startsWith("chrome:")) {
+        console.error(ex);
+      }
+      return false;
+    }
+  },
+
+  /**
+   * Enable or disable storing logins for the specified origin.
+   */
+  setLoginSavingEnabled(origin, enabled) {
+    // Throws if there are bogus values.
+    lazy.LoginHelper.checkOriginValue(origin);
+
+    let uri = Services.io.newURI(origin);
+    let principal = Services.scriptSecurityManager.createContentPrincipal(
+      uri,
+      {}
+    );
+    if (enabled) {
+      Services.perms.removeFromPrincipal(principal, PERMISSION_SAVE_LOGINS);
+    } else {
+      Services.perms.addFromPrincipal(
+        principal,
+        PERMISSION_SAVE_LOGINS,
+        Services.perms.DENY_ACTION
+      );
+    }
+
+    lazy.log.debug(
+      `Enabling login saving for ${origin} now enabled? ${enabled}.`
+    );
+    lazy.LoginHelper.notifyStorageChanged(
+      enabled ? "hostSavingEnabled" : "hostSavingDisabled",
+      origin
+    );
+  },
+
+  /**
+   * For migration purposes, asynchronously reencrypt all logins in the
+   * background.
+   */
+  reencryptAllLogins() {
+    return this._storage.reencryptAllLogins();
+  },
+
+  /**
+   * Debug helper to identify logins with invalid origin/formActionOrigin URLs.
+   * Used to diagnose login storage incompatibilities with the Application Services
+   * Rust component, which has stricter URL validation requirements.
+   *
+   * @return {Promise<Array<object>>} Array of objects containing origin,
+   * timeCreated, and timeLastUsed for logins that failed URL validation.
+   */
+  async listInvalidOrigins() {
+    const logins = await this.getAllLogins();
+    const invalidOrigins = [];
+    for (const login of logins) {
+      const origin = login.origin || login.formActionOrigin;
+      if (!URL.canParse(origin)) {
+        invalidOrigins.push({
+          origin,
+          timeCreated: new Date(login.timeCreated),
+          timeLastUsed: new Date(login.timeLastUsed),
+        });
+      }
+    }
+    return invalidOrigins;
+  },
+}; // end of LoginManager implementation

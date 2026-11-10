@@ -1,0 +1,19 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+export class UnselectedTabHoverChild extends JSWindowActorChild {
+  receiveMessage(message) {
+    Services.obs.notifyObservers(
+      this.contentWindow,
+      "unselected-tab-hover",
+      message.data.hovered
+    );
+  }
+
+  handleEvent(event) {
+    this.sendAsyncMessage("UnselectedTabHover:Toggle", {
+      enable: event.type == "UnselectedTabHover:Enable",
+    });
+  }
+}

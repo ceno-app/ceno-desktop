@@ -1,0 +1,73 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - android_taskgraph.transforms.upstream_artifacts
+    - android_taskgraph.transforms.treeherder:transforms
+    - android_taskgraph.transforms.signing_android_app:transforms
+    - gecko_taskgraph.transforms.release_notifications:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - build-apk
+
+task-defaults:
+    run-on-repo-type: [hg]
+
+tasks:
+    sign-apk:
+        description: Sign Android APKs
+        from-deps:
+            copy-attributes: true
+        worker:
+            implementation: scriptworker-signing
+        signing-format:
+            by-build-type:
+                (focus-.*|klar-.*): gcp_prod_autograph_focus
+                fenix-(beta|release)-mozillaonline: gcp_prod_autograph_apk_mozillaonline
+                default: gcp_prod_autograph_apk
+        index:
+            by-build-type:
+                (focus-nightly|focus-release|klar-release|focus-beta|fenix-nightly|fenix-debug|fenix-nightly-simulation|fenix-beta|fenix-beta-mozillaonline|fenix-release|fenix-release-mozillaonline):
+                    type: generic
+                    product: mobile
+                default: {}
+        run-on-projects: []
+        treeherder:
+            symbol:
+                by-build-type:
+                    default: Bs
+                    focus-(debug|nightly|beta|release)$: Bfs
+                    focus-(nightly|beta)-firebase$: Bffs
+                    focus-android-test-(debug|nightly|beta)$: Bats
+                    klar-.*: Bkls
+                    fenix-android-test.+: Bats
+                    fenix-android-test-mozillaonline: Bats-mo
+                    fenix-beta-firebase: Bfs
+                    fenix-nightly-firebase: Bfs
+                    fenix-beta-mozillaonline: Bmos
+                    fenix-release-mozillaonline: Bmos
+            kind: build
+            platform:
+                by-build-type:
+                    (fenix.*): fenix-android-all/opt
+                    default: focus-android-all/opt
+            tier: 1
+        notifications:
+            by-build-type:
+                .*(fenix-beta|fenix-release)-mozillaonline:
+                    by-level:
+                        '3':
+                            subject: Mozilla Online Fenix {release_config[version]} APKs are now available
+                            message: The Mozilla Online Fenix {release_config[version]} APKs are now available
+                            emails: [mozillaonline-fenix@mozilla.com]
+                            status-types: [on-completed]
+                            link:
+                                text: Taskcluster Task
+                                href: 'https://firefox-ci-tc.services.mozilla.com/tasks/${status.taskId}'
+                        default: {}
+                default: {}

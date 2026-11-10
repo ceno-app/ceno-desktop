@@ -1,0 +1,14 @@
+[DEFAULT]
+
+["test_initial_download.py"]
+skip-if = [
+  "asan",
+  "debug", # The GAPI key isn't available in debug or sanitizer builds
+  "cc_type == 'clang' && os == 'win'", # Bug 1565818
+  "os == 'win' && ccov", # Bug 1805893
+  "tsan",
+]
+
+["test_notification.py"]
+
+["test_warning_pages.py"]

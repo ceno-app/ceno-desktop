@@ -1,0 +1,356 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_a11y_AccIterator_h_
+#define mozilla_a11y_AccIterator_h_
+
+#include "Filters.h"
+#include "mozilla/a11y/DocAccessible.h"
+#include "mozilla/dom/Element.h"
+#include "nsTArray.h"
+#include "nsContentUtils.h"
+#include "mozilla/dom/TreeOrderedArray.h"
+
+#include <memory>
+
+class nsITreeView;
+
+namespace mozilla {
+namespace dom {
+class Element;
+class HTMLLabelElement;
+}  // namespace dom
+
+namespace a11y {
+class DocAccessibleParent;
+
+/**
+ * AccIterable is a basic interface for iterators over accessibles.
+ */
+class AccIterable {
+ public:
+  virtual ~AccIterable() = default;
+  virtual Accessible* Next() = 0;
+
+ private:
+  friend class Relation;
+  std::unique_ptr<AccIterable> mNextIter;
+};
+
+/**
+ * Allows to iterate through accessible children or subtree complying with
+ * filter function.
+ */
+class AccIterator : public AccIterable {
+ public:
+  AccIterator(LocalAccessible* aRoot, filters::FilterFuncPtr aFilterFunc);
+  virtual ~AccIterator();
+
+  AccIterator() = delete;
+  AccIterator(const AccIterator&) = delete;
+  AccIterator& operator=(const AccIterator&) = delete;
+
+  /**
+   * Return next accessible complying with filter function. Return the first
+   * accessible for the first time.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  struct IteratorState {
+    explicit IteratorState(LocalAccessible* aParent,
+                           IteratorState* mParentState = nullptr);
+
+    RefPtr<LocalAccessible> mParent;
+    int32_t mIndex;
+    IteratorState* mParentState;
+  };
+
+  filters::FilterFuncPtr mFilterFunc;
+  IteratorState* mState;
+};
+
+/**
+ * Allows to traverse through related accessibles that are pointing to the given
+ * dependent accessible by relation attribute. This is typically used to query
+ * implicit reverse relations; e.g. calculating the LABEL_FOR relation for a
+ * label where that label was referenced using aria-labelledby.
+ */
+class RelatedAccIterator : public AccIterable {
+ public:
+  /**
+   * Constructor.
+   *
+   * @param aDocument         [in] the document accessible the related
+   * &                         accessibles belong to.
+   * @param aDependentContent [in] the content of dependent accessible that
+   *                           relations were requested for
+   * @param aRelAttr          [in] relation attribute that relations are
+   *                           pointed by, null for all relations
+   */
+  RelatedAccIterator(DocAccessible* aDocument, nsIContent* aDependentContent,
+                     nsAtom* aRelAttr);
+
+  virtual ~RelatedAccIterator() = default;
+
+  RelatedAccIterator() = delete;
+  RelatedAccIterator(const RelatedAccIterator&) = delete;
+  RelatedAccIterator& operator=(const RelatedAccIterator&) = delete;
+
+  /**
+   * Return next related accessible for the given dependent accessible.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  DocAccessible::AttrRelProviders* GetIdRelProvidersFor(nsIContent* aContent);
+
+  DocAccessible* mDocument;
+  nsIContent* mDependentContentOrShadowHost;
+  nsAtom* mRelAttr;
+  DocAccessible::AttrRelProviders* mProviders;
+  uint32_t mIndex;
+  bool mIsWalkingDependentElements;
+};
+
+/**
+ * Used to iterate through HTML labels associated with the given accessible.
+ */
+class HTMLLabelIterator : public AccIterable {
+ public:
+  enum LabelFilter { eAllLabels, eSkipAncestorLabel };
+
+  HTMLLabelIterator(DocAccessible* aDocument,
+                    const LocalAccessible* aAccessible,
+                    LabelFilter aFilter = eAllLabels);
+
+  virtual ~HTMLLabelIterator() = default;
+
+  HTMLLabelIterator() = delete;
+  HTMLLabelIterator(const HTMLLabelIterator&) = delete;
+  HTMLLabelIterator& operator=(const HTMLLabelIterator&) = delete;
+
+  /**
+   * Return next label accessible associated with the given element.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  void Initialize();
+
+  bool IsLabel(LocalAccessible* aLabel);
+
+  DocAccessible* mDocument;
+
+  // XXX: replace it on weak reference (bug 678429), it's safe to use raw
+  // pointer now because iterators life cycle is short.
+  const LocalAccessible* mAcc;
+  LabelFilter mLabelFilter;
+
+  dom::TreeOrderedArray<nsIContent*, TreeKind::ShadowIncludingDOM>
+      mRelatedNodes;
+  size_t mNextIndex = 0;
+  bool mInitialized = false;
+};
+
+/**
+ * Used to iterate through HTML outputs associated with the given element.
+ */
+class HTMLOutputIterator : public AccIterable {
+ public:
+  HTMLOutputIterator(DocAccessible* aDocument, nsIContent* aElement);
+  virtual ~HTMLOutputIterator() = default;
+
+  HTMLOutputIterator() = delete;
+  HTMLOutputIterator(const HTMLOutputIterator&) = delete;
+  HTMLOutputIterator& operator=(const HTMLOutputIterator&) = delete;
+
+  /**
+   * Return next output accessible associated with the given element.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  RelatedAccIterator mRelIter;
+};
+
+/**
+ * Used to iterate through XUL labels associated with the given element.
+ */
+class XULLabelIterator : public AccIterable {
+ public:
+  XULLabelIterator(DocAccessible* aDocument, nsIContent* aElement);
+  virtual ~XULLabelIterator() = default;
+
+  XULLabelIterator() = delete;
+  XULLabelIterator(const XULLabelIterator&) = delete;
+  XULLabelIterator& operator=(const XULLabelIterator&) = delete;
+
+  /**
+   * Return next label accessible associated with the given element.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  RelatedAccIterator mRelIter;
+};
+
+/**
+ * Used to iterate through XUL descriptions associated with the given element.
+ */
+class XULDescriptionIterator : public AccIterable {
+ public:
+  XULDescriptionIterator(DocAccessible* aDocument, nsIContent* aElement);
+  virtual ~XULDescriptionIterator() = default;
+
+  XULDescriptionIterator() = delete;
+  XULDescriptionIterator(const XULDescriptionIterator&) = delete;
+  XULDescriptionIterator& operator=(const XULDescriptionIterator&) = delete;
+
+  /**
+   * Return next description accessible associated with the given element.
+   */
+  virtual LocalAccessible* Next() override;
+
+ private:
+  RelatedAccIterator mRelIter;
+};
+
+/**
+ * Used to iterate through elements referenced through explicitly set
+ * attr-elements or IDs listed in a content attribute. Note, any method used to
+ * iterate through IDs, elements, or accessibles moves iterator to next
+ * position.
+ */
+class AssociatedElementsIterator : public AccIterable {
+ public:
+  AssociatedElementsIterator(DocAccessible* aDoc, nsIContent* aContent,
+                             nsAtom* aIDRefsAttr);
+  virtual ~AssociatedElementsIterator() = default;
+
+  AssociatedElementsIterator() = delete;
+  AssociatedElementsIterator(const AssociatedElementsIterator&) = delete;
+  AssociatedElementsIterator operator=(const AssociatedElementsIterator&) =
+      delete;
+
+  /**
+   * Return next element.
+   */
+  dom::Element* NextElem();
+
+  // AccIterable
+  virtual LocalAccessible* Next() override;
+
+ private:
+  nsIContent* mContent;
+  DocAccessible* mDoc;
+  nsTArray<RefPtr<dom::Element>> mElements;
+  uint32_t mElemIdx;
+};
+
+/**
+ * Iterator that points to a single accessible returning it on the first call
+ * to Next().
+ */
+class SingleAccIterator : public AccIterable {
+ public:
+  explicit SingleAccIterator(Accessible* aTarget) : mAcc(aTarget) {}
+  virtual ~SingleAccIterator() = default;
+
+  SingleAccIterator() = delete;
+  SingleAccIterator(const SingleAccIterator&) = delete;
+  SingleAccIterator& operator=(const SingleAccIterator&) = delete;
+
+  virtual Accessible* Next() override;
+
+ private:
+  Accessible* mAcc;
+};
+
+/**
+ * Used to iterate items of the given item container.
+ */
+class ItemIterator : public AccIterable {
+ public:
+  explicit ItemIterator(const Accessible* aItemContainer)
+      : mContainer(aItemContainer), mAnchor(nullptr) {}
+
+  ItemIterator() = delete;
+  ItemIterator(const ItemIterator&) = delete;
+  ItemIterator& operator=(const ItemIterator&) = delete;
+
+  virtual Accessible* Next() override;
+
+ private:
+  const Accessible* mContainer;
+  Accessible* mAnchor;
+};
+
+/**
+ * Used to iterate through XUL tree items of the same level.
+ */
+class XULTreeItemIterator : public AccIterable {
+ public:
+  XULTreeItemIterator(const XULTreeAccessible* aXULTree, nsITreeView* aTreeView,
+                      int32_t aRowIdx);
+  virtual ~XULTreeItemIterator() = default;
+
+  XULTreeItemIterator() = delete;
+  XULTreeItemIterator(const XULTreeItemIterator&) = delete;
+  XULTreeItemIterator& operator=(const XULTreeItemIterator&) = delete;
+
+  virtual LocalAccessible* Next() override;
+
+ private:
+  const XULTreeAccessible* mXULTree;
+  nsITreeView* mTreeView;
+  int32_t mRowCount;
+  int32_t mContainerLevel;
+  int32_t mCurrRowIdx;
+};
+
+/**
+ * Used to iterate through a sequence of RemoteAccessibles supplied as an array
+ * of ids. Such id arrays are included in the RemoteAccessible cache.
+ */
+class RemoteAccIterator : public AccIterable {
+ public:
+  /**
+   * Construct with a reference to an array owned somewhere else; e.g. a
+   * RemoteAccessible cache.
+   */
+  RemoteAccIterator(const nsTArray<uint64_t>& aIds, DocAccessibleParent* aDoc)
+      : mIds(aIds), mDoc(aDoc), mIndex(0) {}
+
+  virtual ~RemoteAccIterator() = default;
+
+  virtual Accessible* Next() override;
+
+ private:
+  const nsTArray<uint64_t>& mIds;
+  DocAccessibleParent* mDoc;
+  uint32_t mIndex;
+};
+
+/**
+ * Used to iterate through an array of accessibles
+ */
+class ArrayAccIterator : public AccIterable {
+ public:
+  explicit ArrayAccIterator(nsTArray<Accessible*>&& aAccs)
+      : mAccs(std::move(aAccs)), mIndex(0) {}
+
+  virtual ~ArrayAccIterator() = default;
+
+  virtual Accessible* Next() override;
+
+ private:
+  nsTArray<Accessible*> mAccs;
+  uint32_t mIndex;
+};
+
+}  // namespace a11y
+}  // namespace mozilla
+
+#endif

@@ -1,0 +1,9 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+MOZ_SRC_FILES += [
+    "dir/file1.txt",
+    "dir/file2.txt",
+    "dir/subdir/otherfile.txt",
+    "file.txt",
+]

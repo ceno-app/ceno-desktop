@@ -1,0 +1,115 @@
+<html>
+
+<head>
+  <title>Testing the tree updates</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests
+    // //////////////////////////////////////////////////////////////////////////
+
+    async function doTests() {
+      // prependAppend("c1")
+      {
+        let reordered = waitForEvent(EVENT_REORDER, "c1");
+        const checkbox = document.createElement("input");
+        checkbox.setAttribute("type", "checkbox");
+        getNode("c1").insertBefore(checkbox, getNode("c1").firstChild);
+        const button = document.createElement("input");
+        button.setAttribute("type", "button");
+        getNode("c1").appendChild(button);
+        await reordered;
+        const accTree =
+          { SECTION: [ // container
+            { CHECKBUTTON: [ ] },
+            { ENTRY: [ ] },
+            { PUSHBUTTON: [ ] },
+          ] };
+        testAccessibleTree("c1", accTree);
+      }
+
+      // removeRemove("c2")
+      {
+        let reordered = waitForEvent(EVENT_REORDER, "c2");
+        getNode("c2").firstChild.remove();
+        await reordered;
+        const accTree =
+          { SECTION: [ // container
+            { PUSHBUTTON: [ ] },
+          ] };
+        testAccessibleTree("c2", accTree);
+      }
+
+      // insertInaccessibleAccessibleSiblings
+      {
+        let reordered = waitForEvent(EVENT_REORDER, "c3");
+        getNode("c3").appendChild(document.createElement("span"));
+        getNode("c3").appendChild(document.createElement("input"));
+        await reordered;
+        const accTree =
+          { SECTION: [ // container
+            { PUSHBUTTON: [
+              { TEXT_LEAF: [] },
+            ] },
+            { ENTRY: [ ] },
+          ] };
+        testAccessibleTree("c3", accTree);
+      }
+
+      // displayContentsInsertion (bug 1500416)
+      {
+        let reordered = waitForEvent(EVENT_REORDER, "c4");
+        document.body.offsetTop; // Flush layout.
+        const list = document.createElement("ul");
+        list.style.display = "contents";
+        list.appendChild(document.createElement("li"));
+        list.firstChild.appendChild(document.createTextNode("Text"));
+        getNode("c4").appendChild(list);
+        await reordered;
+        const accTree =
+          { SECTION: [ // container
+            { LIST: [
+              { LISTITEM: [
+                { LISTITEM_MARKER: [] },
+                { TEXT_LEAF: [] },
+              ] },
+            ] },
+          ] };
+        testAccessibleTree("c4", accTree);
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="c1"><input></div>
+  <div id="c2"><span><input type="checkbox"><input></span><input type="button"></div>
+
+  <div id="c3"><input type="button" value="button"></div>
+  <div id="c4"></div>
+
+</body>
+</html>

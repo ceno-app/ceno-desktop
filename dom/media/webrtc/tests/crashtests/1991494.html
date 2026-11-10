@@ -1,0 +1,18 @@
+<html class="reftest-wait">
+<head>
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      SpecialPowers.wrap(document).notifyUserGestureActivation();
+      try {
+        await navigator.mediaDevices.getDisplayMedia({
+          "video": {
+            "height": -2147483584,
+          }
+        });
+      } finally {
+        document.documentElement.removeAttribute("class");
+      }
+    })
+  </script>
+</head>
+</html>

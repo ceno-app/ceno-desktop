@@ -1,0 +1,33 @@
+<html class="reftest-wait">
+  <body>
+    <script>
+      let o1;
+      let p1, p2;
+      window.addEventListener("MozReftestInvalidate", finish);
+      // Synchronously call reload while an async load away from the initial about:blank is ongoing.
+      // This causes the window to be reused and a navigation event to mess with the gUM request.
+      try { o1 = window.open("/") } catch (e) {}
+      // Note: window.open can fail here in some configurations, so o1 might be null.
+      // But the try/catch silence that (bug 2002313).
+      try { o1.location.reload() } catch (e) {}
+      try { o2 = new RTCPeerConnection({iceServers: [{"url": "stun:d"}]}) } catch (e) {}
+      try { p1 = o1.navigator.mediaDevices.getUserMedia({video: true, fake: true}).catch((error) => {}) } catch (e) {}
+      try { o2.createOffer({offerToReceiveVideo: true}).then((offer) => {
+        try { p2 = o1.navigator.mediaDevices.getUserMedia({video: true}) } catch (e) {};
+      }) } catch (e) {}
+
+      async function finish() {
+        try {
+          await p1;
+        } catch (e) {}
+        try {
+          await p2;
+        } catch (e) {}
+        try {
+          o1.close();
+        } catch (e) {}
+        document.documentElement.className = "";
+      }
+    </script>
+  </body>
+</html>

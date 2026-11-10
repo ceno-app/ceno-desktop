@@ -1,0 +1,66 @@
+<html>
+
+<head>
+  <title>Test hide/show events on event listener changes</title>
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../role.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    function dummyListener() {}
+
+    async function doTest() {
+      is(getAccessible("parent", null, null, DONOTFAIL_IF_NO_ACC), null, "Check that parent is not accessible.");
+      is(getAccessible("child", null, null, DONOTFAIL_IF_NO_ACC), null, "Check that child is not accessible.");
+      let shown = waitForEvent(EVENT_SHOW, getNode("parent"));
+      getNode("parent").addEventListener("click", dummyListener);
+      await shown;
+      const tree = { TEXT: [] };
+      testAccessibleTree("parent", tree);
+
+      let unexpected = new UnexpectedEvents([[EVENT_HIDE, getNode("parent")]]);
+      getNode("parent").removeEventListener("click", dummyListener);
+      await unexpected.flush();
+      unexpected.stop();
+      ok(getAccessible("parent", null, null, DONOTFAIL_IF_NO_ACC),
+         "Parent stays accessible after click event listener is removed");
+      ok(!getAccessible("child", null, null, DONOTFAIL_IF_NO_ACC),
+         "Child stays inaccessible");
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTest);
+  </script>
+
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=1175913"
+     title="Crash in mozilla::a11y::DocAccessibleParent::RemoveAccessible(ProxyAccessible* aAccessible)">
+    Mozilla Bug 1175913
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <span id="parent">
+      <span id="child">
+      </span>
+  </span>
+
+</body>
+</html>

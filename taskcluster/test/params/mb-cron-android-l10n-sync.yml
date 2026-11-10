@@ -1,0 +1,64 @@
+android_perftest_backstop: true
+app_version: '150.0'
+backstop: true
+base_ref: ''
+base_repository: https://hg.mozilla.org/mozilla-unified
+base_rev: 9e645d471130b8ec116abf03fcb40647cd854f69
+build_date: 1776276856
+build_number: 1
+do_not_optimize: []
+dontbuild: false
+enable_always_target:
+  - docker-image
+existing_tasks: {}
+files_changed:
+  - mobile/android/fenix/app/src/main/res/raw/initial_experiments.json
+  - security/ct/CTKnownLogs.h
+  - security/manager/tools/log_list.json
+  - services/settings/dumps/blocklists/addons-bloomfilters.json
+  - services/settings/dumps/main/ai-window-prompts.json
+  - taskcluster/docs/parameters.rst
+  - taskcluster/gecko_taskgraph/actions/merge_automation.py
+  - taskcluster/gecko_taskgraph/actions/release_promotion.py
+  - taskcluster/gecko_taskgraph/actions/run_nightly.py
+  - taskcluster/gecko_taskgraph/actions/scriptworker_canary.py
+  - taskcluster/gecko_taskgraph/decision.py
+  - taskcluster/gecko_taskgraph/morph.py
+  - taskcluster/gecko_taskgraph/parameters.py
+  - taskcluster/gecko_taskgraph/test/test_util_backstop.py
+  - taskcluster/gecko_taskgraph/util/backstop.py
+filters:
+  - target_tasks_method
+head_git_rev: c034b1c857d52dac5ca28b11e94c996d1c8d5e59
+head_ref: eab1c14b7eb1edad6b10f299cccef8def55a4a0f
+head_repository: https://hg.mozilla.org/releases/mozilla-beta
+head_rev: eab1c14b7eb1edad6b10f299cccef8def55a4a0f
+head_tag: ''
+hg_branch: default
+level: '3'
+moz_build_date: '20260415181416'
+next_version: null
+optimize_strategies: gecko_taskgraph.optimize:project.beta
+optimize_target_tasks: true
+owner: user@example.com
+phabricator_diff: null
+project: mozilla-beta
+pushdate: 1776276856
+pushlog_id: '25814'
+release_enable_emefree: false
+release_enable_partner_attribution: false
+release_enable_partner_repack: false
+release_eta: ''
+release_history: {}
+release_partner_build_number: 1
+release_partner_config: {}
+release_partners: []
+release_product: null
+release_type: beta
+repository_type: hg
+target_tasks_method: android-l10n-sync
+tasks_for: cron
+test_manifest_loader: default
+try_mode: null
+try_task_config: {}
+version: 150.0b11

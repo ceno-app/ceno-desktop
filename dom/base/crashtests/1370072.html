@@ -1,0 +1,30 @@
+<script>
+let nLoads = 0;
+
+function start() {
+	ifr = document.createElement('iframe');
+	ifr.addEventListener('load', onLoad);
+	document.body.appendChild(ifr);
+}
+
+function onLoad() {
+	if (++nLoads > 3) {
+		// Limit recursion depth, bug 1971796
+		return;
+	}
+	doc = ifr.contentDocument;
+	// el will be body
+	el = function() {
+		let elements = doc.querySelectorAll('*:not([id])');
+		return elements[elements.length-1]
+	}();
+	ifr.contentWindow.onresize = onResize;
+	ifr.height = '5px';
+	el.clientTop;
+}
+
+function onResize() {
+	document.documentElement.appendChild(ifr);
+}
+</script>
+<body onload="start()"></body>

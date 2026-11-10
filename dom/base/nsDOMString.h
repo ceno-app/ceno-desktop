@@ -1,0 +1,16 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef nsDOMString_h_
+#define nsDOMString_h_
+
+#include "nsString.h"
+
+inline bool DOMStringIsNull(const nsAString& aString) {
+  return aString.IsVoid();
+}
+
+inline void SetDOMStringToNull(nsAString& aString) { aString.SetIsVoid(true); }
+
+#endif /* nsDOMString_h_ */

@@ -1,0 +1,43 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_ReportingUtils_h
+#define mozilla_dom_ReportingUtils_h
+
+#include "mozilla/SourceLocation.h"
+#include "nsString.h"
+
+class nsAtom;
+class nsIGlobalObject;
+class nsIURI;
+
+namespace mozilla::dom {
+
+class EventTarget;
+class ReportBody;
+
+class ReportingUtils final {
+ public:
+  static void StripURL(nsIURI* aURI, nsACString& outStrippedURL);
+  static void StripLocationFileName(const mozilla::JSCallingLocation& aLocation,
+                                    nsACString& outStrippedFileName);
+
+  static void Report(nsIGlobalObject* aGlobal, nsAtom* aType,
+                     const nsAString& aGroupName, const nsAString& aURL,
+                     ReportBody* aBody);
+
+  /**
+   * Deserializes `aSecurityPolicyViolationInitJSON` into a
+   * `SecurityPolicyViolationEventInit` which is then used to generate an event
+   * and report, dispatch them, and attempt delivery to any configured endpoint.
+   */
+  static void DeserializeSecurityViolationEventAndReport(
+      mozilla::dom::EventTarget* aTarget, nsIGlobalObject* aGlobal,
+      const nsAString& aSecurityPolicyViolationInitJSON,
+      const nsAString& aReportGroupName);
+};
+
+}  // namespace mozilla::dom
+
+#endif  // mozilla_dom_ReportingUtils_h

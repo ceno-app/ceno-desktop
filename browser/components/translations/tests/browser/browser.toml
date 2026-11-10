@@ -1,0 +1,72 @@
+[DEFAULT]
+subsuite = "translations"
+support-files = [
+  "head.js",
+  "!/toolkit/components/translations/tests/browser/shared-head.js",
+  "!/toolkit/components/translations/tests/browser/translations-test.mjs",
+]
+prefs = [
+  # The Browser languages section is now hitting AMO on page load
+  "extensions.getAddons.langpacks.url=https://mochi.test:8000/langpacks",
+]
+
+["browser_translations_about_preferences_manage_downloaded_languages.js"]
+
+["browser_translations_about_settings_main_page_offer_checkbox.js"]
+
+["browser_translations_about_settings_subpage_always_translate_langs_a11y.js"]
+
+["browser_translations_about_settings_subpage_always_translate_langs_basic.js"]
+
+["browser_translations_about_settings_subpage_always_translate_langs_modify.js"]
+
+["browser_translations_about_settings_subpage_always_translate_langs_observe.js"]
+
+["browser_translations_about_settings_subpage_back_button.js"]
+
+["browser_translations_about_settings_subpage_default.js"]
+
+["browser_translations_about_settings_subpage_download_langs_basic.js"]
+
+["browser_translations_about_settings_subpage_download_langs_delete_confirmation.js"]
+
+["browser_translations_about_settings_subpage_download_langs_errors.js"]
+
+["browser_translations_about_settings_subpage_download_langs_reopen_reset_states.js"]
+
+["browser_translations_about_settings_subpage_download_langs_reset_states.js"]
+
+["browser_translations_about_settings_subpage_download_langs_sorting.js"]
+
+["browser_translations_about_settings_subpage_never_translate_langs_a11y.js"]
+
+["browser_translations_about_settings_subpage_never_translate_langs_basic.js"]
+
+["browser_translations_about_settings_subpage_never_translate_langs_modify.js"]
+
+["browser_translations_about_settings_subpage_never_translate_langs_observe.js"]
+
+["browser_translations_about_settings_subpage_never_translate_sites_basic.js"]
+
+["browser_translations_about_settings_subpage_never_translate_sites_observe.js"]
+
+["browser_translations_e2e_full_page_translate_with_lexical_shortlist.js"]
+
+["browser_translations_e2e_full_page_translate_without_lexical_shortlist.js"]
+
+["browser_translations_recent_language_memory_auto_translate.js"]
+
+["browser_translations_recent_language_memory_full_page_and_select.js"]
+
+["browser_translations_recent_language_memory_full_page_and_select_multi_window.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && ccov", # Bug 1972458
+]
+
+["browser_translations_recent_language_memory_full_page_multi_window.js"]
+
+["browser_translations_recent_language_memory_full_page_multi_window_multi_tab.js"]
+
+["browser_translations_recent_language_memory_full_page_navigate.js"]
+
+["browser_translations_recent_language_memory_full_page_retranslate.js"]

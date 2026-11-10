@@ -1,0 +1,116 @@
+/* Any copyright is dedicated to the Public Domain.
+ http://creativecommons.org/publicdomain/zero/1.0/ */
+
+"use strict";
+
+// Test that the undo and redo correctly updates the content when opening the HTML editor on a
+// new node. Bug 1327674.
+
+const DIV1_HTML = '<div id="d1">content1</div>';
+const DIV2_HTML = '<div id="d2">content2</div>';
+const DIV2_HTML_UPDATED = '<div id="d2">content2_updated</div>';
+
+const TEST_URL =
+  "data:text/html," +
+  "<!DOCTYPE html>" +
+  "<head><meta charset='utf-8' /></head>" +
+  "<body>" +
+  DIV1_HTML +
+  DIV2_HTML +
+  "</body>" +
+  "</html>";
+
+add_task(async function () {
+  const { inspector } = await openInspectorForURL(TEST_URL);
+
+  inspector.markup._frame.focus();
+
+  await selectNode("#d1", inspector);
+
+  info("Open the HTML editor on node #d1");
+  let onHtmlEditorCreated = once(inspector.markup, "begin-editing");
+  EventUtils.sendKey("F2", inspector.markup._frame.contentWindow);
+  await onHtmlEditorCreated;
+
+  ok(inspector.markup.htmlEditor.isVisible, "HTML Editor is visible");
+  is(
+    inspector.markup.htmlEditor.editor.getText(),
+    DIV1_HTML,
+    "The editor content for d1 is correct."
+  );
+
+  info("Hide the HTML editor for #d1");
+  let onEditorHidden = once(inspector.markup.htmlEditor, "popuphidden");
+  EventUtils.sendKey("ESCAPE", inspector.markup.htmlEditor.doc.defaultView);
+  await onEditorHidden;
+  ok(!inspector.markup.htmlEditor.isVisible, "HTML Editor is not visible");
+
+  await selectNode("#d2", inspector);
+
+  info("Open the HTML editor on node #d2");
+  onHtmlEditorCreated = once(inspector.markup, "begin-editing");
+  EventUtils.sendKey("F2", inspector.markup._frame.contentWindow);
+  await onHtmlEditorCreated;
+
+  ok(inspector.markup.htmlEditor.isVisible, "HTML Editor is visible");
+  is(
+    inspector.markup.htmlEditor.editor.getText(),
+    DIV2_HTML,
+    "The editor content for d2 is correct."
+  );
+
+  // Wait a bit so that the next change is tracked as a
+  // seperate history change
+  await waitForTime(1000);
+
+  inspector.markup.htmlEditor.editor.focus();
+  // Select and replace the content
+  await EventUtils.synthesizeKey("a", { accelKey: true });
+  await EventUtils.synthesizeKey(DIV2_HTML_UPDATED);
+
+  // Wait a bit so that the next change is tracked as a
+  // seperate history change
+  await waitForTime(1000);
+
+  is(
+    inspector.markup.htmlEditor.editor.getText(),
+    DIV2_HTML_UPDATED,
+    "The editor content for d2 is updated."
+  );
+
+  await EventUtils.synthesizeKey("z", { accelKey: true });
+  // Wait a bit for the content to update
+  await waitForTime(1000);
+  is(
+    inspector.markup.htmlEditor.editor.getText(),
+    DIV2_HTML,
+    "The editor content for d2 is reverted."
+  );
+
+  // Undo should be at the last change in history
+  await EventUtils.synthesizeKey("z", { accelKey: true });
+  // Wait a bit for the content to update
+  await waitForTime(1000);
+  is(
+    inspector.markup.htmlEditor.editor.getText(),
+    DIV2_HTML,
+    "The editor content for d2 has not been set to content1."
+  );
+
+  // TO FIX: The redo key seems to fail intermittently on Windows
+  if (!isWindows()) {
+    // Redo should be back to to the updated content
+    await EventUtils.synthesizeKey("z", { shiftKey: true, accelKey: true });
+    is(
+      inspector.markup.htmlEditor.editor.getText(),
+      DIV2_HTML_UPDATED,
+      "The editor content for d2 is back to updated"
+    );
+  }
+
+  info("Hide the HTML editor for #d2");
+  onEditorHidden = once(inspector.markup.htmlEditor, "popuphidden");
+  EventUtils.sendKey("ESCAPE", inspector.markup.htmlEditor.doc.defaultView);
+  await onEditorHidden;
+  ok(!inspector.markup.htmlEditor.isVisible, "HTML Editor is not visible");
+});

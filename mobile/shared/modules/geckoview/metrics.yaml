@@ -1,0 +1,241 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - "GeckoView :: General"
+
+geckoview:
+  page_load_progress_time:
+    type: timing_distribution
+    time_unit: millisecond
+    telemetry_mirror: GV_PAGE_LOAD_PROGRESS_MS
+    description: >
+      Time between page load progress starts (0) and completion (100).
+      (Migrated from the geckoview metric of the same name).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1499418
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1580077
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877576
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1580077#c10
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+
+  page_load_time:
+    type: timing_distribution
+    time_unit: millisecond
+    telemetry_mirror: GV_PAGE_LOAD_MS
+    description: >
+      The time taken to load a page. This includes all static contents, no
+      dynamic content.
+      Loading of about: pages is not counted.
+      Back back navigation (sometimes via BFCache) is included which is a
+      source of bimodality due to the <50ms load times.
+      (Migrated from the geckoview metric of the same name).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1499418
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1584109
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877576
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1584109#c1
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+
+  page_reload_time:
+    type: timing_distribution
+    time_unit: millisecond
+    description: >
+      Time taken to reload a page.
+      This includes all static contents, no dynamic content.
+      Loading of about: pages is not counted.
+      (Migrated from the geckoview metric of the same name).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1549519
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1580077
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877576
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1580077#c10
+    notification_emails:
+      - android-probes@mozilla.com
+      - sefeng@mozilla.com
+      - perf-telemetry-alerts@mozilla.com
+    expires: never
+
+  document_site_origins:
+    type: custom_distribution
+    description: >
+      When a document is loaded, report the
+      number of [site origins](https://searchfox.org/
+      mozilla-central/rev/
+      3300072e993ae05d50d5c63d815260367eaf9179/
+      caps/nsIPrincipal.idl#264) of the entire browser
+      if it has been at least 5 minutes since last
+      time we collect this data.
+      (Migrated from the geckoview metric of the same name).
+    range_min: 0
+    range_max: 100
+    bucket_count: 50
+    histogram_type: exponential
+    unit: number of site_origin
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1589700
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877576
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1589700#c5
+    notification_emails:
+      - sefeng@mozilla.com
+      - perf-telemetry-alerts@mozilla.com
+    expires: never
+
+  per_document_site_origins:
+    type: custom_distribution
+    description: >
+      When a document is unloaded, report the highest number of
+      [site origins](https://searchfox.org/
+      mozilla-central/rev/
+      3300072e993ae05d50d5c63d815260367eaf9179/
+      caps/nsIPrincipal.idl#264) loaded simultaneously in that
+      document.
+      (Migrated from the geckoview metric of the same name).
+    range_min: 0
+    range_max: 100
+    bucket_count: 50
+    histogram_type: exponential
+    unit: number of site origins per document
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1603185
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1877576
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1603185#c13
+    notification_emails:
+      - beth@mozilla.com
+      - perf-telemetry-alerts@mozilla.com
+    expires: never
+
+nimbus_qa_prefs:
+  string_default:
+    type: object
+    description: >
+      The value of the "nimbus.qa.string-default" pref.
+    structure: &nimbus_qa_string_pref
+      type: object
+      properties:
+        user_branch_value:
+          type: string
+        default_branch_value:
+          type: string
+    bugs: &nimbus_qa_prefs_bugs
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2030152
+    data_reviews: &nimbus_qa_prefs_data_reviews
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2030152
+    notification_emails: &nimbus_qa_prefs_notification_emails
+      - beth@mozilla.com
+      - project-nimbus@mozilla.com
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  string_user:
+    type: object
+    description: >
+      The value of the "nimbus.qa.string-user" pref.
+    structure: *nimbus_qa_string_pref
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  int_default:
+    type: object
+    description: >
+      The value of the "nimbus.qa.int-default" pref.
+    structure: &nimbus_qa_int_pref
+      type: object
+      properties:
+        user_branch_value:
+          type: number
+        default_branch_value:
+          type: number
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  int_user:
+    type: object
+    description: >
+      The value of the "nimbus.qa.int-user" pref.
+    structure: *nimbus_qa_int_pref
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  bool_default:
+    type: object
+    description: >
+      The value of the "nimbus.qa.bool-default" pref.
+    structure: &nimbus_qa_bool_pref
+      type: object
+      properties:
+        user_branch_value:
+          type: boolean
+        default_branch_value:
+          type: boolean
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  bool_user:
+    type: object
+    description: >
+      The value of the "nimbus.qa.bool-user" pref.
+    structure: *nimbus_qa_bool_pref
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155
+    lifetime: application
+
+  pref_type_errors:
+    type: labeled_counter
+    labels:
+      - "nimbus.qa.string-default"
+      - "nimbus.qa.string-user"
+      - "nimbus.qa.int-default"
+      - "nimbus.qa.int-user"
+      - "nimbus.qa.bool-default"
+      - "nimbus.qa.bool-user"
+    description: >
+      Any prefs that we could not get a value -- and thus record a metric value
+      for -- due to type errors.
+    bugs: *nimbus_qa_prefs_bugs
+    data_reviews: *nimbus_qa_prefs_data_reviews
+    notification_emails: *nimbus_qa_prefs_notification_emails
+    data_sensitivity:
+      - technical
+    expires: 155

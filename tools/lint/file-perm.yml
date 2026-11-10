@@ -1,0 +1,60 @@
+---
+file-perm:
+    description: File permission check
+    include:
+        - .
+    extensions:
+        - .build
+        - .c
+        - .cc
+        - .cpp
+        - .css
+        - .flac
+        - .h
+        - .html
+        - .idl
+        - .js
+        - .json
+        - .jsx
+        - .m
+        - .m4s
+        - .md
+        - .mjs
+        - .mm
+        - .mn
+        - .mozbuild
+        - .mp4
+        - .png
+        - .rs
+        - .rst
+        - .svg
+        - .toml
+        - .ts
+        - .ttf
+        - .wasm
+        - .webidl
+        - .xhtml
+        - .xml
+        - .yaml
+        - .yml
+    support-files:
+        - 'tools/lint/mozcheck/**'
+    type: external
+    payload: mozcheck:lint
+    check: file-perm
+
+maybe-shebang-file-perm:
+    description: "File permission check for files that might have `#!` header."
+    include:
+        - .
+    extensions:
+        - .js
+        - .py
+        - .sh
+    support-files:
+        - 'tools/lint/mozcheck/**'
+    type: external
+    payload: mozcheck:lint
+    check: file-perm
+    check-config:
+        allow-shebang: true

@@ -1,0 +1,410 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef mozilla_dom_WindowContext_h
+#define mozilla_dom_WindowContext_h
+
+#include "mozilla/PermissionDelegateHandler.h"
+#include "mozilla/WeakPtr.h"
+#include "mozilla/Span.h"
+#include "mozilla/dom/MaybeDiscarded.h"
+#include "mozilla/dom/SyncedContext.h"
+#include "mozilla/dom/UserActivation.h"
+#include "nsDOMNavigationTiming.h"
+#include "nsILoadInfo.h"
+#include "nsIWebProgressListener.h"
+#include "nsWrapperCache.h"
+
+class nsIGlobalObject;
+
+class nsGlobalWindowInner;
+
+namespace mozilla {
+class LogModule;
+class nsRFPTargetSetIDL;
+
+namespace dom {
+
+class WindowGlobalChild;
+class WindowGlobalParent;
+class WindowGlobalInit;
+class BrowsingContext;
+class BrowsingContextGroup;
+
+#define MOZ_EACH_WC_FIELD(FIELD)                                               \
+  /* Whether the SHEntry associated with the current top-level                 \
+   * window has already seen user interaction.                                 \
+   * As such, this will be reset to false when a new SHEntry is                \
+   * created without changing the WC (e.g. when using pushState or             \
+   * sub-frame navigation)                                                     \
+   * This flag is set for optimization purposes, to avoid                      \
+   * having to get the top SHEntry and update it on every                      \
+   * user interaction.                                                         \
+   * This is only meaningful on the top-level WC. */                           \
+  FIELD(SHEntryHasUserInteraction, bool, {.mCanSet = CanSet::Unrestricted})    \
+  FIELD(CookieBehavior, Maybe<uint32_t>, {.mCanSet = CanSet::OwnerOnly})       \
+  FIELD(IsOnContentBlockingAllowList, bool, {.mCanSet = CanSet::OwnerOnly})    \
+  /* Whether the given window hierarchy is third party. See                    \
+   * ThirdPartyUtil::IsThirdPartyWindow for details */                         \
+  FIELD(IsThirdPartyWindow, bool, {.mCanSet = CanSet::OwnerOnly})              \
+  /* Whether this window's channel has been marked as a third-party            \
+   * tracking resource */                                                      \
+  FIELD(IsThirdPartyTrackingResourceWindow, bool,                              \
+        {.mCanSet = CanSet::OwnerOnly})                                        \
+  /* Whether this window is using its unpartitioned cookies due to             \
+   * the Storage Access API */                                                 \
+  FIELD(UsingStorageAccess, bool, {.mCanSet = CanSet::OwnerOnly})              \
+  FIELD(ShouldResistFingerprinting, bool, {.mCanSet = CanSet::OwnerOnly})      \
+  FIELD(OverriddenFingerprintingSettings, Maybe<RFPTargetSet>,                 \
+        {.mCanSet = CanSet::OwnerOnly})                                        \
+  FIELD(IsSecureContext, bool, {.mCanSet = CanSet::OwnerOnly})                 \
+  FIELD(IsOriginalFrameSource, bool, {.mCanSet = CanSet::OwnerOnly})           \
+  /* Mixed-Content: If the corresponding documentURI is https,                 \
+   * then this flag is true. */                                                \
+  FIELD(IsSecure, bool, {.mCanSet = CanSet::OwnerOnly})                        \
+  /* Whether this window has registered a "beforeunload" event                 \
+   * handler */                                                                \
+  FIELD(NeedsBeforeUnload, bool, {.mCanSet = CanSet::OwnerOnly})               \
+  /* Whether this window's navigation object has registered any                \
+   * event handlers or has ongoing or upcoming method trackers. Only           \
+   * valid for the top-level context. */                                       \
+  FIELD(NeedsTraverse, bool, {.mCanSet = CanSet::OwnerOnly})                   \
+  /* Controls whether the WindowContext is currently considered to be          \
+   * activated by a gesture */                                                 \
+  FIELD(UserActivationStateAndModifiers,                                       \
+        UserActivation::StateAndModifiers::DataT,                              \
+        {.mCanSet = CanSet::Unrestricted})                                     \
+  FIELD(EmbedderPolicy, nsILoadInfo::CrossOriginEmbedderPolicy,                \
+        {.mCanSet = CanSet::Unrestricted})                                     \
+  /* True if this document tree contained at least a HTMLMediaElement.         \
+   * This should only be set on top level context. */                          \
+  FIELD(DocTreeHadMedia, bool,                                                 \
+        {.mTopOnly = true, .mCanSet = CanSet::Unrestricted})                   \
+  FIELD(AutoplayPermission, uint32_t, {.mCanSet = CanSet::OwnerOnly})          \
+  FIELD(ShortcutsPermission, uint32_t,                                         \
+        {.mTopOnly = true, .mCanSet = CanSet::OwnerOnly})                      \
+  /* Store the Id of the browsing context where active media session           \
+   * exists on the top level window context */                                 \
+  FIELD(ActiveMediaSessionContextId, Maybe<uint64_t>,                          \
+        {.mTopOnly = true, .mCanSet = CanSet::Unrestricted})                   \
+  /* ALLOW_ACTION if it is allowed to open popups for the sub-tree             \
+   * starting and including the current WindowContext */                       \
+  FIELD(PopupPermission, uint32_t, {.mCanSet = CanSet::OwnerOnly})             \
+  FIELD(DelegatedPermissions,                                                  \
+        PermissionDelegateHandler::DelegatedPermissionList,                    \
+        {.mCanSet = CanSet::OwnerOnly})                                        \
+  FIELD(DelegatedExactHostMatchPermissions,                                    \
+        PermissionDelegateHandler::DelegatedPermissionList,                    \
+        {.mCanSet = CanSet::OwnerOnly})                                        \
+  FIELD(HasReportedShadowDOMUsage, bool, {.mCanSet = CanSet::Unrestricted})    \
+  /* Whether the principal of this window is for a local                       \
+   * IP address */                                                             \
+  FIELD(IsLocalIP, bool, {.mCanSet = CanSet::OwnerOnly})                       \
+  /* Whether any of the windows in the subtree rooted at this window has       \
+   * active peer connections or not (only set on the top window). */           \
+  FIELD(HasActivePeerConnections, bool,                                        \
+        {.mTopOnly = true, .mCanSet = CanSet::ParentOnly})                     \
+  /* Whether we can execute scripts in this WindowContext. Has no effect       \
+   * unless scripts are also allowed in the BrowsingContext. */                \
+  FIELD(                                                                       \
+      AllowJavascript, bool,                                                   \
+      {.mCanSet = CanSet::OwnerOrParentOnly, .mDefault = [] { return true; }}) \
+  /* If this field is `true`, it means that this WindowContext's               \
+   * CloseWatcherManager has active CloseWatchers, which some UIs may          \
+   * want to dismiss (for example the Android "back button"). */               \
+  FIELD(HasActiveCloseWatcher, bool, {.mCanSet = CanSet::Unrestricted})        \
+  /* Whether this window is allowed to navigate the top-level                  \
+   * without user interaction. */                                              \
+  FIELD(IsFramebustingAllowed, bool, {.mCanSet = CanSet::OwnerOnly})
+
+class WindowContext : public nsISupports, public nsWrapperCache {
+  MOZ_DECL_SYNCED_CONTEXT(WindowContext, MOZ_EACH_WC_FIELD)
+
+  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
+  NS_DECL_CYCLE_COLLECTION_WRAPPERCACHE_CLASS(WindowContext)
+
+ public:
+  static already_AddRefed<WindowContext> GetById(uint64_t aInnerWindowId);
+  static LogModule* GetLog();
+  static LogModule* GetSyncLog();
+
+  BrowsingContext* GetBrowsingContext() const { return mBrowsingContext; }
+  BrowsingContextGroup* Group() const;
+  uint64_t Id() const { return InnerWindowId(); }
+  uint64_t InnerWindowId() const { return mInnerWindowId; }
+  uint64_t OuterWindowId() const { return mOuterWindowId; }
+  bool IsDiscarded() const { return mIsDiscarded; }
+
+  // Returns `true` if this WindowContext is the current WindowContext in its
+  // BrowsingContext.
+  bool IsCurrent() const;
+
+  // Returns `true` if this WindowContext is currently in the BFCache.
+  bool IsInBFCache();
+
+  bool IsInProcess() const { return mIsInProcess; }
+
+  bool NeedsBeforeUnload() const { return GetNeedsBeforeUnload(); }
+
+  bool HasBeforeUnload() const { return NeedsBeforeUnload(); }
+
+  bool IsLocalIP() const { return GetIsLocalIP(); }
+
+  bool ShouldResistFingerprinting() const {
+    return GetShouldResistFingerprinting();
+  }
+
+  bool UsingStorageAccess() const { return GetUsingStorageAccess(); }
+
+  already_AddRefed<nsIRFPTargetSetIDL>
+  GetOverriddenFingerprintingSettingsWebIDL() const;
+
+  nsGlobalWindowInner* GetInnerWindow() const;
+  Document* GetDocument() const;
+  Document* GetExtantDoc() const;
+
+  WindowGlobalChild* GetWindowGlobalChild() const;
+
+  // Get the parent WindowContext of this WindowContext, taking the BFCache into
+  // account. This will not cross chrome/content <browser> boundaries.
+  WindowContext* GetParentWindowContext();
+  WindowContext* TopWindowContext();
+
+  bool SameOriginWithTop() const;
+
+  bool IsTop() const;
+
+  Span<RefPtr<BrowsingContext>> Children() { return mChildren; }
+
+  // The filtered version of `Children()`, which contains no browsing contexts
+  // for synthetic documents as created by object loading content.
+  Span<RefPtr<BrowsingContext>> NonSyntheticChildren() {
+    return mNonSyntheticChildren;
+  }
+
+  BrowsingContext* NonSyntheticLightDOMChildAt(uint32_t aIndex);
+  uint32_t NonSyntheticLightDOMChildrenCount();
+
+  // Cast this object to it's parent-process canonical form.
+  WindowGlobalParent* Canonical();
+
+  nsIGlobalObject* GetParentObject() const;
+  JSObject* WrapObject(JSContext* cx,
+                       JS::Handle<JSObject*> aGivenProto) override;
+
+  void Discard();
+
+  struct IPCInitializer {
+    uint64_t mInnerWindowId;
+    uint64_t mOuterWindowId;
+    uint64_t mBrowsingContextId;
+
+    FieldValues mFields;
+  };
+  IPCInitializer GetIPCInitializer();
+
+  static void CreateFromIPC(IPCInitializer&& aInit);
+
+  // Add new security state flags to the top window context.
+  // These should be some of the nsIWebProgressListener 'HTTPS_ONLY_MODE' or
+  // 'MIXED' state flags.
+  void AddSecurityState(uint32_t aStateFlags);
+
+  static constexpr uint32_t kValidSecurityStateFlags =
+      nsIWebProgressListener::STATE_LOADED_MIXED_DISPLAY_CONTENT |
+      nsIWebProgressListener::STATE_LOADED_MIXED_ACTIVE_CONTENT |
+      nsIWebProgressListener::STATE_BLOCKED_MIXED_DISPLAY_CONTENT |
+      nsIWebProgressListener::STATE_BLOCKED_MIXED_ACTIVE_CONTENT |
+      nsIWebProgressListener::STATE_HTTPS_ONLY_MODE_UPGRADED |
+      nsIWebProgressListener::STATE_HTTPS_ONLY_MODE_UPGRADE_FAILED |
+      nsIWebProgressListener::STATE_HTTPS_ONLY_MODE_UPGRADED_FIRST;
+
+  UserActivation::State GetUserActivationState() const {
+    return UserActivation::StateAndModifiers(
+               GetUserActivationStateAndModifiers())
+        .GetState();
+  }
+
+  // This function would be called when its corresponding window is activated
+  // by user gesture.
+  void NotifyUserGestureActivation(
+      UserActivation::Modifiers aModifiers = UserActivation::Modifiers::None());
+
+  // This function would be called when we want to reset the user gesture
+  // activation flag.
+  void NotifyResetUserGestureActivation();
+
+  // Return true if its corresponding window has been activated by user
+  // gesture.
+  bool HasBeenUserGestureActivated();
+
+  // Return true if its corresponding window has transient user gesture
+  // activation and the transient user gesture activation haven't yet timed
+  // out.
+  bool HasValidTransientUserGestureActivation();
+
+  // See `mLastActivationTimestamp`.
+  const TimeStamp& GetUserGestureStart() const;
+
+  // Return true if the corresponding window has valid transient user gesture
+  // activation and the transient user gesture activation had been consumed
+  // successfully.
+  bool ConsumeTransientUserGestureActivation();
+
+  // Return true if its corresponding window has history activation.
+  bool HasValidHistoryActivation() const;
+
+  // Consume the history-action user activation.
+  void ConsumeHistoryActivation();
+
+  // Update the history-action user activation for this window context
+  void UpdateLastHistoryActivation();
+
+  bool GetTransientUserGestureActivationModifiers(
+      UserActivation::Modifiers* aModifiers);
+
+  bool CanShowPopup();
+  bool CanFramebust();
+
+  bool AllowJavascript() const { return GetAllowJavascript(); }
+  bool CanExecuteScripts() const { return mCanExecuteScripts; }
+
+  void TransientSetHasActivePeerConnections();
+
+  bool HasActiveCloseWatcher() const { return GetHasActiveCloseWatcher(); }
+
+  void ProcessCloseRequest();
+
+ protected:
+  WindowContext(BrowsingContext* aBrowsingContext, uint64_t aInnerWindowId,
+                uint64_t aOuterWindowId, FieldValues&& aFields);
+  virtual ~WindowContext();
+
+  virtual void Init();
+
+ private:
+  friend class BrowsingContext;
+  friend class WindowGlobalChild;
+  friend class WindowGlobalActor;
+
+  void AppendChildBrowsingContext(BrowsingContext* aBrowsingContext);
+  void RemoveChildBrowsingContext(BrowsingContext* aBrowsingContext);
+
+  // Update non-synthetic children based on whether `aBrowsingContext`
+  // is synthetic or not. Regardless the synthetic of `aBrowsingContext`, it is
+  // kept in this WindowContext's all children list.
+  void UpdateChildSynthetic(BrowsingContext* aBrowsingContext,
+                            bool aIsSynthetic);
+
+  // Send a given `BaseTransaction` object to the correct remote.
+  void SendCommitTransaction(ContentParent* aParent,
+                             const BaseTransaction& aTxn, uint64_t aEpoch);
+  void SendCommitTransaction(ContentChild* aChild, const BaseTransaction& aTxn,
+                             uint64_t aEpoch);
+
+  bool CheckOnlyOwningProcessCanSet(ContentParent* aSource);
+
+  bool CheckOnlyParentProcessCanSet(ContentParent* aSource) {
+    return XRE_IsParentProcess() && !aSource;
+  }
+
+  void DidSet(FieldIndex<IDX_AllowJavascript>, bool aOldValue);
+
+  void DidSet(FieldIndex<IDX_HasReportedShadowDOMUsage>, bool aOldValue);
+
+  void DidSet(FieldIndex<IDX_SHEntryHasUserInteraction>, bool aOldValue);
+
+  void DidSet(FieldIndex<IDX_HasActivePeerConnections>, bool aOldValue);
+
+  // Overload `DidSet` to get notifications for a particular field being set.
+  //
+  // You can also overload the variant that gets the old value if you need it.
+  template <size_t I>
+  void DidSet(FieldIndex<I>) {}
+  template <size_t I, typename T>
+  void DidSet(FieldIndex<I>, T&& aOldValue) {}
+  void DidSet(FieldIndex<IDX_UserActivationStateAndModifiers>);
+
+  // Recomputes whether we can execute scripts in this WindowContext based on
+  // the value of AllowJavascript() and whether scripts are allowed in the
+  // BrowsingContext.
+  void RecomputeCanExecuteScripts(bool aApplyChanges = true);
+
+  void ClearLightDOMChildren();
+
+  void EnsureLightDOMChildren();
+
+  const uint64_t mInnerWindowId;
+  const uint64_t mOuterWindowId;
+  RefPtr<BrowsingContext> mBrowsingContext;
+  WeakPtr<WindowGlobalChild> mWindowGlobalChild;
+
+  // --- NEVER CHANGE `mChildren` DIRECTLY! ---
+  // Changes to this list need to be synchronized to the list within our
+  // `mBrowsingContext`, and should only be performed through the
+  // `AppendChildBrowsingContext` and `RemoveChildBrowsingContext` methods.
+  nsTArray<RefPtr<BrowsingContext>> mChildren;
+
+  // --- NEVER CHANGE `mNonSyntheticChildren` DIRECTLY! ---
+  // Same reason as for mChildren.
+  // mNonSyntheticChildren contains the same browsing contexts except browsing
+  // contexts created by the synthetic document for object loading contents
+  // loading images. This is used to discern browsing contexts created when
+  // loading images in <object> or <embed> elements, so that they can be hidden
+  // from named targeting, `Window.frames` etc.
+  nsTArray<RefPtr<BrowsingContext>> mNonSyntheticChildren;
+
+  // mNonSyntheticLightDOMChildren is otherwise the same as
+  // mNonSyntheticChildren, but it contains only those BrowsingContexts where
+  // embedder is in light DOM. The contents of the array are computed lazily and
+  // cleared if there are changes to mChildren.
+  Maybe<nsTArray<RefPtr<BrowsingContext>>> mNonSyntheticLightDOMChildren;
+
+  bool mIsDiscarded = false;
+  bool mIsInProcess = false;
+
+  // Determines if we can execute scripts in this WindowContext. True if
+  // AllowJavascript() is true and script execution is allowed in the
+  // BrowsingContext.
+  bool mCanExecuteScripts = true;
+
+  // https://html.spec.whatwg.org/multipage/interaction.html#last-activation-timestamp
+  // The start time of user gesture, this is only available if the window
+  // context is in process.
+  TimeStamp mLastActivationTimestamp;
+
+  // https://html.spec.whatwg.org/#history-action-activation
+  // This is set to mLastActivationTimestamp every time ConsumeHistoryActivation
+  // is called.
+  TimeStamp mHistoryActivation;
+};
+
+using WindowContextTransaction = WindowContext::BaseTransaction;
+using WindowContextInitializer = WindowContext::IPCInitializer;
+using MaybeDiscardedWindowContext = MaybeDiscarded<WindowContext>;
+
+// Don't specialize the `Transaction` object for every translation unit it's
+// used in. This should help keep code size down.
+extern template class syncedcontext::Transaction<WindowContext>;
+
+}  // namespace dom
+}  // namespace mozilla
+
+namespace IPC {
+template <>
+struct ParamTraits<mozilla::dom::MaybeDiscarded<mozilla::dom::WindowContext>> {
+  using paramType = mozilla::dom::MaybeDiscarded<mozilla::dom::WindowContext>;
+  static void Write(MessageWriter* aWriter, const paramType& aParam);
+  static bool Read(MessageReader* aReader, paramType* aResult);
+};
+
+template <>
+struct ParamTraits<mozilla::dom::WindowContext::IPCInitializer> {
+  using paramType = mozilla::dom::WindowContext::IPCInitializer;
+  static void Write(MessageWriter* aWriter, const paramType& aInitializer);
+  static bool Read(MessageReader* aReader, paramType* aInitializer);
+};
+}  // namespace IPC
+
+#endif  // !defined(mozilla_dom_WindowContext_h)

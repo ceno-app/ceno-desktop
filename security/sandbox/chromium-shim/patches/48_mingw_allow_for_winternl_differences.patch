@@ -1,0 +1,254 @@
+# User Bob Owen <bobowencode@gmail.com>
+This #ifs out various things that are already defined in mingw's winternl.h but
+not in the standard Windows one. It also renames _OBJECT_TYPE_INFORMATION::Name
+to TypeName and _OBJECT_NAME_INFORMATION::ObjectName to Name to match Windows
+documentation and mingw.
+
+diff --git a/sandbox/win/src/nt_internals.h b/sandbox/win/src/nt_internals.h
+--- a/sandbox/win/src/nt_internals.h
++++ b/sandbox/win/src/nt_internals.h
+@@ -35,51 +35,57 @@ typedef NTSTATUS(WINAPI* NtOpenFileFunct
+                                              IN POBJECT_ATTRIBUTES
+                                                  ObjectAttributes,
+                                              OUT PIO_STATUS_BLOCK IoStatusBlock,
+                                              IN ULONG ShareAccess,
+                                              IN ULONG OpenOptions);
+ 
+ typedef NTSTATUS(WINAPI* NtCloseFunction)(IN HANDLE Handle);
+ 
++#if !defined(__MINGW32__)
+ typedef struct _FILE_RENAME_INFORMATION {
+   BOOLEAN ReplaceIfExists;
+   HANDLE RootDirectory;
+   ULONG FileNameLength;
+   WCHAR FileName[1];
+ } FILE_RENAME_INFORMATION, *PFILE_RENAME_INFORMATION;
++#endif
+ 
+ typedef NTSTATUS(WINAPI* NtSetInformationFileFunction)(
+     IN HANDLE FileHandle,
+     OUT PIO_STATUS_BLOCK IoStatusBlock,
+     IN PVOID FileInformation,
+     IN ULONG Length,
+     IN FILE_INFORMATION_CLASS FileInformationClass);
+ 
++#if !defined(__MINGW32__)
+ typedef struct FILE_BASIC_INFORMATION {
+   LARGE_INTEGER CreationTime;
+   LARGE_INTEGER LastAccessTime;
+   LARGE_INTEGER LastWriteTime;
+   LARGE_INTEGER ChangeTime;
+   ULONG FileAttributes;
+ } FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
++#endif
+ 
+ typedef NTSTATUS(WINAPI* NtQueryAttributesFileFunction)(
+     IN POBJECT_ATTRIBUTES ObjectAttributes,
+     OUT PFILE_BASIC_INFORMATION FileAttributes);
+ 
++#if !defined(__MINGW32__)
+ typedef struct _FILE_NETWORK_OPEN_INFORMATION {
+   LARGE_INTEGER CreationTime;
+   LARGE_INTEGER LastAccessTime;
+   LARGE_INTEGER LastWriteTime;
+   LARGE_INTEGER ChangeTime;
+   LARGE_INTEGER AllocationSize;
+   LARGE_INTEGER EndOfFile;
+   ULONG FileAttributes;
+ } FILE_NETWORK_OPEN_INFORMATION, *PFILE_NETWORK_OPEN_INFORMATION;
++#endif
+ 
+ typedef NTSTATUS(WINAPI* NtQueryFullAttributesFileFunction)(
+     IN POBJECT_ATTRIBUTES ObjectAttributes,
+     OUT PFILE_NETWORK_OPEN_INFORMATION FileAttributes);
+ 
+ // -----------------------------------------------------------------------
+ // Sections
+ 
+@@ -142,18 +148,20 @@ typedef NTSTATUS(WINAPI* NtOpenThreadFun
+                                                IN PCLIENT_ID ClientId);
+ 
+ typedef NTSTATUS(WINAPI* NtOpenProcessFunction)(OUT PHANDLE ProcessHandle,
+                                                 IN ACCESS_MASK DesiredAccess,
+                                                 IN POBJECT_ATTRIBUTES
+                                                     ObjectAttributes,
+                                                 IN PCLIENT_ID ClientId);
+ 
++#if !defined(__MINGW32__)
+ // Provide ThreadImpersonationToken which is not in THREADINFOCLASS.
+ constexpr auto ThreadImpersonationToken = static_cast<THREADINFOCLASS>(5);
++#endif
+ 
+ typedef NTSTATUS(WINAPI* NtImpersonateAnonymousTokenFunction)(
+     IN HANDLE ThreadHandle);
+ 
+ typedef NTSTATUS(WINAPI* NtOpenSectionFunction)(
+     OUT PHANDLE SectionHandle, IN ACCESS_MASK DesiredAccess,
+     IN POBJECT_ATTRIBUTES ObjectAttributes);
+ 
+@@ -227,18 +235,20 @@ typedef NTSTATUS(WINAPI* NtOpenKeyFuncti
+ 
+ typedef NTSTATUS(WINAPI* NtOpenKeyExFunction)(
+     OUT PHANDLE KeyHandle, IN ACCESS_MASK DesiredAccess,
+     IN POBJECT_ATTRIBUTES ObjectAttributes, IN DWORD open_options);
+ 
+ // -----------------------------------------------------------------------
+ // Memory
+ 
++#if !defined(__MINGW32__)
+ // Don't really need this structure right now.
+ typedef PVOID PRTL_HEAP_PARAMETERS;
++#endif
+ 
+ typedef PVOID(WINAPI* RtlCreateHeapFunction)(IN ULONG Flags,
+                                              IN PVOID HeapBase OPTIONAL,
+                                              IN SIZE_T ReserveSize OPTIONAL,
+                                              IN SIZE_T CommitSize OPTIONAL,
+                                              IN PVOID Lock OPTIONAL,
+                                              IN PRTL_HEAP_PARAMETERS Parameters
+                                                  OPTIONAL);
+@@ -290,45 +300,48 @@ typedef NTSTATUS(WINAPI* NtProtectVirtua
+     IN OUT PVOID* BaseAddress,
+     IN OUT PSIZE_T ProtectSize,
+     IN ULONG NewProtect,
+     OUT PULONG OldProtect);
+ 
+ // -----------------------------------------------------------------------
+ // Objects
+ 
++#if !defined(__MINGW32__)
+ // Add some field not in OBJECT_INFORMATION_CLASS.
+ constexpr auto ObjectNameInformation = static_cast<OBJECT_INFORMATION_CLASS>(1);
++#endif
+ 
+ typedef enum _POOL_TYPE {
+   NonPagedPool,
+   PagedPool,
+   NonPagedPoolMustSucceed,
+   ReservedType,
+   NonPagedPoolCacheAligned,
+   PagedPoolCacheAligned,
+   NonPagedPoolCacheAlignedMustS
+ } POOL_TYPE;
+ 
++#if !defined(__MINGW32__)
+ typedef struct _OBJECT_BASIC_INFORMATION {
+   ULONG Attributes;
+   ACCESS_MASK GrantedAccess;
+   ULONG HandleCount;
+   ULONG PointerCount;
+   ULONG PagedPoolUsage;
+   ULONG NonPagedPoolUsage;
+   ULONG Reserved[3];
+   ULONG NameInformationLength;
+   ULONG TypeInformationLength;
+   ULONG SecurityDescriptorLength;
+   LARGE_INTEGER CreateTime;
+ } OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
+ 
+ typedef struct _OBJECT_TYPE_INFORMATION {
+-  UNICODE_STRING Name;
++  UNICODE_STRING TypeName;
+   ULONG TotalNumberOfObjects;
+   ULONG TotalNumberOfHandles;
+   ULONG TotalPagedPoolUsage;
+   ULONG TotalNonPagedPoolUsage;
+   ULONG TotalNamePoolUsage;
+   ULONG TotalHandleTableUsage;
+   ULONG HighWaterNumberOfObjects;
+   ULONG HighWaterNumberOfHandles;
+@@ -343,18 +356,19 @@ typedef struct _OBJECT_TYPE_INFORMATION 
+   BOOLEAN MaintainHandleCount;
+   USHORT MaintainTypeList;
+   POOL_TYPE PoolType;
+   ULONG PagedPoolUsage;
+   ULONG NonPagedPoolUsage;
+ } OBJECT_TYPE_INFORMATION, *POBJECT_TYPE_INFORMATION;
+ 
+ typedef struct _OBJECT_NAME_INFORMATION {
+-  UNICODE_STRING ObjectName;
++  UNICODE_STRING Name;
+ } OBJECT_NAME_INFORMATION, *POBJECT_NAME_INFORMATION;
++#endif
+ 
+ typedef NTSTATUS(WINAPI* NtQueryObjectFunction)(
+     IN HANDLE Handle,
+     IN OBJECT_INFORMATION_CLASS ObjectInformationClass,
+     OUT PVOID ObjectInformation OPTIONAL,
+     IN ULONG ObjectInformationLength,
+     OUT PULONG ReturnLength OPTIONAL);
+ 
+diff --git a/sandbox/win/src/sandbox_nt_util.cc b/sandbox/win/src/sandbox_nt_util.cc
+--- a/sandbox/win/src/sandbox_nt_util.cc
++++ b/sandbox/win/src/sandbox_nt_util.cc
+@@ -36,7 +36,10 @@ namespace {
+
+ // Uses value of FILE_INFORMATION_CLASS defined in Wdm.h but not in user-mode.
+ // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ne-wdm-_file_information_class
++// MinGW's winternl.h defines FILE_INFORMATION_CLASS including this value.
++#if !defined(__MINGW32__)
+ constexpr uint32_t FileRenameInformation = 10;
++#endif  // !defined(__MINGW32__)
+
+ #if defined(_WIN64)
+ // Align a pointer to the next allocation granularity boundary.
+diff --git a/sandbox/win/src/signed_interception.cc b/sandbox/win/src/signed_interception.cc
+--- a/sandbox/win/src/signed_interception.cc
++++ b/sandbox/win/src/signed_interception.cc
+@@ -69,17 +69,17 @@ TargetNtCreateSection(NtCreateSectionFun
+                                     path_buffer_size, &out_buffer_size);
+ 
+     if (!NT_SUCCESS(status)) {
+       break;
+     }
+ 
+     CountedParameterSet<NameBased> params;
+     std::wstring_view object_name =
+-        base::win::UnicodeStringToView(path->ObjectName);
++        base::win::UnicodeStringToView(path->Name);
+     params[NameBased::NAME] = ParamPickerMake(object_name);
+ 
+     // Check if this will be sent to the broker.
+     if (!QueryBroker(IpcTag::NTCREATESECTION, params.GetBase()))
+       break;
+ 
+     if (!ValidParameter(section_handle, sizeof(HANDLE), WRITE))
+       break;
+diff --git a/sandbox/win/src/win_utils.cc b/sandbox/win/src/win_utils.cc
+--- a/sandbox/win/src/win_utils.cc
++++ b/sandbox/win/src/win_utils.cc
+@@ -108,30 +108,30 @@ absl::optional<std::wstring> GetNtPathFr
+ 
+ std::optional<std::wstring> GetPathFromHandle(HANDLE handle) {
+   auto buffer = QueryObjectInformation(handle, ObjectNameInformation, 512);
+   if (!buffer)
+     return std::nullopt;
+   OBJECT_NAME_INFORMATION* name =
+       UNSAFE_TODO(reinterpret_cast<OBJECT_NAME_INFORMATION*>(buffer->data()));
+   return std::wstring(
+-      name->ObjectName.Buffer,
+-      name->ObjectName.Length / sizeof(name->ObjectName.Buffer[0]));
++      name->Name.Buffer,
++      name->Name.Length / sizeof(name->Name.Buffer[0]));
+ }
+ 
+ std::optional<std::wstring> GetTypeNameFromHandle(HANDLE handle) {
+   // No typename is currently longer than 32 characters on Windows 11, so use a
+   // hint of 128 bytes.
+   auto buffer = QueryObjectInformation(handle, ObjectTypeInformation, 128);
+   if (!buffer)
+     return std::nullopt;
+   OBJECT_TYPE_INFORMATION* name =
+       UNSAFE_TODO(reinterpret_cast<OBJECT_TYPE_INFORMATION*>(buffer->data()));
+-  return std::wstring(name->Name.Buffer,
+-                      name->Name.Length / sizeof(name->Name.Buffer[0]));
++  return std::wstring(name->TypeName.Buffer,
++                      name->TypeName.Length / sizeof(name->TypeName.Buffer[0]));
+ }
+ 
+ bool CopyToChildMemory(HANDLE child,
+                        const base::span<uint8_t> local_buffer,
+                        void** remote_buffer) {
+   DCHECK(remote_buffer);
+   if (local_buffer.empty()) {
+     *remote_buffer = nullptr;

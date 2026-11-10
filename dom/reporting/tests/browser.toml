@@ -1,0 +1,10 @@
+[DEFAULT]
+support-files = [
+  "delivering.sjs",
+  "empty.html",
+  "reporting_endpoints.sjs",
+]
+
+["browser_purgeHost.js"]
+
+["browser_reportGeneration.js"]

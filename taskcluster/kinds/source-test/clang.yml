@@ -1,0 +1,106 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+task-defaults:
+    run-on-repo-type: [hg]
+    run-on-projects: ["trunk"]
+    platform: linux64/debug
+    worker-type: t-linux-docker-amd
+    attributes:
+        code-review: true
+    worker:
+        docker-image: {in-tree: static-analysis-build}
+        max-run-time: 5400
+    treeherder:
+        kind: other
+        tier: 2
+    run:
+        using: run-task
+        tooltool-downloads: public
+    fetches:
+        toolchain:
+            - linux64-cbindgen
+            - linux64-nasm
+            - linux64-node
+    when:
+        files-changed:
+            - '**/*.c'
+            - '**/*.cpp'
+            - '**/*.cc'
+            - '**/*.cxx'
+            - '**/*.m'
+            - '**/*.mm'
+
+tidy:
+    description: Run static-analysis (clang-tidy) on C/C++ patches
+    treeherder:
+        symbol: cpp(clang-tidy)
+    run:
+        cwd: '{checkout}'
+        command: >-
+            source taskcluster/scripts/misc/source-test-clang-setup.sh &&
+            ./mach --log-no-times static-analysis check --outgoing --output $HOME/clang-tidy.json --format json
+    fetches:
+        toolchain:
+            - linux64-clang
+            - linux64-clang-tidy
+            - linux64-rust
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+    worker:
+        artifacts:
+            - type: file
+              name: public/code-review/clang-tidy.json
+              path: /builds/worker/clang-tidy.json
+
+external:
+    description: Run static-analysis (clang-tidy) on C/C++ patches with external checks
+    treeherder:
+        symbol: cpp(clang-tidy-external)
+    run:
+        cwd: '{checkout}'
+        command: >-
+            source taskcluster/scripts/misc/source-test-clang-setup.sh &&
+            ./mach --log-no-times static-analysis check --checks="-*,mozilla-civet-*" --outgoing --output $HOME/clang-tidy.json --format json
+    fetches:
+        toolchain:
+            - linux64-clang
+            - linux64-clang-tidy-external
+            - linux64-rust
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+    worker:
+        artifacts:
+            - type: file
+              name: public/code-review/clang-tidy.json
+              path: /builds/worker/clang-tidy.json
+
+
+unittest:
+    description: Ensure static analysis works correctly
+    treeherder:
+        symbol: cpp(clang-tidy-unittest)
+    attributes:
+        code-review: false
+    when:
+        files-changed:
+            - 'config/mozunit/**'
+            - 'python/mach_commands.py'
+            - 'python/mach/**'
+            - 'python/mozbuild/mozbuild/code_analysis/mach_commands.py'
+            - 'taskcluster/scripts/misc/source-test-clang-setup.sh'
+            - 'tools/clang-tidy/**'
+    run:
+        cwd: '{checkout}'
+        command: >-
+            source taskcluster/scripts/misc/source-test-clang-setup.sh &&
+            ./mach --log-no-times static-analysis unittest
+
+    fetches:
+        toolchain:
+            - linux64-clang
+            - linux64-clang-tidy
+            - linux64-rust
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi

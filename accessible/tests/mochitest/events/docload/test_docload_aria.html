@@ -1,0 +1,54 @@
+<html>
+
+<head>
+  <title>Accessible events testing for ARIA document</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+
+  <script type="application/javascript"
+          src="../../common.js"></script>
+  <script type="application/javascript"
+          src="../../role.js"></script>
+  <script type="application/javascript"
+          src="../../states.js"></script>
+  <script type="application/javascript"
+          src="../../events.js"></script>
+
+  <script type="application/javascript">
+    async function doTests() {
+      let loaded = waitForEvent(EVENT_DOCUMENT_LOAD_COMPLETE, getNode("dialog"));
+      getNode("dialog").style.display = "block";
+      await loaded;
+
+      loaded = waitForEvent(EVENT_DOCUMENT_LOAD_COMPLETE, getNode("document"));
+      getNode("document").style.display = "block";
+      await loaded;
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=759833"
+     title="ARIA documents should fire document loading events">
+    Mozilla Bug 759833
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div role="dialog" id="dialog" style="display: none;">It's a dialog</div>
+  <div role="document" id="document" style="display: none;">It's a document</div>
+</body>
+</html>

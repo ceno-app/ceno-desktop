@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef DOM_SVG_SVGFRAGMENTIDENTIFIER_H_
+#define DOM_SVG_SVGFRAGMENTIDENTIFIER_H_
+
+#include "nsString.h"
+
+namespace mozilla {
+namespace dom {
+class Document;
+}  // namespace dom
+
+/**
+ * Implements support for parsing SVG fragment identifiers
+ * http://www.w3.org/TR/SVG/linking.html#SVGFragmentIdentifiers
+ */
+class SVGFragmentIdentifier {
+ public:
+  // Prevent the class being instantiated.
+  SVGFragmentIdentifier() = delete;
+
+  /**
+   * Process the SVG fragment identifier, if there is one.
+   * @return true if we found a valid svgView()-style fragment identifier,
+   * in which case further processing by the caller can stop. Otherwise return
+   * false as we may have an ordinary anchor which needs to be :target matched.
+   */
+  static bool ProcessFragmentIdentifier(dom::Document* aDocument,
+                                        const nsAString& aAnchorName);
+};
+
+}  // namespace mozilla
+
+#endif  // DOM_SVG_SVGFRAGMENTIDENTIFIER_H_

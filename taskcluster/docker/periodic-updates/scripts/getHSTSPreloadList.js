@@ -1,0 +1,684 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+"use strict";
+
+// How to run this file:
+// 1. [obtain firefox source code]
+// 2. [build/obtain firefox binaries]
+// 3. run `[path to]/firefox -xpcshell [path to]/getHSTSPreloadlist.js [absolute path to]/nsSTSPreloadlist.inc'
+//    To carry failure streaks forward, append the absolute path to the previous
+//    run's hsts-probe-results.json as an optional second argument.
+// Note: Running this file outputs a new nsSTSPreloadlist.inc,
+//       hsts-probe-results.json and an hsts-profile directory in the current
+//       working directory.
+
+var gSSService = Cc["@mozilla.org/ssservice;1"].getService(
+  Ci.nsISiteSecurityService
+);
+
+const { FileUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/FileUtils.sys.mjs"
+);
+const { RemoteSecuritySettings } = ChromeUtils.importESModule(
+  "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs"
+);
+
+const logger = console.createInstance({ prefix: "HSTSPreloadList" });
+
+const SOURCE =
+  "https://raw.githubusercontent.com/chromium/chromium/main/net/http/transport_security_state_static.json";
+const TOOL_SOURCE =
+  "https://github.com/mozilla-firefox/firefox/blob/main/taskcluster/docker/periodic-updates/scripts/getHSTSPreloadList.js";
+const OUTPUT = "nsSTSPreloadList.inc";
+const RESULTS_OUTPUT = "hsts-probe-results.json";
+const MINIMUM_REQUIRED_MAX_AGE = 60 * 60 * 24 * 7 * 18;
+const MAX_CONCURRENT_REQUESTS = 250;
+const REQUEST_TIMEOUT = 30 * 1000;
+const ERROR_NONE = "no error";
+const ERROR_CONNECTING_TO_HOST = "could not connect to host";
+const ERROR_NO_HSTS_HEADER = "did not receive HSTS header";
+const ERROR_MAX_AGE_TOO_LOW = "max-age too low: ";
+const HEADER = `/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*****************************************************************************/
+/* This is an automatically generated file. If you're not                    */
+/* nsSiteSecurityService.cpp, you shouldn't be #including it.                */
+/*****************************************************************************/
+
+#include <stdint.h>
+`;
+
+const GPERF_DELIM = "%%\n";
+
+async function download() {
+  var resp = await fetch(SOURCE);
+  if (resp.status != 200) {
+    throw new Error(
+      "ERROR: problem downloading '" + SOURCE + "': status " + resp.status
+    );
+  }
+
+  let text = await resp.text();
+  // we have to filter out '//' comments, while not mangling the json
+  let result = text.replace(/^(\s*)?\/\/[^\n]*\n/gm, "");
+  let data = null;
+  try {
+    data = JSON.parse(result);
+  } catch (e) {
+    throw new Error(`ERROR: could not parse data from '${SOURCE}': ${e}`);
+  }
+  return data;
+}
+
+async function loadPreloadedIntermediates() {
+  let profileDir = Services.dirsvc.get("CurWorkD", Ci.nsIFile);
+  profileDir.append("hsts-profile");
+  profileDir.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0o700);
+  Services.dirsvc.QueryInterface(Ci.nsIDirectoryService).registerProvider({
+    getFile(prop, persistent) {
+      persistent.value = true;
+      return ["ProfD", "ProfLD", "ProfDS", "ProfLDS"].includes(prop)
+        ? profileDir.clone()
+        : null;
+    },
+    QueryInterface: ChromeUtils.generateQI(["nsIDirectoryServiceProvider"]),
+  });
+  Services.obs.notifyObservers(null, "profile-do-change");
+
+  let { IntermediatePreloadsClient } = RemoteSecuritySettings.init();
+  Services.prefs.setIntPref(
+    "security.remote_settings.intermediates.downloads_per_poll",
+    1000000
+  );
+  try {
+    await IntermediatePreloadsClient.client.sync();
+    await IntermediatePreloadsClient.updatePreloadedIntermediates();
+    let records = await IntermediatePreloadsClient.client.db.list();
+    let imported = records.filter(r => r.cert_import_complete).length;
+    logger.log(
+      `Loaded ${imported} of ${records.length} preloaded intermediates`
+    );
+  } catch (e) {
+    logger.warn(`loading the preloaded intermediates failed: ${e}`);
+  }
+}
+
+function getHosts(rawdata) {
+  let hosts = [];
+
+  if (!rawdata || !rawdata.entries) {
+    throw new Error(
+      "ERROR: source data not formatted correctly: 'entries' not found"
+    );
+  }
+
+  for (let entry of rawdata.entries) {
+    if (entry.mode && entry.mode == "force-https") {
+      if (entry.name) {
+        // We trim the entry name here to avoid malformed URI exceptions when we
+        // later try to connect to the domain.
+        entry.name = entry.name.trim();
+        // We prefer the camelCase variable to the JSON's snake case version
+        entry.includeSubdomains = entry.include_subdomains;
+        hosts.push(entry);
+      } else {
+        throw new Error("ERROR: entry not formatted correctly: no name found");
+      }
+    }
+  }
+
+  return hosts;
+}
+
+function processStsHeader(host, header, status, securityInfo, nsresult = 0) {
+  let maxAge = {
+    value: 0,
+  };
+  let includeSubdomains = {
+    value: false,
+  };
+  let error = ERROR_NONE;
+  if (
+    header != null &&
+    securityInfo != null &&
+    securityInfo.overridableErrorCategory ==
+      Ci.nsITransportSecurityInfo.ERROR_UNSET
+  ) {
+    try {
+      let uri = Services.io.newURI("https://" + host.name);
+      gSSService.processHeader(uri, header, {}, maxAge, includeSubdomains);
+    } catch (e) {
+      logger.error(
+        `could not process header '${header}' from ${host.name}: ${e}`
+      );
+      error = e;
+    }
+  } else if (status == 0) {
+    error = ERROR_CONNECTING_TO_HOST;
+  } else {
+    error = ERROR_NO_HSTS_HEADER;
+  }
+
+  if (error == ERROR_NONE && maxAge.value < MINIMUM_REQUIRED_MAX_AGE) {
+    error = ERROR_MAX_AGE_TOO_LOW;
+  }
+
+  return {
+    name: host.name,
+    maxAge: maxAge.value,
+    includeSubdomains: includeSubdomains.value,
+    error,
+    forceInclude: host.forceInclude,
+    httpStatus: status,
+    nsresult: Number(nsresult).toString(16),
+    latencyMs: Date.now() - host.startTime,
+  };
+}
+
+// RedirectAndAuthStopper prevents redirects and HTTP authentication
+function RedirectAndAuthStopper() {}
+
+RedirectAndAuthStopper.prototype = {
+  // nsIChannelEventSink
+  asyncOnChannelRedirect() {
+    throw Components.Exception("", Cr.NS_ERROR_ENTITY_CHANGED);
+  },
+
+  // nsIAuthPrompt2
+  promptAuth() {
+    return false;
+  },
+
+  asyncPromptAuth() {
+    throw Components.Exception("", Cr.NS_ERROR_NOT_IMPLEMENTED);
+  },
+
+  getInterface(iid) {
+    return this.QueryInterface(iid);
+  },
+
+  QueryInterface: ChromeUtils.generateQI([
+    "nsIChannelEventSink",
+    "nsIAuthPrompt2",
+  ]),
+};
+
+function fetchstatus(host, method) {
+  return new Promise(resolve => {
+    let xhr = new XMLHttpRequest();
+    let uri = "https://" + host.name + "/";
+    host.startTime = Date.now();
+
+    xhr.open(method, uri, true);
+    xhr.setRequestHeader("X-Automated-Tool", TOOL_SOURCE);
+    xhr.timeout = REQUEST_TIMEOUT;
+
+    let errorHandler = () => {
+      logger.error(`exception making request to ${host.name}`);
+      resolve(
+        processStsHeader(
+          host,
+          null,
+          xhr.status,
+          xhr.channel && xhr.channel.securityInfo,
+          xhr.channel && xhr.channel.status
+        )
+      );
+    };
+
+    xhr.onerror = errorHandler;
+    xhr.ontimeout = errorHandler;
+    xhr.onabort = errorHandler;
+
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState != XMLHttpRequest.HEADERS_RECEIVED) {
+        return;
+      }
+      let header = xhr.getResponseHeader("strict-transport-security");
+      let status = processStsHeader(
+        host,
+        header,
+        xhr.status,
+        xhr.channel.securityInfo
+      );
+      xhr.onerror = xhr.ontimeout = xhr.onabort = null;
+      xhr.abort();
+      resolve(status);
+    };
+
+    xhr.channel.notificationCallbacks = new RedirectAndAuthStopper();
+    xhr.send();
+  });
+}
+
+function compareHSTSStatus(a, b) {
+  if (a.name > b.name) {
+    return 1;
+  }
+  if (a.name < b.name) {
+    return -1;
+  }
+  return 0;
+}
+
+function writeTo(string, fos) {
+  fos.write(string, string.length);
+}
+
+// Determines and returns a string representing a declaration of when this
+// preload list should no longer be used.
+// This is the current time plus MINIMUM_REQUIRED_MAX_AGE.
+function getExpirationTimeString() {
+  let now = new Date();
+  let nowMillis = now.getTime();
+  // MINIMUM_REQUIRED_MAX_AGE is in seconds, so convert to milliseconds
+  let expirationMillis = nowMillis + MINIMUM_REQUIRED_MAX_AGE * 1000;
+  let expirationMicros = expirationMillis * 1000;
+  return (
+    "const PRTime gPreloadListExpirationTime = INT64_C(" +
+    expirationMicros +
+    ");\n"
+  );
+}
+
+// Copied from browser/components/migration/MigrationUtils.sys.mjs
+function spinResolve(promise) {
+  if (!(promise instanceof Promise)) {
+    return promise;
+  }
+  let done = false;
+  let result = null;
+  let error = null;
+  promise
+    .catch(e => {
+      error = e;
+    })
+    .then(r => {
+      result = r;
+      done = true;
+    });
+
+  Services.tm.spinEventLoopUntil(
+    "getHSTSPreloadList.js:spinResolve",
+    () => done
+  );
+  if (error) {
+    throw error;
+  } else {
+    return result;
+  }
+}
+
+async function probePool(hosts, method = "HEAD") {
+  let total = hosts.length;
+  let results = [];
+  let lastProgress = 0;
+  let worker = async () => {
+    while (hosts.length) {
+      results.push(await fetchstatus(hosts.pop(), method));
+      let progress = Math.floor((100 * results.length) / total);
+      if (progress > lastProgress) {
+        lastProgress = progress;
+        logger.log(`${progress}% done`);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: MAX_CONCURRENT_REQUESTS }, worker));
+  return results;
+}
+
+function needsRetry(status) {
+  return (
+    status.error == ERROR_CONNECTING_TO_HOST ||
+    (status.httpStatus == 429 && status.error == ERROR_NO_HSTS_HEADER)
+  );
+}
+
+async function probeHSTSStatuses(hosts) {
+  logger.log(`Examining ${hosts.length} hosts.`);
+  for (let i = hosts.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [hosts[i], hosts[j]] = [hosts[j], hosts[i]];
+  }
+  let probed = await probePool(hosts);
+
+  let results = probed.filter(status => !needsRetry(status));
+  let failed = probed.filter(needsRetry);
+  logger.log(`Retrying ${failed.length} hosts that failed or answered 429.`);
+  let retried = await probePool(failed.map(status => ({ name: status.name })));
+  let rescued = retried.filter(status => !needsRetry(status));
+  for (let status of rescued) {
+    status.rescued = true;
+  }
+  results = results.concat(retried);
+  logger.log(
+    `${rescued.length} of ${failed.length} retried hosts were rescued.`
+  );
+
+  let headerless = results.filter(
+    status => status.error == ERROR_NO_HSTS_HEADER && status.httpStatus != 429
+  );
+  logger.log(`Probing ${headerless.length} hosts without a header with GET.`);
+  let viaGet = (
+    await probePool(
+      headerless.map(status => ({ name: status.name })),
+      "GET"
+    )
+  ).filter(
+    status =>
+      status.error != ERROR_NO_HSTS_HEADER &&
+      status.error != ERROR_CONNECTING_TO_HOST
+  );
+  let byName = new Map(headerless.map(status => [status.name, status]));
+  for (let status of viaGet) {
+    Object.assign(byName.get(status.name), status, { get: true });
+  }
+  logger.log(`${viaGet.length} of them sent a header on GET.`);
+
+  logger.log(`HSTS Probe received ${results.length} statuses.`);
+  return results;
+}
+
+function probeResult(status) {
+  switch (status.error) {
+    case ERROR_NONE:
+      return "ok";
+    case ERROR_NO_HSTS_HEADER:
+      return "no-header";
+    case ERROR_MAX_AGE_TOO_LOW:
+      return "max-age-too-low";
+    case ERROR_CONNECTING_TO_HOST:
+      return "connect-failed";
+    default:
+      return "invalid-header";
+  }
+}
+
+function isFailedRun(status) {
+  let result = probeResult(status);
+  return (
+    result != "ok" &&
+    result != "max-age-too-low" &&
+    !(result == "no-header" && status.httpStatus < 400)
+  );
+}
+
+async function writeProbeResults(probedStatuses, previousPath) {
+  let previous = null;
+  if (previousPath) {
+    try {
+      previous = await IOUtils.readJSON(previousPath);
+    } catch (e) {
+      logger.warn(`could not read previous probe results: ${e}`);
+    }
+  }
+  let previousHosts = previous?.hosts ?? {};
+  let date = new Date().toISOString().slice(0, 10);
+
+  let hosts = {};
+  for (let status of probedStatuses.sort(compareHSTSStatus)) {
+    let record = { result: probeResult(status), latencyMs: status.latencyMs };
+    if (status.rescued) {
+      record.rescued = true;
+    }
+    if (status.get) {
+      record.get = true;
+    }
+    if (status.httpStatus) {
+      record.httpStatus = status.httpStatus;
+    }
+    if (status.error == ERROR_NONE || status.error == ERROR_MAX_AGE_TOO_LOW) {
+      record.maxAge = status.maxAge;
+      record.includeSubdomains = status.includeSubdomains;
+    }
+    if (record.result == "connect-failed") {
+      record.nsresult = status.nsresult;
+    }
+    if (isFailedRun(status)) {
+      let streak = previousHosts[status.name]?.streak;
+      record.streak = {
+        count: (streak?.count ?? 0) + 1,
+        since: streak?.since ?? date,
+      };
+    }
+    hosts[status.name] = record;
+  }
+
+  let path = PathUtils.join(
+    Services.dirsvc.get("CurWorkD", Ci.nsIFile).path,
+    RESULTS_OUTPUT
+  );
+  logger.log(`Writing probe results to ${path}`);
+  await IOUtils.writeJSON(path, {
+    version: 1,
+    run: {
+      taskId: Services.env.get("TASK_ID") || null,
+      project: Services.env.get("BRANCH") || null,
+      date,
+      previousTaskId: previous?.run?.taskId ?? null,
+    },
+    hosts,
+  });
+}
+
+function readCurrentList(filename) {
+  var currentHosts = {};
+  var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+  file.initWithPath(filename);
+  var fis = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(
+    Ci.nsILineInputStream
+  );
+  fis.init(file, -1, -1, Ci.nsIFileInputStream.CLOSE_ON_EOF);
+  var line = {};
+
+  // While we generate entries matching the latest version format,
+  // we still need to be able to read entries in the previous version formats
+  // for bootstrapping a latest version preload list from a previous version
+  // preload list. Hence these regexes.
+  const entryRegexes = [
+    /([^,]+), (0|1)/, // v3
+    / {2}\/\* "([^"]*)", (true|false) \*\//, // v2
+    / {2}{ "([^"]*)", (true|false) },/, // v1
+  ];
+
+  while (fis.readLine(line)) {
+    let match;
+    entryRegexes.find(r => {
+      match = r.exec(line.value);
+      return match;
+    });
+    if (match) {
+      currentHosts[match[1]] = match[2] == "1" || match[2] == "true";
+    }
+  }
+  return currentHosts;
+}
+
+function combineLists(newHosts, currentHosts) {
+  let newHostsSet = new Set();
+
+  for (let newHost of newHosts) {
+    newHostsSet.add(newHost.name);
+  }
+
+  for (let currentHost in currentHosts) {
+    if (!newHostsSet.has(currentHost)) {
+      newHosts.push({ name: currentHost });
+    }
+  }
+}
+
+const TEST_ENTRIES = [
+  {
+    name: "includesubdomains.preloaded.test",
+    includeSubdomains: true,
+  },
+  {
+    name: "includesubdomains2.preloaded.test",
+    includeSubdomains: true,
+  },
+  {
+    name: "noincludesubdomains.preloaded.test",
+    includeSubdomains: false,
+  },
+];
+
+function deleteTestHosts(currentHosts) {
+  for (let testEntry of TEST_ENTRIES) {
+    delete currentHosts[testEntry.name];
+  }
+}
+
+function getTestHosts() {
+  let hosts = [];
+  for (let testEntry of TEST_ENTRIES) {
+    hosts.push({
+      name: testEntry.name,
+      maxAge: MINIMUM_REQUIRED_MAX_AGE,
+      includeSubdomains: testEntry.includeSubdomains,
+      error: ERROR_NONE,
+      forceInclude: true,
+    });
+  }
+  return hosts;
+}
+
+async function insertHosts(inoutHostList, inAddedHosts) {
+  for (let host of inAddedHosts) {
+    inoutHostList.push(host);
+  }
+}
+
+function filterForcedInclusions(inHosts, outNotForced, outForced) {
+  // Apply our filters (based on policy today) to determine which entries
+  // will be included without being checked (forced); the others will be
+  // checked using active probing.
+  for (let host of inHosts) {
+    if (
+      host.policy == "google" ||
+      host.policy == "public-suffix" ||
+      host.policy == "public-suffix-requested"
+    ) {
+      host.forceInclude = true;
+      host.error = ERROR_NONE;
+      outForced.push(host);
+    } else {
+      outNotForced.push(host);
+    }
+  }
+}
+
+function output(statuses) {
+  logger.log(`Writing output to ${OUTPUT}`);
+  try {
+    let file = new FileUtils.File(
+      PathUtils.join(Services.dirsvc.get("CurWorkD", Ci.nsIFile).path, OUTPUT)
+    );
+    let fos = FileUtils.openSafeFileOutputStream(file);
+    writeTo(HEADER, fos);
+    writeTo(getExpirationTimeString(), fos);
+
+    writeTo(GPERF_DELIM, fos);
+
+    for (let status of statuses) {
+      let includeSubdomains = status.includeSubdomains ? 1 : 0;
+      writeTo(status.name + ", " + includeSubdomains + "\n", fos);
+    }
+
+    writeTo(GPERF_DELIM, fos);
+    FileUtils.closeSafeFileOutputStream(fos);
+    logger.log("finished writing output file");
+  } catch (e) {
+    logger.error(`problem writing output to '${OUTPUT}': ${e}`);
+    throw e;
+  }
+}
+
+function errorToString(status) {
+  return status.error == ERROR_MAX_AGE_TOO_LOW
+    ? status.error + status.maxAge
+    : status.error;
+}
+
+async function main(args) {
+  if (args.length < 1 || args.length > 2) {
+    throw new Error(
+      "Usage: getHSTSPreloadList.js <absolute path to current nsSTSPreloadList.inc> [<absolute path to previous hsts-probe-results.json>]"
+    );
+  }
+
+  // get the current preload list
+  let currentHosts = readCurrentList(args[0]);
+  // delete any hosts we use in tests so we don't actually connect to them
+  deleteTestHosts(currentHosts);
+  // disable the current preload list so it won't interfere with requests we make
+  Services.prefs.setBoolPref(
+    "network.stricttransportsecurity.preloadlist",
+    false
+  );
+  await loadPreloadedIntermediates();
+  // download and parse the raw json file from the Chromium source
+  let rawdata = await download();
+  // get just the hosts with mode: "force-https"
+  let hosts = getHosts(rawdata);
+  // add hosts in the current list to the new list (avoiding duplicates)
+  combineLists(hosts, currentHosts);
+
+  // Don't contact hosts that are forced to be included anyway
+  let hostsToContact = [];
+  let forcedHosts = [];
+  filterForcedInclusions(hosts, hostsToContact, forcedHosts);
+
+  // Initialize the final status list
+  let hstsStatuses = [];
+  // Add the hosts we use in tests
+  logger.log("Adding test hosts");
+  insertHosts(hstsStatuses, getTestHosts());
+  // Add in the hosts that are forced
+  logger.log("Adding forced hosts");
+  insertHosts(hstsStatuses, forcedHosts);
+
+  let probedStatuses = await probeHSTSStatuses(hostsToContact);
+  await writeProbeResults(probedStatuses, args[1]);
+  let statuses = hstsStatuses.concat(probedStatuses).sort(compareHSTSStatus);
+  for (let status of statuses) {
+    // If we couldn't connect to this entry, couldn't process its header, or it
+    // answered 4xx or 5xx without a valid HSTS header, be safe and don't remove
+    // it from the list (given that it was already on the list).
+    if (
+      !status.forceInclude &&
+      isFailedRun(status) &&
+      status.name in currentHosts
+    ) {
+      status.maxAge = MINIMUM_REQUIRED_MAX_AGE;
+      status.includeSubdomains = currentHosts[status.name];
+    }
+  }
+
+  // Filter out entries we aren't including.
+  let total = statuses.filter(function (status) {
+    if (status.maxAge < MINIMUM_REQUIRED_MAX_AGE && !status.forceInclude) {
+      return false;
+    }
+
+    if (status.forceInclude && status.error != ERROR_NONE) {
+      logger.log(
+        `${status.name}: ${errorToString(status)} (error ignored - included regardless)`
+      );
+    }
+    return true;
+  });
+
+  // Write the output file
+  output(total);
+
+  logger.log("HSTS probing all done");
+}
+
+// arguments is a global within xpcshell
+try {
+  spinResolve(main(arguments));
+} finally {
+  Services.obs.notifyObservers(null, "profile-before-change");
+}

@@ -1,0 +1,89 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef NS_ACCESSIBLE_WRAP_H_
+#define NS_ACCESSIBLE_WRAP_H_
+
+#include "nsCOMPtr.h"
+#include "LocalAccessible.h"
+
+struct _AtkObject;
+typedef struct _AtkObject AtkObject;
+
+enum AtkProperty {
+  PROP_0,  // gobject convention
+  PROP_NAME,
+  PROP_DESCRIPTION,
+  PROP_PARENT,  // ancestry has changed
+  PROP_ROLE,
+  PROP_LAYER,
+  PROP_MDI_ZORDER,
+  PROP_TABLE_CAPTION,
+  PROP_TABLE_COLUMN_DESCRIPTION,
+  PROP_TABLE_COLUMN_HEADER,
+  PROP_TABLE_ROW_DESCRIPTION,
+  PROP_TABLE_ROW_HEADER,
+  PROP_TABLE_SUMMARY,
+  PROP_LAST  // gobject convention
+};
+
+struct AtkPropertyChange {
+  int32_t type;  // property type as listed above
+  void* oldvalue;
+  void* newvalue;
+};
+
+namespace mozilla {
+namespace a11y {
+
+class MaiHyperlink;
+
+/**
+ * Atk specific functionality for an accessibility tree node that originated in
+ * mDoc's content process.
+ *
+ * AccessibleWrap, and its descendents in atk directory provide the
+ * implementation of AtkObject.
+ */
+class AccessibleWrap : public LocalAccessible {
+ public:
+  AccessibleWrap(nsIContent* aContent, DocAccessible* aDoc);
+  virtual ~AccessibleWrap();
+  void ShutdownAtkObject();
+
+  virtual void Shutdown() override;
+
+  // return the atk object for this AccessibleWrap
+  virtual void GetNativeInterface(void** aOutAccessible) override;
+
+  AtkObject* GetAtkObject(void);
+  static AtkObject* GetAtkObject(LocalAccessible* aAccessible);
+
+  bool IsValidObject();
+
+  /**
+   * ATK has a bunch of getters that expect a borrowed reference to raw char*
+   * pointers. To simulate this, we have a method that uses a static nsCString
+   * return a temporary buffer that gets wiped on the next call.
+   */
+  static const char* ReturnString(nsAString& aString);
+
+  static void GetKeyBinding(Accessible* aAccessible, nsAString& aResult);
+
+  static Accessible* GetColumnHeader(TableAccessible* aAccessible,
+                                     int32_t aColIdx);
+  static Accessible* GetRowHeader(TableAccessible* aAccessible,
+                                  int32_t aRowIdx);
+
+ protected:
+  nsresult FireAtkStateChangeEvent(AccEvent* aEvent, AtkObject* aObject);
+  nsresult FireAtkTextChangedEvent(AccEvent* aEvent, AtkObject* aObject);
+
+  AtkObject* mAtkObject;
+};
+
+}  // namespace a11y
+}  // namespace mozilla
+
+#endif /* NS_ACCESSIBLE_WRAP_H_ */

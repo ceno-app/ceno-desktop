@@ -1,0 +1,20 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this file,
+   - You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+
+{%- extends "sphinx_rtd_theme/breadcrumbs.html" %} {% block breadcrumbs_aside %}
+<li class="wy-breadcrumbs-aside">
+  <a
+    href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer+Infrastructure&component=Firefox+Source+Docs%3A+Content&short_desc=Documentation+issue+on+{{ pagename }}&comment=URL+=+https://firefox-source-docs.mozilla.org/{{ pagename }}.html&bug_file_loc=https://firefox-source-docs.mozilla.org/{{ pagename }}.html"
+    rel="nofollow"
+    >Report an issue</a
+  >
+  / {%- if display_github and has_source and github_source_path %}
+  <a
+    href="https://{{ github_host|default('github.com') }}/{{ github_user }}/{{ github_repo }}/blob/{{ github_version }}/{{ github_source_path }}"
+    rel="nofollow"
+    >{{ _('View page source') }}</a
+  >
+  {%- endif %}
+</li>
+{% endblock %}

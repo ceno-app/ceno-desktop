@@ -1,0 +1,327 @@
+<html>
+
+<head>
+  <title>Accessible caret move events testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    async function checkCaretMove(target, expectedOffset, isCollapsed) {
+      let evt = await waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+      evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+      is(evt.caretOffset, expectedOffset,
+         "Wrong caret offset for " + prettyName(target));
+      is(evt.isSelectionCollapsed, isCollapsed,
+         "Wrong collapsed for " + prettyName(target));
+    }
+
+    async function doTests() {
+      // test caret move events and caret offsets
+      let id = "textbox";
+
+      // synthFocus
+      {
+        let p = checkCaretMove(id, 5, true);
+        selectAllTextAndFocus(id);
+        await p;
+      }
+
+      // synthSelectAll
+      {
+        let p = checkCaretMove(id, 5, false);
+        getNode(id).select();
+        await p;
+      }
+
+      // synthClick
+      {
+        let p = checkCaretMove(id, 0, true);
+        getNode(id).scrollIntoView(true);
+        synthesizeMouse(getNode(id), 1, 1, {});
+        await p;
+      }
+
+      // synthRightKey
+      {
+        let p = checkCaretMove(id, 1, true);
+        synthesizeKey("KEY_ArrowRight", {});
+        await p;
+      }
+
+      if (!MAC) {
+        // synthSelectAll
+        {
+          let p = checkCaretMove(id, 5, false);
+          getNode(id).select();
+          await p;
+        }
+
+        // synthHomeKey
+        {
+          let p = checkCaretMove(id, 0, true);
+          synthesizeKey("KEY_Home", {});
+          await p;
+        }
+
+        // synthRightKey
+        {
+          let p = checkCaretMove(id, 1, true);
+          synthesizeKey("KEY_ArrowRight", {});
+          await p;
+        }
+      } else {
+        todo(false, "Make these tests pass on OSX (bug 650294)");
+      }
+
+      id = "textarea";
+
+      // synthClick
+      {
+        let p = checkCaretMove(id, 0, true);
+        getNode(id).scrollIntoView(true);
+        synthesizeMouse(getNode(id), 1, 1, {});
+        await p;
+      }
+
+      // synthRightKey
+      {
+        let p = checkCaretMove(id, 1, true);
+        synthesizeKey("KEY_ArrowRight", {});
+        await p;
+      }
+
+      // synthDownKey
+      {
+        let p = checkCaretMove(id, 12, true);
+        synthesizeKey("KEY_ArrowDown", {});
+        await p;
+      }
+
+      id = "textarea_wrapped";
+      // synthFocus
+      {
+        let p = checkCaretMove(id, 10, true);
+        selectAllTextAndFocus(id);
+        await p;
+      }
+
+      // setCaretOffset
+      {
+        let target = getAccessible(id, [nsIAccessibleText]);
+        let offset = 4;
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+        target.caretOffset = offset;
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(evt.caretOffset, offset, "Wrong caret offset for " + prettyName(id));
+        is(
+          evt.isSelectionCollapsed,
+          true,
+          "Wrong collapsed for " + prettyName(id)
+        );
+      }
+
+      // synthLeftKey
+      {
+        let p = checkCaretMove(id, 4, true);
+        synthesizeKey("KEY_ArrowLeft", {});
+        await p;
+      }
+
+      id = "p";
+
+      // synthClick
+      {
+        let p = checkCaretMove(id, 0, true);
+        getNode(id).scrollIntoView(true);
+        synthesizeMouse(getNode(id), 1, 1, {});
+        await p;
+      }
+
+      // synthRightKey
+      {
+        let p = checkCaretMove(id, 1, true);
+        synthesizeKey("KEY_ArrowRight", {});
+        await p;
+      }
+
+      // synthDownKey
+      {
+        let p = checkCaretMove(id, 6, true);
+        synthesizeKey("KEY_ArrowDown", {});
+        await p;
+      }
+
+      // synthClick on p1_in_div
+      {
+        let p1Id = "p1_in_div";
+        let p2Acc = getAccessible("p2_in_div", [nsIAccessibleText]);
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, p1Id);
+        getNode(p1Id).scrollIntoView(true);
+        synthesizeMouse(getNode(p1Id), 1, 1, {});
+        let caretEvt = await p;
+        caretEvt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(
+          caretEvt.caretOffset,
+          0,
+          "Wrong caret offset for " + prettyName(p1Id)
+        );
+        is(
+          caretEvt.isSelectionCollapsed,
+          true,
+          "Wrong collapsed for " + prettyName(p1Id)
+        );
+        is(p2Acc.caretOffset, -1, "Wrong caret offset for p2_in_div");
+      }
+
+      // synthShiftTab from p -> textarea
+      {
+        let p = checkCaretMove("p", 0, true);
+        synthesizeKey("KEY_Tab", { shiftKey: true });
+        await p;
+      }
+      {
+        let p = checkCaretMove("textarea", 12, true);
+        synthesizeKey("KEY_Tab", { shiftKey: true });
+        await p;
+      }
+
+      // synthTab from p
+      {
+        let p = checkCaretMove("p", 0, true);
+        synthesizeKey("KEY_Tab", { shiftKey: false });
+        await p;
+      }
+
+      // moveCaretToDOMPoint: Set caret after a child of span element
+      {
+        let target = getAccessible("test1", [nsIAccessibleText]);
+        let domPointNode = getNode("test1_span");
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+        getNode("test1").focus();
+        let selection = domPointNode.documentGlobal.getSelection();
+        let selRange = selection.rangeCount
+          ? selection.getRangeAt(0)
+          : domPointNode.ownerDocument.createRange();
+        selRange.setStart(domPointNode, 1);
+        selRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(selRange);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(evt.caretOffset, 4, "Wrong caret offset for test1");
+        is(evt.isSelectionCollapsed, true, "Wrong collapsed for test1");
+      }
+
+      {
+        let target = getAccessible("test2", [nsIAccessibleText]);
+        let domPointNode = getNode("test2_span");
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+        getNode("test2").focus();
+        let selection = domPointNode.documentGlobal.getSelection();
+        let selRange = selection.rangeCount
+          ? selection.getRangeAt(0)
+          : domPointNode.ownerDocument.createRange();
+        selRange.setStart(domPointNode, 1);
+        selRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(selRange);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(evt.caretOffset, 4, "Wrong caret offset for test2");
+        is(evt.isSelectionCollapsed, true, "Wrong collapsed for test2");
+      }
+
+      // empty text element
+      {
+        let target = getAccessible("test3", [nsIAccessibleText]);
+        let domPointNode = getNode("test3");
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+        domPointNode.focus();
+        let selection = domPointNode.documentGlobal.getSelection();
+        let selRange = selection.rangeCount
+          ? selection.getRangeAt(0)
+          : domPointNode.ownerDocument.createRange();
+        selRange.setStart(domPointNode, 0);
+        selRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(selRange);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(evt.caretOffset, 0, "Wrong caret offset for test3");
+        is(evt.isSelectionCollapsed, true, "Wrong collapsed for test3");
+      }
+
+      {
+        let target = getAccessible("test4", [nsIAccessibleText]);
+        let domPointNode = getNode("test4_span");
+        let p = waitForEvent(EVENT_TEXT_CARET_MOVED, target);
+        getNode("test4").focus();
+        let selection = domPointNode.documentGlobal.getSelection();
+        let selRange = selection.rangeCount
+          ? selection.getRangeAt(0)
+          : domPointNode.ownerDocument.createRange();
+        selRange.setStart(domPointNode, 0);
+        selRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(selRange);
+        let evt = await p;
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent);
+        is(evt.caretOffset, 0, "Wrong caret offset for test4");
+        is(evt.isSelectionCollapsed, true, "Wrong collapsed for test4");
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=454377"
+     title="Accessible caret move events testing">
+    Bug 454377
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=567571"
+     title="caret-moved events missing at the end of a wrapped line of text">
+    Bug 567571
+  </a>
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=824901"
+     title="HyperTextAccessible::DOMPointToHypertextOffset fails for node and offset equal to node child count">
+    Bug 824901
+  </a>
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <input id="textbox" value="hello"/>
+
+  <textarea id="textarea">text<br>text</textarea>
+  <p id="p" contentEditable="true"><span>text</span><br/>text</p>
+  <div id="div" contentEditable="true"><p id="p1_in_div">text</p><p id="p2_in_div">text</p></div>
+
+  <p contentEditable="true" id="test1"><span id="test1_span">text</span>ohoho</p>
+  <p contentEditable="true" id="test2"><span><span id="test2_span">text</span></span>ohoho</p>
+  <p contentEditable="true" id="test3"></p>
+  <p contentEditable="true" id="test4"><span id="test4_span"></span></p>
+
+  <textarea id="textarea_wrapped" cols="5">hey friend</textarea>
+</body>
+</html>

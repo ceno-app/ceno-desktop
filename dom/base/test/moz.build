@@ -1,0 +1,45 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+XPCSHELL_TESTS_MANIFESTS += [
+    "unit/xpcshell.toml",
+    "unit_ipc/xpcshell.toml",
+]
+
+MOCHITEST_MANIFESTS += [
+    "mochitest-bug1.toml",
+    "mochitest-bug2.toml",
+    "mochitest.toml",
+]
+
+MOCHITEST_CHROME_MANIFESTS += [
+    "chrome.toml",
+    "chrome/chrome.toml",
+]
+
+BROWSER_CHROME_MANIFESTS += [
+    "browser.toml",
+    "fmm/browser.toml",
+]
+
+TEST_DIRS += [
+    "fullscreen",
+    "gtest",
+    "jsmodules",
+    "jsmodules/importmaps",
+    "jsmodules/importmaps/multiple",
+    "useractivation",
+    "meta_viewport",
+]
+
+TEST_HARNESS_FILES.testing.mochitest.tests.dom.base.test.chrome += [
+    "chrome/bug421622-referer.sjs",
+    "chrome/bug884693.sjs",
+    "chrome/nochrome_bug1346936.html",
+    "chrome/nochrome_bug1346936.js",
+    "chrome/nochrome_bug1346936.js^headers^",
+    "chrome/nochrome_bug765993.html",
+    "chrome/nochrome_bug765993.js",
+    "chrome/nochrome_bug765993.js^headers^",
+]

@@ -1,0 +1,639 @@
+<html>
+
+<head>
+  <title>Accessible mutation events coalescence testing</title>
+
+  <link rel="stylesheet" type="text/css"
+        href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+
+  <script type="application/javascript"
+          src="../common.js"></script>
+  <script type="application/javascript"
+          src="../states.js"></script>
+  <script type="application/javascript"
+          src="../events.js"></script>
+
+  <script type="application/javascript">
+
+    // //////////////////////////////////////////////////////////////////////////
+    // Do tests.
+    // enableLogging("eventTree");
+
+    async function doTests() {
+      // removeChildNParent("option1", "select1")
+      {
+        let childAcc = getAccessible(getNode("option1"));
+        let parentAcc = getAccessible(getNode("select1"));
+        let hostNode = getNode("select1").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select1")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select1")],
+          ],
+        });
+        getNode("option1").remove();
+        getNode("select1").remove();
+        await evts;
+        testIsDefunct(childAcc);
+        testIsDefunct(parentAcc);
+      }
+
+      // removeParentNChild("option2", "select2")
+      {
+        let select2 = getNode("select2");
+        let option2 = getNode("option2");
+        let childAcc = getAccessible(option2);
+        let parentAcc = getAccessible(select2);
+        let hostNode = getNode("select2").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select2")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select2")],
+          ],
+        });
+        select2.remove();
+        option2.remove();
+        await evts;
+        testIsDefunct(childAcc);
+        testIsDefunct(parentAcc);
+      }
+
+      // hideChildNParent("option3", "select3")
+      {
+        let childAcc = getAccessible(getNode("option3"));
+        let parentAcc = getAccessible(getNode("select3"));
+        let hostNode = getNode("select3").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select3")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select3")],
+          ],
+        });
+        getNode("option3").style.display = "none";
+        getNode("select3").style.display = "none";
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // hideParentNChild("option4", "select4")
+      {
+        let childAcc = getAccessible(getNode("option4"));
+        let parentAcc = getAccessible(getNode("select4"));
+        let hostNode = getNode("select4").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select4")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select4")],
+          ],
+        });
+        getNode("select4").style.display = "none";
+        getNode("option4").style.display = "none";
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // hideChildNRemoveParent("option5", "select5")
+      {
+        let childAcc = getAccessible(getNode("option5"));
+        let parentAcc = getAccessible(getNode("select5"));
+        let hostNode = getNode("select5").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select5")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select5")],
+          ],
+        });
+        getNode("option5").style.display = "none";
+        getNode("select5").remove();
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // hideParentNRemoveChild("option6", "select6")
+      {
+        let childAcc = getAccessible(getNode("option6"));
+        let parentAcc = getAccessible(getNode("select6"));
+        let hostNode = getNode("select6").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select6")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select6")],
+          ],
+        });
+        getNode("select6").style.display = "none";
+        getNode("option6").remove();
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // removeChildNHideParent("option7", "select7")
+      {
+        let childAcc = getAccessible(getNode("option7"));
+        let parentAcc = getAccessible(getNode("select7"));
+        let hostNode = getNode("select7").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select7")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select7")],
+          ],
+        });
+        getNode("option7").remove();
+        getNode("select7").style.display = "none";
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // removeParentNHideChild("option8", "select8")
+      {
+        let childAcc = getAccessible(getNode("option8"));
+        let parentAcc = getAccessible(getNode("select8"));
+        let hostNode = getNode("select8").parentNode;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("select8")],
+            [EVENT_REORDER, hostNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, childAcc],
+            [EVENT_REORDER, getNode("select8")],
+          ],
+        });
+        getNode("select8").style.display = "none";
+        getNode("option8").remove();
+        await evts;
+        testIsDefunct(parentAcc);
+      }
+
+      // addParentNChild("testContainer", false) - parent added first, then child
+      {
+        let hostNode = getNode("testContainer");
+        let parentNode = document.createElement("select");
+        let childNode = document.createElement("option");
+        childNode.textContent = "testing";
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        hostNode.appendChild(parentNode);
+        parentNode.appendChild(childNode);
+        await evts;
+      }
+
+      // addParentNChild("testContainer", true) - child added first, then parent
+      {
+        let hostNode = getNode("testContainer");
+        let parentNode = document.createElement("select");
+        let childNode = document.createElement("option");
+        childNode.textContent = "testing";
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        parentNode.appendChild(childNode);
+        hostNode.appendChild(parentNode);
+        await evts;
+      }
+
+      // showParentNChild("select9", "option9", false) - parent shown first, then child
+      {
+        let parentNode = getNode("select9");
+        let childNode = getNode("option9");
+        let hostNode = parentNode.parentNode;
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        parentNode.style.display = "block";
+        childNode.style.display = "block";
+        await evts;
+      }
+
+      // showParentNChild("select10", "option10", true) - child shown first, then parent
+      {
+        let parentNode = getNode("select10");
+        let childNode = getNode("option10");
+        let hostNode = parentNode.parentNode;
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        childNode.style.display = "block";
+        parentNode.style.display = "block";
+        await evts;
+      }
+
+      // showParentNAddChild("select11", false) - parent shown first, then child added
+      {
+        let parentNode = getNode("select11");
+        let hostNode = parentNode.parentNode;
+        let childNode = document.createElement("option");
+        childNode.textContent = "testing";
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        parentNode.style.display = "block";
+        parentNode.appendChild(childNode);
+        await evts;
+      }
+
+      // showParentNAddChild("select12", true) - child added first, then parent shown
+      {
+        let parentNode = getNode("select12");
+        let hostNode = parentNode.parentNode;
+        let childNode = document.createElement("option");
+        childNode.textContent = "testing";
+        let evts = waitForEvents({
+          expected: [[EVENT_SHOW, parentNode], [EVENT_REORDER, hostNode]],
+          unexpected: [[EVENT_SHOW, childNode], [EVENT_REORDER, parentNode]],
+        });
+        parentNode.appendChild(childNode);
+        parentNode.style.display = "block";
+        await evts;
+      }
+
+      // removeGrandChildrenNHideParent("t1_child1", "t1_child2", "t1_parent")
+      {
+        let child1 = getNode("t1_child1");
+        let child2 = getNode("t1_child2");
+        let parentAcc = getAccessible("t1_parent");
+        let child1Acc = getAccessible("t1_child1");
+        let child2Acc = getAccessible("t1_child2");
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, parentAcc],
+            [EVENT_REORDER, getNode("t1_parent").parentNode],
+          ],
+          unexpected: [
+            [EVENT_HIDE, child1Acc],
+            [EVENT_HIDE, child2Acc],
+            [EVENT_REORDER, parentAcc],
+          ],
+        });
+        child1.remove();
+        child2.remove();
+        getNode("t1_parent").hidden = true;
+        await evts;
+      }
+
+      // test3: remove a child, and then its parent
+      {
+        let o = getAccessible("t3_o");
+        let ofc = getAccessible("t3_o").firstChild;
+        let evts = waitForEvents({
+          expected: [[EVENT_HIDE, o], [EVENT_REORDER, "t3_lb"]],
+          unexpected: [[EVENT_HIDE, ofc], [EVENT_REORDER, o]],
+        });
+        getNode("t3_o").textContent = "";
+        getNode("t3_lb").removeChild(getNode("t3_o"));
+        await evts;
+        testIsDefunct(o);
+        testIsDefunct(ofc);
+      }
+
+      // test4: remove children, and then a parent of 2nd child
+      {
+        let o1 = getAccessible("t4_o1");
+        let o1fc = o1.firstChild;
+        let o2 = getAccessible("t4_o2");
+        let o2fc = o2.firstChild;
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, o1fc],
+            [EVENT_HIDE, o2],
+            [EVENT_REORDER, "t4_lb"],
+          ],
+          unexpected: [
+            [EVENT_HIDE, o2fc],
+            [EVENT_REORDER, o1],
+            [EVENT_REORDER, o2],
+          ],
+        });
+        getNode("t4_o1").textContent = "";
+        getNode("t4_o2").textContent = "";
+        getNode("t4_lb").removeChild(getNode("t4_o2"));
+        await evts;
+        testIsDefunct(o1fc);
+        testIsDefunct(o2);
+        testIsDefunct(o2fc);
+      }
+
+      // test5: remove a child, remove a parent sibling, remove the parent
+      {
+        let o = getAccessible("t5_o");
+        let ofc = o.firstChild;
+        let b = getAccessible("t5_b");
+        let evts = waitForEvents({
+          expected: [[EVENT_HIDE, b], [EVENT_HIDE, o], [EVENT_REORDER, "t5"]],
+          unexpected: [
+            [EVENT_HIDE, ofc],
+            [EVENT_REORDER, o],
+            [EVENT_REORDER, getAccessible("t5_lb")],
+          ],
+        });
+        getNode("t5_o").textContent = "";
+        getNode("t5").removeChild(getNode("t5_b"));
+        getNode("t5_lb").removeChild(getNode("t5_o"));
+        await evts;
+        testIsDefunct(ofc);
+        testIsDefunct(o);
+        testIsDefunct(b);
+      }
+
+      // test6: Insert accessibles with a child node moved by aria-owns
+      {
+        let parent = getNode("t6");
+        let fc = document.createElement("div");
+        fc.setAttribute("id", "t6_fc");
+        let owns = document.createElement("div");
+        owns.setAttribute("id", "t6_owns");
+        let sc = document.createElement("div");
+        sc.setAttribute("id", "t6_sc");
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_SHOW, fc],
+            [EVENT_SHOW, sc],
+            [EVENT_REORDER, parent],
+          ],
+          unexpected: [
+            [EVENT_REORDER, fc],
+            [EVENT_REORDER, sc],
+            [EVENT_HIDE, owns],
+            [EVENT_SHOW, owns],
+          ],
+        });
+        parent.appendChild(fc);
+        getNode("t6_fc").appendChild(owns);
+        parent.appendChild(sc);
+        getNode("t6_sc").setAttribute("aria-owns", "t6_owns");
+        await evts;
+      }
+
+      info(
+        "test7: Insert text nodes under direct and grand children, then hide via aria-owns"
+      );
+      {
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, "t7_c"],
+            [EVENT_SHOW, "t7_c"],
+            [EVENT_REORDER, "t7"],
+          ],
+          unexpected: [
+            [EVENT_REORDER, "t7_c_directchild"],
+            [EVENT_REORDER, "t7_c_grandchild"],
+            [EVENT_SHOW, e => e.accessible.parent.id == "t7_c_directchild"],
+            [EVENT_SHOW, e => e.accessible.parent.id == "t7_c_grandchild"],
+          ],
+        });
+        getNode("t7_c_directchild").textContent = "ha";
+        getNode("t7_c_grandchild").textContent = "ha";
+        getNode("t7_moveplace").setAttribute("aria-owns", "t7_c");
+        await evts;
+      }
+
+      info("test8: Move a node by aria-owns from right to left in the tree");
+      {
+        let evts = waitForEvents([
+          [EVENT_HIDE, getNode("t8_c1_child")],
+          [EVENT_HIDE, "t8_c2_moved"],
+          [EVENT_SHOW, "t8_c2_moved"],
+          [EVENT_REORDER, "t8_c2"],
+          [EVENT_REORDER, "t8_c1"],
+        ]);
+        getNode("t8_c1_child").remove();
+        getNode("t8_c1").setAttribute("aria-owns", "t8_c2_moved");
+        await evts;
+      }
+
+      // test9: Move node #1 by aria-owns and then move node #2 into node #1
+      {
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("t9_c1_child")],
+            [EVENT_HIDE, getNode("t9_c2_child")],
+            [EVENT_HIDE, "t9_c3_moved"],
+            [EVENT_HIDE, "t9_c2_moved"],
+            [EVENT_SHOW, "t9_c2_moved"],
+            [EVENT_REORDER, "t9_c3"],
+            [EVENT_REORDER, "t9_c2"],
+            [EVENT_REORDER, "t9_c1"],
+          ],
+          unexpected: [[EVENT_SHOW, "t9_c3_moved"]],
+        });
+        getNode("t9_c1_child").remove();
+        getNode("t9_c2_child").remove();
+        getNode("t9_c2_moved").setAttribute("aria-owns", "t9_c3_moved");
+        getNode("t9_c1").setAttribute("aria-owns", "t9_c2_moved");
+        await evts;
+      }
+
+      // test10: Move a node by aria-owns into a node moved by aria-owns
+      {
+        let evts = waitForEvents([
+          [EVENT_HIDE, getNode("t10_c1_child")],
+          [EVENT_HIDE, getNode("t10_c2_child")],
+          [EVENT_HIDE, getNode("t10_c2_moved")],
+          [EVENT_HIDE, getNode("t10_c3_moved")],
+          [EVENT_SHOW, getNode("t10_c2_moved")],
+          [EVENT_REORDER, "t10_c2"],
+          [EVENT_REORDER, "t10_c1"],
+          [EVENT_REORDER, "t10_c3"],
+        ]);
+        getNode("t10_c1_child").remove();
+        getNode("t10_c2_child").remove();
+        getNode("t10_c1").setAttribute("aria-owns", "t10_c2_moved");
+        getNode("t10_c2_moved").setAttribute("aria-owns", "t10_c3_moved");
+        await evts;
+      }
+
+      // test11: Move a node by aria-owns to left within the tree
+      {
+        let evts = waitForEvents({
+          expected: [
+            [EVENT_HIDE, getNode("t11_c1_child")],
+            [EVENT_HIDE, getNode("t11_c2")],
+            [EVENT_SHOW, "t11_c2_child"],
+            [EVENT_SHOW, "t11_c2"],
+            [EVENT_REORDER, "t11"],
+          ],
+          unexpected: [
+            [EVENT_HIDE, "t11_c2_child"],
+            [EVENT_REORDER, "t11_c1"],
+            [EVENT_REORDER, "t11_c2"],
+            [EVENT_REORDER, "t11_c3"],
+          ],
+        });
+        getNode("t11_c1_child").remove();
+        getNode("t11_c1").setAttribute("aria-owns", "t11_c2_child");
+        getNode("t11_c3").setAttribute("aria-owns", "t11_c2");
+        await evts;
+      }
+
+      SimpleTest.finish();
+    }
+
+    SimpleTest.waitForExplicitFinish();
+    addA11yLoadEvent(doTests);
+  </script>
+</head>
+
+<body>
+
+  <a target="_blank"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=513213"
+     title="coalesce events when new event is appended to the queue">
+    Mozilla Bug 513213
+  </a><br>
+  <a target="_blank"
+     title="Rework accessible tree update code"
+     href="https://bugzilla.mozilla.org/show_bug.cgi?id=570275">
+    Mozilla Bug 570275
+  </a>
+
+  <p id="display"></p>
+  <div id="content" style="display: none"></div>
+  <pre id="test">
+  </pre>
+
+  <div id="testContainer">
+    <select id="select1">
+      <option id="option1">option</option>
+    </select>
+    <select id="select2">
+      <option id="option2">option</option>
+    </select>
+    <select id="select3">
+      <option id="option3">option</option>
+    </select>
+    <select id="select4">
+      <option id="option4">option</option>
+    </select>
+    <select id="select5">
+      <option id="option5">option</option>
+    </select>
+    <select id="select6">
+      <option id="option6">option</option>
+    </select>
+    <select id="select7">
+      <option id="option7">option</option>
+    </select>
+    <select id="select8">
+      <option id="option8">option</option>
+    </select>
+
+    <select id="select9" style="display: none">
+      <option id="option9" style="display: none">testing</option>
+    </select>
+    <select id="select10" style="display: none">
+      <option id="option10" style="display: none">testing</option>
+    </select>
+    <select id="select11" style="display: none"></select>
+    <select id="select12" style="display: none"></select>
+  </div>
+
+  <div id="testContainer2">
+    <div id="t1_parent">
+      <div id="t1_mid1"><div id="t1_child1"></div></div>
+      <div id="t1_mid2"><div id="t1_child2"></div></div>
+    </div>
+  </div>
+
+  <div id="t3">
+    <div role="listbox" id="t3_lb">
+      <div role="option" id="t3_o">opt</div>
+    </div>
+  </div>
+
+  <div id="t4">
+    <div role="listbox" id="t4_lb">
+      <div role="option" id="t4_o1">opt1</div>
+      <div role="option" id="t4_o2">opt2</div>
+    </div>
+  </div>
+
+  <div id="t5">
+    <div role="button" id="t5_b">btn</div>
+    <div role="listbox" id="t5_lb">
+      <div role="option" id="t5_o">opt</div>
+    </div>
+  </div>
+
+  <div id="t6">
+  </div>
+
+  <div id="t7">
+    <div id="t7_moveplace"></div>
+    <div id="t7_c">
+      <div><div id="t7_c_grandchild"></div></div>
+      <div id="t7_c_directchild"></div>
+    </div>
+  </div>
+
+  <div id="t8">
+    <div id="t8_c1"><div id="t8_c1_child"></div></div>
+    <div id="t8_c2">
+      <div id="t8_c2_moved"></div>
+    </div>
+  </div>
+
+  <div id="t9">
+    <div id="t9_c1"><div id="t9_c1_child"></div></div>
+    <div id="t9_c2">
+      <div id="t9_c2_child"></div>
+      <div id="t9_c2_moved"></div>
+    </div>
+    <div id="t9_c3">
+      <div id="t9_c3_moved"></div>
+    </div>
+  </div>
+
+  <div id="t10">
+    <div id="t10_c1"><div id="t10_c1_child"></div></div>
+    <div id="t10_c2">
+      <div id="t10_c2_child"></div>
+      <div id="t10_c2_moved"></div>
+    </div>
+    <div id="t10_c3">
+      <div id="t10_c3_moved"></div>
+    </div>
+  </div>
+
+  <div id="t11">
+    <div id="t11_c1"><div id="t11_c1_child"></div></div>
+    <div id="t11_c2"><div id="t11_c2_child"></div></div>
+    <div id="t11_c3"></div>
+  </div>
+</body>
+</html>

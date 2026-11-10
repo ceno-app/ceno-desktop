@@ -1,0 +1,55 @@
+/* clang-format off */
+/* clang-format on */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef ACCESSIBLE_MAC_MOZHTMLACCESSIBLE_H_
+#define ACCESSIBLE_MAC_MOZHTMLACCESSIBLE_H_
+
+#import "mozAccessible.h"
+
+@interface mozHeadingAccessible : mozAccessible
+
+// override
+- (NSString*)moxTitle;
+
+// override
+- (id)moxValue;
+
+@end
+
+@interface mozLinkAccessible : mozAccessible
+
+// override
+- (id)moxValue;
+
+// override
+- (NSString*)moxRole;
+
+// override
+- (NSURL*)moxURL;
+
+// override
+- (NSNumber*)moxVisited;
+
+// override
+- (NSArray*)moxLinkedUIElements;
+
+@end
+
+@interface MOXListItemAccessible : mozAccessible
+
+// override
+- (NSString*)moxTitle;
+
+@end
+
+@interface MOXLabelAccessible : mozAccessible
+
+// override
+- (NSString*)moxTitle;
+
+@end
+
+#endif  // ACCESSIBLE_MAC_MOZHTMLACCESSIBLE_H_

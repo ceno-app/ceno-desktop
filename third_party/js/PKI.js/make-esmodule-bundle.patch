@@ -1,0 +1,46 @@
+diff --git a/rollup.config.mjs b/rollup.config.mjs
+index fcc1af8..572b511 100644
+--- a/rollup.config.mjs
++++ b/rollup.config.mjs
+@@ -3,6 +3,7 @@ import fs from "fs";
+ import { fileURLToPath } from "url";
+ import typescript from "rollup-plugin-typescript2";
+ import dts from "rollup-plugin-dts";
++import { nodeResolve } from "@rollup/plugin-node-resolve";
+ const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ const pkg = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+ 
+@@ -23,7 +24,7 @@ export default [
+     input,
+     plugins: [
+       typescript({
+-        check: true,
++        check: false,
+         clean: true,
+         tsconfigOverride: {
+           compilerOptions: {
+@@ -32,8 +33,8 @@ export default [
+           }
+         }
+       }),
++      nodeResolve(),
+     ],
+-    external: [...external],
+     output: [
+       {
+         banner,
+@@ -49,7 +50,6 @@ export default [
+   },
+   {
+     input,
+-    external: [...external],
+     plugins: [
+       dts({
+         tsconfig: path.resolve(__dirname, "./tsconfig.json")
+@@ -62,4 +62,4 @@ export default [
+       }
+     ]
+   },
+-];
+\ No newline at end of file
++];

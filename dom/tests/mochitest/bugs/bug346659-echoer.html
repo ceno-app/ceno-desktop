@@ -1,0 +1,5 @@
+<script>
+  const testNum = decodeURIComponent(window.location.search.substring(1));
+  (window.opener || window.parent).postMessage(testNum + " - " + window.x, "*");
+  window.close();
+</script>

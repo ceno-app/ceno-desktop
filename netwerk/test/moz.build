@@ -1,0 +1,37 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+TEST_DIRS += ["httpserver", "http3server", "gtest"]
+
+BROWSER_CHROME_MANIFESTS += [
+    "browser/browser.toml",
+    "useragent/browser_nonsnap.toml",
+    "useragent/browser_snap.toml",
+]
+MOCHITEST_MANIFESTS += ["mochitests/mochitest.toml"]
+
+# mochitests using NodeServer need the cert for HTTPS servers
+TEST_HARNESS_FILES.testing.mochitest.tests.netwerk.test.unit += [
+    "/netwerk/test/unit/http2-ca.pem",
+]
+
+XPCSHELL_TESTS_MANIFESTS += [
+    "unit/node_execute/xpcshell.toml",
+    "unit/xpcshell.toml",
+    "unit_ipc/xpcshell.toml",
+]
+
+TESTING_JS_MODULES += [
+    "browser/cookie_filtering_helper.sys.mjs",
+    "browser/early_hint_preload_test_helper.sys.mjs",
+    "browser/simple_unknown_uri_helpers.sys.mjs",
+    "unit/test_http3_prio_helpers.js",
+]
+
+PERFTESTS_MANIFESTS += ["perf/perftest.toml", "unit/perftest.toml"]
+
+MARIONETTE_MANIFESTS += ["marionette/manifest.toml"]
+
+if CONFIG["FUZZING_INTERFACES"]:
+    TEST_DIRS += ["fuzz"]
