@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.11] - 2026-11-17
+### Changed
+- Updated uBlock Origin to 1.76.4
+
 ## [0.1.10] - 2026-11-10
 ### Changed
 - Updated Base Browser to 153.7.0esr-16.0-1-build1
